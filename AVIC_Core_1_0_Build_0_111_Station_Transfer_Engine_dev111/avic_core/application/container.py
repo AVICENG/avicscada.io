@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
 
@@ -167,7 +168,7 @@ class CoreApplication:
     def create_system_backup(self, destination: str | Path | None = None, *, passphrase: str) -> Path:
         with self._lock:
             self._ensure_open()
-        stamp = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         output = Path(destination) if destination is not None else self.paths.backups / f"avic-system-{stamp}.avicbackup"
         result = self.system_backups.create_backup(
             self, output, passphrase=passphrase, core_version="1.0.0.dev145"
