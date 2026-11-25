@@ -111,9 +111,9 @@ def test_driver_manager_rejects_nested_secrets(tmp_path):
 
 def test_driver_manager_requires_registered_runtime_for_mqtt(tmp_path):
     core, station = make_station(tmp_path)
-    created = core.driver_manager.create_instance(station["id"], "mqtt", "MQTT")
-    with pytest.raises(RuntimeError, match="factory"):
-        core.driver_manager.start_instance(created["id"])
+    with pytest.raises(ValueError, match="пока не реализован"):
+        core.driver_manager.create_instance(station["id"], "mqtt", "MQTT")
+    assert next(x for x in core.driver_manager.catalog() if x["driver_id"] == "mqtt")["runtime_start_supported"] is False
     core.close()
 
 
@@ -140,3 +140,68 @@ def test_core_shutdown_stops_active_driver_session(tmp_path):
     assert adapter.closed is True
     persisted, _ = core.repository.get(created["id"], DriverInstance)
     assert persisted.state == "STOPPED" and persisted.enabled is False
+
+
+def test_driver_runtime_state_and_station_stop_are_truthful(tmp_path):
+    import time
+    from avic_core.drivers.manager import DriverInstance
+
+    class DegradedAdapter:
+        def poll_once(self):
+            return {"results": [{"ok": False, "error": "simulated link loss"}]}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    adapter = DegradedAdapter()
+    adapter.closed = False
+    created = core.driver_manager.create_instance(station["id"], "modbus-tcp", "Degraded test",
+                                                   {"poll_interval_seconds": 0.1})
+    core.driver_manager.register_adapter_factory("modbus-tcp", lambda _core, _instance: adapter)
+    core.driver_manager.start_instance(created["id"])
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
+        state = core.driver_manager.diagnostics(created["id"])["state"]
+        if state == "DEGRADED":
+            break
+        time.sleep(0.01)
+    assert core.driver_manager.diagnostics(created["id"])["state"] == "DEGRADED"
+    view = core.driver_manager.get_instance(created["id"])
+    assert view["state"] == "DEGRADED"
+    assert view["field_read_enabled"] is True
+    assert view["field_write_enabled"] is False
+    core.stop_station(station["id"])
+    assert adapter.closed is True
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "STOPPED" and persisted.enabled is False
+    core.close()
+
+
+def test_persisted_active_driver_without_worker_is_reported_orphaned(tmp_path):
+    import uuid
+    from avic_core.drivers.manager import DriverInstance
+    core, station = make_station(tmp_path)
+    item = DriverInstance("Orphan", station["id"], "modbus-tcp", "Modbus TCP",
+                          state="RUNNING", enabled=True)
+    core.repository.save(item)
+    assert core.driver_manager.diagnostics(item.id)["state"] == "ORPHANED"
+    assert core.driver_manager.get_instance(item.id)["field_read_enabled"] is False
+    core.close()
+
+
+def test_factory_registration_is_blocked_only_for_same_active_driver(tmp_path):
+    import time
+    core, station = make_station(tmp_path)
+    created = core.driver_manager.create_instance(station["id"], "modbus-tcp", "Active Modbus",
+                                                   {"poll_interval_seconds": 0.1})
+    class Adapter:
+        def poll_once(self): return {"results": []}
+        def close(self): pass
+    core.driver_manager.register_adapter_factory("modbus-tcp", lambda _core, _instance: Adapter())
+    core.driver_manager.start_instance(created["id"])
+    # Updating a different protocol factory must not be blocked by this Modbus worker.
+    core.driver_manager.register_adapter_factory("bacnet-ip", lambda _core, _instance: Adapter())
+    with pytest.raises(RuntimeError, match="активной сессии"):
+        core.driver_manager.register_adapter_factory("modbus-tcp", lambda _core, _instance: Adapter())
+    core.driver_manager.stop_station(station["id"])
+    core.close()

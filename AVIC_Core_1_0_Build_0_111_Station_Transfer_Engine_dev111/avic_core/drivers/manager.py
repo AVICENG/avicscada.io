@@ -82,8 +82,12 @@ class DriverManagerService:
         if not callable(factory):
             raise TypeError("factory must be callable")
         with self._lock:
-            if self._sessions:
-                raise RuntimeError("Нельзя менять factory во время активных сессий драйверов")
+            for instance_id in self._sessions:
+                active_item, _ = self._load(instance_id)
+                if active_item.driver_id == driver_id:
+                    raise RuntimeError(
+                        f"Нельзя менять factory {driver_id} во время активной сессии этого драйвера"
+                    )
             self._factories[driver_id] = factory
 
     def _build_modbus_adapter(self, core, instance: DriverInstance):

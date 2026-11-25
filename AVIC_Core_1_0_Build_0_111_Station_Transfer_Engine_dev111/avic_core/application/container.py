@@ -116,10 +116,22 @@ class CoreApplication:
     def stop_station(self, station_id: str, stop_hook=None):
         with self._lock:
             self._ensure_open()
+        driver_error = None
+        try:
+            self.driver_manager.stop_station(station_id)
+        except Exception as exc:
+            driver_error = exc
+        # Station runtime shutdown is attempted even if a driver worker reports a
+        # shutdown failure; the caller receives an explicit error after the stop.
         result = self.runtime.stop(station_id, stop_hook=stop_hook)
-        self.events.record("runtime.station_stopped", f"Station {station_id} stopped", station_id=station_id, severity="NOTICE", details={"state": result.state.value})
+        details = {"state": result.state.value,
+                   "driver_shutdown_error": f"{type(driver_error).__name__}: {driver_error}" if driver_error else None}
+        self.events.record("runtime.station_stopped", f"Station {station_id} stopped", station_id=station_id,
+                           severity="ERROR" if driver_error else "NOTICE", details=details)
         self.audit.append(actor_id="system", action="runtime.station_stopped", resource_type="station",
-                          resource_id=station_id, details={"state": result.state.value})
+                          resource_id=station_id, outcome="error" if driver_error else "success", details=details)
+        if driver_error:
+            raise RuntimeError(f"Станция остановлена, но не все драйверы удалось корректно остановить: {driver_error}") from driver_error
         return result
 
     def health_report(self) -> HealthReport:

@@ -143,18 +143,21 @@ class HostIdentity:
                         "Не удалось определить точный Windows user SID для ACL installation identity"
                     )
 
-                subprocess.run(
-                    [
-                        "icacls", str(identity_dir),
-                        "/inheritance:r", "/grant:r",
-                        f"*{current_sid}:(OI)(CI)F",
-                        "*S-1-5-18:(OI)(CI)F",
-                        "*S-1-5-32-544:(OI)(CI)F",
-                        "/remove:g", "*S-1-5-113",
-                    ],
-                    check=True, stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL, timeout=10,
+                # Apply each ACL operation separately. icacls accepts one SID:perm
+                # operand for /grant[:r]; combining several operands after one switch
+                # can leave the explicit user ACE unapplied on hosted Windows runners.
+                acl_commands = (
+                    ["icacls", str(identity_dir), "/inheritance:r"],
+                    ["icacls", str(identity_dir), "/remove:g", "*S-1-5-113"],
+                    ["icacls", str(identity_dir), "/grant:r", f"*{current_sid}:(OI)(CI)F"],
+                    ["icacls", str(identity_dir), "/grant", "*S-1-5-18:(OI)(CI)F"],
+                    ["icacls", str(identity_dir), "/grant", "*S-1-5-32-544:(OI)(CI)F"],
                 )
+                for command in acl_commands:
+                    subprocess.run(
+                        command, check=True, stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL, timeout=10,
+                    )
 
             if identity_file.exists():
                 return str(
