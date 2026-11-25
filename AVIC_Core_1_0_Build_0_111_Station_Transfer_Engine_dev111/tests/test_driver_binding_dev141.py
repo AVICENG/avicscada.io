@@ -12,6 +12,37 @@ def _station(tmp_path):
     return app, station
 
 
+def _import_setup(tmp_path, driver_id="modbus-tcp"):
+    app, station = _station(tmp_path)
+    driver = app.state.driver_manager.create_instance(station["id"], driver_id, "Field driver", {})
+    protocol = "modbus/tcp" if driver_id == "modbus-tcp" else "bacnet/ip"
+    if driver_id == "modbus-tcp":
+        device_id = f"{protocol}:device:10.20.0.15"
+        points = [
+            {"native_identity": f"{protocol}:holding-register:40001", "name": "Supply temperature",
+             "data_type": "float", "unit": "°C", "direction": "input", "object_type": "holding-register",
+             "driver_binding": {"function": 3, "address": 0, "count": 1, "data_type": "uint16", "scale": 0.1}},
+            {"native_identity": f"{protocol}:coil:00001", "name": "Fan command",
+             "data_type": "bool", "unit": "", "direction": "output", "object_type": "coil",
+             "driver_binding": {"function": 1, "address": 0, "count": 1, "data_type": "bool"}},
+        ]
+    else:
+        device_id = f"{protocol}:device:123"
+        points = [
+            {"native_identity": f"{protocol}:object:0:1", "name": "Supply temperature",
+             "data_type": "analog-input", "unit": "°C", "direction": "input", "object_type": "analog-input"},
+        ]
+    inspection = {
+        "protocol": protocol, "network_id": "lan-01",
+        "device": {"native_identity": device_id,
+                   "address": "10.20.0.15:502" if driver_id == "modbus-tcp" else "10.20.0.15:47808",
+                   "device_instance": 123 if driver_id == "bacnet-ip" else None,
+                   "name": "Controller"},
+        "points": points,
+    }
+    return app, station, driver, inspection
+
+
 def test_stopped_driver_config_update_uses_optimistic_version_and_secret_guard(tmp_path):
     app, station = _station(tmp_path)
     created = app.state.driver_manager.create_instance(station["id"], "modbus-tcp", "Modbus", {})
@@ -54,16 +85,14 @@ def test_driver_config_cannot_change_while_runtime_is_active(tmp_path):
 
 
 def test_import_commits_modbus_bindings_with_points_and_is_idempotent(tmp_path):
-    from tests.test_protocol_point_import_dev140 import _setup
-
-    app, station, driver, inspection = _setup(tmp_path)
+    app, station, driver, inspection = _import_setup(tmp_path)
     native = inspection["points"][0]["native_identity"]
     preview = app.state.protocol_point_import.preview(station["id"], driver["id"], inspection, [native])
     assert preview["bindings_validated"] is True
     assert preview["binding_count"] == 1
     result = app.state.protocol_point_import.import_points(station["id"], driver["id"], inspection, [native])
-    driver_item, _ = app.state.core.repository.get(driver["id"], __import__(
-        "avic_core.drivers.manager", fromlist=["DriverInstance"]).DriverInstance)
+    from avic_core.drivers.manager import DriverInstance
+    driver_item, _ = app.state.core.repository.get(driver["id"], DriverInstance)
     binding = driver_item.config["bindings"][0]
     assert binding["point_id"] == result["points_added"][0]
     assert (binding["function"], binding["address"], binding["data_type"]) == (3, 0, "uint16")
@@ -76,10 +105,9 @@ def test_import_commits_modbus_bindings_with_points_and_is_idempotent(tmp_path):
 
 
 def test_import_builds_bacnet_readproperty_binding_from_confirmed_object_identity(tmp_path):
-    from tests.test_protocol_point_import_dev140 import _setup
     from avic_core.drivers.manager import DriverInstance
 
-    app, station, driver, inspection = _setup(tmp_path, driver_id="bacnet-ip")
+    app, station, driver, inspection = _import_setup(tmp_path, driver_id="bacnet-ip")
     native = inspection["points"][0]["native_identity"]
     result = app.state.protocol_point_import.import_points(station["id"], driver["id"], inspection, [native])
     driver_item, _ = app.state.core.repository.get(driver["id"], DriverInstance)
