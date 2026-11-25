@@ -28,7 +28,7 @@ def test_excluded_proprietary_families_are_not_in_catalog():
 
 
 def test_only_existing_read_only_transports_advertise_read_capability():
-    expected = {"bacnet-ip", "modbus-tcp"}
+    expected = {"bacnet-ip", "modbus-tcp", "knxnet-ip"}
     actual = {entry.driver_id for entry in BUILTIN_DRIVERS if entry.read_supported}
     assert actual == expected
     assert all(not entry.write_supported for entry in BUILTIN_DRIVERS)
@@ -50,6 +50,16 @@ def test_existing_bacnet_modbus_foundations_remain_honest():
         assert item.lifecycle == DriverLifecycle.READ_ONLY_TRANSPORT
         assert item.read_supported
         assert not item.write_supported
+
+
+
+def test_knxnet_ip_is_read_only_runtime_not_write_capable():
+    item = get_driver("knxnet-ip")
+    assert item is not None
+    assert item.lifecycle == DriverLifecycle.READ_ONLY_TRANSPORT
+    assert item.read_supported
+    assert not item.discovery_supported
+    assert not item.write_supported
 
 
 def test_category_tree_groups_semantic_layer_separately():
