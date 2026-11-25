@@ -79,14 +79,17 @@ class PollingSession:
                     self._state = "DEGRADED"
             with self._lock:
                 self._last_completed_at = datetime.now(timezone.utc).isoformat()
+
+            # Keep a fixed-rate schedule while on time. If a poll overruns its
+            # slot, wait a full interval after completion instead of immediately
+            # issuing a catch-up request to a slow or overloaded controller.
             next_tick += self.interval_seconds
+            now = time.monotonic()
+            if next_tick <= now:
+                next_tick = now + self.interval_seconds
             delay = max(0.0, next_tick - time.monotonic())
             if self._stop_event.wait(delay):
                 break
-            # If a poll takes longer than the interval, do not run overlapping
-            # catch-up bursts; schedule the next poll from the current time.
-            if delay == 0.0:
-                next_tick = time.monotonic()
         with self._lock:
             self._state = "STOPPED"
 

@@ -51,3 +51,27 @@ def test_polling_session_rejects_invalid_configuration():
         PollingSession(FakeAdapter(), 0.01)
     with pytest.raises(TypeError):
         PollingSession(object(), 1.0)
+
+
+def test_overrun_waits_full_interval_before_next_poll():
+    class SlowAdapter:
+        def __init__(self):
+            self.calls = []
+            self.second_call = threading.Event()
+
+        def poll_once(self):
+            self.calls.append(time.monotonic())
+            if len(self.calls) == 1:
+                time.sleep(0.16)
+            else:
+                self.second_call.set()
+            return {"results": [{"ok": True}]}
+
+    adapter = SlowAdapter()
+    interval = 0.12
+    session = PollingSession(adapter, interval)
+    session.start()
+    assert adapter.second_call.wait(1.0)
+    session.stop()
+    assert len(adapter.calls) >= 2
+    assert adapter.calls[1] - adapter.calls[0] >= 0.25
