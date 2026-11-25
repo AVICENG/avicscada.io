@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import csv
 import json
 import os
 import platform
@@ -129,35 +130,30 @@ class HostIdentity:
             if os.name == "nt":
                 # Windows ACL: current account, SYSTEM and local administrators.
                 # Inheritance from parent directories is disabled.
-                username = os.environ.get("USERNAME", "").strip()
-                domain = os.environ.get("USERDOMAIN", "").strip()
-
-                account = (
-                    f"{domain}\\{username}"
-                    if domain
-                    else username
+                # Resolve the current account to its immutable SID; account
+                # name strings can resolve ambiguously on hosted Windows runners.
+                who = subprocess.run(
+                    ["whoami", "/user", "/fo", "csv", "/nh"],
+                    check=True, capture_output=True, text=True, timeout=10,
                 )
-
-                if not username:
+                rows = list(csv.reader(line for line in who.stdout.splitlines() if line.strip()))
+                current_sid = rows[0][-1].strip() if rows and rows[0] else ""
+                if not re.fullmatch(r"S-1-5-21-(?:\\d+-){2,}\\d+", current_sid):
                     raise HostIdentityError(
-                        "Не удалось определить Windows account "
-                        "для ACL installation identity"
+                        "Не удалось определить точный Windows user SID для ACL installation identity"
                     )
 
                 subprocess.run(
                     [
-                        "icacls",
-                        str(identity_dir),
-                        "/inheritance:r",
-                        "/grant:r",
-                        f"{account}:(OI)(CI)F",
+                        "icacls", str(identity_dir),
+                        "/inheritance:r", "/grant:r",
+                        f"*{current_sid}:(OI)(CI)F",
                         "*S-1-5-18:(OI)(CI)F",
                         "*S-1-5-32-544:(OI)(CI)F",
+                        "/remove:g", "*S-1-5-113",
                     ],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=10,
+                    check=True, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, timeout=10,
                 )
 
             if identity_file.exists():

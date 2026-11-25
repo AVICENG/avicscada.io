@@ -65,5 +65,7 @@ def test_installation_identity_is_uuid_and_private(tmp_path):
         assert "D:PAI" in sddl, "Identity directory ACL is not protected from inheritance"
 
         aces = re.findall(r"\(A;OICI;FA;;;([^)]+)\)", sddl)
-        assert len(aces) == 3, f"Unexpected ACL entries: {aces}"
-        assert set(aces) == {"SY", "BA", current_sid}
+        # Owner Rights (OW) may exist on hosted Windows runners.
+        assert {"SY", "BA", current_sid}.issubset(set(aces)), f"Required ACL principals missing: {aces}"
+        assert "LA" not in aces, f"Broad Local Account access is not permitted: {aces}"
+        assert set(aces).issubset({"OW", "SY", "BA", current_sid}), f"Unexpected ACL principals: {aces}

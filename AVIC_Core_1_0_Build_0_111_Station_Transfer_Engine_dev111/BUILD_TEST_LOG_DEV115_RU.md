@@ -22,3 +22,11 @@
 
 ## CI
 Предыдущий CI выявил ImportError из-за отсутствовавшего экспорта `DriverCategory`. Экспортный файл исправлен и включён в текущий HEAD. Повторная матрица CI запущена; до завершения тесты не объявляются пройденными.
+
+
+## DEV122 — CI regressions and Windows HostIdentity ACL
+
+- Исправлен тест каталога: MQTT является реализованным read-only subscribe transport и включён в ожидаемый набор read-capable drivers.
+- Windows HostIdentity теперь определяет текущего пользователя по SID через whoami и назначает ACL непосредственно SID, а не неоднозначной строке USERDOMAIN/USERNAME.
+- Широкий principal Local Account (S-1-5-113) удаляется; ACL тест требует текущий SID, SYSTEM и Administrators, разрешает специальную запись Owner Rights и запрещает неизвестные principals.
+- Предыдущий CI: Linux — 31 175 passed, 1 failed (устаревшее ожидание каталога); Windows — 31 173 passed, 1 skipped, 2 failed (ожидание каталога и ACL principal). DEV122 требует повторного полного CI.
