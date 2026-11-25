@@ -723,10 +723,10 @@ class StationTransferManager:
         cloned_station['payload']['project_id'] = target_project_id
         if 'name' in cloned_station['payload']: cloned_station['payload']['name'] = station_name.strip()
         return cloned_records, cloned_aux, cloned_station['entity_id']
+
     def commit_import(self, core, staged_path: str | Path, *, expected_package_id: str, target_project_id: str,
-                      actor: str = 'local-engineer', clone: bool = False,
+                      actor: str = "local-engineer", clone: bool = False,
                       clone_station_name: str | None = None) -> dict[str, Any]:
-                      actor: str = "local-engineer") -> dict[str, Any]:
         stage_input = Path(staged_path).expanduser()
         if stage_input.is_symlink():
             raise StationTransferError("Staged Station directory cannot be a symbolic link")
