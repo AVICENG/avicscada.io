@@ -11,6 +11,10 @@ KNXnet/IP — приоритетный протокол автоматизаци
 6. Engineering UI, диагностика и hardware acceptance.
 7. Управление — только после RBAC, явных разрешений, аудита, quality guards и подтверждения на оборудовании.
 
+## DEV151 — cEMI parser
+- Добавлен строгий парсер cEMI L_Data.req/con/ind, GroupValueRead/Response/Write, адресов, TPCI/APCI, короткого значения и payload.
+- DPT metadata ещё не связывается автоматически: DPT берётся из инженерного проекта/ETS, не из самого telegram.
+
 ## DEV150 — UDP Tunnelling transport
 - Добавлен отдельный UDP tunnelling transport: CONNECT lifecycle, endpoint validation, TX TUNNELING_REQ/ACK, RX TUNNELING_REQ/ACK, sequence checks, duplicate suppression, heartbeat и disconnect.
 - Транспорт пока не интегрирован с Driver Manager и Point Runtime; cEMI/APDU decode, ETS import, Routing и аппаратная проверка остаются следующими этапами.
