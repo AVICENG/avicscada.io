@@ -134,6 +134,14 @@ class DriverInstanceCreateInput(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     config: dict = Field(default_factory=dict)
 
+
+class DriverStartInput(BaseModel):
+    poll_interval_seconds: float | None = Field(default=None, ge=0.1, le=86400)
+
+
+class DriverStopInput(BaseModel):
+    timeout_seconds: float = Field(default=5.0, gt=0, le=60)
+
 class AccessLeaseInput(BaseModel):
     duration_seconds: int = Field(default=300, ge=1, le=900)
 
@@ -1039,6 +1047,39 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         try: return app.state.driver_manager.get_instance(instance_id)
         except EntityNotFound as exc: raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
         except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/driver-instances/{instance_id}/start")
+    def start_driver_instance(instance_id: str, payload: DriverStartInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.driver_manager.start_instance(
+                instance_id, poll_interval_seconds=payload.poll_interval_seconds)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/api/driver-instances/{instance_id}/stop")
+    def stop_driver_instance(instance_id: str, payload: DriverStopInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.driver_manager.stop_instance(
+                instance_id, timeout=payload.timeout_seconds)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except (RuntimeError, TimeoutError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/api/driver-instances/{instance_id}/diagnostics")
+    def driver_instance_diagnostics(instance_id: str) -> dict:
+        try:
+            return app.state.driver_manager.diagnostics(instance_id)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
 
     @app.get("/api/stations/{station_id}/engineering-workflow")
     def engineering_workflow(station_id: str) -> dict:

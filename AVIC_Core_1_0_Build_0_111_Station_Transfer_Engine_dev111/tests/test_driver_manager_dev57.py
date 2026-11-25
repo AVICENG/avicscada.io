@@ -220,3 +220,34 @@ def test_driver_config_rejects_secret_aliases_recursively(tmp_path):
         with pytest.raises(ValueError, match="SecretStore"):
             core.driver_manager.create_instance(station["id"], "modbus-tcp", "Secret alias", config)
     core.close()
+
+
+def test_driver_runtime_http_start_stop_diagnostics_and_origin_guard(tmp_path):
+    from avic_core.ui.app import create_ui_app
+    from fastapi.testclient import TestClient
+
+    class Adapter:
+        def __init__(self): self.closed = False
+        def poll_once(self): return {"results": [{"ok": True}]}
+        def diagnostics(self): return {"fake": True}
+        def close(self): self.closed = True
+
+    app = create_ui_app(data_dir=str(tmp_path / "driver-api"))
+    client = TestClient(app)
+    project = client.post("/api/projects", json={"name": "API"}).json()
+    station = client.post("/api/stations", json={"name": "Station", "project_id": project["id"]}).json()
+    created = client.post(f"/api/stations/{station['id']}/drivers",
+                          json={"driver_id": "modbus-tcp", "name": "Modbus"}).json()
+    adapter = Adapter()
+    app.state.driver_manager.register_adapter_factory("modbus-tcp", lambda _core, _item: adapter)
+    denied = client.post(f"/api/driver-instances/{created['id']}/start", json={},
+                         headers={"origin": "https://evil.example"})
+    assert denied.status_code == 403
+    started = client.post(f"/api/driver-instances/{created['id']}/start", json={"poll_interval_seconds": 0.1})
+    assert started.status_code == 200 and started.json()["state"] in {"RUNNING", "DEGRADED"}
+    diag = client.get(f"/api/driver-instances/{created['id']}/diagnostics")
+    assert diag.status_code == 200 and diag.json()["field_write_enabled"] is False
+    stopped = client.post(f"/api/driver-instances/{created['id']}/stop", json={})
+    assert stopped.status_code == 200 and stopped.json()["state"] == "STOPPED"
+    assert adapter.closed is True
+    app.state.core.close()
