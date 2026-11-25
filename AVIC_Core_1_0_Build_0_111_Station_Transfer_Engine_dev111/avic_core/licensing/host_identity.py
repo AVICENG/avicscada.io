@@ -151,8 +151,8 @@ class HostIdentity:
                 ps_user_sid = current_sid.replace("'", "''")
                 ps_script = r"""
 $ErrorActionPreference = 'Stop'
-$path = '' + ps_path + ''
-$userSid = '' + ps_user_sid + ''
+$path = '__AVIC_PATH__'
+$userSid = '__AVIC_USER_SID__'
 $acl = Get-Acl -LiteralPath $path
 $acl.SetAccessRuleProtection($true, $false)
 foreach ($existingRule in @($acl.Access)) {
@@ -181,7 +181,6 @@ Set-Acl -LiteralPath $path -AclObject $acl
                     [
                         "powershell", "-NoProfile", "-NonInteractive",
                         "-EncodedCommand", encoded_script,
-                        str(identity_dir), current_sid,
                     ],
                     check=True, capture_output=True, text=True, timeout=15,
                 )
