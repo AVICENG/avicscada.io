@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 import shutil
 import tempfile
 from uuid import uuid4
+from time import monotonic
 
 from avic_core.application.container import CoreApplication
 from avic_core.transfer import StationTransferError
@@ -406,6 +407,12 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     app.state.command_manager = CommandManagerService(app.state.core, app.state.core.paths.databases / "commands.sqlite3")
     app.state.discovery_history = DiscoveryHistory(app.state.core.paths.databases / "discovery_history.sqlite3")
     app.state.station_transfer_tokens = {}
+    # Staging tokens are process-local; clean abandoned work from a previous process.
+    for transfer_dir in ("station-transfer-inbox", "station-transfer-staging"):
+        stale_dir = app.state.core.paths.backups / transfer_dir
+        if stale_dir.exists():
+            shutil.rmtree(stale_dir, ignore_errors=True)
+        stale_dir.mkdir(parents=True, exist_ok=True)
 
     def require_local_operator(request: Request) -> None:
         # DEV25 mutations are intentionally restricted to loopback until session/RBAC
@@ -421,6 +428,15 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                     or parsed_origin.username is not None or parsed_origin.password is not None
                     or parsed_origin.path not in {"", "/"} or parsed_origin.query or parsed_origin.fragment):
                 raise HTTPException(status_code=403, detail="Недопустимый Origin")
+
+    def expire_station_transfer_tokens() -> None:
+        now = monotonic()
+        for token, item in list(app.state.station_transfer_tokens.items()):
+            if now - item.get("created_at", now) > 900:
+                app.state.station_transfer_tokens.pop(token, None)
+                item["package_path"].unlink(missing_ok=True)
+                if item.get("stage_path") is not None:
+                    shutil.rmtree(item["stage_path"], ignore_errors=True)
 
     def render_workspace(filename: str, active: str) -> str:
         html = (_UI_DIR / filename).read_text(encoding="utf-8")
@@ -2423,6 +2439,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         length = request.headers.get("content-length")
         if length and (not length.isdigit() or int(length) > app.state.core.station_transfer.MAX_PACKAGE_BYTES):
             raise HTTPException(status_code=413, detail="Размер пакета превышает допустимый предел")
+        expire_station_transfer_tokens()
         if len(app.state.station_transfer_tokens) >= 16:
             raise HTTPException(status_code=429, detail="Слишком много незавершённых операций переноса; завершите или перезапустите Workbench")
         inbox = app.state.core.paths.backups / "station-transfer-inbox"
@@ -2450,12 +2467,16 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         except Exception as exc:
             package_path.unlink(missing_ok=True)
             raise HTTPException(status_code=400, detail="Не удалось прочитать пакет станции") from exc
-        app.state.station_transfer_tokens[token] = {
-            "package_path": package_path, "package_id": preview.package_id, "stage_path": None}
+        if not preview.compatible:
+            package_path.unlink(missing_ok=True)
+        else:
+            app.state.station_transfer_tokens[token] = {
+                "package_path": package_path, "package_id": preview.package_id,
+                "stage_path": None, "created_at": monotonic()}
         warnings = list(preview.warnings) + [
             "Пакет не имеет цифровой подписи издателя. Его происхождение не подтверждено; проверьте источник файла."]
         return {
-            "upload_token": token, "package_id": preview.package_id,
+            "upload_token": token if preview.compatible else None, "package_id": preview.package_id,
             "station_id": preview.station_id, "station_name": preview.station_name,
             "source_project_id": preview.source_project_id,
             "source_core_version": preview.source_core_version,
@@ -2470,6 +2491,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     @app.post("/api/station-transfer/stage")
     def station_transfer_stage(payload: StationTransferStageInput, request: Request) -> dict:
         require_local_operator(request)
+        expire_station_transfer_tokens()
         item = app.state.station_transfer_tokens.get(payload.upload_token)
         if not item or item.get("package_id") != payload.package_id:
             raise HTTPException(status_code=404, detail="Загрузка пакета не найдена или устарела")
@@ -2490,6 +2512,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     @app.post("/api/station-transfer/commit")
     def station_transfer_commit(payload: StationTransferCommitInput, request: Request) -> dict:
         require_local_operator(request)
+        expire_station_transfer_tokens()
         item = app.state.station_transfer_tokens.get(payload.stage_token)
         if not item or item.get("package_id") != payload.package_id or item.get("stage_path") is None:
             raise HTTPException(status_code=404, detail="Подготовленный пакет не найден или устарел")

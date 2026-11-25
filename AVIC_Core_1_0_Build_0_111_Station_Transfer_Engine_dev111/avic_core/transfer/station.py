@@ -792,6 +792,15 @@ class StationTransferManager:
                 raise StationTransferError("Target parent is not a Project")
             if target_project["payload"].get("archived", False):
                 raise StationTransferError("Cannot import a Station into an archived Project")
+            if clone:
+                requested_name = (clone_station_name or "").strip().casefold()
+                if not requested_name:
+                    raise StationTransferError("Clone Station name is required")
+                duplicate_names = [row for row in core.repository.list_records(entity_type="Station")
+                    if row.get("payload", {}).get("project_id") == target_project_id
+                    and row.get("name", "").casefold() == requested_name]
+                if duplicate_names:
+                    raise StationTransferError("A Station with this name already exists in the target Project")
             records = payload.get("entities", [])
             station_id = stage_meta.get("station_id")
             if not records or records[0] is None:
