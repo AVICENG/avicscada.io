@@ -2432,6 +2432,9 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 raise HTTPException(status_code=400, detail="Пустой пакет станции")
             preview = app.state.core.station_transfer.inspect_package(
                 package_path, target_core_version="1.0.0.dev148")
+        except HTTPException:
+            package_path.unlink(missing_ok=True)
+            raise
         except StationTransferError as exc:
             package_path.unlink(missing_ok=True)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
