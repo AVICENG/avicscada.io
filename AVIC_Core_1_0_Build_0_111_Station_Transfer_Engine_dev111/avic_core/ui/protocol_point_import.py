@@ -197,6 +197,9 @@ class ProtocolDeviceImportService:
                 selected_native_ids: list[str] | None = None, import_all: bool = False) -> dict:
         _, driver, points, chosen, info = self._validate(
             station_id, driver_instance_id, inspection, selected_native_ids, import_all)
+        selected_items = [item for item in points if item["native_identity"] in chosen]
+        binding_preview = {item["native_identity"]: self._binding_template(info["protocol"], info["device"], item)
+                           for item in selected_items}
         return {
             "station_id": station_id, "driver_instance_id": driver_instance_id,
             "driver_id": driver["driver_id"], "protocol": info["protocol"],
