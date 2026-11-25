@@ -31,6 +31,7 @@ from avic_core.runtime.fbd_execution import FBDExecutionService
 from avic_core.logic_fbd_studio import FBDStudioService
 from avic_core.engineering.workflow import EngineeringWorkflowService
 from avic_core.web_pages import WebPagesService
+from avic_core.ui.drafts import EngineeringDraftStore, DraftError, DraftConflict, DraftNotFound
 from avic_core.commands import CommandManagerService, CommandRejected
 from avic_core.scheduling import ScheduleConflict, ScheduleError, ScheduleNotFound
 from fastapi.responses import HTMLResponse, Response
@@ -182,6 +183,12 @@ class CommandRequestInput(BaseModel):
 class SimulatedFeedbackInput(BaseModel):
     value: bool
     quality: str = Field(default="GOOD", pattern="^GOOD$")
+
+class EngineeringDraftInput(BaseModel):
+    base_revision: int = Field(default=0, ge=0)
+    expected_draft_revision: int = Field(default=0, ge=0)
+    content: dict
+
 
 class GraphicCreateInput(BaseModel):
     name: str = Field(min_length=1, max_length=160)
@@ -404,6 +411,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     app.state.fbd_studio = FBDStudioService(app.state.core)
     app.state.engineering_workflow = EngineeringWorkflowService(app.state.core)
     app.state.web_pages = WebPagesService(app.state.core)
+    app.state.engineering_drafts = EngineeringDraftStore(app.state.core.paths.databases / "engineering_drafts.sqlite3")
     app.state.command_manager = CommandManagerService(app.state.core, app.state.core.paths.databases / "commands.sqlite3")
     app.state.discovery_history = DiscoveryHistory(app.state.core.paths.databases / "discovery_history.sqlite3")
     app.state.station_transfer_tokens = {}
@@ -1052,6 +1060,52 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     def evaluate_graphics_logic_bindings(document_id: str) -> dict:
         try: return app.state.fbd.evaluate_graphic_bindings(document_id)
         except Exception as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/stations/{station_id}/engineering-drafts")
+    def list_engineering_drafts(station_id: str) -> dict:
+        try:
+            return {"drafts": app.state.engineering_drafts.list_station(station_id)}
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
+    def get_engineering_draft(editor: str, station_id: str, resource_id: str) -> dict:
+        try:
+            return app.state.engineering_drafts.get(editor, station_id, resource_id)
+        except DraftNotFound as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.put("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
+    def save_engineering_draft(editor: str, station_id: str, resource_id: str,
+                               payload: EngineeringDraftInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.engineering_drafts.save(
+                editor, station_id, resource_id, content=payload.content,
+                base_revision=payload.base_revision,
+                expected_draft_revision=payload.expected_draft_revision,
+            )
+        except DraftConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.delete("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
+    def delete_engineering_draft(editor: str, station_id: str, resource_id: str,
+                                 expected_draft_revision: int, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            deleted = app.state.engineering_drafts.delete(
+                editor, station_id, resource_id,
+                expected_draft_revision=expected_draft_revision,
+            )
+            return {"deleted": deleted}
+        except DraftConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/graphics/{document_id}")
     def get_graphic(document_id: str) -> dict:
