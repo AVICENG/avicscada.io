@@ -37,7 +37,8 @@ def test_bacnet_adapter_reads_present_value_into_shared_runtime(tmp_path):
     result = adapter.poll_once()
     assert result["polled"] == 2
     assert [x["quality"] for x in result["results"]] == ["GOOD", "GOOD"]
-    assert app.state.core.point_runtime.read(pts[0].id).value == 2.175
+    import pytest
+    assert app.state.core.point_runtime.read(pts[0].id).value == pytest.approx(2.175, rel=1e-12)
     assert app.state.core.point_runtime.read(pts[1].id).value == 23.5
     assert all(c[4] == 85 for c in client.calls)
     app.state.core.close()

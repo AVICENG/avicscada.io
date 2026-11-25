@@ -65,7 +65,7 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
     DriverCatalogEntry(
         "bacnet-ip", "BACnet/IP", "BACnet/IP",
         DriverLifecycle.READ_ONLY_TRANSPORT, True, discovery_supported=True,
-        notes="Limited read-only Who-Is/I-Am, ReadProperty and object inspection; no production polling/COV/runtime adapter/commands.",
+        notes="Read-only discovery and ReadProperty plus one-shot Point Runtime adapter; managed polling/COV/commands are not implemented.",
         category=DriverCategory.BUILDING_AUTOMATION, license_feature="driver.bacnet-ip",
     ),
     _planned(
@@ -76,7 +76,7 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
     DriverCatalogEntry(
         "modbus-tcp", "Modbus TCP", "Modbus TCP",
         DriverLifecycle.READ_ONLY_TRANSPORT, True,
-        notes="Limited read-only FC01/02/03/04 and optional MEI 0x0E; no map importer/polling/runtime adapter/commands.",
+        notes="Read-only FC01/02/03/04 and one-shot Point Runtime adapter; managed polling/map importer/commands are not implemented.",
         category=DriverCategory.INDUSTRIAL, license_feature="driver.modbus-tcp",
     ),
     _planned(
