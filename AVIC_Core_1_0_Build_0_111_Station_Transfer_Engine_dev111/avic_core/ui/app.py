@@ -2567,7 +2567,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     def manifest() -> dict:
         return {
             "product": "AVIC Engineering & Automation Platform",
-            "version": "1.0.0.dev148",
+            "version": "1.0.0.dev77",
             "mode": "engineering-workbench-project-station",
             "execution_enabled": False,
             "network_discovery_enabled": False,
@@ -2622,6 +2622,6 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
 
     @app.get("/api/ui/health")
     def ui_health() -> dict:
-        return {"status": "ok", "ui": "available", "version": "1.0.0.dev148", "mode": "safe-workbench-project-station"}
+        return {"status": "ok", "ui": "available", "version": "1.0.0.dev109", "mode": "safe-workbench-project-station"}
 
     return app
