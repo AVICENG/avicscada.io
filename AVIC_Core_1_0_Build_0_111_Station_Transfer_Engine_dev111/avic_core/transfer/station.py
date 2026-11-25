@@ -386,6 +386,12 @@ class StationTransferManager:
     def export_station(self, core, station_id: str, package_path: str | Path, *, source_core_version: str) -> Path:
         with core._lock:
             core._ensure_open()
+            try: runtime = core.runtime.get(station_id)
+            except KeyError: runtime = None
+            if runtime is not None and runtime.state.value != "STOPPED":
+                raise StationTransferError("Station Runtime must be STOPPED before export")
+            if any(item.get("state") != "STOPPED" or item.get("enabled") for item in core.driver_manager.list_instances(station_id)):
+                raise StationTransferError("All Station drivers must be STOPPED before export")
             station, records, entity_ids = self._resolve_entities(core, station_id)
             point_ids = {r["entity_id"] for r in records if r["entity_type"] == "Point"}
             auxiliary = self._read_auxiliary(core, station_id, point_ids)
@@ -690,6 +696,21 @@ class StationTransferManager:
                 old_id = str(row.get(field, ''))
                 if not old_id or old_id in id_map: raise StationTransferError(f'Clone auxiliary identity is missing or duplicated: {table}.{field}')
                 id_map[old_id] = prefix + uuid4().hex if prefix else str(uuid4())
+        # Nested document identities must also be unique in an independent clone.
+        def collect_nested_ids(value: Any) -> None:
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    if key in {"nodes", "elements", "links", "connectives"} and isinstance(child, list):
+                        for nested in child:
+                            if isinstance(nested, dict) and nested.get("id") is not None:
+                                old_nested_id = str(nested["id"])
+                                if old_nested_id in id_map:
+                                    raise StationTransferError("Clone contains duplicate nested engineering IDs")
+                                id_map[old_nested_id] = str(uuid4())
+                    collect_nested_ids(child)
+            elif isinstance(value, list):
+                for child in value: collect_nested_ids(child)
+        collect_nested_ids(cloned_records)
         cloned_records = cls._replace_clone_references(cloned_records, id_map)
         # Re-key auxiliary primary keys as well as their foreign keys.
         for row in cloned_aux.get('custom_svg', {}).get('custom_svg_assets', []):
