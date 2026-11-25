@@ -11,23 +11,37 @@ def _setup(tmp_path, driver_id="modbus-tcp"):
     driver = app.state.core.driver_manager.create_instance(
         station["id"], driver_id, "Field protocol driver", {})
     protocol = "modbus/tcp" if driver_id == "modbus-tcp" else "bacnet/ip"
+    if driver_id == "bacnet-ip":
+        device_identity = f"{protocol}:device:123"
+        points = [
+            {"native_identity": f"{protocol}:object:0:1", "name": "Supply temperature",
+             "data_type": "analog-input", "unit": "°C", "direction": "input", "object_type": "analog-input"},
+            {"native_identity": f"{protocol}:object:4:2", "name": "Fan command",
+             "data_type": "binary-output", "unit": "", "direction": "output", "object_type": "binary-output"},
+        ]
+    else:
+        device_identity = f"{protocol}:device:10.20.0.15"
+        points = [
+            {"native_identity": f"{protocol}:holding-register:40001", "name": "Supply temperature",
+             "data_type": "float", "unit": "°C", "direction": "input", "object_type": "holding-register",
+             "driver_binding": {"function": 3, "address": 0, "count": 1, "data_type": "uint16", "scale": 0.1}},
+            {"native_identity": f"{protocol}:coil:00001", "name": "Fan command",
+             "data_type": "bool", "unit": "", "direction": "output", "object_type": "coil",
+             "driver_binding": {"function": 1, "address": 0, "count": 1, "data_type": "bool"}},
+        ]
     inspection = {
         "protocol": protocol,
         "network_id": "lan-01",
         "device": {
-            "native_identity": f"{protocol}:device:10.20.0.15",
+            "native_identity": device_identity,
             "address": "10.20.0.15:502" if driver_id == "modbus-tcp" else "10.20.0.15:47808",
+            "device_instance": 123 if driver_id == "bacnet-ip" else None,
             "name": "Test controller",
             "manufacturer": "Example Vendor",
             "model": "Controller-X",
             "identity_sources": {"manufacturer": "discovery response"},
         },
-        "points": [
-            {"native_identity": f"{protocol}:holding-register:40001", "name": "Supply temperature",
-             "data_type": "float", "unit": "°C", "direction": "input", "object_type": "holding-register"},
-            {"native_identity": f"{protocol}:coil:00001", "name": "Fan command",
-             "data_type": "bool", "unit": "", "direction": "output", "object_type": "coil"},
-        ],
+        "points": points,
     }
     return app, station, driver, inspection
 
