@@ -10,6 +10,10 @@ from uuid import uuid4
 from avic_core.logic_fbd import FBDService
 
 
+class _FBDStopRequested(RuntimeError):
+    """Internal cancellation raised before a cycle publishes its outputs."""
+
+
 @dataclass
 class StrategyExecution:
     document_id: str
@@ -200,7 +204,7 @@ class FBDExecutionService:
                 # A stop request may arrive while simulate() is running. Never publish
                 # outputs from a cycle that was cancelled before its publication phase.
                 if item.stop_event.is_set():
-                    raise RuntimeError("FBD-цикл отменён запросом остановки до публикации")
+                    raise _FBDStopRequested("FBD-цикл отменён запросом остановки до публикации")
                 if result.get("field_writes_performed"):
                     raise RuntimeError("Нарушен запрет записи в оборудование")
                 # Publish exposed outputs to Core virtual points. These are read-only
@@ -240,16 +244,22 @@ class FBDExecutionService:
                         "result": result, "runtime_published": bool(result.get("runtime_published")),
                         "field_writes_performed": False}
             except Exception as exc:
-                from avic_core.points.runtime import FBDExposedPoint
-                for row in self.core.repository.list_records(entity_type="FBDExposedPoint"):
-                    if row.get("payload", {}).get("fbd_document_id") == document_id:
-                        try: self.core.point_runtime.mark_fbd_quality(row["entity_id"], "BAD_CONFIGURATION")
-                        except Exception: pass
-                item.state = "ERROR"
-                item.last_error = f"{type(exc).__name__}: {exc}"
-                item.stop_event.set()
-                item.events.append({"event": "TICK_ERROR", "tick": item.tick_count,
-                                    "error": item.last_error, "at_monotonic": monotonic()})
+                if isinstance(exc, _FBDStopRequested):
+                    # Cancellation is not a graph/configuration fault. Let stop()
+                    # decide STOPPED vs ERROR from its own deadline and worker state.
+                    item.events.append({"event": "TICK_CANCELLED", "tick": item.tick_count,
+                                        "at_monotonic": monotonic()})
+                else:
+                    from avic_core.points.runtime import FBDExposedPoint
+                    for row in self.core.repository.list_records(entity_type="FBDExposedPoint"):
+                        if row.get("payload", {}).get("fbd_document_id") == document_id:
+                            try: self.core.point_runtime.mark_fbd_quality(row["entity_id"], "BAD_CONFIGURATION")
+                            except Exception: pass
+                    item.state = "ERROR"
+                    item.last_error = f"{type(exc).__name__}: {exc}"
+                    item.stop_event.set()
+                    item.events.append({"event": "TICK_ERROR", "tick": item.tick_count,
+                                        "error": item.last_error, "at_monotonic": monotonic()})
                 item.events[:] = item.events[-self.MAX_EVENTS:]
                 raise
 
@@ -264,6 +274,7 @@ class FBDExecutionService:
         # the caller's timeout ineffective.
         item.stop_event.set()
         wait_seconds = max(0.0, float(timeout))
+        deadline = monotonic() + wait_seconds
         acquired = item.lock.acquire(timeout=wait_seconds)
         if not acquired:
             item.state = "ERROR"
@@ -291,7 +302,7 @@ class FBDExecutionService:
 
         if future is not None:
             try:
-                future.result(timeout=wait_seconds)
+                future.result(timeout=max(0.0, deadline - monotonic()))
             except FutureTimeout:
                 with item.lock:
                     item.last_error = "FBD-цикл не завершился за отведённое время"
