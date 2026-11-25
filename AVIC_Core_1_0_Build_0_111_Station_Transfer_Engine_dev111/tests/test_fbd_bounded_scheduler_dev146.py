@@ -120,3 +120,33 @@ def test_fbd_topological_evaluation_handles_maximum_chain(tmp_path):
     assert result["outputs"]["Результат"] == 5.0
     assert len(result["node_diagnostics"]) == 1000
     core.close()
+
+
+def test_stop_timeout_is_honored_when_fbd_evaluation_holds_strategy_lock(tmp_path):
+    core, station, _ = setup(tmp_path)
+    doc = FBDService(core).create_fan_demo(station["id"])
+    runtime = FBDExecutionService(core, max_workers=1)
+    original = runtime.fbd.simulate
+    entered = threading.Event()
+
+    def blocked(document_id, **kwargs):
+        entered.set()
+        time.sleep(0.35)
+        return original(document_id, **kwargs)
+
+    runtime.fbd.simulate = blocked
+    runtime.start(doc["id"], interval_ms=100, background=True)
+    assert entered.wait(2.0)
+
+    started = time.monotonic()
+    status = runtime.stop(doc["id"], timeout=0.05)
+    elapsed = time.monotonic() - started
+
+    assert elapsed < 0.20
+    assert status["state"] == "ERROR"
+    assert "не завершился за отведённое время" in status["last_error"]
+    # The worker must observe the cancellation before publishing its stale result.
+    time.sleep(0.40)
+    assert runtime.status(doc["id"])["state"] == "ERROR"
+    runtime.close()
+    core.close()
