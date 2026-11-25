@@ -126,7 +126,7 @@ def test_same_normalized_import_contract_accepts_bacnet_points(tmp_path):
         station["id"], driver["id"], inspection, [native])
     point = app.state.core.repository.get_record(result["points_added"][0])
     assert point["payload"]["data_type"] == "analog-input"
-    assert point["payload"]["direction"]["value"] == "input"
+    assert point["payload"]["direction"] == "input"
     app.state.core.close()
 
 
