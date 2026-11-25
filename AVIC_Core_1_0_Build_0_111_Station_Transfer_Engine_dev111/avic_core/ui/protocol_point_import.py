@@ -13,7 +13,7 @@ _PROTOCOL_DRIVERS = {
 _DATA_TYPES = {
     "bool", "boolean", "binary", "digital", "digital input", "digital output", "binary-input", "binary-output",
     "float", "double", "real", "analog", "numeric", "number", "analog-input", "analog-output",
-    "int", "integer", "uint", "counter", "long", "multi-state-input", "multi-state-output", "integer-value", "multi-state-value", "string", "text", "char",
+    "int", "integer", "uint", "counter", "long", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "float32", "float64", "multi-state-input", "multi-state-output", "integer-value", "multi-state-value", "string", "text", "char",
 }
 
 
