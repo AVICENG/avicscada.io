@@ -109,3 +109,9 @@
 
 - Исправлены BACnet test packet byte literals для тестов wrong source port и segmented ACK.
 - Обновлено ожидание каталога: MQTT остаётся PLANNED до готовности production runtime.
+
+
+## DEV137 — проверка содержимого исходников
+
+- Повторно проверены фактические Git blob contents для Driver Manager, PollingSession и связанных регрессионных тестов.
+- Публикация кода считается завершённой только после проверки содержимого blob и CI.

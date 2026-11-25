@@ -63,3 +63,8 @@
 - DEV134 Linux Python 3.12/3.13 выявил 3 тестовые ошибки: 2 BACnet теста имели двойное экранирование байтовых литералов; каталог-тест ожидал MQTT как read_supported после перевода MQTT в PLANNED.
 - Исправлены литералы и ожидание read-capability. Реальный MQTT runtime не рекламируется.
 - Повторная CI DEV136 обязательна; результат ещё не получен.
+
+## DEV137 — повторная проверка содержимого
+- DEV136 tree validation выявила пять code/test entries, содержащих текстовые SHA вместо исходного файла.
+- DEV137 напрямую привязывает пути к заранее проверенным полным blob SHA (manager, polling, manager tests, BACnet tests, catalog tests).
+- Проверка blob content и полная CI DEV137 обязательны.
