@@ -301,11 +301,8 @@ class FBDExecutionService:
             if self._closed:
                 return
             ids = tuple(self._items)
-        failures = []
         for document_id in ids:
-            status = self.stop(document_id)
-            if status.get("state") == "ERROR":
-                failures.append(document_id)
+            self.stop(document_id)
         self._scheduler_stop.set()
         self._scheduler_wake.set()
         scheduler = self._scheduler_thread
@@ -314,5 +311,3 @@ class FBDExecutionService:
         self._executor.shutdown(wait=False, cancel_futures=True)
         with self._lock:
             self._closed = True
-        if failures:
-            raise RuntimeError("Не удалось штатно остановить FBD стратегии: " + ", ".join(failures))
