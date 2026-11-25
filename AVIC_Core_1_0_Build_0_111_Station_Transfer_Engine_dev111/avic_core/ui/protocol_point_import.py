@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from avic_core.domain.models import Device, Point, PointDirection, PointQuality
+from avic_core.drivers.manager import DriverInstance
 
 
 _PROTOCOL_DRIVERS = {
@@ -92,6 +93,7 @@ class ProtocolDeviceImportService:
                 "native_identity": native, "name": name, "data_type": data_type,
                 "direction": direction, "unit": unit, "object_type": object_type,
                 "engineering_description": str(raw.get("engineering_description") or "")[:2000],
+                "driver_binding": dict(raw.get("driver_binding") or {}),
             })
 
         available = {p["native_identity"] for p in normalized}
@@ -128,6 +130,69 @@ class ProtocolDeviceImportService:
             "unknown_selection": [], "selected_count": len(chosen),
         }
 
+    @staticmethod
+    def _bacnet_object_type(value: Any) -> int:
+        names = {
+            "analog-input": 0, "analog-output": 1, "analog-value": 2,
+            "binary-input": 3, "binary-output": 4, "binary-value": 5,
+            "multi-state-input": 13, "multi-state-output": 14, "multi-state-value": 19,
+        }
+        text = str(value or "").strip().casefold().replace("_", "-").replace(" ", "-")
+        if text.isdigit():
+            result = int(text)
+        elif text in names:
+            result = names[text]
+        else:
+            raise ValueError(f"BACnet object_type не распознан: {value!r}")
+        if not 0 <= result <= 1023:
+            raise ValueError("BACnet object_type вне допустимого диапазона")
+        return result
+
+    def _binding_template(self, protocol: str, device: dict, item: dict) -> dict:
+        """Build a strict read-only driver binding; never guess Modbus addressing."""
+        if protocol == "bacnet/ip":
+            import ipaddress
+            address_text = str(device.get("address") or "")
+            host, sep, port_text = address_text.rpartition(":")
+            if not sep:
+                host, port_text = address_text, "47808"
+            try:
+                ipaddress.IPv4Address(host)
+                port = int(port_text)
+                device_instance = int(device.get("device_instance"))
+                object_instance = int(str(item["native_identity"]).rsplit(":", 1)[1])
+                object_type = self._bacnet_object_type(item.get("object_type"))
+            except (ValueError, TypeError, KeyError) as exc:
+                raise ValueError(
+                    f"Недостаточно подтверждённых BACnet реквизитов для binding точки {item['native_identity']}: {exc}"
+                ) from exc
+            if not 1 <= port <= 65535 or not 0 <= device_instance <= 4_194_303 or not 0 <= object_instance <= 4_194_303:
+                raise ValueError("BACnet address/device/object instance вне допустимого диапазона")
+            return {"address": [host, port], "device_instance": device_instance,
+                    "object_type": object_type, "object_instance": object_instance,
+                    "property_id": 85}
+        if protocol == "modbus/tcp":
+            raw = item.get("driver_binding") or {}
+            required = {"function", "address"}
+            if not required.issubset(raw):
+                raise ValueError(
+                    f"Для Modbus точки {item['native_identity']} нужна явная карта регистра: function и address"
+                )
+            allowed = {"function", "address", "count", "data_type", "byte_order", "word_order", "scale", "offset"}
+            if set(raw) - allowed:
+                raise ValueError(f"Неизвестные параметры Modbus binding: {sorted(set(raw) - allowed)}")
+            # Validate now, before creating any repository records.
+            from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointBinding
+            probe = ModbusTcpPointBinding(point_id="00000000-0000-0000-0000-000000000001",
+                function=int(raw["function"]), address=int(raw["address"]),
+                count=int(raw.get("count", 1)), data_type=str(raw.get("data_type", "uint16")),
+                byte_order=str(raw.get("byte_order", "big")), word_order=str(raw.get("word_order", "big")),
+                scale=float(raw.get("scale", 1.0)), offset=float(raw.get("offset", 0.0)))
+            return {"function": probe.function, "address": probe.address, "count": probe.count,
+                    "data_type": probe.data_type, "byte_order": probe.byte_order,
+                    "word_order": probe.word_order, "scale": probe.scale, "offset": probe.offset}
+        raise ValueError(f"Нет read-only binding builder для протокола {protocol}")
+
     def preview(self, station_id: str, driver_instance_id: str, inspection: dict[str, Any],
                 selected_native_ids: list[str] | None = None, import_all: bool = False) -> dict:
         _, driver, points, chosen, info = self._validate(
@@ -151,6 +216,13 @@ class ProtocolDeviceImportService:
             raise ValueError("Не выбраны точки для импорта")
 
         device_meta = info["device"]
+        # Validate every selected native point before opening the write transaction.
+        selected_items = [item for item in points if item["native_identity"] in chosen]
+        templates = {item["native_identity"]: self._binding_template(info["protocol"], device_meta, item)
+                     for item in selected_items}
+        driver_item, driver_version = self.repository.get(driver_instance_id, DriverInstance)
+        if driver_item.state != "STOPPED" or driver_item.enabled:
+            raise RuntimeError("Импорт точек и изменение bindings разрешены только при остановленном драйвере")
         created_device = False
         added: list[str] = []
         skipped: list[str] = []
@@ -201,6 +273,30 @@ class ProtocolDeviceImportService:
                 self.repository.save(point, connection=connection)
                 added.append(point.id)
                 existing_native.add(native)
+
+            # Driver configuration and engineering records commit together. Existing
+            # bindings are preserved; a point can never be bound twice.
+            if added:
+                config = dict(driver_item.config)
+                bindings = list(config.get("bindings") or [])
+                existing_binding_ids = {str(x.get("point_id")) for x in bindings if isinstance(x, dict)}
+                new_bindings = []
+                for point_id, item in zip(added, [x for x in selected_items
+                                                  if x["native_identity"] not in skipped]):
+                    if point_id in existing_binding_ids:
+                        raise ValueError(f"Для точки {point_id} уже существует binding драйвера")
+                    new_bindings.append({"point_id": point_id, **templates[item["native_identity"]]})
+                config["bindings"] = bindings + new_bindings
+                if info["protocol"] == "modbus/tcp":
+                    host, sep, port_text = info["address"].rpartition(":")
+                    if not sep:
+                        host, port_text = info["address"], "502"
+                    config.setdefault("host", host)
+                    config.setdefault("port", int(port_text))
+                    config.setdefault("unit_id", 1)
+                driver_item.config = config
+                driver_item.updated_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+                self.repository.save(driver_item, expected_version=driver_version, connection=connection)
 
         return {
             "device_id": device.id, "device_created": created_device,
