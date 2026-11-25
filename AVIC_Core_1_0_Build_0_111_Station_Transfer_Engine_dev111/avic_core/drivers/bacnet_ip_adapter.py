@@ -1,104 +1,98 @@
-"""Read-only Modbus TCP point adapter for the shared AVIC Point Runtime."""
+"""Read-only BACnet/IP point adapter for the shared AVIC Point Runtime."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from math import isfinite
-from typing import Callable, Literal
+from typing import Any, Callable
 
-from avic_core.network.modbus_tcp import ModbusTcpClient, decode_registers
-
-
-ModbusFunction = Literal[1, 2, 3, 4]
+from avic_core.network.bacnet_ip import BacnetIpClient
 
 
 @dataclass(frozen=True, slots=True)
-class ModbusTcpPointBinding:
+class BacnetIpPointBinding:
     point_id: str
-    function: ModbusFunction
-    address: int
-    count: int = 1
-    data_type: str = "uint16"
-    byte_order: Literal["big", "little"] = "big"
-    word_order: Literal["big", "little"] = "big"
+    address: tuple[str, int]
+    device_instance: int
+    object_type: int
+    object_instance: int
+    property_id: int = 85  # Present_Value
+    array_index: int | None = None
     scale: float = 1.0
     offset: float = 0.0
 
     def __post_init__(self) -> None:
+        import ipaddress
         if not self.point_id.strip():
             raise ValueError("point_id is required")
-        if self.function not in (1, 2, 3, 4):
-            raise ValueError("only Modbus read functions 1..4 are supported")
-        if not 0 <= self.address <= 65535:
-            raise ValueError("Modbus address must be in range 0..65535")
-        max_count = 2000 if self.function in (1, 2) else 125
-        if not 1 <= self.count <= max_count or self.address + self.count > 65536:
-            raise ValueError("invalid Modbus address/count")
-        expected = {"uint16": 1, "int16": 1, "uint32": 2, "int32": 2,
-                    "float32": 2, "uint64": 4, "int64": 4, "float64": 4}
-        if self.function in (1, 2):
-            if self.count != 1 or self.data_type not in {"bool", "boolean"}:
-                raise ValueError("coil/discrete input bindings require count=1 and bool data type")
-        elif self.data_type not in expected or expected[self.data_type] != self.count:
-            raise ValueError("register count does not match data_type")
-        if self.byte_order not in ("big", "little") or self.word_order not in ("big", "little"):
-            raise ValueError("invalid byte/word order")
+        if len(self.address) != 2:
+            raise ValueError("BACnet address must be (IPv4, UDP port)")
+        ipaddress.ip_address(self.address[0])
+        if not 1 <= int(self.address[1]) <= 65535:
+            raise ValueError("BACnet UDP port must be in range 1..65535")
+        if not 0 <= self.device_instance <= 4_194_303:
+            raise ValueError("invalid BACnet Device Instance")
+        if not 0 <= self.object_type <= 1023 or not 0 <= self.object_instance <= 4_194_303:
+            raise ValueError("invalid BACnet object identifier")
+        if not 0 <= self.property_id <= .property_id_max:
+            raise ValueError("invalid BACnet property identifier")
+        if self.array_index is not None and not 0 <= self.array_index <= 0xFFFFFFFF:
+            raise ValueError("invalid BACnet array index")
         if not isfinite(float(self.scale)) or not isfinite(float(self.offset)):
             raise ValueError("scale and offset must be finite")
 
 
-class ModbusTcpPointAdapter:
-    """One-shot polling adapter. It never sends Modbus write function codes."""
+# Keep the maximum as a named constant so range validation is easy to audit.
+BacnetIpPointBinding.property_id_max = 0xFFFFFFFF
+
+
+class BacnetIpPointAdapter:
+    """One-shot read polling. No WriteProperty, reinitialize or time-sync services."""
 
     def __init__(
         self,
-        client: ModbusTcpClient,
+        client: BacnetIpClient,
         point_runtime,
         driver_instance_id: str,
-        bindings: tuple[ModbusTcpPointBinding, ...] | list[ModbusTcpPointBinding],
+        bindings: tuple[BacnetIpPointBinding, ...] | list[BacnetIpPointBinding],
         *,
-        client_factory: Callable[..., ModbusTcpClient] | None = None,
+        value_transform: Callable[[Any], Any] | None = None,
     ) -> None:
         if not driver_instance_id.strip():
             raise ValueError("driver_instance_id is required")
         if len({b.point_id for b in bindings}) != len(bindings):
-            raise ValueError("duplicate point_id in Modbus binding map")
+            raise ValueError("duplicate point_id in BACnet binding map")
         self.client = client
         self.point_runtime = point_runtime
         self.driver_instance_id = driver_instance_id
         self.bindings = tuple(bindings)
-        self._client_factory = client_factory
+        self.value_transform = value_transform
         self._last_errors: dict[str, str] = {}
         self._success_count = 0
         self._failure_count = 0
 
-    def _read_binding(self, binding: ModbusTcpPointBinding):
-        if binding.function == 1:
-            raw = self.client.read_coils(binding.address, 1)
-            return bool(raw[0])
-        if binding.function == 2:
-            raw = self.client.read_discrete_inputs(binding.address, 1)
-            return bool(raw[0])
-        if binding.function == 3:
-            raw = self.client.read_holding_registers(binding.address, binding.count)
-        else:
-            raw = self.client.read_input_registers(binding.address, binding.count)
-        value = decode_registers(
-            raw, binding.data_type, byte_order=binding.byte_order, word_order=binding.word_order
-        )
-        if binding.data_type.startswith("float") or binding.scale != 1.0 or binding.offset != 0.0:
+    def _decode(self, value: Any, binding: BacnetIpPointBinding) -> Any:
+        if self.value_transform is not None:
+            value = self.value_transform(value)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
             value = float(value) * float(binding.scale) + float(binding.offset)
             if not isfinite(value):
-                raise ValueError("decoded/scaled Modbus value is not finite")
+                raise ValueError("decoded/scaled BACnet value is not finite")
+        elif binding.scale != 1.0 or binding.offset != 0.0:
+            raise ValueError("scale/offset can only be applied to numeric BACnet values")
         return value
 
     def poll_once(self) -> dict:
-        """Poll all configured input bindings; isolate failures per point."""
         from avic_core.domain.models import PointQuality
 
         results = []
         for binding in self.bindings:
             try:
-                value = self._read_binding(binding)
+                value = self.client.read_property(
+                    binding.address, binding.device_instance,
+                    binding.object_type, binding.object_instance, binding.property_id,
+                    array_index=binding.array_index,
+                )
+                value = self._decode(value, binding)
                 sample = self.point_runtime.publish(
                     binding.point_id, value, quality=PointQuality.GOOD,
                     source_driver_id=self.driver_instance_id,
@@ -133,7 +127,7 @@ class ModbusTcpPointAdapter:
 
     def diagnostics(self) -> dict:
         return {
-            "driver_id": "modbus-tcp",
+            "driver_id": "bacnet-ip",
             "mode": "READ_ONLY",
             "write_supported": False,
             "configured_points": len(self.bindings),

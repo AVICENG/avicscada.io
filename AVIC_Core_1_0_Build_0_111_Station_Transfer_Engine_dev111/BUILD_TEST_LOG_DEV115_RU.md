@@ -1,22 +1,22 @@
-# DEV115 — Modbus TCP Point Runtime Adapter
+# DEV115 — BACnet/IP и Modbus TCP Point Runtime adapters
 
 Дата: 2026-11-25  
 Ветка: `dev113-network-drivers`  
-Статус: реализация добавлена; CI ещё не завершён.
+Статус: реализации добавлены; CI ожидается.
 
 ## Реализовано
-- `ModbusTcpPointBinding`: строгая карта Modbus read points, функции 01/02/03/04, адреса, типы, byte/word order, scale/offset.
-- `ModbusTcpPointAdapter`: однократный опрос набора точек, публикация GOOD в общий Point Runtime, изоляция ошибок по точкам.
-- При ошибке обмена сохраняется последнее значение, качество переводится в BAD_COMMUNICATION; timestamp последнего успешного образца сохраняется.
-- Диагностика успешных/неуспешных опросов.
-- PointRuntime.mark_quality для изменения качества без подмены последнего значения.
-- Тесты на публикацию, масштабирование, ошибки связи, принадлежность точки драйверу и запрет функций записи.
+- BACnet/IP: `BacnetIpPointBinding` + `BacnetIpPointAdapter`, чтение Present_Value через существующий ReadProperty, публикация в общий Point Runtime.
+- Modbus TCP: `ModbusTcpPointBinding` + `ModbusTcpPointAdapter`, чтение FC01/02/03/04, декодирование, scale/offset и публикация в Point Runtime.
+- Для обоих адаптеров ошибки изолируются по точкам, сохраняется последнее значение, качество переводится в BAD_COMMUNICATION, время последнего успешного образца сохраняется.
+- PointRuntime.mark_quality добавлен для корректного изменения качества без подмены значения/времени образца.
+- Экспортированы адаптеры из `avic_core.drivers`.
+- Добавлены тесты успешного опроса, scaling, потери связи, ownership и валидации адресов.
 
 ## Ограничения
-- Это polling adapter, не полный lifecycle runtime: нет фонового scheduler, connection pooling, массовой оптимизации диапазонов, UI map importer и field command manager.
-- Реальный Modbus TCP endpoint не подключался; проверка идёт на fake transport.
-- Никакие write function codes не реализованы.
-- BACnet, Trend IP, остальные протоколы пока не доведены до полноценного polling + Runtime adapter.
+- Это однократный polling adapter; полноценный background scheduler, оптимизированная группировка чтения, UI import map, COV, BACnet segmentation/BBMD/FDR и Command Manager не завершены.
+- Реальное оборудование не подключалось; используются fake clients в тестах.
+- Оба адаптера строго read-only.
+- Trend IP/vCNC и остальные семейства ещё не реализованы.
 
 ## Проверки
-Ожидается GitHub Actions CI. До завершения CI нельзя считать тесты пройденными.
+GitHub Actions CI запущен после коммита. Результаты будут внесены после завершения.

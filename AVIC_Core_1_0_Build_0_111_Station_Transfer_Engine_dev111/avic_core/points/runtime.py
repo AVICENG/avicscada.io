@@ -221,40 +221,6 @@ class PointRuntimeService:
                     self._subscriber_errors = self._subscriber_errors[-100:]
         return result
 
-    def mark_quality(self, point_id: str, quality: PointQuality | str, *,
-                     source_driver_id: str | None = None) -> PointRuntimeValue:
-        """Change input-point quality without replacing its last known value or sample timestamp."""
-        q = self._quality(quality)
-        if q == PointQuality.GOOD:
-            raise ValueError("mark_quality нельзя использовать для восстановления GOOD без нового образца")
-        with self._lock:
-            point, version, device = self._read_entity(point_id)
-            if not isinstance(point, Point) or device is None:
-                raise ValueError("Качество физической точки может менять только её драйвер")
-            direction = getattr(point.direction, "value", str(point.direction)).lower()
-            if direction == PointDirection.OUTPUT.value:
-                raise ValueError("Драйвер не может менять качество OUTPUT-точки как входного измерения")
-            owner = str(device.get("payload", {}).get("driver_instance_id") or "")
-            if source_driver_id and owner and source_driver_id != owner:
-                raise ValueError("Источник изменения качества не совпадает с драйвером устройства")
-            point.quality = q
-            point.updated_at = _utcnow()
-            new_version = self.repository.save(point, expected_version=version)
-            result = PointRuntimeValue(
-                point_id=point.id, value=point.value, quality=q.value, timestamp=point.timestamp,
-                unit=point.unit, data_type=point.data_type,
-                source=point.source_ref or point.native_identity or "unassigned", revision=new_version,
-            )
-            subscribers = tuple(self._subscribers.get(point.id, {}).values())
-        for callback in subscribers:
-            try:
-                callback(result)
-            except Exception as exc:
-                with self._lock:
-                    self._subscriber_errors.append(f"{point_id}: {type(exc).__name__}: {exc}")
-                    self._subscriber_errors = self._subscriber_errors[-100:]
-        return result
-
     def subscriber_errors(self) -> tuple[str, ...]:
         with self._lock:
             return tuple(self._subscriber_errors)
