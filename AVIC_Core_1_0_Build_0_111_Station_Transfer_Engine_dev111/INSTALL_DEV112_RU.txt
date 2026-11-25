@@ -1,0 +1,26 @@
+AVIC Core 1.0 DEV112 — порядок локальной проверки (Windows)
+
+1. В GitHub Desktop выберите Repository → Fetch origin.
+2. В меню Current Branch выберите dev112-station-transfer-reliability.
+3. Выполните Pull origin, если программа его предлагает.
+4. Не переключайте и не перезаписывайте вашу рабочую DEV111 папку. Работайте в отдельной копии/папке DEV112.
+5. Откройте терминал в корне проекта DEV112.
+
+Проверки:
+  python --version
+  python -m pip install -e ".[dev]"
+  python -m pip check
+  python -m compileall -q avic_core
+  python -m pytest -q -rs
+  python -m avic_core --help
+
+Отдельно проверить Station Transfer:
+  python -m pytest -q tests/test_station_transfer_engine_dev111.py -rs
+
+Ожидаемое поведение fault-injection тестов:
+- При искусственном отказе EventService или AuditService импортированные сущности остаются зафиксированными.
+- commit_import возвращает journal_status=PENDING_RETRY и operation_id.
+- После перезапуска Core outbox автоматически доставляет отсутствующую запись.
+- Повторная доставка не создаёт второе событие и не ломает audit hash chain.
+
+После запуска пришлите полный вывод команд и полный результат pytest. До успешного запуска на Windows DEV112 не считается проверенной сборкой. Не переносите эту ветку в main и не удаляйте DEV111 до завершения приёмки.
