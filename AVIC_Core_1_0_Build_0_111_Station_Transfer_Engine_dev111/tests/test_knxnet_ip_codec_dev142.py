@@ -45,7 +45,8 @@ def test_dpt_5_001():
 
 def test_dpt_9_001_signed_temperature():
     assert decode_datapoint(bytes.fromhex("0c7e"),"9.001")==pytest.approx(23.0)
-    assert decode_datapoint(bytes.fromhex("81f4"),"9.001")==pytest.approx(-5.0)
+    assert decode_datapoint(bytes.fromhex("860c"),"9.001")==pytest.approx(-5.0)
+    with pytest.raises(KnxProtocolError): decode_datapoint(bytes.fromhex("7fff"),"9.001")
 
 def test_dpt_14_and_unknown_type():
     assert decode_datapoint(struct.pack(">f",21.5),"14.000")==pytest.approx(21.5)
