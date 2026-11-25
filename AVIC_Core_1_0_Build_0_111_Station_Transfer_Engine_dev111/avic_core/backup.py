@@ -396,13 +396,20 @@ class SystemBackupManager:
                 db_path = stage.joinpath(*relative.parts)
                 if not db_path.is_file():
                     raise SystemBackupError(f"Восстановленная база данных отсутствует: {database}")
+                db = None
                 try:
-                    with sqlite3.connect(str(db_path)) as db:
-                        check = db.execute("PRAGMA integrity_check").fetchone()
-                        if not check or check[0] != "ok":
-                            raise SystemBackupError(f"SQLite integrity_check failed after restore: {database}")
+                    db = sqlite3.connect(str(db_path))
+                    check = db.execute("PRAGMA integrity_check").fetchone()
+                    if not check or check[0] != "ok":
+                        raise SystemBackupError(f"SQLite integrity_check failed after restore: {database}")
                 except sqlite3.Error as exc:
                     raise SystemBackupError(f"Не удалось проверить восстановленную БД {database}: {exc}") from exc
+                finally:
+                    # sqlite3.Connection.__exit__ commits/rolls back but does not close.
+                    # Windows cannot atomically move the restored directory while SQLite
+                    # still holds an open handle to one of its database files.
+                    if db is not None:
+                        db.close()
             if target.exists():
                 shutil.rmtree(target)
             os.replace(stage, target)
