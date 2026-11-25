@@ -38,14 +38,15 @@ class ProtocolDeviceImportService:
             raise ValueError("Целевой объект не является станцией")
         if not isinstance(inspection, dict):
             raise ValueError("inspection должен быть объектом")
-        protocol = str(inspection.get("protocol") or "").strip().casefold()
+        protocol = str(inspection.get("protocol") or "").strip().casefold().replace(" ", "/")
         expected = _PROTOCOL_DRIVERS.get(protocol)
         if expected is None:
             raise ValueError(f"Протокол пока не поддерживает общий импорт: {protocol or 'не указан'}")
         driver = self.core.driver_manager.get_instance(driver_instance_id)
         if driver["station_id"] != station_id:
             raise ValueError("Экземпляр драйвера принадлежит другой станции")
-        if driver["driver_id"] != expected[0] or driver["protocol"].casefold() != protocol:
+        driver_protocol = str(driver["protocol"]).casefold().replace(" ", "/")
+        if driver["driver_id"] != expected[0] or driver_protocol != protocol:
             raise ValueError("Протокол обнаружения не совпадает с выбранным экземпляром драйвера")
 
         device = inspection.get("device")
