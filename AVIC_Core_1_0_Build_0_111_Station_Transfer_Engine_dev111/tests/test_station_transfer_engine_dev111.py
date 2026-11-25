@@ -365,3 +365,22 @@ def test_station_clone_remaps_engineering_and_auxiliary_ids(tmp_path):
     finally:
         source.close()
         target.close()
+
+
+@pytest.mark.parametrize("auxiliary, message", [
+    ({"dependencies": {"dependencies": [{"station_id": "station", "dependent_id": "missing", "dependency_id": "missing"}]}},
+     "dangling entity reference"),
+    ({"time_management": {"device_time_permission": [{"station_id": "station", "device_id": "missing"}]}},
+     "missing device"),
+    ({"schedules": {"schedules": [{"station_id": "station", "schedule_id": "schedule"}],
+                    "schedule_bindings": [{"station_id": "station", "schedule_id": "schedule", "point_id": "missing"}]}},
+     "missing Point"),
+    ({"analytics": {"point_tags": [{"point_id": "missing"}]}},
+     "missing Point"),
+])
+def test_station_transfer_rejects_dangling_auxiliary_references(auxiliary, message):
+    from avic_core.transfer.station import StationTransferError, StationTransferManager
+
+    records = [{"entity_id": "station", "entity_type": "Station", "payload": {}}]
+    with pytest.raises(StationTransferError, match=message):
+        StationTransferManager._validate_auxiliary_references(records, auxiliary)
