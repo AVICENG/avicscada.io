@@ -209,6 +209,8 @@ class ProtocolDeviceImportService:
             "device_id": info["existing_device"]["entity_id"] if info["existing_device"] else None,
             "discovered_points": len(points), "selected_points": len(chosen),
             "new_points": info["new_points"], "duplicate_points": info["duplicate_points"],
+            "binding_count": len(binding_preview), "bindings_validated": True,
+            "binding_preview": binding_preview, "device_only": not bool(chosen),
             "can_import": bool(chosen), "write_enabled": False, "field_device_writes": False,
         }
 
