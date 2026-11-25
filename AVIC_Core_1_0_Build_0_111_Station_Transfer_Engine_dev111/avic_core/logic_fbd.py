@@ -270,15 +270,29 @@ class FBDService:
             if (tn,tp) in occupied or (tn,tp) in connective_occupied: raise ValueError("Входной порт уже занят")
             occupied.add((tn,tp)); adjacency[sn].add(tn)
             links_prepared.append({"id":lid,"source_node_id":sn,"source_port":sp,"target_node_id":tn,"target_port":tp})
-        # Reject combinational cycles before any repository mutation.
-        visiting=set(); visited=set()
-        def visit(n):
-            if n in visiting: raise ValueError("Циклическая зависимость в FBD-схеме")
-            if n in visited:return
-            visiting.add(n)
-            for nxt in adjacency[n]: visit(nxt)
-            visiting.remove(n); visited.add(n)
-        for n in adjacency: visit(n)
+        # Include cross-page Connectives in cycle detection, then use iterative
+        # Kahn traversal. Recursive DFS fails on valid long chains near the 1000-node limit.
+        for row in connective_rows:
+            source_id = row["payload"].get("source_node_id")
+            target_id = row["payload"].get("target_node_id")
+            if source_id in adjacency and target_id in adjacency:
+                adjacency[source_id].add(target_id)
+        from collections import deque
+        indegree = {node_id: 0 for node_id in adjacency}
+        for source_id, targets in adjacency.items():
+            for target_id in targets:
+                indegree[target_id] += 1
+        ready = deque(node_id for node_id in adjacency if indegree[node_id] == 0)
+        visited_count = 0
+        while ready:
+            node_id = ready.popleft()
+            visited_count += 1
+            for target_id in adjacency[node_id]:
+                indegree[target_id] -= 1
+                if indegree[target_id] == 0:
+                    ready.append(target_id)
+        if visited_count != len(adjacency):
+            raise ValueError("Циклическая зависимость в FBD-схеме")
         with self.core.repository.transaction() as conn:
             for item in prepared:
                 if item["id"] in old_nodes:
@@ -484,7 +498,7 @@ class FBDService:
             node = nodes[node_id]; spec = self.BLOCKS[node["type"]]
             deps = [incoming.get((node_id, port)) for port in spec["inputs"]]
             if any(dep and (dep[0], dep[1]) not in values for dep in deps):
-                continue
+                raise ValueError("FBD-связь ссылается на отсутствующий выходной порт")
             args = {}
             for port, signal_type in spec["inputs"].items():
                 dep = incoming.get((node_id, port))
