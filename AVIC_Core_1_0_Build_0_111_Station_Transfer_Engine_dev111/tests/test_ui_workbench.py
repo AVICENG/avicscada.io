@@ -31,7 +31,7 @@ def test_manifest_contains_complete_product_navigation_and_roles(tmp_path):
     client = TestClient(create_ui_app(data_dir=str(tmp_path)))
     data = client.get("/api/ui/manifest").json()
     ids = {item["id"] for item in data["workspaces"]}
-    assert data["workspace_count"] == 49
+    assert data["workspace_count"] == 50
     assert {"projects", "stations", "equipment", "documents", "network", "devices", "points", "drivers", "graphics", "web-pages", "logic", "simulation", "alarms", "events", "history", "analytics", "notifications", "cleanup", "signature", "trends", "commissioning", "service", "supervisor", "sites", "mobile", "ai", "security", "audit", "backup", "licensing", "learning"} <= ids
     assert "Главный инженер" in data["roles"]
     assert "Пусконаладчик" in data["roles"]
