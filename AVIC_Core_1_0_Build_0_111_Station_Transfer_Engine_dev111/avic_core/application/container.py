@@ -81,7 +81,11 @@ class CoreApplication:
         self.alarms = AlarmService(self.paths.databases / "alarms.sqlite3", audit_service=self.audit, event_publisher=lambda e: self.events.record("alarm." + e.event_type.lower(), e.message, station_id=e.station_id, severity="WARNING" if e.to_state in {"ACTIVE", "RETURNED_TO_NORMAL"} else "NOTICE", source_id=e.alarm_id, actor_id=e.actor_id, details={"from_state":e.from_state,"to_state":e.to_state,"alarm_id":e.alarm_id}))
         self.schedules = ScheduleService(self.paths.databases / "schedules.sqlite3", repository=self.repository, audit_service=self.audit)
         self.health = CoreHealthService(self.paths.root, self.runtime, self.audit)
-        self.events.record("core.initialized", "AVIC Core initialized", severity="INFO", details={"api_version": "1.0.0.dev111"})
+        # Retry durable Station Transfer journal deliveries before normal operation.
+        # Crash-interrupted PREPARED operations are deliberately flagged for manual
+        # reconciliation rather than being reported as successful imports.
+        self.station_transfer_recovery = self.station_transfer.recover_pending(self)
+        self.events.record("core.initialized", "AVIC Core initialized", severity="INFO", details={"api_version": "1.0.0.dev112"})
         self.audit.append(actor_id="system", action="core.initialized", resource_type="core",
                           resource_id="local", details={"data_dir": str(self.paths.root), "api_version": "1.0.0.dev111"})
 
