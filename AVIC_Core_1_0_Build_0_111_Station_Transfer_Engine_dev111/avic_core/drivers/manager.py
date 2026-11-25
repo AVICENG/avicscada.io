@@ -53,7 +53,16 @@ class DriverInstance:
 class DriverManagerService:
     """Owns explicit read-only adapter sessions; no implicit field I/O at Core startup."""
 
-    _SECRET_KEYS = {"password", "secret", "token", "private_key", "credential", "client_secret"}
+    _SECRET_KEYS = {
+        "password", "passwd", "secret", "token", "private_key", "privatekey",
+        "credential", "credentials", "client_secret", "client_key", "api_key",
+        "access_token", "refresh_token", "auth_token", "authorization", "bearer",
+        "tls_key", "tls_private_key", "mqtt_password", "database_password",
+    }
+    _SECRET_SUFFIXES = (
+        "password", "passwd", "secret", "privatekey", "apikey", "credential",
+        "accesstoken", "refreshtoken", "authtoken", "clientkey", "tlskey",
+    )
 
     def __init__(self, core):
         self.core = core
@@ -69,7 +78,8 @@ class DriverManagerService:
     def _reject_secrets(cls, value: Any, path: str = "config") -> None:
         if isinstance(value, dict):
             for key, item in value.items():
-                if str(key).casefold() in cls._SECRET_KEYS:
+                normalized = "".join(ch for ch in str(key).casefold() if ch.isalnum())
+                if normalized in cls._SECRET_KEYS or normalized.endswith(cls._SECRET_SUFFIXES):
                     raise ValueError(f"Секреты нельзя хранить в конфигурации экземпляра ({path}.{key}); используйте SecretStore")
                 cls._reject_secrets(item, f"{path}.{key}")
         elif isinstance(value, (list, tuple)):

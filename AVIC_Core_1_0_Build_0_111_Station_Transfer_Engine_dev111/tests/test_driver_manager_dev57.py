@@ -205,3 +205,18 @@ def test_factory_registration_is_blocked_only_for_same_active_driver(tmp_path):
         core.driver_manager.register_adapter_factory("modbus-tcp", lambda _core, _instance: Adapter())
     core.driver_manager.stop_station(station["id"])
     core.close()
+
+
+def test_driver_config_rejects_secret_aliases_recursively(tmp_path):
+    core, station = make_station(tmp_path)
+    secret_configs = [
+        {"api_key": "x"},
+        {"mqtt_password": "x"},
+        {"nested": {"oauth_refresh_token": "x"}},
+        {"tls_private_key": "x"},
+        {"clientKey": "x"},
+    ]
+    for config in secret_configs:
+        with pytest.raises(ValueError, match="SecretStore"):
+            core.driver_manager.create_instance(station["id"], "modbus-tcp", "Secret alias", config)
+    core.close()
