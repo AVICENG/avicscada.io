@@ -71,14 +71,27 @@ class AuditService:
         return json.dumps(fields, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     def append(self, *, actor_id: str, action: str, resource_type: str, resource_id: str,
-               outcome: str = "success", details: dict | None = None) -> AuditRecord:
+               outcome: str = "success", details: dict | None = None,
+               event_id: str | None = None, occurred_at: str | None = None) -> AuditRecord:
         if not all(isinstance(v, str) and v.strip() for v in (actor_id, action, resource_type, resource_id, outcome)):
             raise ValueError("Поля аудита не могут быть пустыми")
-        occurred = datetime.now(timezone.utc).isoformat()
-        event_id = str(uuid4())
+        occurred = occurred_at or datetime.now(timezone.utc).isoformat()
+        event_id = event_id or str(uuid4())
         safe_details = details or {}
         with closing(sqlite3.connect(self.path, timeout=15, isolation_level=None)) as db:
             db.execute("BEGIN IMMEDIATE")
+            existing = db.execute("""SELECT event_id,occurred_at,actor_id,action,resource_type,resource_id,
+                outcome,details_json,previous_hash,record_hash FROM audit_events WHERE event_id=?""", (event_id,)).fetchone()
+            if existing is not None:
+                stored_details = json.loads(existing[7])
+                expected = (occurred, actor_id, action, resource_type, resource_id, outcome, safe_details)
+                actual = (existing[1], existing[2], existing[3], existing[4], existing[5], existing[6], stored_details)
+                if actual != expected:
+                    db.rollback()
+                    raise ValueError("Audit idempotency key was reused with different record content")
+                db.commit()
+                return AuditRecord(existing[0], existing[1], existing[2], existing[3], existing[4],
+                                   existing[5], existing[6], stored_details, existing[8], existing[9])
             row = db.execute("SELECT record_hash FROM audit_events ORDER BY rowid DESC LIMIT 1").fetchone()
             previous = row[0] if row and row[0] else self.GENESIS
             fields = {"event_id": event_id, "occurred_at": occurred, "actor_id": actor_id,
