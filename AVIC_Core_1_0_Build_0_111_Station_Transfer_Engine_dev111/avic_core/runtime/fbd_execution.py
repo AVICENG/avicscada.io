@@ -197,6 +197,10 @@ class FBDExecutionService:
                 if graph["station_id"] != item.station_id:
                     raise ValueError("Нарушена изоляция станции: стратегия сменила станцию")
                 result = self.fbd.simulate(document_id, inputs=inputs, runtime_state=item.runtime_state)
+                # A stop request may arrive while simulate() is running. Never publish
+                # outputs from a cycle that was cancelled before its publication phase.
+                if item.stop_event.is_set():
+                    raise RuntimeError("FBD-цикл отменён запросом остановки до публикации")
                 if result.get("field_writes_performed"):
                     raise RuntimeError("Нарушен запрет записи в оборудование")
                 # Publish exposed outputs to Core virtual points. These are read-only
@@ -254,17 +258,40 @@ class FBDExecutionService:
             item = self._items.get(document_id)
         if not item:
             return self.status(document_id)
-        with item.lock:
-            if item.state == "STOPPED":
-                return self.status(document_id)
-            item.stop_event.set()
+
+        # Signal cancellation BEFORE acquiring item.lock. tick_once currently holds
+        # this lock while evaluating the graph, so waiting for it first would make
+        # the caller's timeout ineffective.
+        item.stop_event.set()
+        wait_seconds = max(0.0, float(timeout))
+        acquired = item.lock.acquire(timeout=wait_seconds)
+        if not acquired:
+            item.state = "ERROR"
+            item.last_error = "FBD-цикл не завершился за отведённое время; остановка не подтверждена"
+            return {
+                "document_id": item.document_id,
+                "station_id": item.station_id,
+                "state": "ERROR",
+                "configured": True,
+                "interval_ms": item.interval_ms,
+                "generation": item.generation,
+                "tick_count": item.tick_count,
+                "last_error": item.last_error,
+                "runtime_published": bool((item.last_result or {}).get("runtime_published")),
+                "field_writes_performed": False,
+            }
+
+        try:
             future = item.future
             if item.state != "ERROR":
                 item.state = "STOPPING"
             item.generation += 1
+        finally:
+            item.lock.release()
+
         if future is not None:
             try:
-                future.result(timeout=max(0.0, timeout))
+                future.result(timeout=wait_seconds)
             except FutureTimeout:
                 with item.lock:
                     item.last_error = "FBD-цикл не завершился за отведённое время"
@@ -276,7 +303,7 @@ class FBDExecutionService:
             if item.in_flight:
                 item.last_error = "FBD worker не завершился за отведённое время"
                 item.state = "ERROR"
-            elif item.state != "ERROR":
+            elif item.state not in ("ERROR",):
                 item.state = "STOPPED"
                 item.events.append({"event": "STOPPED", "generation": item.generation,
                                     "at_monotonic": monotonic()})
@@ -284,8 +311,10 @@ class FBDExecutionService:
         if self.status(document_id)["state"] == "STOPPED":
             for row in self.core.repository.list_records(entity_type="FBDExposedPoint"):
                 if row.get("payload", {}).get("fbd_document_id") == document_id:
-                    try: self.core.point_runtime.mark_fbd_quality(row["entity_id"], "STALE")
-                    except Exception: pass
+                    try:
+                        self.core.point_runtime.mark_fbd_quality(row["entity_id"], "STALE")
+                    except Exception:
+                        pass
         return self.status(document_id)
 
     def events(self, document_id: str) -> tuple[dict[str, Any], ...]:
