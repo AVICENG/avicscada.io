@@ -191,6 +191,8 @@ class DriverManagerService:
             if item.package_trust == "REJECTED":
                 raise RuntimeError("Пакет драйвера помечен как REJECTED")
             self._save_state(item, version, "STARTING", True)
+            adapter = None
+            session = None
             try:
                 adapter = factory(self.core, item)
                 interval = float(poll_interval_seconds if poll_interval_seconds is not None
@@ -208,6 +210,19 @@ class DriverManagerService:
                     details={"driver_id": item.driver_id, "poll_interval_seconds": interval})
                 return self.diagnostics(instance_id)
             except Exception as exc:
+                if session is not None:
+                    try:
+                        session.stop(timeout=5.0)
+                    except Exception:
+                        pass
+                close = getattr(adapter, "close", None)
+                if callable(close):
+                    try:
+                        close()
+                    except Exception:
+                        pass
+                self._sessions.pop(instance_id, None)
+                self._adapters.pop(instance_id, None)
                 try:
                     failed, current_version = self._load(instance_id)
                     self._save_state(failed, current_version, "ERROR", False)

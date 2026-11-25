@@ -27,7 +27,7 @@ def test_create_driver_instance_persists_stopped_inventory(tmp_path):
     assert created['field_io_enabled'] is False
     rows=svc.list_instances(station['id'])
     assert rows[0]['id']==created['id'] and rows[0]['config']=={'interface_id':'eth0'}
-    assert svc.get_instance(created['id'])['start_supported'] is False
+    assert svc.get_instance(created['id'])['start_supported'] is True
 
 
 def test_unknown_driver_cannot_be_instantiated(tmp_path):
@@ -115,3 +115,28 @@ def test_driver_manager_requires_registered_runtime_for_mqtt(tmp_path):
     with pytest.raises(RuntimeError, match="factory"):
         core.driver_manager.start_instance(created["id"])
     core.close()
+
+
+def test_core_shutdown_stops_active_driver_session(tmp_path):
+    import time
+    from avic_core.drivers.manager import DriverInstance
+
+    class Adapter:
+        def __init__(self):
+            self.closed = False
+        def poll_once(self):
+            return {"results": [{"ok": True}]}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    service = core.driver_manager
+    created = service.create_instance(station["id"], "modbus-tcp", "Shutdown test",
+                                      {"poll_interval_seconds": 0.1})
+    adapter = Adapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _instance: adapter)
+    service.start_instance(created["id"])
+    core.close()
+    assert adapter.closed is True
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "STOPPED" and persisted.enabled is False

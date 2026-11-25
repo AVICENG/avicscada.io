@@ -37,3 +37,10 @@
 - Добавлен close() у BACnet/IP Point Adapter: остановка Driver Manager освобождает UDP socket клиента.
 - Исправлена защита register_adapter_factory: factory нельзя менять, пока существует активная polling session.
 - Modbus TCP не держит постоянный socket: каждая транзакция открывает и закрывает ограниченное соединение.
+
+
+## DEV126 — lifecycle failure rollback and shutdown test
+
+- Если запуск polling worker/персистентного состояния завершается ошибкой, Driver Manager пытается остановить созданную сессию, закрыть транспорт и удалить временные ссылки до фиксации ERROR.
+- Уточнён тест: BACnet/IP и Modbus TCP имеют встроенные runtime factories, поэтому start_supported=true; это не означает разрешение записи.
+- Добавлен тест, подтверждающий, что CoreApplication.close останавливает активную сессию драйвера, закрывает адаптер и сохраняет STOPPED.
