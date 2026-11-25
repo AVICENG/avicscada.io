@@ -691,6 +691,16 @@ class StationTransferManager:
                 if not old_id or old_id in id_map: raise StationTransferError(f'Clone auxiliary identity is missing or duplicated: {table}.{field}')
                 id_map[old_id] = prefix + uuid4().hex if prefix else str(uuid4())
         cloned_records = cls._replace_clone_references(cloned_records, id_map)
+        # Re-key auxiliary primary keys as well as their foreign keys.
+        for row in cloned_aux.get('custom_svg', {}).get('custom_svg_assets', []):
+            row['symbol_id'] = id_map[str(row['symbol_id'])]
+        for row in cloned_aux.get('dependencies', {}).get('dependencies', []):
+            row['edge_id'] = id_map[str(row['edge_id'])]
+        for row in cloned_aux.get('schedules', {}).get('schedules', []):
+            row['schedule_id'] = id_map[str(row['schedule_id'])]
+        for table in ('weekly_events', 'special_events'):
+            for row in cloned_aux.get('schedules', {}).get(table, []):
+                row['event_id'] = id_map[str(row['event_id'])]
         for row in cloned_aux.get('custom_svg', {}).get('custom_svg_assets', []):
             row['station_id'] = id_map.get(str(row.get('station_id')), row.get('station_id'))
         for row in cloned_aux.get('dependencies', {}).get('dependencies', []):
