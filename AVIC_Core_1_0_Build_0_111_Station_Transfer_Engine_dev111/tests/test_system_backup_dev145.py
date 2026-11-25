@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import sqlite3
+import os
 
 import pytest
 
@@ -73,3 +73,28 @@ def test_system_backup_rejects_short_passphrase_before_writing(tmp_path):
         with pytest.raises(SystemBackupError, match="не менее 12"):
             core.create_system_backup(tmp_path / "system.avicbackup", passphrase="short")
         assert not (tmp_path / "system.avicbackup").exists()
+
+
+def test_backup_catalog_retention_keeps_newest_and_never_allows_zero(tmp_path):
+    from avic_core.backup import SystemBackupManager
+
+    directory = tmp_path / "backups"
+    directory.mkdir()
+    files = []
+    for index in range(3):
+        item = directory / f"backup-{index}.avicbackup"
+        item.write_bytes(f"backup-{index}".encode("utf-8"))
+        os.utime(item, (1000 + index, 1000 + index))
+        files.append(item)
+
+    manager = SystemBackupManager()
+    entries = manager.list_backups(directory)
+    assert [entry.path.name for entry in entries] == [
+        "backup-2.avicbackup", "backup-1.avicbackup", "backup-0.avicbackup"
+    ]
+    removed = manager.prune_backups(directory, keep_last=2)
+    assert removed == (files[0],)
+    assert not files[0].exists()
+    assert files[1].exists() and files[2].exists()
+    with pytest.raises(SystemBackupError, match="не менее одной"):
+        manager.prune_backups(directory, keep_last=0)
