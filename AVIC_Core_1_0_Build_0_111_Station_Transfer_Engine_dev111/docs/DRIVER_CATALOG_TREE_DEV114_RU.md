@@ -58,7 +58,7 @@ Network & Drivers
 | Modbus RTU | Planned | `driver.modbus-rtu` |
 | LonWorks | Planned; единый драйвер + профили производителей | `driver.lonworks` |
 | KNXnet/IP | Planned | `driver.knxnet-ip` |
-| MQTT | Planned | `driver.mqtt` |
+| MQTT | Read-only subscribe adapter (DEV118) | `driver.mqtt` |
 | OPC UA Client | Planned | `driver.opc-ua-client` |
 | OPC UA Server | Planned | `driver.opc-ua-server` |
 | OPC Classic DA Gateway | Planned; legacy Windows bridge | `driver.opc-da-gateway` |
@@ -115,4 +115,4 @@ AVIC реализует протоколы независимо по опубл�
 
 ## 8. Границы DEV118
 
-DEV118 уточняет фактические статусы: BACnet/IP и Modbus TCP имеют read-only one-shot адаптеры в общий Point Runtime, но не имеют управляемого polling lifecycle, COV/subscriptions, восстановления сессии или аппаратной приёмки. Каталог не должен скрывать эти границы. В DEV117 CI выявил только точное сравнение float в тесте BACnet; исправление теста использует допуск pytest.approx, не меняя инженерную математику адаптера. Коммерческое лицензирование и пользовательский экран дерева по-прежнему не реализованы.
+DEV118 добавляет MQTT subscribe adapter (Paho-compatible injected client), topic→point mapping, JSON/raw payload decoding, quality on disconnect, bounded payload size and diagnostics. TLS/credentials must be configured on the client by the deployment layer; no broker command publishing. Добавлены unit tests. DEV118 также уточняет фактические статусы: BACnet/IP и Modbus TCP имеют read-only one-shot адаптеры в общий Point Runtime, но не имеют управляемого polling lifecycle, COV/subscriptions, восстановления сессии или аппаратной приёмки. Каталог не должен скрывать эти границы. В DEV117 CI выявил только точное сравнение float в тесте BACnet; исправление теста использует допуск pytest.approx, не меняя инженерную математику адаптера. Коммерческое лицензирование и пользовательский экран дерева по-прежнему не реализованы.

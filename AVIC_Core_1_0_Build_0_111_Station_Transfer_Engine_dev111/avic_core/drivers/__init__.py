@@ -6,3 +6,4 @@ from .catalog import (
 from .manager import DriverInstance, DriverManagerService
 from .bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from .modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTcpPointBinding
+\nfrom .mqtt_adapter import MqttPointAdapter, MqttPointBinding\n
