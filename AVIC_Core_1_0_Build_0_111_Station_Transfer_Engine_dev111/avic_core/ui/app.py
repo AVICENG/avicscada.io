@@ -7,6 +7,9 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from tempfile import gettempdir
 import os
+import shutil
+import tempfile
+from uuid import uuid4
 
 from avic_core.application.container import CoreApplication
 from avic_core.repository.sqlite_repository import ConcurrencyConflict, EntityNotFound
@@ -98,6 +101,25 @@ class ProjectInput(BaseModel):
 
 class StationInput(ProjectInput):
     project_id: str
+
+
+class StationTransferExportInput(BaseModel):
+    station_id: str = Field(min_length=1, max_length=80)
+
+
+class StationTransferStageInput(BaseModel):
+    upload_token: str = Field(min_length=32, max_length=32)
+    package_id: str = Field(min_length=24, max_length=24)
+    acknowledge_unsigned: bool = False
+
+
+class StationTransferCommitInput(BaseModel):
+    stage_token: str = Field(min_length=32, max_length=32)
+    package_id: str = Field(min_length=24, max_length=24)
+    target_project_id: str = Field(min_length=1, max_length=80)
+    mode: str = Field(pattern="^(transfer|clone)$")
+    clone_station_name: str | None = Field(default=None, min_length=1, max_length=160)
+    confirmation: str = Field(min_length=1, max_length=16)
 
 
 class BacnetDiscoveryInput(BaseModel):
@@ -364,7 +386,7 @@ class ObjectPatch(BaseModel):
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
     """Create the DEV140 local-only Workbench host. Drivers and OT commands remain stopped."""
-    app = FastAPI(title=title, version="1.0.0.dev140")
+    app = FastAPI(title=title, version="1.0.0.dev148")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     app.state.core = CoreApplication(root)
     app.state.project_station = ProjectStationService(app.state.core)
@@ -380,6 +402,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     app.state.web_pages = WebPagesService(app.state.core)
     app.state.command_manager = CommandManagerService(app.state.core, app.state.core.paths.databases / "commands.sqlite3")
     app.state.discovery_history = DiscoveryHistory(app.state.core.paths.databases / "discovery_history.sqlite3")
+    app.state.station_transfer_tokens = {}
 
     def require_local_operator(request: Request) -> None:
         # DEV25 mutations are intentionally restricted to loopback until session/RBAC
@@ -396,6 +419,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         nav_items = [
             ("/?page=dashboard", "⌂", "Главная", "home"),
             ("/?page=projects", "▣", "Проекты", "projects"),
+            ("/station-transfer", "⇄", "Перенос и клонирование станции", "transfer"),
             ("/?page=network", "⌘", "Сети", "network"),
             ("/?page=devices", "▥", "Устройства и Discovery", "devices"),
             ("/?page=points", "⌗", "Точки", "points"),
