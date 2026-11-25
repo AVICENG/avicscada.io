@@ -1050,6 +1050,25 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         except EntityNotFound as exc: raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
         except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.put("/api/driver-instances/{instance_id}/config")
+    def update_driver_instance_config(instance_id: str, payload: dict, request: Request) -> dict:
+        require_local_operator(request)
+        config = payload.get("config")
+        expected_version = payload.get("expected_version")
+        if not isinstance(config, dict) or not isinstance(expected_version, int):
+            raise HTTPException(status_code=400, detail="Требуются config и expected_version")
+        try:
+            return app.state.driver_manager.update_config(
+                instance_id, config, expected_version=expected_version)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
+        except ConcurrencyConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.post("/api/driver-instances/{instance_id}/start")
     def start_driver_instance(instance_id: str, payload: DriverStartInput, request: Request) -> dict:
         require_local_operator(request)
