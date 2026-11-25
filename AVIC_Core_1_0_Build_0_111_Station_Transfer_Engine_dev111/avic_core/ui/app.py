@@ -364,7 +364,7 @@ class ObjectPatch(BaseModel):
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
     """Create local-only Workbench host. Runtime, drivers and OT commands remain stopped."""
-    app = FastAPI(title=title, version="1.0.0.dev109")
+    app = FastAPI(title=title, version="1.0.0.dev140")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     app.state.core = CoreApplication(root)
     app.state.project_station = ProjectStationService(app.state.core)
