@@ -10,6 +10,8 @@ import ipaddress
 import socket
 import struct
 import time
+import threading
+from functools import wraps
 from typing import Any
 
 from .contracts import BacnetIpNetworkConfig, DiscoveryPolicy, DiscoveredDevice
@@ -18,6 +20,15 @@ from .identity import DeviceIdentityResolver
 
 class BacnetProtocolError(ValueError):
     pass
+
+
+def _serialized_io(method):
+    """Serialize access to the UDP socket and invoke-id space per BACnet client."""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self._io_lock:
+            return method(self, *args, **kwargs)
+    return wrapper
 
 
 @dataclass(frozen=True)
@@ -313,6 +324,7 @@ class BacnetIpClient:
             raise ValueError("BACnet discovery client only supports read-only policy")
         self._socket: socket.socket | None = None
         self._invoke_id = 1
+        self._io_lock = threading.RLock()
         self.last_discovery_diagnostics: dict[str, Any] = {
             "interface_name": config.interface_name,
             "local_endpoint": f"{config.local_address}:{config.udp_port}",
@@ -331,6 +343,7 @@ class BacnetIpClient:
     def __exit__(self, *_: object) -> None:
         self.close()
 
+    @_serialized_io
     def open(self) -> None:
         if self._socket is not None: return
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -350,10 +363,12 @@ class BacnetIpClient:
         endpoint = sock.getsockname() if hasattr(sock, "getsockname") else (self.config.local_address, self.config.udp_port)
         self.last_discovery_diagnostics["local_endpoint"] = f"{endpoint[0]}:{endpoint[1]}"
 
+    @_serialized_io
     def close(self) -> None:
         if self._socket is not None:
             self._socket.close(); self._socket = None
 
+    @_serialized_io
     def discover(self, timeout_seconds: float | None = None, low_limit: int | None = None, high_limit: int | None = None) -> list[BacnetIAm]:
         """Broadcast Who-Is on the configured IPv4 subnet and collect I-Am replies."""
         if self._socket is None: self.open()
@@ -446,6 +461,7 @@ class BacnetIpClient:
                                        "confidence": identity.confidence.value}}))
         return devices
 
+    @_serialized_io
     def read_property(self, address: tuple[str, int], device_instance: int, object_type: int,
                       object_instance: int, property_id: int, timeout_seconds: float | None = None,
                       array_index: int | None = None) -> Any:
@@ -466,7 +482,7 @@ class BacnetIpClient:
             if remaining <= 0: raise TimeoutError("BACnet ReadProperty timeout")
             self._socket.settimeout(remaining)
             packet, source = self._socket.recvfrom(65535)
-            if source[0] != address[0] or len(packet) < 12 or packet[0] != 0x81: continue
+            if source != address or len(packet) < 12 or packet[0] != 0x81: continue
             if packet[1] not in (0x0A, 0x0B):
                 continue
             try:
@@ -475,6 +491,8 @@ class BacnetIpClient:
                 continue
             apdu = packet[pos:]
             if len(apdu) < 3: continue
+            if apdu[0] == 0x38 and apdu[1] == invoke:
+                raise BacnetProtocolError("segmented ReadProperty ComplexACK is not supported by this transport profile")
             if apdu[0] == 0x30 and apdu[1] == invoke:  # ComplexACK
                 if apdu[2] != 0x0C: continue
                 # Return raw application values inside opening/closing context tag 3.
@@ -491,6 +509,7 @@ class BacnetIpClient:
                 raise BacnetProtocolError(f"BACnet Reject response: {apdu[2:].hex()}")
 
 
+    @_serialized_io
     def read_object_list(self, address: tuple[str, int], device_instance: int,
                          timeout_seconds: float | None = None, max_objects: int = 4096) -> list[BacnetObjectIdentifier]:
         """Read Device.Object_List using BACnet array-index reads (index 0 = item count).
@@ -513,12 +532,14 @@ class BacnetIpClient:
             objects.append(BacnetObjectIdentifier(int(value["object_type"]), int(value["instance"])))
         return objects
 
+    @_serialized_io
     def read_object_name(self, address: tuple[str, int], device_instance: int,
                          obj: BacnetObjectIdentifier, timeout_seconds: float | None = None) -> str | None:
         """Read Object_Name for one object; unsupported properties remain explicit errors."""
         value = self.read_property(address, device_instance, obj.object_type, obj.instance, 77, timeout_seconds)
         return value if isinstance(value, str) else None
 
+    @_serialized_io
     def read_device_identity(self, address: tuple[str, int], device_instance: int) -> dict[str, Any]:
         """Read standard Device object identity properties; unsupported properties are reported, not hidden."""
         props = {"object_name": 77, "vendor_id": 118, "vendor_name": 119,

@@ -254,3 +254,40 @@ def test_diagnose_real_trend_iq3_global_broadcast_iam_capture():
     assert result["apdu_type"] == "0x10"
     assert result["apdu_service"] == "0x00"
     assert result["reason"].startswith("I-Am APDU envelope detected")
+
+
+def test_read_property_ignores_response_from_wrong_udp_port(monkeypatch):
+    class FakeSocket:
+        def __init__(self, *args): self.calls = 0
+        def setsockopt(self, *args): pass
+        def bind(self, *args): pass
+        def sendto(self, data, target): pass
+        def settimeout(self, value): pass
+        def recvfrom(self, size):
+            self.calls += 1
+            packet = _read_property_ack(1, b"\\x21\\x2a")
+            return packet, ("127.0.0.2", 47809 if self.calls == 1 else 47808)
+        def close(self): pass
+    fake = FakeSocket()
+    monkeypatch.setattr(socket, "socket", lambda *args: fake)
+    client = BacnetIpClient(_config())
+    assert client.read_property(("127.0.0.2", 47808), 1001, 0, 1, 85) == 42
+    assert fake.calls == 2
+
+
+def test_read_property_reports_unsupported_segmented_ack_without_timeout(monkeypatch):
+    class FakeSocket:
+        def __init__(self, *args): pass
+        def setsockopt(self, *args): pass
+        def bind(self, *args): pass
+        def sendto(self, data, target): pass
+        def settimeout(self, value): pass
+        def recvfrom(self, size):
+            npdu = b"\\x01\\x00\\x38\\x01\\x0c"
+            packet = b"\\x81\\x0a" + (len(npdu) + 4).to_bytes(2, "big") + npdu
+            return packet, ("127.0.0.2", 47808)
+        def close(self): pass
+    monkeypatch.setattr(socket, "socket", lambda *args: FakeSocket())
+    client = BacnetIpClient(_config())
+    with pytest.raises(BacnetProtocolError, match="segmented ReadProperty"):
+        client.read_property(("127.0.0.2", 47808), 1001, 0, 1, 85)
