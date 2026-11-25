@@ -128,36 +128,61 @@ class HostIdentity:
             identity_dir.mkdir(parents=True, exist_ok=True)
 
             if os.name == "nt":
-                # Windows ACL: current account, SYSTEM and local administrators.
-                # Inheritance from parent directories is disabled.
-                # Resolve the current account to its immutable SID; account
-                # name strings can resolve ambiguously on hosted Windows runners.
+                # Build the DACL with .NET SecurityIdentifier objects. icacls can
+                # canonicalize local-account principals to the broad LA alias on
+                # hosted Windows runners; explicit SID objects avoid that ambiguity.
                 who = subprocess.run(
                     ["whoami", "/user", "/fo", "csv", "/nh"],
                     check=True, capture_output=True, text=True, timeout=10,
                 )
                 rows = list(csv.reader(line for line in who.stdout.splitlines() if line.strip()))
                 current_sid = rows[0][-1].strip() if rows and rows[0] else ""
-                if not re.fullmatch(r"S-1-5-21-(?:\d+-){2,}\d+", current_sid):
+                if not re.fullmatch(r"S-1-5-21-(?:\\d+-){2,}\\d+", current_sid):
                     raise HostIdentityError(
                         "Не удалось определить точный Windows user SID для ACL installation identity"
                     )
 
-                # Apply each ACL operation separately. icacls accepts one SID:perm
-                # operand for /grant[:r]; combining several operands after one switch
-                # can leave the explicit user ACE unapplied on hosted Windows runners.
-                acl_commands = (
-                    ["icacls", str(identity_dir), "/inheritance:r"],
-                    ["icacls", str(identity_dir), "/remove:g", "*S-1-5-113"],
-                    ["icacls", str(identity_dir), "/grant:r", f"*{current_sid}:(OI)(CI)F"],
-                    ["icacls", str(identity_dir), "/grant", "*S-1-5-18:(OI)(CI)F"],
-                    ["icacls", str(identity_dir), "/grant", "*S-1-5-32-544:(OI)(CI)F"],
+                # Disable inheritance, remove every existing ACE, then grant
+                # FullControl only to the current user SID, SYSTEM and Administrators.
+                # The same protected DACL applies to child files and directories.
+                import base64
+
+                ps_script = r"""
+$ErrorActionPreference = 'Stop'
+$path = $args[0]
+$userSid = $args[1]
+$acl = Get-Acl -LiteralPath $path
+$acl.SetAccessRuleProtection($true, $false)
+foreach ($existingRule in @($acl.Access)) {
+    $acl.RemoveAccessRuleAll($existingRule)
+}
+$principals = @(
+    [System.Security.Principal.SecurityIdentifier]::new($userSid),
+    [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18'),
+    [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')
+)
+$inheritance = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+foreach ($principal in $principals) {
+    $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
+        $principal,
+        [System.Security.AccessControl.FileSystemRights]::FullControl,
+        $inheritance,
+        [System.Security.AccessControl.PropagationFlags]::None,
+        [System.Security.AccessControl.AccessControlType]::Allow
+    )
+    [void]$acl.AddAccessRule($rule)
+}
+Set-Acl -LiteralPath $path -AclObject $acl
+"""
+                encoded_script = base64.b64encode(ps_script.encode("utf-16le")).decode("ascii")
+                subprocess.run(
+                    [
+                        "powershell", "-NoProfile", "-NonInteractive",
+                        "-EncodedCommand", encoded_script,
+                        str(identity_dir), current_sid,
+                    ],
+                    check=True, capture_output=True, text=True, timeout=15,
                 )
-                for command in acl_commands:
-                    subprocess.run(
-                        command, check=True, stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL, timeout=10,
-                    )
 
             if identity_file.exists():
                 return str(
