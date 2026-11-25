@@ -646,6 +646,20 @@ class StationTransferManager:
                     pending += 1
         return {"recovered": recovered, "pending": pending, "needs_reconciliation": reconciliation}
 
+    def list_recovery_operations(self, core) -> list[dict[str, Any]]:
+        """Expose non-complete operations for an administrator/recovery UI."""
+        self._ensure_outbox(core)
+        with sqlite3.connect(str(core.repository.database), timeout=20) as db:
+            db.row_factory = sqlite3.Row
+            rows = db.execute(
+                """SELECT operation_id,station_id,station_name,target_project_id,actor_id,
+                          entity_count,created_at,status,last_error
+                   FROM station_transfer_outbox
+                   WHERE status!='COMPLETE'
+                   ORDER BY created_at"""
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def commit_import(self, core, staged_path: str | Path, *, expected_package_id: str, target_project_id: str,
                       actor: str = "local-engineer") -> dict[str, Any]:
         stage_input = Path(staged_path).expanduser()
