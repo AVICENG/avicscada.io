@@ -933,6 +933,7 @@ class StationTransferManager:
                 # the auxiliary writes, so it is safe to attempt idempotent delivery now.
                 pass
             delivered = self._deliver_outbox(core, operation_id, allow_prepared=True)
+            core.runtime.register(station_id)
             return {"station_id": station_id, "station_name": station_record["name"], "entity_count": len(records),
                     "activation": "NOT_ACTIVATED", "site_binding_required": True,
                     "operation_id": operation_id, "cloned": bool(clone),
