@@ -1,0 +1,76 @@
+name: AVIC Core CI
+
+on:
+  push:
+    branches:
+      - dev112-station-transfer-reliability
+  pull_request:
+    branches:
+      - main
+      - dev112-station-transfer-reliability
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avic-core-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Python ${{ matrix.python-version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.13"
+
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/pyproject.toml
+
+      - name: Install AVIC Core and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Compile package
+        run: python -m compileall -q avic_core
+
+      - name: Run full test suite
+        shell: bash
+        run: |
+          mkdir -p test-results
+          python -m pytest -q -rs --junitxml=test-results/junit.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: avic-test-report-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 14
