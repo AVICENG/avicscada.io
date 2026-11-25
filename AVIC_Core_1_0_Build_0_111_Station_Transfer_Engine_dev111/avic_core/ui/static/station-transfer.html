@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AVIC — Перенос и клонирование станции</title>
+<style>
+:root{font-family:"Segoe UI",Arial,sans-serif;color:#24384b;background:#f5f7f9}*{box-sizing:border-box}
+.transfer-wrap{max-width:1120px;margin:26px auto;padding:0 22px 50px}h1{font-size:24px;margin:0 0 8px;color:#263e54}.sub{color:#718191;margin:0 0 22px;max-width:760px}
+.card{background:#fff;border:1px solid #e1e7ec;border-radius:12px;padding:20px;margin:14px 0;box-shadow:0 5px 20px rgba(34,55,73,.04)}.card h2{font-size:16px;margin:0 0 14px}
+.step{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#eaf6f4;color:#087f73;margin-right:8px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-weight:600;font-size:12px;color:#526779}
+select,input[type=file],input[type=text]{width:100%;min-height:39px;border:1px solid #cfd9df;border-radius:7px;padding:8px;background:white;color:#24384b}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}.btn{border:1px solid #cbd7dd;background:#fff;color:#30495c;padding:9px 14px;border-radius:7px;font-weight:600}.btn.primary{background:#168f83;border-color:#168f83;color:white}.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{border-left:3px solid #d89a36;background:#fff8ed;padding:12px 14px;border-radius:5px;color:#76521c;font-size:13px;line-height:1.5}.ok{border-left-color:#168f83;background:#edf8f5;color:#245f57}.error{border-left-color:#c45d52;background:#fff1ef;color:#8a332c}
+.hidden{display:none!important}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.metric{background:#f5f8fa;border-radius:8px;padding:10px}.metric b{display:block;font-size:19px;color:#263e54}.metric small{color:#718191}
+.mode{display:flex;gap:16px;flex-wrap:wrap}.mode label{display:flex;align-items:center;gap:7px;font-weight:500}.check{display:flex;gap:9px;align-items:flex-start;margin-top:14px;font-size:13px;line-height:1.45}
+.status{font-size:12px;color:#718191;margin-top:8px;min-height:18px}.warning-list{padding-left:20px;color:#805a23}.result{font-size:14px;line-height:1.6}
+@media(max-width:720px){.grid,.meta{grid-template-columns:1fr}.transfer-wrap{padding:0 12px 30px}.card{padding:15px}}
+</style></head><body>
+<main class="transfer-wrap">
+<h1>Перенос и клонирование станции</h1>
+<p class="sub">Безопасная передача инженерной конфигурации между установками AVIC. Перенос сохраняет идентификаторы объектов; клонирование создаёт независимую копию с новыми идентификаторами.</p>
+<div class="note">Важно: пакет станции не содержит пароли, ключи, историю и аудит. Сетевые адреса и идентификаторы оборудования очищаются, драйверы и каналы остаются остановленными. Импорт не запускает станцию и не отправляет команды контроллерам.</div>
+<section class="card"><h2><span class="step">1</span>Экспорт исходной станции</h2>
+<div class="grid"><div class="field"><label for="sourceStation">Станция для экспорта</label><select id="sourceStation"><option value="">Загрузка списка…</option></select></div>
+<div class="field"><label>Формат пакета</label><input value=".avicstation — инженерная конфигурация" disabled></div></div>
+<div class="actions"><button class="btn primary" id="exportBtn" disabled>Создать пакет и сохранить файл</button></div><div class="status" id="exportStatus"></div></section>
+<section class="card"><h2><span class="step">2</span>Проверка входящего пакета</h2>
+<div class="field"><label for="packageFile">Файл станции (.avicstation)</label><input id="packageFile" type="file" accept=".avicstation,application/zip"></div>
+<div class="actions"><button class="btn primary" id="inspectBtn" disabled>Проверить пакет</button></div><div class="status" id="inspectStatus"></div>
+<div id="preview" class="hidden"><div class="meta"><div class="metric"><b id="pName">—</b><small>Исходная станция</small></div><div class="metric"><b id="pEntities">—</b><small>Инженерных объектов</small></div><div class="metric"><b id="pAux">—</b><small>Вспомогательных записей</small></div></div>
+<div class="note" id="trustWarning">Подпись издателя не проверена. Происхождение пакета не подтверждено.</div><ul class="warning-list" id="warnings"></ul></div></section>
+<section class="card"><h2><span class="step">3</span>Выбор операции и целевого проекта</h2>
+<div class="grid"><div class="field"><label>Операция</label><div class="mode"><label><input type="radio" name="mode" value="transfer" checked> Перенос</label><label><input type="radio" name="mode" value="clone"> Клонирование</label></div></div>
+<div class="field"><label for="targetProject">Целевой проект</label><select id="targetProject"><option value="">Загрузка списка проектов…</option></select></div>
+<div class="field hidden" id="cloneNameField"><label for="cloneName">Новое имя клона</label><input id="cloneName" type="text" maxlength="160" placeholder="Например, AHU-01 — копия"></div></div>
+<label class="check"><input id="unsignedAck" type="checkbox"><span>Я понимаю, что пакет не подписан цифровой подписью AVIC, проверил его источник и принимаю риск импорта непроверенного файла.</span></label>
+<div class="actions"><button class="btn" id="stageBtn" disabled>Подготовить импорт</button></div><div class="status" id="stageStatus"></div></section>
+<section class="card hidden" id="commitCard"><h2><span class="step">4</span>Финальное подтверждение</h2>
+<div class="note">До подтверждения данные ещё не внесены в проект. После импорта станция останется неактивированной. Для продолжения потребуется назначить адреса сети, сопоставить устройства, проверить точки и выполнить пусконаладку.</div>
+<div class="field" style="margin-top:14px"><label for="confirmation">Для переноса введите IMPORT; для клонирования — CLONE</label><input id="confirmation" type="text" autocomplete="off" placeholder="Введите слово подтверждения"></div>
+<div class="actions"><button class="btn primary" id="commitBtn" disabled>Подтвердить и выполнить</button></div><div class="status" id="commitStatus"></div></section>
+<section class="card hidden" id="resultCard"><h2>Результат операции</h2><div class="result" id="resultText"></div></section>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);let projects=[],preview=null,stageToken=null,mode='transfer';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const setStatus=(id,msg,kind='')=>{const e=$(id);e.textContent=msg;e.className='status '+kind};
+async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{...(opts.headers||{})}});let d;try{d=await r.json()}catch{d=null}if(!r.ok)throw new Error(d?.detail||('HTTP '+r.status));return d}
+async function loadCatalog(){try{const d=await api('/api/station-transfer/catalog');projects=d.projects||[];
+$('sourceStation').innerHTML='<option value="">Выберите станцию…</option>'+projects.flatMap(p=>p.stations.map(s=>({p,s}))).map(x=>'<option value="'+esc(x.s.id)+'">'+esc(x.p.name)+' / '+esc(x.s.name)+'</option>').join('');
+$('targetProject').innerHTML='<option value="">Выберите целевой проект…</option>'+projects.filter(p=>!p.archived).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('');
+$('exportBtn').disabled=false}catch(e){setStatus('exportStatus',e.message,'error')}}
+$('sourceStation').addEventListener('change',()=>{$('exportBtn').disabled=!$('sourceStation').value});
+$('packageFile').addEventListener('change',()=>{$('inspectBtn').disabled=!$('packageFile').files.length;preview=null;stageToken=null;$('preview').classList.add('hidden');$('commitCard').classList.add('hidden');$('resultCard').classList.add('hidden');$('stageBtn').disabled=true});
+$('inspectBtn').addEventListener('click',async()=>{const file=$('packageFile').files[0];if(!file)return;if(file.size>512*1024*1024){setStatus('inspectStatus','Файл превышает предел 512 МБ','error');return}
+$('inspectBtn').disabled=true;setStatus('inspectStatus','Проверка структуры, контрольных сумм и совместимости…');
+try{preview=await api('/api/station-transfer/inspect',{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:file});$('pName').textContent=preview.station_name;$('pEntities').textContent=preview.entity_count;$('pAux').textContent=preview.auxiliary_record_count;$('warnings').innerHTML=(preview.warnings||[]).map(x=>'<li>'+esc(x)+'</li>').join('');$('preview').classList.remove('hidden');
+if(!preview.compatible){setStatus('inspectStatus','Версия пакета несовместима. Импорт заблокирован.','error');$('stageBtn').disabled=true}else{setStatus('inspectStatus','Проверка завершена. Можно перейти к подготовке импорта.','ok');$('stageBtn').disabled=false}
+}catch(e){setStatus('inspectStatus',e.message,'error')}finally{$('inspectBtn').disabled=false}});
+document.querySelectorAll('input[name=mode]').forEach(el=>el.addEventListener('change',()=>{mode=el.value;$('cloneNameField').classList.toggle('hidden',mode!=='clone');$('confirmation').placeholder=mode==='clone'?'Введите CLONE':'Введите IMPORT';$('confirmation').value='';updateCommit()}));
+function updateCommit(){$('commitBtn').disabled=!stageToken||$('confirmation').value.trim()!==(mode==='clone'?'CLONE':'IMPORT')}
+$('confirmation').addEventListener('input',updateCommit);
+$('stageBtn').addEventListener('click',async()=>{if(!preview)return;if(!preview.compatible){setStatus('stageStatus','Несовместимый пакет нельзя импортировать','error');return}
+if(!$('targetProject').value){setStatus('stageStatus','Выберите целевой проект','error');return}if(!$('unsignedAck').checked){setStatus('stageStatus','Подтвердите, что пакет не подписан и источник проверен','error');return}
+if(mode==='clone'&&!$('cloneName').value.trim()){setStatus('stageStatus','Укажите новое имя клона','error');return}
+$('stageBtn').disabled=true;setStatus('stageStatus','Повторная проверка пакета и подготовка staging-копии…');
+try{const d=await api('/api/station-transfer/stage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({upload_token:preview.upload_token,package_id:preview.package_id,acknowledge_unsigned:true})});stageToken=d.stage_token;$('commitCard').classList.remove('hidden');setStatus('stageStatus','Подготовлено. Целевая база ещё не изменена.','ok');updateCommit()}
+catch(e){setStatus('stageStatus',e.message,'error');$('stageBtn').disabled=false}});
+$('commitBtn').addEventListener('click',async()=>{if(!stageToken)return;const expected=mode==='clone'?'CLONE':'IMPORT';if($('confirmation').value.trim()!==expected)return;
+if(!confirm('Подтвердить '+(mode==='clone'?'клонирование':'перенос')+' станции? Новая станция останется остановленной и неактивированной.'))return;
+$('commitBtn').disabled=true;setStatus('commitStatus','Выполняется транзакционный импорт и проверка связей…');
+try{const d=await api('/api/station-transfer/commit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage_token:stageToken,package_id:preview.package_id,target_project_id:$('targetProject').value,mode:mode,clone_station_name:mode==='clone'?$('cloneName').value.trim():null,confirmation:expected})});
+$('resultText').textContent='Станция: '+d.station_id+' · состояние: '+d.activation+' · журнал: '+(d.journal_status||'не указан')+'. '+d.message;$('resultCard').classList.remove('hidden');$('commitCard').classList.add('hidden');setStatus('commitStatus','Операция завершена','ok');loadCatalog()}
+catch(e){setStatus('commitStatus',e.message,'error');$('commitBtn').disabled=false}});
+$('exportBtn').addEventListener('click',async()=>{const id=$('sourceStation').value;if(!id)return;$('exportBtn').disabled=true;setStatus('exportStatus','Проверка остановки Runtime и драйверов, создание пакета…');
+try{const r=await fetch('/api/station-transfer/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({station_id:id})});if(!r.ok){let d={};try{d=await r.json()}catch{}throw new Error(d.detail||('HTTP '+r.status))}
+const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='avic-station.avicstation';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);setStatus('exportStatus','Пакет создан. Сохраните его в защищённом месте.','ok')}
+catch(e){setStatus('exportStatus',e.message,'error')}finally{$('exportBtn').disabled=!id}});
+loadCatalog();
+})();
+</script></body></html>
