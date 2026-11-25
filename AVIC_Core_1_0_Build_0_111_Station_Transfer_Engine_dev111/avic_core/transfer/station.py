@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
+from uuid import uuid4, uuid5, NAMESPACE_URL
 
 from avic_core.repository.sqlite_repository import RepositoryError
 
@@ -563,6 +564,88 @@ class StationTransferManager:
             if temp.exists():
                 shutil.rmtree(temp, ignore_errors=True)
 
+    @staticmethod
+    def _ensure_outbox(core) -> None:
+        """Create the durable journal-delivery outbox in the entity database."""
+        with sqlite3.connect(str(core.repository.database), timeout=20) as db:
+            db.execute("PRAGMA busy_timeout=20000")
+            db.execute("""CREATE TABLE IF NOT EXISTS station_transfer_outbox (
+                operation_id TEXT PRIMARY KEY,
+                station_id TEXT NOT NULL,
+                station_name TEXT NOT NULL,
+                target_project_id TEXT NOT NULL,
+                actor_id TEXT NOT NULL,
+                entity_count INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                status TEXT NOT NULL,
+                event_id TEXT NOT NULL UNIQUE,
+                audit_event_id TEXT NOT NULL UNIQUE,
+                last_error TEXT
+            )""")
+            db.execute("CREATE INDEX IF NOT EXISTS idx_station_transfer_outbox_status ON station_transfer_outbox(status, created_at)")
+
+    def _deliver_outbox(self, core, operation_id: str, *, allow_prepared: bool = False) -> bool:
+        """Deliver event and audit records idempotently; retain the row until both succeed."""
+        with sqlite3.connect(str(core.repository.database), timeout=20) as db:
+            db.row_factory = sqlite3.Row
+            row = db.execute("SELECT * FROM station_transfer_outbox WHERE operation_id=?", (operation_id,)).fetchone()
+        if row is None:
+            return False
+        if row["status"] == "COMPLETE":
+            return True
+        if row["status"] == "PREPARED" and not allow_prepared:
+            return False
+        details = {"operation_id": operation_id, "target_project_id": row["target_project_id"],
+                   "entity_count": row["entity_count"], "activation": "NOT_ACTIVATED"}
+        try:
+            core.events.record(
+                "station.imported", f"Station imported: {row['station_name']}",
+                station_id=row["station_id"], severity="NOTICE", actor_id=row["actor_id"],
+                details=details, event_id=row["event_id"],
+            )
+            core.audit.append(
+                actor_id=row["actor_id"], action="station.imported", resource_type="station",
+                resource_id=row["station_id"], details=details,
+                event_id=row["audit_event_id"], occurred_at=row["created_at"],
+            )
+            with core.repository.transaction() as conn:
+                conn.execute("UPDATE station_transfer_outbox SET status='COMPLETE', last_error=NULL WHERE operation_id=?",
+                             (operation_id,))
+            return True
+        except Exception as exc:
+            try:
+                with core.repository.transaction() as conn:
+                    conn.execute("UPDATE station_transfer_outbox SET status='JOURNAL_PENDING', last_error=? WHERE operation_id=?",
+                                 (f"{type(exc).__name__}: {exc}"[:2000], operation_id))
+            except Exception:
+                # The durable PREPARED/JOURNAL_PENDING row remains available for startup recovery.
+                pass
+            return False
+
+    def recover_pending(self, core) -> dict[str, int]:
+        """Retry committed journal deliveries; flag crash-interrupted imports for reconciliation."""
+        self._ensure_outbox(core)
+        with sqlite3.connect(str(core.repository.database), timeout=20) as db:
+            db.row_factory = sqlite3.Row
+            rows = db.execute("SELECT operation_id,status FROM station_transfer_outbox WHERE status!='COMPLETE' ORDER BY created_at").fetchall()
+        recovered = 0
+        pending = 0
+        reconciliation = 0
+        for row in rows:
+            if row["status"] == "PREPARED":
+                # PREPARED means the process stopped before it could certify that every
+                # auxiliary database committed. Never publish a success event for this state.
+                with core.repository.transaction() as conn:
+                    conn.execute("UPDATE station_transfer_outbox SET status='NEEDS_RECONCILIATION', last_error=? WHERE operation_id=?",
+                                 ("Process stopped before auxiliary-store commit was confirmed; inspect imported rows.", row["operation_id"]))
+                reconciliation += 1
+            elif row["status"] == "JOURNAL_PENDING":
+                if self._deliver_outbox(core, row["operation_id"]):
+                    recovered += 1
+                else:
+                    pending += 1
+        return {"recovered": recovered, "pending": pending, "needs_reconciliation": reconciliation}
+
     def commit_import(self, core, staged_path: str | Path, *, expected_package_id: str, target_project_id: str,
                       actor: str = "local-engineer") -> dict[str, Any]:
         stage_input = Path(staged_path).expanduser()
@@ -584,6 +667,11 @@ class StationTransferManager:
             raise StationTransferError("staged Station payload integrity check failed")
         if not isinstance(payload.get("entities"), list) or not isinstance(payload.get("auxiliary", {}), dict):
             raise StationTransferError("Staged Station entity/auxiliary structure is invalid")
+        self._ensure_outbox(core)
+        operation_id = str(uuid4())
+        created_at = datetime.now(timezone.utc).isoformat()
+        event_id = str(uuid5(NAMESPACE_URL, "avic.station-transfer:" + operation_id + ":event"))
+        audit_event_id = str(uuid5(NAMESPACE_URL, "avic.station-transfer:" + operation_id + ":audit"))
         with core._lock:
             core._ensure_open()
             try:
@@ -668,6 +756,12 @@ class StationTransferManager:
                             (row["entity_id"], row["entity_type"], row["name"], row.get("project_id"), row.get("station_id"),
                              int(row["version"]), json.dumps(row["payload"], ensure_ascii=False, sort_keys=True, separators=(",", ":")),
                              row["created_at"], row["updated_at"]))
+                    conn.execute("""INSERT INTO station_transfer_outbox
+                        (operation_id,station_id,station_name,target_project_id,actor_id,entity_count,created_at,
+                         status,event_id,audit_event_id,last_error)
+                        VALUES(?,?,?,?,?,?,?,'PREPARED',?,?,NULL)""",
+                        (operation_id, station_id, station_record["name"], target_project_id, actor,
+                         len(records), created_at, event_id, audit_event_id))
                 grouped: dict[Path, list[tuple[str, list[dict[str, Any]]]]] = {}
                 for db_path, table, rows in db_specs:
                     grouped.setdefault(db_path, []).append((table, rows))
@@ -698,6 +792,7 @@ class StationTransferManager:
                 try:
                     with core.repository.transaction() as conn:
                         conn.executemany("DELETE FROM entities WHERE entity_id=?", [(x,) for x in incoming_ids])
+                        conn.execute("DELETE FROM station_transfer_outbox WHERE operation_id=?", (operation_id,))
                 except Exception as rollback_exc:
                     compensation_failures.append(f"objects.sqlite3: {rollback_exc}")
                 if compensation_failures:
@@ -709,9 +804,18 @@ class StationTransferManager:
                 for snap in snapshots.values():
                     try: snap.unlink(missing_ok=True)
                     except OSError: pass
-            core.events.record("station.imported", f"Station imported: {station_record['name']}", station_id=station_id, severity="NOTICE", actor_id=actor,
-                               details={"target_project_id": target_project_id, "entity_count": len(records), "activation": "NOT_ACTIVATED"})
-            core.audit.append(actor_id=actor, action="station.imported", resource_type="station", resource_id=station_id,
-                              details={"target_project_id": target_project_id, "entity_count": len(records), "activation": "NOT_ACTIVATED"})
+            # Auxiliary stores have committed. Move the durable outbox row to a
+            # retryable delivery state before attempting either external journal.
+            try:
+                with core.repository.transaction() as conn:
+                    conn.execute("UPDATE station_transfer_outbox SET status='JOURNAL_PENDING' WHERE operation_id=?",
+                                 (operation_id,))
+            except Exception:
+                # The PREPARED row is still durable. We know this live process completed
+                # the auxiliary writes, so it is safe to attempt idempotent delivery now.
+                pass
+            delivered = self._deliver_outbox(core, operation_id, allow_prepared=True)
             return {"station_id": station_id, "station_name": station_record["name"], "entity_count": len(records),
-                    "activation": "NOT_ACTIVATED", "site_binding_required": True}
+                    "activation": "NOT_ACTIVATED", "site_binding_required": True,
+                    "operation_id": operation_id,
+                    "journal_status": "DELIVERED" if delivered else "PENDING_RETRY"}
