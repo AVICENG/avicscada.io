@@ -33,16 +33,12 @@ class BacnetIpPointBinding:
             raise ValueError("invalid BACnet Device Instance")
         if not 0 <= self.object_type <= 1023 or not 0 <= self.object_instance <= 4_194_303:
             raise ValueError("invalid BACnet object identifier")
-        if not 0 <= self.property_id <= .property_id_max:
+        if not 0 <= self.property_id <= 0x3FFFFF:
             raise ValueError("invalid BACnet property identifier")
         if self.array_index is not None and not 0 <= self.array_index <= 0xFFFFFFFF:
             raise ValueError("invalid BACnet array index")
         if not isfinite(float(self.scale)) or not isfinite(float(self.offset)):
             raise ValueError("scale and offset must be finite")
-
-
-# Keep the maximum as a named constant so range validation is easy to audit.
-BacnetIpPointBinding.property_id_max = 0xFFFFFFFF
 
 
 class BacnetIpPointAdapter:
