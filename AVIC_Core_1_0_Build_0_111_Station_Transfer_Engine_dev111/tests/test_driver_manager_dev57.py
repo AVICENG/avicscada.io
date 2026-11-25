@@ -61,3 +61,57 @@ def test_driver_manager_http_routes_and_local_mutation_guard(tmp_path):
     assert client.get(f"/api/stations/{station['id']}/drivers").json()['instances'][0]['name']=='LAN'
     denied=client.post(f"/api/stations/{station['id']}/drivers",json={'driver_id':'bacnet-ip','name':'Remote'},headers={'origin':'https://evil.example'})
     assert denied.status_code==403
+
+
+def test_driver_manager_explicit_runtime_factory_lifecycle(tmp_path):
+    from avic_core.drivers.manager import DriverInstance
+    from datetime import datetime, timezone
+    import time
+
+    class Adapter:
+        def __init__(self):
+            self.calls = 0
+            self.closed = False
+        def poll_once(self):
+            self.calls += 1
+            return {"results": [{"ok": True}]}
+        def diagnostics(self):
+            return {"calls": self.calls}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    service = core.driver_manager
+    created = service.create_instance(station["id"], "modbus-tcp", "Test Modbus", {"poll_interval_seconds": 0.1})
+    adapter = Adapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _instance: adapter)
+    started = service.start_instance(created["id"])
+    assert started["state"] == "RUNNING"
+    deadline = time.monotonic() + 2
+    while adapter.calls < 1 and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert adapter.calls >= 1
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "RUNNING" and persisted.enabled is True
+    stopped = service.stop_instance(created["id"])
+    assert stopped["state"] == "STOPPED"
+    assert adapter.closed is True
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "STOPPED" and persisted.enabled is False
+    core.close()
+
+
+def test_driver_manager_rejects_nested_secrets(tmp_path):
+    core, station = make_station(tmp_path)
+    with pytest.raises(ValueError, match="SecretStore"):
+        core.driver_manager.create_instance(station["id"], "modbus-tcp", "Unsafe",
+            {"bindings": [{"point_id": "x", "password": "hidden"}]})
+    core.close()
+
+
+def test_driver_manager_requires_registered_runtime_for_mqtt(tmp_path):
+    core, station = make_station(tmp_path)
+    created = core.driver_manager.create_instance(station["id"], "mqtt", "MQTT")
+    with pytest.raises(RuntimeError, match="factory"):
+        core.driver_manager.start_instance(created["id"])
+    core.close()

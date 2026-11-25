@@ -24,6 +24,7 @@ from avic_core.time_management import TimeManagementService
 from avic_core.platform import ModuleCatalog
 from avic_core.domain.point_views import PointViewService
 from avic_core.points import PointRuntimeService
+from avic_core.drivers.manager import DriverManagerService
 from avic_core.graphics.custom_svg_library import CustomSvgLibrary
 from .health import CoreHealthService, HealthReport
 
@@ -62,6 +63,7 @@ class CoreApplication:
         self.repository = SQLiteRepository(self.paths.databases / "objects.sqlite3")
         self.point_views = PointViewService(self.paths.databases / "point_views.sqlite3")
         self.point_runtime = PointRuntimeService(self.repository)
+        self.driver_manager = DriverManagerService(self)
         self.audit = AuditService(self.paths.databases / "audit.sqlite3")
         self.custom_svg = CustomSvgLibrary(self.paths.databases / "custom_svg_library.sqlite3")
         self.runtime = RuntimeManager()
@@ -153,6 +155,10 @@ class CoreApplication:
             if self._closed:
                 return
             failures: list[tuple[str, Exception]] = []
+            try:
+                self.driver_manager.stop_all()
+            except Exception as exc:
+                failures.append(("drivers", exc))
             for status in self.runtime.all():
                 if status.state != RuntimeState.STOPPED:
                     try:

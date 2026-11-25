@@ -18,3 +18,15 @@
 
 ## Ограничения
 Это пока не полноценный пакетный менеджер и не исполняемый драйверный runtime. Нет установки сторонних пакетов, проверки цифровой подписи модулей, dependency resolver, конфигурационных схем драйверов, polling/subscriptions, активного discovery, reconnect и команд записи. Trend оставлен необязательным профилем. TONN не реализован: для будущих Linux-контроллеров AVIC предусмотрено направление отдельного адаптера/протокола, но текущий код не заявляет совместимость с TONN.
+
+
+## DEV124 — runtime lifecycle Driver Manager
+
+- DriverManagerService теперь владеет зарегистрированными adapter factories, PollingSession, стартом/остановкой и диагностикой экземпляров.
+- Встроены безопасные фабрики BACnet/IP и Modbus TCP: создание клиента и адаптера выполняется только при явном start_instance; конфигурация валидируется, binding создаётся из явно заданного списка.
+- Состояния экземпляра персистентны: STARTING/RUNNING/ERROR/STOPPED; optimistic version check при изменениях. CoreApplication останавливает активные драйверы при shutdown.
+- UI использует единственный CoreApplication.driver_manager, а не создаёт отдельный менеджер с независимым состоянием.
+- MQTT остаётся подписочным адаптером; его Paho factory пока должна быть зарегистрирована отдельным runtime-пакетом с TLS/SecretStore wiring. Каталог показывает runtime_start_supported отдельно от read_supported.
+- Вложенные секреты запрещены рекурсивно.
+- Добавлены тесты lifecycle/factory, persisted state, close и secret rejection.
+- Это первый runtime lifecycle слой, не финальный промышленный Driver Manager: пока нет recovery после аварийного завершения процесса, лицензирования пакетов, heartbeat/watchdog и UI настройки параметров.
