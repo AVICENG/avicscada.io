@@ -13,6 +13,7 @@ import tempfile
 from uuid import uuid4
 
 from avic_core.application.container import CoreApplication
+from avic_core.transfer import StationTransferError
 from avic_core.repository.sqlite_repository import ConcurrencyConflict, EntityNotFound
 from avic_core.domain.models import Point, PointQuality, PhysicalNetwork, ProtocolChannel
 from avic_core.network.bacnet_ip import BacnetObjectIdentifier
@@ -2369,7 +2370,8 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         return render_workspace("station-transfer.html", "transfer")
 
     @app.get("/api/station-transfer/catalog")
-    def station_transfer_catalog() -> dict:
+    def station_transfer_catalog(request: Request) -> dict:
+        require_local_operator(request)
         records = app.state.core.repository.list_records()
         projects = [row for row in records if row.get("entity_type") == "Project"]
         stations = [row for row in records if row.get("entity_type") == "Station"]
@@ -2542,7 +2544,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     def manifest() -> dict:
         return {
             "product": "AVIC Engineering & Automation Platform",
-            "version": "1.0.0.dev77",
+            "version": "1.0.0.dev148",
             "mode": "engineering-workbench-project-station",
             "execution_enabled": False,
             "network_discovery_enabled": False,
