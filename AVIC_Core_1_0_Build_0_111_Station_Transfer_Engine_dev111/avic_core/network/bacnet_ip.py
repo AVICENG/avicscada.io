@@ -482,7 +482,7 @@ class BacnetIpClient:
             if remaining <= 0: raise TimeoutError("BACnet ReadProperty timeout")
             self._socket.settimeout(remaining)
             packet, source = self._socket.recvfrom(65535)
-            if source != address or len(packet) < 12 or packet[0] != 0x81: continue
+            if source != address or len(packet) < 9 or packet[0] != 0x81: continue
             if packet[1] not in (0x0A, 0x0B):
                 continue
             try:
