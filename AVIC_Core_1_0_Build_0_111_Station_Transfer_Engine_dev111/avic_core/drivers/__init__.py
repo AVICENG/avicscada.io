@@ -8,3 +8,4 @@ from .bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from .modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTcpPointBinding
 
 from .mqtt_adapter import MqttPointAdapter, MqttPointBinding
+from .polling import PollingSession
