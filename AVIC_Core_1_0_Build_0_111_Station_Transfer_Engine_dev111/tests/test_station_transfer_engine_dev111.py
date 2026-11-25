@@ -355,8 +355,10 @@ def test_station_clone_remaps_engineering_and_auxiliary_ids(tmp_path):
         assert all(row["station_id"] == clone_id for row in target.repository.list_records(station_id=clone_id))
         cloned_graphic = GraphicsService(target).get(cloned_graphics[0]["entity_id"])
         assert cloned_graphic["elements"][0]["bindings"][0]["point_id"] == cloned_points[0]["entity_id"]
+        assert cloned_graphic["elements"][0]["id"] != graphic["elements"][0]["id"]
         cloned_logic_doc = FBDService(target).get(cloned_logic[0]["entity_id"])
         assert len(cloned_logic_doc["nodes"]) == 2 and len(cloned_logic_doc["links"]) == 1
+        assert {node["id"] for node in cloned_logic_doc["nodes"]}.isdisjoint({input_id, output_id})
         cloned_page = WebPagesService(target).get(next(r["entity_id"] for r in cloned_pages if r["name"] == "Overview"))
         assert cloned_page["graphic_ids"] == [cloned_graphics[0]["entity_id"]]
         assert result["activation"] == "NOT_ACTIVATED"
