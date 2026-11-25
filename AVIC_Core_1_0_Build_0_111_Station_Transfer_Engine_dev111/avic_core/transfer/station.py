@@ -495,7 +495,12 @@ class StationTransferManager:
                 if table == "device_time_permission" and row.get("device_id") not in entity_ids:
                     raise StationTransferError("Device time permission references a missing device")
         schedule_rows = rows("schedules", "schedules")
-        schedule_ids = {row.get("schedule_id") for row in schedule_rows}
+        schedule_station_by_id = {
+            str(row.get("schedule_id")): row.get("station_id")
+            for row in schedule_rows
+            if row.get("schedule_id") is not None
+        }
+        schedule_ids = set(schedule_station_by_id)
         for row in schedule_rows:
             if row.get("station_id") != station_id:
                 raise StationTransferError("Schedule references a Station outside the package")
@@ -503,8 +508,11 @@ class StationTransferManager:
             for row in rows("schedules", table):
                 if row.get("schedule_id") not in schedule_ids:
                     raise StationTransferError(f"{table} references a missing schedule")
+        # schedule_bindings has no station_id column: station ownership is
+        # inherited through its schedule_id foreign key.
         for row in rows("schedules", "schedule_bindings"):
-            if row.get("station_id") != station_id or row.get("schedule_id") not in schedule_ids:
+            schedule_id = row.get("schedule_id")
+            if schedule_id not in schedule_ids or schedule_station_by_id.get(str(schedule_id)) != station_id:
                 raise StationTransferError("Schedule binding references a missing schedule or Station")
             if row.get("point_id") not in point_ids:
                 raise StationTransferError("Schedule binding references a missing Point")
