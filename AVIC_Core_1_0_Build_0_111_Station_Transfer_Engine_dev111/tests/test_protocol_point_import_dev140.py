@@ -114,3 +114,27 @@ def test_protocol_import_api_preview_and_commit(tmp_path):
     assert imported.status_code == 200
     assert len(imported.json()["points_added"]) == 1
     app.state.core.close()
+
+
+
+def test_same_normalized_import_contract_accepts_bacnet_points(tmp_path):
+    app, station, driver, inspection = _setup(tmp_path, driver_id="bacnet-ip")
+    inspection["points"][0]["data_type"] = "analog-input"
+    inspection["points"][1]["data_type"] = "binary-output"
+    native = inspection["points"][0]["native_identity"]
+    result = app.state.protocol_point_import.import_points(
+        station["id"], driver["id"], inspection, [native])
+    point = app.state.core.repository.get_record(result["points_added"][0])
+    assert point["payload"]["data_type"] == "analog-input"
+    assert point["payload"]["direction"]["value"] == "input"
+    app.state.core.close()
+
+
+def test_import_requires_explicit_point_direction(tmp_path):
+    app, station, driver, inspection = _setup(tmp_path)
+    del inspection["points"][0]["direction"]
+    with pytest.raises(ValueError, match="должно быть задано явно"):
+        app.state.protocol_point_import.import_points(
+            station["id"], driver["id"], inspection, import_all=True)
+    assert app.state.core.repository.list_records(entity_type="Device", station_id=station["id"]) == []
+    app.state.core.close()
