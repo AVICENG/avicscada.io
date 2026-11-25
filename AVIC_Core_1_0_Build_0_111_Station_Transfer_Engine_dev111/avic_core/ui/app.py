@@ -2556,7 +2556,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                     "generation": item.generation, "last_error": item.last_error}
                    for item in app.state.core.runtime.all()]
         backup_files = sorted(p.name for p in app.state.core.paths.backups.glob("*.avicbackup.zip") if p.is_file())
-        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev148",
+        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev77",
                 "core_open": not app.state.core.closed, "object_counts": counts,
                 "runtime_stations": runtime, "backup_archives": backup_files,
                 "safety": {"driver_autostart": False, "field_writes_enabled": False,
