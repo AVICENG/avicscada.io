@@ -34,6 +34,14 @@ class SystemBackupPreview:
     warnings: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class BackupCatalogEntry:
+    path: Path
+    backup_id: str
+    size_bytes: int
+    modified_at: str
+
+
 class SystemBackupManager:
     """Encrypted, verified full-installation backup using SQLite online snapshots.
 
@@ -284,6 +292,35 @@ class SystemBackupManager:
                 if actual_size != metadata["size"] or digest.hexdigest() != metadata.get("sha256"):
                     raise SystemBackupError(f"Контрольная сумма не совпадает: {info.filename}")
             return manifest, total
+
+    def list_backups(self, backup_directory: str | Path) -> tuple[BackupCatalogEntry, ...]:
+        directory = Path(backup_directory).expanduser().resolve()
+        if not directory.exists():
+            return ()
+        if not directory.is_dir():
+            raise SystemBackupError("Каталог резервных копий не является папкой")
+        entries = []
+        for item in directory.iterdir():
+            if item.is_symlink() or not item.is_file() or item.suffix.casefold() != ".avicbackup":
+                continue
+            digest, size = self._sha256_file(item)
+            modified = datetime.fromtimestamp(item.stat().st_mtime, timezone.utc).isoformat()
+            entries.append(BackupCatalogEntry(item, digest[:20], size, modified))
+        entries.sort(key=lambda item: (item.modified_at, item.path.name), reverse=True)
+        return tuple(entries)
+
+    def prune_backups(self, backup_directory: str | Path, *, keep_last: int) -> tuple[Path, ...]:
+        if not isinstance(keep_last, int) or isinstance(keep_last, bool) or keep_last < 1:
+            raise SystemBackupError("Политика хранения должна сохранять не менее одной резервной копии")
+        entries = self.list_backups(backup_directory)
+        removed = []
+        for entry in entries[keep_last:]:
+            directory = Path(backup_directory).expanduser().resolve()
+            if entry.path.parent != directory or entry.path.is_symlink():
+                raise SystemBackupError("Обнаружен недопустимый путь в каталоге резервных копий")
+            entry.path.unlink()
+            removed.append(entry.path)
+        return tuple(removed)
 
     def create_backup(self, core, destination: str | Path, *, passphrase: str,
                       core_version: str = "unknown") -> Path:
