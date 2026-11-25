@@ -138,3 +138,35 @@ def test_import_requires_explicit_point_direction(tmp_path):
             station["id"], driver["id"], inspection, import_all=True)
     assert app.state.core.repository.list_records(entity_type="Device", station_id=station["id"]) == []
     app.state.core.close()
+
+
+
+def test_imported_point_is_selectable_in_graphics_and_web_pages(tmp_path):
+    app, station, driver, inspection = _setup(tmp_path)
+    native = inspection["points"][0]["native_identity"]
+    imported = app.state.protocol_point_import.import_points(
+        station["id"], driver["id"], inspection, [native])
+    point_id = imported["points_added"][0]
+    app.state.core.point_runtime.publish(
+        point_id, 23.0, quality="GOOD", source_driver_id=driver["id"])
+
+    catalog = app.state.graphics.points(station["id"])
+    assert any(item["id"] == point_id and item["protocol"] == "modbus/tcp" for item in catalog)
+
+    graphic = app.state.graphics.create(station["id"], "DEV140 Graphic")
+    saved = app.state.graphics.save(graphic["id"], graphic["revision"], [{
+        "name": "Supply fan", "symbol_key": "fan", "x": 20, "y": 20,
+        "width": 120, "height": 100,
+        "bindings": [{"point_id": point_id, "role": "value"}],
+    }])
+    assert saved["elements"][0]["bindings"][0]["point_id"] == point_id
+    evaluated = app.state.graphics.evaluate_bindings(graphic["id"])
+    assert evaluated
+
+    site = app.state.web_pages.create(station["id"], "Site", "site")
+    page = app.state.web_pages.create(station["id"], "Overview", "page", parent_id=site["id"])
+    updated = app.state.web_pages.update(page["id"], page["revision"], layout=[{
+        "type": "value", "point_id": point_id, "x": 10, "y": 10, "width": 240, "height": 100,
+    }])
+    assert updated["layout"][0]["point_id"] == point_id
+    app.state.core.close()
