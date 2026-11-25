@@ -89,3 +89,10 @@
 - Сериализованы операции discovery/read_property на одном BACnet client, включая Invoke ID и общий UDP receive socket.
 - ReadProperty проверяет полный source endpoint (IP и UDP port).
 - Сегментированный ComplexACK явно диагностируется как неподдерживаемый; поддержка сегментации не заявляется.
+
+
+## DEV133 — исправления жизненного цикла
+
+- DriverManager.stop_station поддерживает runtime station до создания инженерной inventory-записи.
+- Замена factory блокируется только для соответствующего активного протокола.
+- Проверка секретов нормализует имена полей и блокирует распространённые aliases.

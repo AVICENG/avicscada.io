@@ -41,3 +41,9 @@
 - Ужесточена проверка источника ReadProperty response до точного IP:port.
 - Добавлена явная ошибка для сегментированного ComplexACK и два регрессионных теста.
 - CI DEV132 ожидается.
+
+## DEV133 — согласование Driver Manager
+- Восстановлена единая версия manager.py с DEV128 state diagnostics, station stop и DEV129 secret filter.
+- Исправлена совместимость остановки runtime station, не имеющей предварительной inventory-записи.
+- Factory registration блокируется только для того driver_id, чья сессия активна.
+- Добавлены регрессионные тесты на factory scope и секретные aliases.
