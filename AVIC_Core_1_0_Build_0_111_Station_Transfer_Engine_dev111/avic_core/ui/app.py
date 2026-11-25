@@ -2414,16 +2414,22 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         length = request.headers.get("content-length")
         if length and (not length.isdigit() or int(length) > app.state.core.station_transfer.MAX_PACKAGE_BYTES):
             raise HTTPException(status_code=413, detail="Размер пакета превышает допустимый предел")
-        raw = await request.body()
-        if not raw or len(raw) > app.state.core.station_transfer.MAX_PACKAGE_BYTES:
-            raise HTTPException(status_code=413 if raw else 400, detail="Пустой или слишком большой пакет станции")
+        if len(app.state.station_transfer_tokens) >= 16:
+            raise HTTPException(status_code=429, detail="Слишком много незавершённых операций переноса; завершите или перезапустите Workbench")
         inbox = app.state.core.paths.backups / "station-transfer-inbox"
         inbox.mkdir(parents=True, exist_ok=True)
         token = uuid4().hex
         package_path = inbox / (token + ".avicstation")
+        total = 0
         try:
             with package_path.open("xb") as stream:
-                stream.write(raw)
+                async for chunk in request.stream():
+                    total += len(chunk)
+                    if total > app.state.core.station_transfer.MAX_PACKAGE_BYTES:
+                        raise HTTPException(status_code=413, detail="Размер пакета превышает допустимый предел")
+                    stream.write(chunk)
+            if total == 0:
+                raise HTTPException(status_code=400, detail="Пустой пакет станции")
             preview = app.state.core.station_transfer.inspect_package(
                 package_path, target_core_version="1.0.0.dev148")
         except StationTransferError as exc:
