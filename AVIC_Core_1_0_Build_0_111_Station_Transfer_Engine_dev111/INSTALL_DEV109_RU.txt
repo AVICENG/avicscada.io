@@ -1,0 +1,18 @@
+AVIC Core 1.0 DEV109 — Windows
+
+1. Распакуйте архив в отдельную папку.
+2. Откройте CMD в корне проекта (там, где находится pyproject.toml).
+3. Установите dev-зависимости:
+   python -m pip install -e ".[dev]"
+4. Проверьте CLI:
+   python -m avic_core --help
+5. Запустите фокусный сквозной тест:
+   python -m pytest -q tests\test_dev109_fbd_graphics_page_flow.py
+   Ожидаемый результат: 1 passed.
+6. Запустите полный набор Windows:
+   python -m pytest -q -rs > pytest_dev109.txt 2>&1
+7. После появления приглашения CMD просмотрите результат:
+   type pytest_dev109.txt
+
+Не закрывайте CMD до завершения полного набора.
+DEV109 не считается принятой до получения и анализа полного Windows pytest.

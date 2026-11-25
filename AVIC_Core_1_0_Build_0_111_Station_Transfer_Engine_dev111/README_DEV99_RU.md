@@ -1,0 +1,1 @@
+# AVIC Core 1.0 DEV99\n\nПервый интеграционный слой Repository Manager DEV23: ветвь Repository под существующей Station в Core Engineering Tree и общая точка входа Workbench. Данные устройств, точек, графики, web pages и права остаются под управлением Core. См. `docs/REPOSITORY_DEV23_CORE_MERGE_DEV99_RU.md`.\n

@@ -1,0 +1,29 @@
+AVIC Core 1.0 — DEV66 Iso3D HVAC / ITP SVG Library
+
+1. Распакуйте архив в отдельный каталог:
+   C:\AVIC_Core_1_0_Build_0_66_Iso3D_HVAC_ITP_Library_dev66
+
+2. Откройте CMD в этом каталоге и проверьте версию:
+   python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])"
+
+3. Установите dev-зависимости:
+   python -m pip install -e ".[dev]"
+
+4. Запустите регрессию:
+   python -m pytest -q
+
+5. Запустите Workbench локально:
+   python -m avic_core.ui --data-dir .\_acceptance_data_dev66 --host 127.0.0.1 --port 8765
+
+6. Откройте:
+   http://127.0.0.1:8765
+
+7. Откройте Engineering → Мнемосхемы. Выберите проект/станцию, создайте/откройте мнемосхему. В левой панели находится «Объёмная SVG-библиотека · изометрия 3D». Используйте поиск и категории, перетащите символ на холст и сохраните.
+
+8. API каталога:
+   GET http://127.0.0.1:8765/api/graphics/library
+
+9. Пример отдельного SVG:
+   GET http://127.0.0.1:8765/api/graphics/library/itp_heating_substation/svg
+
+Используйте отдельный acceptance data-dir. Не распаковывайте DEV66 поверх DEV65.

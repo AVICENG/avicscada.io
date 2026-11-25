@@ -1,0 +1,13 @@
+AVIC Core 1.0 DEV97 — установка и проверка Windows
+
+1. Распакуйте ZIP в новую отдельную папку. Не распаковывайте поверх DEV96.
+2. Откройте CMD в корне распакованного проекта.
+3. Выполняйте команды по одной:
+
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python -m compileall -q avic_core tests
+python -m avic_core --help
+python -m pip check
+
+Для проверки Core Runtime используйте тесты FBD в составе pytest. Сборка не включает автоматическую запись в физические контроллеры.

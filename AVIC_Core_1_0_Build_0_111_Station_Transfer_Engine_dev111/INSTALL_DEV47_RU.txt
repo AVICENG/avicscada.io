@@ -1,0 +1,22 @@
+AVIC Core 1.0 — DEV47 Scheduler Manager Foundation
+
+1. Распакуйте архив в отдельную папку, не поверх DEV44/DEV46.
+2. Откройте CMD в каталоге проекта.
+3. Создайте виртуальное окружение (рекомендуется):
+   py -3.12 -m venv .venv
+   .venv\Scripts\activate
+4. Установите зависимости:
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev]"
+5. Запустите тесты:
+   python -m pytest -q
+6. Запустите Workbench:
+   python -m uvicorn avic_core.ui.__main__:app --host 127.0.0.1 --port 8765
+7. Откройте http://127.0.0.1:8765
+8. Создайте проект и станцию в инженерном дереве, затем откройте «Расписания».
+
+Данные Core по умолчанию хранятся в %USERPROFILE%\.avic\data.
+Для отдельного тестового каталога задайте AVIC_DATA_DIR перед запуском.
+
+Важно: DEV47 Scheduler вычисляет намерение расписания и не отправляет физические команды в контроллеры.
+См. docs\SCHEDULER_RU.md и docs\BUILD_047_RU.md.

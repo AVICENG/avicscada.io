@@ -1,0 +1,12 @@
+AVIC Core 1.0 DEV89 — установка для проверки
+
+1. Распакуйте архив в отдельную папку. Не устанавливайте поверх DEV85/DEV88.
+2. Откройте CMD в корне папки, где находится pyproject.toml.
+3. Выполните:
+   python -m pip install -e ".[dev]"
+4. Затем:
+   python -m pytest -q tests/test_dev89_fbd_runtime_evaluation.py tests/test_dev85_point_runtime.py tests/test_fbd_point_binding_dev69.py
+5. Если тесты прошли, выполните полный набор:
+   python -m pytest -q
+
+DEV89 не выполняет запись в полевые устройства. Результат FBD помечается SIMULATION_ONLY.

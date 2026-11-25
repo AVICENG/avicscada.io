@@ -1,0 +1,27 @@
+AVIC Core 1.0 — DEV104 Web Application Page Builder
+
+Требования: Python 3.11+; Windows/Linux.
+
+Установка из каталога проекта:
+  python -m pip install -e ".[dev]"
+
+Запуск локального инженерного Workbench:
+  python -m uvicorn avic_core.ui.app:create_ui_app --factory --host 127.0.0.1 --port 8000
+
+Открыть в браузере:
+  http://127.0.0.1:8000/
+
+Сценарий:
+  Инженерное дерево → станция → Repository → Web Application.
+  Создать сайт → папку → страницу; добавить элементы; сохранить; предпросмотр; опубликовать.
+  Graphics branch по-прежнему открывает Graphics Workbench.
+
+Опубликованные страницы:
+  /published/{station_id}/{page_path}
+
+Данные Core по умолчанию:
+  %USERPROFILE%\.avic\data (Windows) / ~/.avic/data (Linux), если не задан AVIC_DATA_DIR.
+
+Важно:
+  DEV104 — локальный инженерный прототип. Команды оборудования с Web Page Builder не связаны.
+  Полноценный server-side RBAC, production HTTPS deployment и полноценный HTML/CSS/JS файловый IDE не входят в эту сборку.

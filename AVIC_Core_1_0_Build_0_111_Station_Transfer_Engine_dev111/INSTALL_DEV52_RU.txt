@@ -1,0 +1,31 @@
+AVIC Core 1.0 — DEV52
+IQVISION Manual Section 5 / Point List View
+
+1. Распакуйте архив в отдельную папку. Не поверх DEV50 или DEV51.
+2. Откройте CMD в корне распакованной папки.
+3. Установите пакет и dev-зависимости:
+   python -m pip install -e ".[dev]"
+4. Проверьте количество тестов:
+   python -m pytest --collect-only -q
+   Ожидается 8151 тест.
+5. Проверка DEV52 Point List View:
+   python -m pytest -q tests/test_point_views_iqvision_dev52.py
+   Ожидается 6727 passed.
+6. Базовая регрессия DEV51:
+   python -m pytest -q --ignore=tests/test_point_views_iqvision_dev52.py
+   Ожидается 1424 passed.
+7. Проверка компиляции:
+   python -m compileall -q avic_core tests
+8. Запуск Workbench:
+   python -m avic_core.ui --host 127.0.0.1 --port 8000
+9. Откройте в браузере:
+   http://127.0.0.1:8000
+
+Для проверки Point Manager откройте «Точки / Point Manager». Доступны фильтр по станции, поиск, качество, сортировка, избранное и экспорт CSV. Избранное сохраняется в данных установки.
+
+Ограничения: изменение и override значений из списка не включены; Live/Engineering modes и группировка не включены; полноценная пользовательская авторизация и RBAC UI не завершены. Не выполняйте команды управления на действующем объекте. Discovery запускайте только вручную, с выбранным сетевым интерфейсом и разрешением владельца OT-сети.
+
+Журнал и ограничения:
+- BUILD_TEST_LOG_DEV52_RU.md
+- docs/BUILD_052_RU.md
+- docs/IQVISION_MANUAL_SECTION_REGISTER_RU.md

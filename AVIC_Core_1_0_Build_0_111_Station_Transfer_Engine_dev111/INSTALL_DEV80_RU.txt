@@ -1,0 +1,15 @@
+Установка AVIC Core DEV80 (Windows)
+
+1. Распакуйте архив в новую отдельную папку.
+2. Откройте CMD в этой папке.
+3. Выполните:
+
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -e ".[dev]"
+python -m pip check
+python -m avic_core.ui --host 127.0.0.1 --port 8001 --data-dir .\data
+
+4. Откройте http://127.0.0.1:8001/logic
+
+Не распаковывайте DEV80 поверх DEV77/DEV78/DEV79. Для сохранения тестовых данных используйте отдельный data-dir.

@@ -1,0 +1,14 @@
+AVIC Core 1.0 DEV91
+1. Распакуйте архив в отдельную папку; DEV85/DEV90 не перезаписывайте.
+2. Откройте CMD в папке сборки.
+3. Выполните:
+   python -m pip install -e ".[dev]"
+4. Проверки:
+   python -m pytest -q tests/test_dev91_fbd_project_package_schedule.py
+   python -m compileall -q avic_core tests
+   python -m avic_core --help
+5. Запустите AVIC Core обычным способом и откройте FBD.
+6. File → Export JSON… создаёт .avicfbd.json с SHA-256.
+7. File → Open FBD file… проверяет пакет и предлагает заменить текущий проект.
+8. Добавьте блок Schedule, откройте его параметры, задайте недельные интервалы/исключения и запустите локальную симуляцию.
+Важно: DEV91 Schedule ещё не управляет физическим оборудованием.

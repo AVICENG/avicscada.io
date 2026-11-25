@@ -1,0 +1,22 @@
+AVIC Core 1.0 — DEV46 Unified Engineering Editor
+
+Установка из распакованной папки:
+  .venv\Scripts\python.exe -m pip install -e ".[dev,http]"
+
+Запуск Workbench:
+  .venv\Scripts\python.exe -m uvicorn avic_core.ui.__main__:app --host 127.0.0.1 --port 8080
+
+Основная среда:
+  http://127.0.0.1:8080
+
+Редактор страниц и мнемосхем (единая рабочая область):
+  http://127.0.0.1:8080/pages
+
+Проверка версии:
+  .venv\Scripts\python.exe -c "import importlib.metadata as m; print(m.version('avic-core'))"
+
+Тесты:
+  .venv\Scripts\python.exe -m pytest -q
+
+DEV46 сохраняет публикацию отключённой. Для приёмки редактора используйте сценарии в BUILD_TEST_LOG_DEV46_RU.md.
+Не публикуйте локальный порт в Интернет: production-аутентификация, HTTPS/TLS и production publishing не входят в эту сборку.

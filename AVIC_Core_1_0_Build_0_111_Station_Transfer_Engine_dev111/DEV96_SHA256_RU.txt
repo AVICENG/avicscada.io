@@ -1,0 +1,5 @@
+AVIC Core 1.0 DEV96 — SHA-256
+
+WHEEL:  9aa7f7a43138ff21513034fb690d0d9310f85d57a3b6a2d380ac9a867b3c37d2  avic_core-1.0.0.dev96-py3-none-any.whl
+
+Полный SHA-256 ZIP приведён во внешнем файле DEV96_SHA256_RU.txt рядом с архивом.

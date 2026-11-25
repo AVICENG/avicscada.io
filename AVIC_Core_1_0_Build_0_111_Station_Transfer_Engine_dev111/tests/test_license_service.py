@@ -1,0 +1,75 @@
+import pytest
+from avic_core.licensing import (
+    InstallationLicenseService, LicenseLimitExceeded, LicenseStatus,
+)
+
+class Identity:
+    def get_host_id(self): return "AVIC-11111111-22222222-33333333-44444444"
+
+class Manager:
+    def verify(self, license_file, host_id):
+        assert host_id.startswith("AVIC-")
+        return LicenseStatus(True, "OK", host_id, "Customer", 2, (), "license-id")
+
+def test_service_uses_installation_host_id(tmp_path):
+    service = InstallationLicenseService(tmp_path, Manager(), Identity())
+    state = service.inspect("ignored.aviclic")
+    assert state.host_id.startswith("AVIC-")
+    assert state.status.valid
+
+def test_point_limit_counts_unique_ids_and_allows_existing_id(tmp_path):
+    service = InstallationLicenseService(tmp_path, Manager(), Identity())
+    status = LicenseStatus(True, "OK", point_limit=2)
+    service.assert_can_create_point(status, ["p1", "p2"], "p2")
+    with pytest.raises(LicenseLimitExceeded):
+        service.assert_can_create_point(status, ["p1", "p2"], "p3")
+
+def test_invalid_license_blocks_new_point_only(tmp_path):
+    service = InstallationLicenseService(tmp_path, Manager(), Identity())
+    status = LicenseStatus(False, "INVALID_SIGNATURE")
+    with pytest.raises(LicenseLimitExceeded):
+        service.assert_can_create_point(status, [], "p1")
+
+def test_core_object_service_enforces_limit_atomically(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+
+    class Gate:
+        def inspect(self, license_file):
+            from types import SimpleNamespace
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    repo = SQLiteRepository(tmp_path / "core.db")
+    service = CoreObjectService(repo, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point1 = __import__("avic_core.domain.models", fromlist=["Point"]).Point("P1", device_id=device.id)
+    service.save_graph([platform, project, station, device, point1])
+    point2 = Point("P2", device_id=device.id)
+    with pytest.raises(LicenseLimitExceeded):
+        service.save_graph([point2])
+    assert len(repo.list_records(entity_type="Point")) == 1
+
+
+def test_point_usage_separates_project_total_and_licensed_points():
+    from avic_core.licensing import summarize_point_usage
+    records = [
+        {"entity_type": "Point", "entity_id": "physical-1", "payload": {"point_type": "physical"}},
+        {"entity_type": "Point", "entity_id": "calc-draft", "payload": {"point_type": "calculated", "published": False, "licensed_active": False}},
+        {"entity_type": "Point", "entity_id": "calc-live", "payload": {"point_type": "calculated", "published": True, "licensed_active": True}},
+        {"entity_type": "Point", "entity_id": "manual-1", "payload": {"point_type": "manual", "licensed_active": True}},
+        {"entity_type": "FbdSignal", "entity_id": "wire-1", "payload": {}},
+        {"entity_type": "Point", "entity_id": "physical-1", "payload": {"point_type": "physical"}},
+    ]
+    result = summarize_point_usage(records, point_limit=3)
+    assert result["project_total_points"] == 4
+    assert result["licensed_active_points"] == 3
+    assert result["remaining_points"] == 0
+    assert result["warning"] == "LIMIT_REACHED"
+    assert result["by_type"] == {"physical": 1, "calculated": 2, "software": 0, "manual": 1}

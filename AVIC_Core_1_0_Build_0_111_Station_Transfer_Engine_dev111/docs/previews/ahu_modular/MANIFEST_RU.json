@@ -1,0 +1,86 @@
+{
+  "ahu_section_outdoor_damper": {
+    "name": "ПВУ · Секция заслонки наружного воздуха",
+    "category": "ПВУ · модульные секции",
+    "description": "Объёмная секция наружного воздуха с многолопаточной заслонкой и электроприводом. Лопатки открываются по Boolean/feedback=1.",
+    "tags": "пву приточная установка наружный воздух заслонка привод damper модуль animated airflow",
+    "svg_url": "/api/graphics/library/ahu_section_outdoor_damper/svg",
+    "animation": {
+      "damper": true,
+      "fan": false,
+      "airflow": "global fan AND inlet damper active"
+    }
+  },
+  "ahu_section_filter": {
+    "name": "ПВУ · Секция фильтров",
+    "category": "ПВУ · модульные секции",
+    "description": "Секция карманных фильтров с выдвижной рамой и прижимами.",
+    "tags": "пву фильтр карманный кассетный очистка воздуха filter модуль",
+    "svg_url": "/api/graphics/library/ahu_section_filter/svg",
+    "animation": {
+      "damper": false,
+      "fan": false,
+      "airflow": "global fan AND inlet damper active"
+    }
+  },
+  "ahu_section_heat_recovery": {
+    "name": "ПВУ · Секция рекуператора",
+    "category": "ПВУ · модульные секции",
+    "description": "Пластинчатый перекрёстноточный рекуператор в общей раме; встречные воздушные каналы показаны синим и оранжевым.",
+    "tags": "пву рекуператор пластинчатый теплоутилизация heat recovery модуль",
+    "svg_url": "/api/graphics/library/ahu_section_heat_recovery/svg",
+    "animation": {
+      "damper": false,
+      "fan": false,
+      "airflow": "global fan AND inlet damper active"
+    }
+  },
+  "ahu_section_heating_coil": {
+    "name": "ПВУ · Секция водяного нагревателя",
+    "category": "ПВУ · модульные секции",
+    "description": "Водяной калорифер с ламельным пакетом, красной подачей и обратным трубным контуром.",
+    "tags": "пву секция нагревателя водяной калорифер теплообменник красный hot coil",
+    "svg_url": "/api/graphics/library/ahu_section_heating_coil/svg",
+    "animation": {
+      "damper": false,
+      "fan": false,
+      "airflow": "global fan AND inlet damper active"
+    }
+  },
+  "ahu_section_cooling_coil": {
+    "name": "ПВУ · Секция водяного охладителя",
+    "category": "ПВУ · модульные секции",
+    "description": "Секция охлаждения с синим контуром холодоносителя, ламелями и поддоном конденсата.",
+    "tags": "пву секция охлаждения охладитель холодная вода синий cooling coil condensate",
+    "svg_url": "/api/graphics/library/ahu_section_cooling_coil/svg",
+    "animation": {
+      "damper": false,
+      "fan": false,
+      "airflow": "global fan AND inlet damper active"
+    }
+  },
+  "ahu_section_supply_fan": {
+    "name": "ПВУ · Секция приточного вентилятора",
+    "category": "ПВУ · модульные секции",
+    "description": "Центробежный вентилятор с рабочим колесом, электродвигателем и виброопорами. Ротор вращается при Boolean/value=1.",
+    "tags": "пву вентилятор приточный радиальный центробежный fan motor rotor animated airflow",
+    "svg_url": "/api/graphics/library/ahu_section_supply_fan/svg",
+    "animation": {
+      "damper": false,
+      "fan": true,
+      "airflow": "global fan AND inlet damper active"
+    }
+  },
+  "ahu_section_open_plenum": {
+    "name": "ПВУ · Открытая выходная секция после вентилятора",
+    "category": "ПВУ · модульные секции",
+    "description": "Пустая секция-удлинитель после вентилятора с открытой боковой стенкой и видимым внутренним каналом.",
+    "tags": "пву короб пустая секция plenum выходной патрубок открытая боковая стенка без панели airflow",
+    "svg_url": "/api/graphics/library/ahu_section_open_plenum/svg",
+    "animation": {
+      "damper": false,
+      "fan": false,
+      "airflow": "global fan AND inlet damper active"
+    }
+  }
+}

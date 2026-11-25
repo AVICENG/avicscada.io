@@ -1,0 +1,12 @@
+AVIC Core 1.0 DEV90 — установка для Windows CMD
+
+1. Распакуйте архив в отдельную папку. Не устанавливайте поверх DEV85/DEV88/DEV89.
+2. Откройте CMD в корне распакованного проекта.
+3. Выполните по одной команде:
+
+python -m pip install -e ".[dev]"
+python -m pip check
+python -m compileall -q avic_core tests
+python -m pytest -q tests/test_dev90_fbd_cyclic_runtime.py tests/test_dev89_fbd_runtime_evaluation.py tests/test_dev85_point_runtime.py
+
+DEV90 добавляет циклическую оценку FBD-графа. Это не включает запись в контроллеры.

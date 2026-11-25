@@ -1,0 +1,26 @@
+AVIC Core 1.0 — DEV53
+IQVISION User Manual §6 — Alarm Console / Alarm History
+
+1. Распакуйте архив в отдельную папку. Не поверх DEV51 или DEV52.
+2. Откройте CMD в корне распакованной папки.
+3. Установите пакет и dev-зависимости:
+   python -m pip install -e ".[dev]"
+4. Проверьте количество тестов:
+   python -m pytest --collect-only -q
+   Ожидается 8398 тестов.
+5. Проверка Alarm Console и заметок:
+   python -m pytest -q tests/test_alarm_manager.py tests/test_iqvision_alarm_console_dev53.py
+   Ожидается 253 passed.
+6. Проверка Point List View из DEV52:
+   python -m pytest -q tests/test_point_views_iqvision_dev52.py
+   Ожидается 6727 passed.
+7. Проверка компиляции:
+   python -m compileall -q avic_core tests
+8. Запуск Workbench:
+   python -m avic_core.ui --host 127.0.0.1 --port 8000
+9. Откройте браузер:
+   http://127.0.0.1:8000
+
+Для проверки аварий откройте «Аварии и события». Выберите фильтр, откройте карточку нажатием кнопки с названием аварии. Добавьте примечание, затем подтвердите запись.
+
+Ограничения: отдельный Alarm Portal, межстанционная маршрутизация, звуковые уведомления и Silence не реализованы. Полная единая регрессия в среде сборки не завершилась; Windows acceptance обязателен. Не подключайте к действующему OT-объекту без отдельного плана безопасной проверки.

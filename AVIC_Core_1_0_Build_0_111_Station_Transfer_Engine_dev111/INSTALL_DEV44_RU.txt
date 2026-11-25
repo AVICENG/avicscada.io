@@ -1,0 +1,22 @@
+AVIC Core 1.0 — DEV44 Web Pages & Unified Editor
+
+Установка из распакованной папки сборки:
+  python -m pip install --force-reinstall --no-deps .\dist\avic_core-1.0.0.dev44-py3-none-any.whl
+
+Запуск Workbench:
+  python -m uvicorn avic_core.ui.__main__:app --host 127.0.0.1 --port 8080
+
+Основное рабочее место:
+  http://127.0.0.1:8080
+
+Web Pages Unified Editor:
+  http://127.0.0.1:8080/pages
+
+Проверка версии:
+  python -c "import importlib.metadata as m; print(m.version('avic-core'))"
+
+Запуск тестов из исходной папки:
+  python -m pytest -q
+
+DEV44 работает как локальная инженерная среда. Не публикуйте порт в интернет: клиентская авторизация, HTTPS/TLS и production publishing в этой версии не реализованы.
+Подробности: docs\BUILD_044_RU.md и BUILD_TEST_LOG_DEV44_RU.md

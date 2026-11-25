@@ -1,0 +1,13 @@
+AVIC Core 1.0 DEV82 — установка Windows
+
+1. Распакуйте архив в отдельную папку.
+2. Откройте CMD в корне проекта.
+3. Выполните:
+   python -m pip install -e ".[dev]"
+   python -m pip check
+   python -m avic_core --data-dir .\avic_data init
+4. Запустите Workbench:
+   python -m avic_core.ui --host 127.0.0.1 --port 8001 --data-dir .\avic_data
+5. Откройте http://127.0.0.1:8001/
+
+Если папка avic_data уже содержит данные AVIC, не удаляйте её. Используйте существующий каталог и сделайте резервную копию перед обновлением.

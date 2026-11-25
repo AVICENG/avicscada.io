@@ -1,0 +1,1 @@
+093fea940e8462b306450ca18c67622cd21298ecd37cf713188eaeea23aa0f58  avic_core-1.0.0.dev105-py3-none-any.whl

@@ -1,0 +1,656 @@
+{
+  "library": "AVIC Iso3D HVAC & ITP Library",
+  "version": "2.0.0",
+  "visual_style": "original orthographic/isometric 3D vector assets",
+  "asset_count": 59,
+  "categories": [
+    "Вентиляторы",
+    "Вентиляция",
+    "Воздуховоды и секции",
+    "Воздушные заслонки",
+    "ИТП · арматура",
+    "ИТП · источники тепла",
+    "ИТП · насосные группы",
+    "ИТП · насосы",
+    "ИТП · приборы",
+    "ИТП · теплообменники",
+    "ИТП · узлы в сборе",
+    "ИТП · ёмкости",
+    "КИП · датчики",
+    "КИП · приборы",
+    "Теплообменные секции",
+    "Трубопроводы",
+    "Фильтрация",
+    "Фильтрация и обработка",
+    "Холодоснабжение"
+  ],
+  "assets": [
+    {
+      "id": "fan",
+      "name": "Вентилятор осевой канальный",
+      "category": "Вентиляция",
+      "description": "Осевой канальный вентилятор с мотором и ротором",
+      "tags": "вентилятор осевой канальный fan motor rotor",
+      "svg": "fan.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "air_handling_unit",
+      "name": "Приточная установка ПВУ в разрезе",
+      "category": "Вентиляция",
+      "description": "Изометрический разрез ПВУ: фильтр, теплообменная секция и вентилятор",
+      "tags": "пву ahu приточная установка секция вентиляция разрез",
+      "svg": "air_handling_unit.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "filter",
+      "name": "Фильтр кассетный",
+      "category": "Фильтрация",
+      "description": "Кассетный фильтр в корпусной секции воздуховода",
+      "tags": "фильтр кассетный карманный очистка воздуха",
+      "svg": "filter.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "heating_coil",
+      "name": "Калорифер водяной",
+      "category": "Теплообменные секции",
+      "description": "Секция нагрева с красным контуром подачи теплоносителя",
+      "tags": "нагреватель калорифер тепло горячая вода красный",
+      "svg": "heating_coil.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "cooling_coil",
+      "name": "Охладитель водяной",
+      "category": "Теплообменные секции",
+      "description": "Секция охлаждения с синим контуром холодоносителя",
+      "tags": "охладитель испаритель холодная вода синий",
+      "svg": "cooling_coil.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "heat_recovery",
+      "name": "Роторный рекуператор",
+      "category": "Теплообменные секции",
+      "description": "Роторный теплоутилизатор в корпусе воздуховода",
+      "tags": "рекуператор роторный теплоутилизация",
+      "svg": "heat_recovery.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pump",
+      "name": "Насос консольный с электродвигателем",
+      "category": "ИТП · насосы",
+      "description": "Центробежный насос с электродвигателем и фланцами",
+      "tags": "насос насосный агрегат pump",
+      "svg": "pump.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pump_vertical",
+      "name": "Насос вертикальный многоступенчатый",
+      "category": "ИТП · насосы",
+      "description": "Вертикальный многоступенчатый насос",
+      "tags": "насос вертикальный многоступенчатый",
+      "svg": "pump_vertical.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pump_inline",
+      "name": "Насос линейный inline",
+      "category": "ИТП · насосы",
+      "description": "Линейный насос в разрыв трубопровода",
+      "tags": "насос линейный inline циркуляционный",
+      "svg": "pump_inline.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "valve",
+      "name": "Клапан двухходовой",
+      "category": "ИТП · арматура",
+      "description": "Двухходовой клапан в изометрической трубной обвязке",
+      "tags": "клапан двухходовой запорная арматура",
+      "svg": "valve.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "control_valve",
+      "name": "Клапан регулирующий с приводом",
+      "category": "ИТП · арматура",
+      "description": "Регулирующий клапан с электроприводом",
+      "tags": "клапан регулирующий привод двухходовой",
+      "svg": "control_valve.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "three_way_valve",
+      "name": "Клапан трёхходовой",
+      "category": "ИТП · арматура",
+      "description": "Смесительный трёхходовой клапан",
+      "tags": "клапан трехходовой смешение",
+      "svg": "three_way_valve.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "damper",
+      "name": "Заслонка воздушная регулирующая",
+      "category": "Воздушные заслонки",
+      "description": "Одна поворотная лопатка в прямоугольном воздуховоде, электропривод",
+      "tags": "заслонка воздушная регулирующая actuator damper",
+      "svg": "damper.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "sensor",
+      "name": "Датчик расхода канальный",
+      "category": "КИП · датчики",
+      "description": "Канальный датчик с погружным элементом",
+      "tags": "датчик расхода воздух",
+      "svg": "sensor.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "temperature_sensor",
+      "name": "Датчик температуры",
+      "category": "КИП · датчики",
+      "description": "Гильза и головка датчика температуры",
+      "tags": "датчик температура термодатчик",
+      "svg": "temperature_sensor.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pressure_sensor",
+      "name": "Датчик давления",
+      "category": "КИП · датчики",
+      "description": "Импульсная трубка и датчик давления",
+      "tags": "датчик давления pressure",
+      "svg": "pressure_sensor.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "flow_sensor",
+      "name": "Расходомер",
+      "category": "КИП · датчики",
+      "description": "Врезной датчик расхода на трубопроводе",
+      "tags": "расходомер расход flow meter",
+      "svg": "flow_sensor.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "thermometer",
+      "name": "Термометр технический",
+      "category": "КИП · приборы",
+      "description": "Термометрический прибор на патрубке",
+      "tags": "термометр температура",
+      "svg": "thermometer.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pressure_gauge",
+      "name": "Манометр технический",
+      "category": "КИП · приборы",
+      "description": "Стрелочный манометр на отводе",
+      "tags": "манометр давление gauge",
+      "svg": "pressure_gauge.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "heat_exchanger",
+      "name": "Пластинчатый теплообменник",
+      "category": "ИТП · теплообменники",
+      "description": "Разборный пластинчатый теплообменник с красным и синим контурами",
+      "tags": "итп теплообменник пластинчатый горячая холодная вода",
+      "svg": "heat_exchanger.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "boiler",
+      "name": "Котёл водогрейный",
+      "category": "ИТП · источники тепла",
+      "description": "Напольный водогрейный котёл",
+      "tags": "котел водогрейный boiler",
+      "svg": "boiler.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "chiller",
+      "name": "Чиллер воздушного охлаждения",
+      "category": "Холодоснабжение",
+      "description": "Чиллер с вентиляторами конденсатора",
+      "tags": "чиллер холодильная машина охлаждение",
+      "svg": "chiller.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "tank",
+      "name": "Бак расширительный мембранный",
+      "category": "ИТП · ёмкости",
+      "description": "Вертикальный мембранный расширительный бак",
+      "tags": "бак расширительный мембранный",
+      "svg": "tank.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "compressor",
+      "name": "Компрессор холодильный",
+      "category": "Холодоснабжение",
+      "description": "Компрессорный агрегат",
+      "tags": "компрессор refrigeration",
+      "svg": "compressor.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pipe",
+      "name": "Труба прямая изометрическая",
+      "category": "Трубопроводы",
+      "description": "Изометрический участок трубопровода с фланцевыми концами",
+      "tags": "труба трубопровод прямая изометрия",
+      "svg": "pipe.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pipe_elbow",
+      "name": "Отвод трубопровода 90°",
+      "category": "Трубопроводы",
+      "description": "Изометрический отвод с плавным радиусом",
+      "tags": "труба отвод колено elbow",
+      "svg": "pipe_elbow.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pipe_tee",
+      "name": "Тройник трубопровода",
+      "category": "Трубопроводы",
+      "description": "Изометрический трубный тройник",
+      "tags": "тройник трубопровод tee",
+      "svg": "pipe_tee.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "duct",
+      "name": "Воздуховод прямоугольный",
+      "category": "Воздуховоды и секции",
+      "description": "Прямой участок оцинкованного прямоугольного воздуховода",
+      "tags": "воздуховод прямоугольный duct прямой",
+      "svg": "duct.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "duct_elbow",
+      "name": "Отвод воздуховода 90°",
+      "category": "Воздуховоды и секции",
+      "description": "Прямоугольный изометрический отвод с большим радиусом",
+      "tags": "воздуховод отвод колено 90",
+      "svg": "duct_elbow.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "duct_transition",
+      "name": "Переход воздуховода",
+      "category": "Воздуховоды и секции",
+      "description": "Переход с большого сечения на малое",
+      "tags": "воздуховод переход редукция",
+      "svg": "duct_transition.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "duct_tee",
+      "name": "Тройник воздуховода",
+      "category": "Воздуховоды и секции",
+      "description": "Тройниковое ответвление прямоугольного воздуховода",
+      "tags": "воздуховод тройник ответвление",
+      "svg": "duct_tee.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "duct_cross",
+      "name": "Крестовина воздуховода",
+      "category": "Воздуховоды и секции",
+      "description": "Крестовое соединение воздуховодных трасс",
+      "tags": "воздуховод крестовина разветвление",
+      "svg": "duct_cross.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "duct_round",
+      "name": "Воздуховод круглый",
+      "category": "Воздуховоды и секции",
+      "description": "Круглый металлический воздуховод",
+      "tags": "воздуховод круглый оцинкованный",
+      "svg": "duct_round.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "damper_parallel",
+      "name": "Заслонка параллельные лопатки",
+      "category": "Воздушные заслонки",
+      "description": "Многолопаточная заслонка с параллельным поворотом",
+      "tags": "заслонка многолопаточная параллельная",
+      "svg": "damper_parallel.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "damper_opposed",
+      "name": "Заслонка встречные лопатки",
+      "category": "Воздушные заслонки",
+      "description": "Многолопаточная заслонка с встречным поворотом",
+      "tags": "заслонка встречные лопатки opposed",
+      "svg": "damper_opposed.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "fire_damper",
+      "name": "Клапан противопожарный",
+      "category": "Воздушные заслонки",
+      "description": "Противопожарная заслонка с огнестойкой рамой и приводом",
+      "tags": "клапан противопожарный огнезадерживающий",
+      "svg": "fire_damper.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "smoke_damper",
+      "name": "Клапан дымоудаления",
+      "category": "Воздушные заслонки",
+      "description": "Дымовой клапан с приводом и усиленной рамой",
+      "tags": "клапан дымовой дымоудаление",
+      "svg": "smoke_damper.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "fan_centrifugal",
+      "name": "Вентилятор радиальный улиточный",
+      "category": "Вентиляторы",
+      "description": "Центробежный вентилятор с рабочим колесом в улитке",
+      "tags": "вентилятор радиальный центробежный улитка",
+      "svg": "fan_centrifugal.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "fan_belt_drive",
+      "name": "Вентилятор ременной привод",
+      "category": "Вентиляторы",
+      "description": "Вентилятор с отдельным электродвигателем и ременной передачей",
+      "tags": "вентилятор ременной привод двигатель",
+      "svg": "fan_belt_drive.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "fan_plug",
+      "name": "Вентилятор plug fan",
+      "category": "Вентиляторы",
+      "description": "Свободно вращающееся рабочее колесо с прямым приводом",
+      "tags": "вентилятор plug fan свободное колесо",
+      "svg": "fan_plug.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "fan_roof",
+      "name": "Вентилятор крышный",
+      "category": "Вентиляторы",
+      "description": "Крышный вытяжной вентилятор с защитным колпаком",
+      "tags": "вентилятор крышный вытяжной",
+      "svg": "fan_roof.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "fan_twin",
+      "name": "Вентиляторная секция сдвоенная",
+      "category": "Вентиляторы",
+      "description": "Два осевых вентилятора в единой секции",
+      "tags": "вентилятор сдвоенный двойной",
+      "svg": "fan_twin.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "filter_bag",
+      "name": "Фильтр карманный",
+      "category": "Фильтрация",
+      "description": "Карманный фильтр с отдельными фильтрующими пакетами",
+      "tags": "фильтр карманный bag filter",
+      "svg": "filter_bag.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "silencer",
+      "name": "Шумоглушитель канальный",
+      "category": "Фильтрация и обработка",
+      "description": "Канальный пластинчатый шумоглушитель",
+      "tags": "шумоглушитель вентиляция акустика",
+      "svg": "silencer.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "humidifier",
+      "name": "Увлажнитель канальный",
+      "category": "Фильтрация и обработка",
+      "description": "Канальный секционный увлажнитель с форсунками",
+      "tags": "увлажнитель форсунки паровой",
+      "svg": "humidifier.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "shell_tube_exchanger",
+      "name": "Кожухотрубный теплообменник",
+      "category": "ИТП · теплообменники",
+      "description": "Горизонтальный кожухотрубный теплообменник",
+      "tags": "теплообменник кожухотрубный",
+      "svg": "shell_tube_exchanger.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "pump_group_dual",
+      "name": "Насосная группа сдвоенная",
+      "category": "ИТП · насосные группы",
+      "description": "Два насоса на общей раме с коллекторами",
+      "tags": "насосная группа два насоса итп",
+      "svg": "pump_group_dual.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "pump_group_triple",
+      "name": "Насосная группа тройная",
+      "category": "ИТП · насосные группы",
+      "description": "Три насоса на общей раме с коллекторами",
+      "tags": "насосная группа три насоса итп",
+      "svg": "pump_group_triple.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "strainer",
+      "name": "Фильтр сетчатый Y",
+      "category": "ИТП · арматура",
+      "description": "Y-образный сетчатый фильтр трубопровода",
+      "tags": "фильтр сетчатый грязевик итп",
+      "svg": "strainer.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "butterfly_valve",
+      "name": "Затвор дисковый поворотный",
+      "category": "ИТП · арматура",
+      "description": "Дисковый затвор с приводом",
+      "tags": "затвор дисковый бабочка butterfly",
+      "svg": "butterfly_valve.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "balance_valve",
+      "name": "Клапан балансировочный",
+      "category": "ИТП · арматура",
+      "description": "Балансировочный клапан с измерительными штуцерами",
+      "tags": "клапан балансировочный",
+      "svg": "balance_valve.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "air_separator",
+      "name": "Сепаратор воздуха",
+      "category": "ИТП · ёмкости",
+      "description": "Вертикальный сепаратор воздуха с воздухоотводчиком",
+      "tags": "сепаратор воздуха итп",
+      "svg": "air_separator.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "heat_meter",
+      "name": "Теплосчётчик",
+      "category": "ИТП · приборы",
+      "description": "Вычислитель с парой датчиков температуры и расходомером",
+      "tags": "теплосчетчик узел учета тепла",
+      "svg": "heat_meter.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "itp_heating_substation",
+      "name": "ИТП отопление",
+      "category": "ИТП · узлы в сборе",
+      "description": "Изометрическая компоновка отопительного теплового пункта: теплообменник, насосы, коллекторы и КИП",
+      "tags": "итп отопление тепловой пункт узел в сборе",
+      "svg": "itp_heating_substation.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "itp_dhw_substation",
+      "name": "ИТП ГВС",
+      "category": "ИТП · узлы в сборе",
+      "description": "Изометрическая компоновка узла ГВС с двумя теплообменными пакетами и насосами",
+      "tags": "итп гвс горячее водоснабжение теплообменник",
+      "svg": "itp_dhw_substation.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "cooling_tower",
+      "name": "Градирня вентиляторная",
+      "category": "Холодоснабжение",
+      "description": "Вентиляторная градирня с оросителем",
+      "tags": "градирня охлаждение вентилятор",
+      "svg": "cooling_tower.svg",
+      "animation_targets": [
+        "rotor"
+      ],
+      "color_gradients": []
+    },
+    {
+      "id": "expansion_vessel",
+      "name": "Гидроаккумулятор",
+      "category": "ИТП · ёмкости",
+      "description": "Мембранный гидроаккумулятор для гидравлического контура",
+      "tags": "гидроаккумулятор бак",
+      "svg": "expansion_vessel.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    },
+    {
+      "id": "mixing_unit",
+      "name": "Смесительный насосный узел",
+      "category": "ИТП · узлы в сборе",
+      "description": "Смесительный узел с подачей и обраткой и насосной группой",
+      "tags": "смесительный узел насос итп",
+      "svg": "mixing_unit.svg",
+      "animation_targets": [],
+      "color_gradients": [
+        "redPipe",
+        "bluePipe"
+      ]
+    },
+    {
+      "id": "differential_pressure_controller",
+      "name": "Регулятор перепада давления",
+      "category": "ИТП · арматура",
+      "description": "Автоматический регулятор перепада давления на подающем трубопроводе",
+      "tags": "регулятор перепада давления клапан",
+      "svg": "differential_pressure_controller.svg",
+      "animation_targets": [],
+      "color_gradients": []
+    }
+  ]
+}

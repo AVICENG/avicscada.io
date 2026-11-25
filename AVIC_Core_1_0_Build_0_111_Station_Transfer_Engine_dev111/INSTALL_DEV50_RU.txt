@@ -1,0 +1,28 @@
+AVIC Core 1.0 — DEV50 / IQVISION functional acceptance matrix
+
+1. Распакуйте архив в отдельную новую папку, не поверх DEV49.
+2. Откройте CMD в папке проекта.
+3. Создайте окружение:
+   py -3 -m venv .venv
+4. Активируйте:
+   .venv\Scripts\activate
+5. Установите проект, инструменты разработки и HTTP-сервер:
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev]"
+6. Запустите тесты:
+   python -m pytest -q
+7. Запустите Workbench:
+   python -m avic_core.ui
+8. Откройте http://127.0.0.1:8000
+
+Параметры запуска: --host, --port, --data-dir, --reload. Например:
+   python -m avic_core.ui --host 127.0.0.1 --port 8010 --data-dir .\avic-data
+
+Вариант запуска через Uvicorn:
+   python -m uvicorn avic_core.ui.app:create_ui_app --factory --host 127.0.0.1 --port 8000
+
+ОГРАНИЧЕНИЯ DEV50:
+- Наличие тестов не означает функциональную готовность всех подсистем. Смотрите docs/IQVISION_PARITY_MATRIX_RU.md.
+- DEV50 не включает разрешение на запись в физические контроллеры.
+- Очередь уведомлений не отправляет сообщения без настроенных транспортных адаптеров.
+- Проверки UI API не заменяют ручную браузерную приёмку Windows.

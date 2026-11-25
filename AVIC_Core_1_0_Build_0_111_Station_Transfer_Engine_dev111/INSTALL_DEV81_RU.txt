@@ -1,0 +1,11 @@
+AVIC Core 1.0 DEV81 — установка для Windows
+
+1. Распакуйте архив в отдельную папку.
+2. В CMD перейдите в корень DEV81.
+3. Выполните:
+   python -m pip install -e ".[dev]"
+   python -m pip check
+4. Выполните целевые тесты:
+   python -m pytest -q tests/test_fbd_editing_dev81.py tests/test_fbd_workbench_dev80.py tests/test_engineering_tree_dev37.py tests/test_fbd_studio_persistence_dev77.py tests/test_ui_workbench.py
+
+Сборка не заменяет резервную копию данных AVIC. Не удаляйте DEV80 до завершения ручной приёмки DEV81.

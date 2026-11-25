@@ -1,0 +1,19 @@
+AVIC Core DEV98 — подготовка Graphics Binding Engine / RBAC
+
+Требования: Python 3.11+ (пользовательская Windows-приёмка Python 3.15.2 ещё не выполнена).
+
+Установка из исходников:
+  python -m pip install -e ".[dev]"
+
+Проверки:
+  python -m compileall -q avic_core tests
+  python -m pytest -q tests/test_graphics_binding_engine_dev98.py tests/test_graphics_security_roles_dev98.py tests/test_graphics_workbench_dev35.py tests/test_security_manager.py tests/test_svg_import_dev65.py tests/test_graphics_svg_library_dev64.py tests/test_graphics_iso3d_library_dev66.py
+
+Runtime evaluator:
+  GET /api/graphics/{document_id}/bindings/evaluate
+
+Важно:
+  - Setpoint/Action пока fail-closed: Command Manager не подключён.
+  - Роли требуют отдельных grants на station/project scope.
+  - GraphicsSecurityPolicy — policy helper; production API обязан вызывать SecurityGateway на каждом маршруте.
+  - Niagara reference library устанавливается/просматривается отдельно и не включается в Core.

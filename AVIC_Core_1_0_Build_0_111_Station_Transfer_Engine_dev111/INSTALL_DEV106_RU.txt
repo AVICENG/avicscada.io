@@ -1,0 +1,15 @@
+AVIC Core 1.0 DEV106 — установка Windows
+
+1. Распакуйте архив в отдельную папку.
+2. Откройте CMD в папке проекта.
+3. Выполните:
+   python -m venv .venv
+   .venv\Scripts\activate
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev]"
+4. Запустите:
+   python -m avic_core.ui --data-dir .\data --host 127.0.0.1 --port 8000
+5. Откройте http://127.0.0.1:8000
+
+В DEV106 Command Manager работает только в SIMULATION_ONLY. Физические команды BACnet/Modbus не отправляются.
+Полный перечень API, ограничений и ручных проверок: docs\COMMAND_MANAGER_DEV106_RU.md

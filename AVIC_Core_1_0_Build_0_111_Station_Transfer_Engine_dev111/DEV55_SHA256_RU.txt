@@ -1,0 +1,3 @@
+AVIC Core 1.0 DEV55
+Wheel: dist/avic_core-1.0.0.dev55-py3-none-any.whl
+SHA256: 9f035c2b94b8deb917c711eb6a82cf2e93f75d930b7b07615c598d61b43e9fb9

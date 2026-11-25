@@ -1,0 +1,1 @@
+e027f3751d06defe5118e77803c26e7fa4df313e224ab08f52b4e54ca71ce7b6  dist/avic_core-1.0.0.dev85-py3-none-any.whl

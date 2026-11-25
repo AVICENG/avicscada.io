@@ -1,0 +1,28 @@
+Установка AVIC Core 1.0 DEV77 (Windows)
+
+1. Распакуйте ZIP в новую отдельную папку. Не распаковывайте поверх DEV69/DEV76.
+2. Откройте CMD в корне распакованного проекта.
+3. Выполните:
+
+   python -m venv .venv
+   .venv\Scripts\activate
+   python -m pip install -e ".[dev]"
+   python -m compileall -q avic_core
+   python -m pytest -q tests/test_fbd_studio_persistence_dev77.py tests/test_engineering_tree_dev37.py tests/test_engineering_tree_values_dev39.py tests/test_ui_workbench.py tests/test_fbd_point_binding_dev69.py tests/test_fbd_iqvision_dev55.py tests/test_fbd_set_parity_dev68.py tests/test_dev62_integrated_workflows.py tests/test_dev63_release_guards.py
+   python -m avic_core.ui --host 127.0.0.1 --port 8001 --data-dir .\data
+
+4. Откройте http://127.0.0.1:8001/logic
+
+Проверка интерфейса:
+- слева должно быть инженерное дерево AVIC: проект → станция → сети → протоколы → устройства → точки;
+- под выбранной станцией должна быть ветка FBD-проекта, страниц и FBD Points;
+- двойной щелчок по точке или перетаскивание точки на лист добавляет ссылку на неё;
+- перемещение блока выполняется перетаскиванием его заголовка;
+- соединение создаётся от выходного порта к совместимому входу; связь можно выбрать и удалить;
+- изменения FBD сохраняются в AVIC Core с ревизией документа.
+
+Ограничения:
+- FBD Studio authoring сохраняется в Core, но полный компилятор всех Studio-блоков в Core runtime ещё не готов;
+- локальная симуляция автономна;
+- запись в BACnet/Modbus отключена;
+- требуется браузерная приёмка на Windows.

@@ -1,0 +1,19 @@
+AVIC Core 1.0 DEV108 — Windows
+
+1. Распакуйте архив в отдельную папку.
+2. Откройте CMD в папке проекта.
+3. Выполните:
+   python -m venv .venv
+   .venv\\Scripts\\activate
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev]"
+4. Запустите:
+   python -m avic_core.ui --data-dir .\\data --host 127.0.0.1 --port 8000
+5. Откройте http://127.0.0.1:8000
+
+Web Application Page Builder: в общем инженерном дереве раскройте станцию и выберите Репозиторий → Web Application.
+Graphics Workbench: выберите ветку Graphics или откройте /graphics.
+
+Маршрут /pages сохранён как совместимый адрес Graphics Workbench; старый pages.html не является активным редактором Repository.
+
+Command Manager остаётся SIMULATION_ONLY. Физические BACnet/Modbus записи не выполняются.

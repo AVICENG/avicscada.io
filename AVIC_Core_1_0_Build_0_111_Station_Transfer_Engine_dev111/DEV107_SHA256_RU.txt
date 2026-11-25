@@ -1,0 +1,4 @@
+AVIC Core 1.0 DEV107
+
+Wheel SHA-256:
+e4387398070650dffcc1fc51e5cea1eeea5f51d19904eac97ef474f196acbbb1  avic_core-1.0.0.dev107-py3-none-any.whl

@@ -1,0 +1,25 @@
+AVIC Core 1.0 — DEV62 Integrated Engineering Workflows
+
+1. Распакуйте архив в каталог:
+   C:\AVIC_Core_1_0_Build_0_62_Integrated_Engineering_dev62
+2. Откройте CMD и перейдите в каталог:
+   cd /d C:\AVIC_Core_1_0_Build_0_62_Integrated_Engineering_dev62
+3. Создайте виртуальное окружение:
+   python -m venv .venv
+4. Активируйте его:
+   .venv\Scripts\activate
+5. Установите проект:
+   python -m pip install -e ".[dev]"
+6. Запустите целевые тесты:
+   python -m pytest -q tests\test_dev62_integrated_workflows.py tests\test_driver_manager_dev57.py tests\test_fbd_iqvision_dev55.py
+7. Проверка компиляции:
+   python -m compileall -q avic_core tests
+8. Справка CLI:
+   python -m avic_core --help
+
+Подробное описание новых функций: docs\BUILD_062_RU.md
+Сквозной сценарий инженера: docs\INTEGRATED_ENGINEERING_WORKFLOWS_DEV62_RU.md
+Журнал проверок: BUILD_TEST_LOG_DEV62_RU.md
+
+Безопасный режим: драйверы не запускаются автоматически, Discovery только по явному read-only запросу, FBD работает в офлайн-симуляции, полевые записи отключены.
+Trend migration не является обязательным условием AVIC. TONN/Linux Agent — будущее направление, не реализован в DEV62.

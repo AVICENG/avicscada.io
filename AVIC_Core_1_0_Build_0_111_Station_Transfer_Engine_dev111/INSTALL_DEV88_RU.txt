@@ -1,0 +1,23 @@
+AVIC Core 1.0 DEV88 — установка и запуск (Windows)
+
+1. Распакуйте архив в отдельную папку, не поверх DEV85/DEV86/DEV87.
+2. Откройте CMD в корне распакованного проекта.
+3. Проверьте Python:
+   python --version
+4. Установите dev-зависимости:
+   python -m pip install -e ".[dev]"
+5. Проверьте зависимости:
+   python -m pip check
+6. Запустите тесты:
+   python -m pytest -q
+7. Проверка компиляции:
+   python -m compileall -q avic_core
+8. Инициализация данных (новый каталог):
+   python -m avic_core --data-dir .\avic_data_dev88 init
+9. Проверка:
+   python -m avic_core --data-dir .\avic_data_dev88 health
+10. Запуск Workbench:
+   python -m avic_core.ui --host 127.0.0.1 --port 8001 --data-dir .\avic_data_dev88
+   Откройте http://127.0.0.1:8001
+
+DEV88 расширяет сведения о происхождении FBD-точек. Это не полноценный FBD Runtime и не разрешение управлять реальным оборудованием.

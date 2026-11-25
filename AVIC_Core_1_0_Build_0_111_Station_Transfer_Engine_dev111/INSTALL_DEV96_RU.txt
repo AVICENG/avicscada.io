@@ -1,0 +1,14 @@
+AVIC Core 1.0 DEV96 — установка Windows
+
+1. Распакуйте ZIP в отдельную папку. Не поверх DEV95.
+2. Откройте CMD в корне распакованной папки.
+3. Выполняйте команды по одной и проверяйте результат каждой:
+
+python -m pip install -e ".[dev]"
+python -m pip check
+python -m pytest -q
+python -m compileall -q avic_core tests
+python -m avic_core --help
+
+Журнал проверок разработчика: BUILD_TEST_LOG_DEV96_RU.md.
+Полный набор тестов репозитория и Windows-приёмка не заявляются как пройденные.

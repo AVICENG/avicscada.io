@@ -1,0 +1,24 @@
+AVIC Core 1.0 DEV85 — установка в Windows
+
+1. Распакуйте архив в новую отдельную папку. Не устанавливайте поверх DEV83/DEV84.
+2. Откройте CMD или PowerShell в каталоге сборки.
+3. Выполните:
+   python -m pip install -e ".[dev]"
+   python -m pip check
+   python -m avic_core --data-dir .\avic_data init
+   python -m avic_core.ui --host 127.0.0.1 --port 8001 --data-dir .\avic_data
+4. Откройте http://127.0.0.1:8001/
+
+Общее меню слева доступно в Home, FBD, Graphics и Web Pages.
+Значок дерева открывает общую панель Engineering Tree. В ней можно раскрывать сеть/протокол/устройство, искать точки, открывать FBD-проект и страницу.
+Физическую точку можно перетащить из общего дерева на FBD-доску. В FBD блоке показывается последнее значение, качество и обновление из Point Runtime; обновление интерфейса выполняется примерно раз в 2 секунды.
+
+Point Runtime API:
+   GET /api/points/{point_id}/runtime
+   GET /api/engineering/points/runtime?station_id=<UUID>
+
+ВАЖНО:
+- В DEV85 нет реального циклического опроса BACnet/Modbus: протокольные клиенты ещё не подключены к PointRuntimeService.publish.
+- В DEV85 нет записи команд в контроллеры и нет полноценного исполняемого FBD Runtime.
+- FBD-симуляция не является подтверждением работы физического оборудования.
+- Не используйте DEV85 для управления реальным объектом.

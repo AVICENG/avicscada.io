@@ -1,0 +1,25 @@
+AVIC Core 1.0 DEV102 — установка и локальная проверка (Windows CMD)
+
+1) Распаковать архив в отдельную папку.
+2) Открыть CMD в корне AVIC_Core_1_0_Build_0_102_AHU_FBD_Fan_Animation_dev102.
+3) Проверить Python:
+   python --version
+4) Установить dev-зависимости в активное виртуальное окружение:
+   python -m pip install -e ".[dev]"
+5) Проверить синтаксис Python:
+   python -m compileall -q avic_core
+6) Проверить CLI:
+   python -m avic_core --help
+7) Запустить выборочную регрессию сценария ПВУ/FBD:
+   python -m pytest -q tests/test_ahu_fbd_to_fan_animation_dev102.py tests/test_modular_ahu_sections_dev67.py tests/test_fbd_point_binding_dev69.py tests/test_dev85_point_runtime.py
+
+Сценарий ПВУ:
+- Открыть Graphics Workbench через инженерное дерево → Станция → Репозиторий → Graphics.
+- Нажать «Тестовая ПВУ · 7 секций».
+- В FBD той же станции добавить POINT_INPUT от BOOL-точки станции.
+- Соединить POINT_INPUT и разрешающий BOOL-сигнал с AND.
+- В Graphics выбрать секцию «Приточный вентилятор», выбрать BOOL-выход FBD и нажать «Связать с логикой».
+- GOOD/TRUE включает вращение; GOOD/FALSE останавливает; плохое качество блокирует анимацию.
+
+ВАЖНО:
+DEV102 выполняет FBD preview/SIMULATION_ONLY и не отправляет команды в BACnet/Modbus. Для проверки физического контроллера требуется отдельная пусконаладочная процедура.

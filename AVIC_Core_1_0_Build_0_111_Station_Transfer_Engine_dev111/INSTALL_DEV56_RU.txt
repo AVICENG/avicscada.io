@@ -1,0 +1,41 @@
+AVIC Core 1.0 — DEV56 Engineering Workflow
+
+1. Распакуйте архив в отдельную папку, например:
+   C:\AVIC_Core_1_0_Build_0_56_Engineering_Workflow_dev56
+
+2. Откройте CMD и перейдите в папку:
+   cd /d C:\AVIC_Core_1_0_Build_0_56_Engineering_Workflow_dev56
+
+3. Создайте окружение:
+   py -3 -m venv .venv
+
+4. Активируйте:
+   .venv\Scripts\activate
+
+5. Обновите инструменты упаковки (при наличии доступа к PyPI):
+   python -m pip install --upgrade pip setuptools wheel
+
+6. Установите AVIC Core и тестовые зависимости:
+   python -m pip install -e ".[dev]"
+
+   Если нужен офлайн/минимальный запуск и зависимости уже установлены, wheel находится в dist\avic_core-1.0.0.dev56-py3-none-any.whl.
+
+7. Проверьте CLI:
+   python -m avic_core --help
+
+8. Проверьте синтаксис пакета:
+   python -m compileall -q avic_core
+
+9. Запустите тесты новой функции:
+   python -m pytest -q tests\test_engineering_workflow_dev56.py
+
+10. Запустите целевые регрессионные наборы по журналу BUILD_TEST_LOG_DEV56_RU.md.
+    Полный pytest в нашей среде ограничивался тайм-аутом; не трактуйте отдельные прогоны как один full-suite pass.
+
+11. Запустите Workbench:
+   python -m avic_core.ui --data-dir .\data
+
+12. Откройте в браузере локальный адрес, указанный uvicorn/CLI. В Workbench выберите:
+   Эксплуатация → Пусконаладка → Инженерный маршрут станции.
+
+Проверка маршрута read-only. Она не запускает драйверы, не выполняет запись в контроллеры и не публикует логику в Runtime.

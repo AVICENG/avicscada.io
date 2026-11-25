@@ -1,0 +1,21 @@
+AVIC Core 1.0 — DEV57 Driver Manager Foundation
+
+1. Распакуйте архив в отдельную папку:
+   C:\AVIC_Core_1_0_Build_0_57_Driver_Manager_dev57
+2. Откройте CMD и выполните:
+   cd /d C:\AVIC_Core_1_0_Build_0_57_Driver_Manager_dev57
+3. Создайте и активируйте окружение:
+   py -3 -m venv .venv
+   .venv\Scripts\activate
+4. Установите проект:
+   python -m pip install --upgrade pip setuptools wheel
+   python -m pip install -e ".[dev]"
+5. Проверка синтаксиса:
+   python -m compileall -q avic_core tests
+6. Целевые тесты:
+   python -m pytest -q tests\test_driver_manager_dev57.py tests\test_driver_catalog_dev26.py tests\test_graphics_workbench_dev35.py
+7. Запуск Workbench:
+   python -m avic_core.ui --data-dir .\data
+
+API Driver Manager описан в docs\DRIVER_MANAGER_DEV57_RU.md.
+Новые экземпляры драйверов сохраняются остановленными. DEV57 не запускает полевой обмен и не выполняет запись в контроллеры.

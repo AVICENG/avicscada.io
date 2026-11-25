@@ -1,0 +1,37 @@
+AVIC Core 1.0 — DEV68
+FBD Strategy Pages / сохранённая модульная ПВУ
+
+1. Распакуйте архив в отдельную папку:
+   C:\AVIC_Core_1_0_Build_0_68_FBD_SET_Parity_dev68
+
+2. Откройте CMD и перейдите в папку:
+   cd /d C:\AVIC_Core_1_0_Build_0_68_FBD_SET_Parity_dev68
+
+3. Проверьте Python:
+   python --version
+
+4. Установите DEV-зависимости:
+   python -m pip install -e ".[dev]"
+
+5. Выполните проверки:
+   python -m compileall -q avic_core tests
+   python -m pytest -q tests/test_fbd_set_parity_dev68.py tests/test_fbd_iqvision_dev55.py
+   python -m pytest -q tests/test_modular_ahu_sections_dev67.py tests/test_graphics_svg_library_dev64.py tests/test_graphics_iso3d_library_dev66.py
+
+6. Запустите Workbench:
+   python -c "import uvicorn; from avic_core.ui.app import create_ui_app; app=create_ui_app(data_dir=r'.\_acceptance_data_dev68'); uvicorn.run(app, host='127.0.0.1', port=8768, log_level='info')"
+
+7. Откройте:
+   http://127.0.0.1:8768/logic
+
+8. Создайте/откройте станцию и FBD-стратегию. Добавьте вторую страницу, разместите на каждой странице блоки, сохраните стратегию. Для межстраничной связи выберите исходный блок и нажмите «Создать Connective от выбранного блока».
+
+9. Отдельно проверьте Graphics:
+   http://127.0.0.1:8768/graphics
+   Создайте тестовую ПВУ из 7 секций и проверьте предпросмотр анимации.
+
+ПРЕДУПРЕЖДЕНИЯ
+- Не распаковывайте поверх DEV67 или DEV66.
+- DEV68 пока не является полной визуальной копией SET 6.3; список незавершённых функций см. в docs/BUILD_068_RU.md.
+- FBD симуляция офлайн; команды в физическое оборудование не отправляются.
+- Для приёмки UI проверьте сохранение, повторное открытие, переключение страниц и межстраничный Connective.

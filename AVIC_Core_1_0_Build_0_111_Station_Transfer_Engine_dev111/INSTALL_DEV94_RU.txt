@@ -1,0 +1,15 @@
+AVIC Core 1.0 — DEV94
+
+1. Распакуйте ZIP в отдельную новую папку. Не распаковывайте поверх DEV85/DEV91/DEV92/DEV93.
+2. Откройте CMD в корне распакованного проекта.
+3. Рекомендуется создать отдельное виртуальное окружение: python -m venv .venv
+4. Активируйте его: .venv\Scripts\activate
+5. Установите сборку: python -m pip install -e ".[dev]"
+6. Проверьте зависимости: python -m pip check
+7. Запустите тесты: python -m pytest -q
+
+Для первичной проверки нового блока достаточно: python -m pytest -q tests/test_dev94_fbd_schedule_core_integration.py tests/test_dev90_fbd_cyclic_runtime.py tests/test_scheduler_manager_dev48.py
+
+После тестов проверьте: python -m compileall -q avic_core tests
+
+DEV94 не включает автоматическое управление полевыми точками. SCHEDULE в исполняемом FBD читает сохранённое расписание и выдаёт вычисленное значение только в контексте симуляции/логики.

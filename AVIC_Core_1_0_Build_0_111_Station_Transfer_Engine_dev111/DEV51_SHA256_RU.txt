@@ -1,0 +1,6 @@
+AVIC DEV51 release checksums (SHA-256)
+
+d1330099a0a7e90ab40d0bd24c35a6d2253bc90fe968b64929a59f8d627b5177  pyproject.toml
+b763a791d81b96c2d4dcf26427e9d5b202b1127762fbc70cc0b1adaf7a272467  avic_core/ui/static/index.html
+4de4703ef20620063c2c7512f0d5080bc4b32868c28883f6443518879e499910  BUILD_TEST_LOG_DEV51_RU.md
+229f6c588a4a6e77f8917c622e03850e57dcb937d27ffe36b4669f71175db45c  dist/avic_core-1.0.0.dev51-py3-none-any.whl

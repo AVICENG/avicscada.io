@@ -1,0 +1,4 @@
+SHA-256 wheel DEV95
+ffc7b18e8131d344c31b88a5a4f768253ee847db0fcff696a3675615c9cd451e  avic_core-1.0.0.dev95-py3-none-any.whl
+
+SHA-256 полного ZIP указан во внешнем файле DEV95_SHA256_RU.txt рядом с архивом.

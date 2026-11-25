@@ -1,0 +1,36 @@
+AVIC Core 1.0 — DEV67
+Модульная ПВУ / SVG-анимация
+
+1. Распакуйте архив в отдельную папку:
+   C:\AVIC_Core_1_0_Build_0_67_AHU_Modular_Animation_dev67
+
+2. Откройте CMD и перейдите в папку:
+   cd /d C:\AVIC_Core_1_0_Build_0_67_AHU_Modular_Animation_dev67
+
+3. Проверьте Python:
+   python --version
+
+4. Установите DEV-зависимости:
+   python -m pip install -e ".[dev]"
+
+5. Проверки:
+   python -m compileall -q avic_core tests
+   python -m pytest -q tests/test_modular_ahu_sections_dev67.py tests/test_graphics_svg_library_dev64.py tests/test_graphics_iso3d_library_dev66.py
+
+6. Запуск Workbench (локальный тестовый каталог):
+   python -c "import uvicorn; from avic_core.ui.app import create_ui_app; app=create_ui_app(data_dir=r'.\\_acceptance_data_dev67'); uvicorn.run(app, host='127.0.0.1', port=8767, log_level='info')"
+
+7. Откройте:
+   http://127.0.0.1:8767/graphics
+
+8. Создайте или выберите проект/станцию, затем нажмите:
+   Тестовая ПВУ · 7 секций
+
+9. Привяжите feedback/value точки к заслонке и вентилятору. Для локальной проверки без точек используйте кнопку предпросмотра анимации.
+
+ПРЕДУПРЕЖДЕНИЯ
+- Не распаковывайте поверх DEV66.
+- Локальный предпросмотр не управляет оборудованием.
+- Для анимации по реальному объекту драйвер/Runtime должен обновлять значения и качество точек.
+- Физические записи в контроллеры не включены.
+- Для пересборки векторных ресурсов см. tools/README_MODULAR_AHU_RU.md; дополнительно потребуются CairoSVG и Pillow.

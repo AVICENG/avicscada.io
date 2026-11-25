@@ -1,0 +1,18 @@
+AVIC Core 1.0 DEV107 — Windows
+
+1. Распакуйте архив в отдельную папку.
+2. Откройте CMD в папке проекта.
+3. Выполните:
+   python -m venv .venv
+   .venv\\Scripts\\activate
+   python -m pip install --upgrade pip
+   python -m pip install -e ".[dev]"
+4. Запустите:
+   python -m avic_core.ui --data-dir .\\data --host 127.0.0.1 --port 8000
+5. Откройте http://127.0.0.1:8000
+
+Для открытия Page Builder: в общем инженерном дереве раскройте станцию и нажмите «Репозиторий».
+Для отдельного Graphics Workbench используйте узел Graphics или пункт «Мнемосхемы».
+
+Командный контур DEV106 по-прежнему работает только SIMULATION_ONLY. Физические BACnet/Modbus записи не выполняются.
+Подробности: docs\\REPOSITORY_PAGE_BUILDER_DEV107_RU.md и docs\\COMMAND_MANAGER_DEV106_RU.md.
