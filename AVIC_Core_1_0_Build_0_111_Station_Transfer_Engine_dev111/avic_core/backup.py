@@ -336,7 +336,7 @@ class SystemBackupManager:
         parent = target.parent
         parent.mkdir(parents=True, exist_ok=True)
         if target.exists():
-            if target.is_symlink() or any(target.rglob("*")):
+            if target.is_symlink() or any(item.is_file() or item.is_symlink() for item in target.rglob("*")):
                 raise SystemBackupError("Восстановление разрешено только в новый или пустой каталог")
         with tempfile.TemporaryDirectory(prefix="avic-system-restore-", dir=str(parent)) as temporary:
             temporary_root = Path(temporary)
@@ -367,6 +367,6 @@ class SystemBackupManager:
                 except sqlite3.Error as exc:
                     raise SystemBackupError(f"Не удалось проверить восстановленную БД {database}: {exc}") from exc
             if target.exists():
-                target.rmdir()
+                shutil.rmtree(target)
             os.replace(stage, target)
         return target
