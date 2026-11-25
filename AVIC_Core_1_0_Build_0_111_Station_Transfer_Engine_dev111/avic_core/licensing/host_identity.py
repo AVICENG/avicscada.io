@@ -147,10 +147,12 @@ class HostIdentity:
                 # The same protected DACL applies to child files and directories.
                 import base64
 
-                ps_script = r"""
+                ps_path = str(identity_dir).replace("'", "''")
+                ps_user_sid = current_sid.replace("'", "''")
+                ps_script = f"""
 $ErrorActionPreference = 'Stop'
-$path = $args[0]
-$userSid = $args[1]
+$path = '{ps_path}'
+$userSid = '{ps_user_sid}'
 $acl = Get-Acl -LiteralPath $path
 $acl.SetAccessRuleProtection($true, $false)
 foreach ($existingRule in @($acl.Access)) {
