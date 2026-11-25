@@ -189,6 +189,30 @@ class DriverManagerService:
             "protocol": item.protocol, "state": "STOPPED", "enabled": False,
             "package_trust": "BUILTIN", "field_io_enabled": False}
 
+    def update_config(self, instance_id: str, config: dict, *, expected_version: int) -> dict:
+        """Replace a stopped driver's configuration with optimistic concurrency."""
+        if not isinstance(config, dict):
+            raise ValueError("Конфигурация должна быть объектом")
+        safe_config = dict(config)
+        self._reject_secrets(safe_config)
+        with self._lock:
+            item, version = self._load(instance_id)
+            if version != expected_version:
+                from avic_core.repository.sqlite_repository import ConcurrencyConflict
+                raise ConcurrencyConflict(
+                    f"Driver instance {instance_id} version changed: expected {expected_version}, current {version}"
+                )
+            if item.state != "STOPPED" or item.enabled or instance_id in self._sessions:
+                raise RuntimeError("Конфигурацию можно менять только у остановленного драйвера")
+            item.config = safe_config
+            item.updated_at = _now()
+            new_version = self.core.repository.save(item, expected_version=version)
+            self.core.audit.append(actor_id="local-engineer", action="driver.instance_config_updated",
+                resource_type="driver_instance", resource_id=instance_id,
+                details={"driver_id": item.driver_id, "config_keys": sorted(safe_config)})
+            return {"id": instance_id, "version": new_version, "state": "STOPPED",
+                    "config": dict(item.config), "field_write_enabled": False}
+
     def _load(self, instance_id: str):
         item, version = self.core.repository.get(instance_id, DriverInstance)
         return item, version
