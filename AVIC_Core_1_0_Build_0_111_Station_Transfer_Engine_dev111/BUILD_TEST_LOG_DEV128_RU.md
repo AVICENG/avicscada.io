@@ -68,3 +68,13 @@
 - DEV136 tree validation выявила пять code/test entries, содержащих текстовые SHA вместо исходного файла.
 - DEV137 напрямую привязывает пути к заранее проверенным полным blob SHA (manager, polling, manager tests, BACnet tests, catalog tests).
 - Проверка blob content и полная CI DEV137 обязательны.
+
+## DEV138 — BACnet response identity validation
+- ReadProperty ComplexACK теперь сверяет Object Identifier, Property Identifier и запрошенный Array Index до декодирования.
+- Добавлен тест, который отклоняет ACK с чужим Object Identifier.
+- Тестовые builders обновлены до полного корректного ComplexACK envelope.
+- CI DEV138 ожидается.
+
+## DEV137 CI — единственный выявленный отказ
+- Linux Python 3.12: 31,188 passed, 1 failed. Ошибка была в тестовом BVLC packet prefix: двойное экранирование `\\x81\\x0a` приводило к отправке буквальных символов вместо байтов.
+- Исправлено в DEV138; повторный прогон обязателен.

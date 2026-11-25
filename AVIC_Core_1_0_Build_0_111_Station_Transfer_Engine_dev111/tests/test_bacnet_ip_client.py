@@ -123,10 +123,7 @@ def test_read_property_builds_confirmed_request_and_decodes_unsigned(monkeypatch
         def sendto(self, data, target): self.sent = (data, target)
         def settimeout(self, value): pass
         def recvfrom(self, size):
-            apdu = b"\x30\x01\x0c\x3e\x21\x2a\x3f"
-            npdu = b"\x01\x00" + apdu
-            packet = b"\x81\x0a" + (len(npdu)+4).to_bytes(2, "big") + npdu
-            return packet, ("127.0.0.2", 47808)
+            return _read_property_ack(1, b"\x21\x2a", object_type=0, instance=1, property_id=85), ("127.0.0.2", 47808)
         def close(self): pass
 
     fake = FakeSocket()
@@ -137,11 +134,17 @@ def test_read_property_builds_confirmed_request_and_decodes_unsigned(monkeypatch
     assert fake.sent[0][6:10] == b"\x00\x05\x01\x0c"
 
 
-def _read_property_ack(invoke, value_tagged):
-    # ReadProperty ComplexACK: context object-id, property-id, value wrapper.
-    object_id = ((8 << 22) | 1001).to_bytes(4, "big")
+def _read_property_ack(invoke, value_tagged, *, object_type=8, instance=1001, property_id=76, array_index=None):
+    # ReadProperty ComplexACK: context object-id, property-id, optional array index, value wrapper.
+    object_id = ((object_type << 22) | instance).to_bytes(4, "big")
+    property_raw = property_id.to_bytes(max(1, (property_id.bit_length() + 7) // 8), "big")
+    property_tag = bytes([0x18 | len(property_raw)]) + property_raw
+    array_tag = b""
+    if array_index is not None:
+        array_raw = array_index.to_bytes(max(1, (array_index.bit_length() + 7) // 8), "big")
+        array_tag = bytes([0x28 | len(array_raw)]) + array_raw
     payload = (bytes([0x30, invoke, 0x0C]) + b"\x0c" + object_id
-               + b"\x19\x4c\x3e" + value_tagged + b"\x3f")
+               + property_tag + array_tag + b"\x3e" + value_tagged + b"\x3f")
     npdu = b"\x01\x00" + payload
     return b"\x81\x0a" + (len(npdu) + 4).to_bytes(2, "big") + npdu
 
@@ -151,9 +154,9 @@ def test_read_object_list_uses_array_index_and_preserves_native_identity(monkeyp
         def __init__(self, *args):
             self.sent = []
             self.responses = [
-                _read_property_ack(1, b"\x21\x02"),  # array length = 2
-                _read_property_ack(2, b"\xc4" + ((1 << 22) | 1).to_bytes(4, "big")),
-                _read_property_ack(3, b"\xc4" + ((3 << 22) | 2).to_bytes(4, "big")),
+                _read_property_ack(1, b"\x21\x02", array_index=0),  # array length = 2
+                _read_property_ack(2, b"\xc4" + ((1 << 22) | 1).to_bytes(4, "big"), array_index=1),
+                _read_property_ack(3, b"\xc4" + ((3 << 22) | 2).to_bytes(4, "big"), array_index=2),
             ]
         def setsockopt(self, *args): pass
         def bind(self, *args): pass
@@ -265,7 +268,7 @@ def test_read_property_ignores_response_from_wrong_udp_port(monkeypatch):
         def settimeout(self, value): pass
         def recvfrom(self, size):
             self.calls += 1
-            packet = _read_property_ack(1, b"\x21\x2a")
+            packet = _read_property_ack(1, b"\x21\x2a", object_type=0, instance=1, property_id=85)
             return packet, ("127.0.0.2", 47809 if self.calls == 1 else 47808)
         def close(self): pass
     fake = FakeSocket()
@@ -284,10 +287,27 @@ def test_read_property_reports_unsupported_segmented_ack_without_timeout(monkeyp
         def settimeout(self, value): pass
         def recvfrom(self, size):
             npdu = b"\x01\x00\x38\x01\x0c"
-            packet = b"\\x81\\x0a" + (len(npdu) + 4).to_bytes(2, "big") + npdu
+            packet = b"\x81\x0a" + (len(npdu) + 4).to_bytes(2, "big") + npdu
             return packet, ("127.0.0.2", 47808)
         def close(self): pass
     monkeypatch.setattr(socket, "socket", lambda *args: FakeSocket())
     client = BacnetIpClient(_config())
     with pytest.raises(BacnetProtocolError, match="segmented ReadProperty"):
         client.read_property(("127.0.0.2", 47808), 1001, 0, 1, 85)
+
+
+def test_read_property_rejects_mismatched_object_identity(monkeypatch):
+    class FakeSocket:
+        def __init__(self, *args): pass
+        def setsockopt(self, *args): pass
+        def bind(self, *args): pass
+        def sendto(self, data, target): pass
+        def settimeout(self, value): pass
+        def recvfrom(self, size):
+            packet = _read_property_ack(1, b"\x21\x2a", object_type=0, instance=2, property_id=85)
+            return packet, ("127.0.0.2", 47808)
+        def close(self): pass
+    monkeypatch.setattr(socket, "socket", lambda *args: FakeSocket())
+    client = BacnetIpClient(_config())
+    with pytest.raises(BacnetProtocolError, match="object identifier does not match"):
+        client.read_property(("127.0.0.2", 47808), 1234, 0, 1, 85)

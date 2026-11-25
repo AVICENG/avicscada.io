@@ -115,3 +115,14 @@
 
 - Повторно проверены фактические Git blob contents для Driver Manager, PollingSession и связанных регрессионных тестов.
 - Публикация кода считается завершённой только после проверки содержимого blob и CI.
+
+
+## DEV138 — проверка идентичности ответа BACnet
+
+- BACnet ReadProperty сверяет Object Identifier, Property Identifier и Array Index ответа с запросом; несовпадающие ACK не публикуются в Point Runtime.
+
+
+## DEV138 — корректировка BACnet test fixtures
+
+- Исправлен последний двойной escape BVLC prefix в segmented ACK test fixture.
+- Полные ComplexACK fixtures теперь включают object/property/array tags, соответствующие запросу.

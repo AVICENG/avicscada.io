@@ -497,11 +497,38 @@ class BacnetIpClient:
                 if apdu[2] != 0x0C: continue
                 # Return raw application values inside opening/closing context tag 3.
                 data = apdu[3:]
-                start = next((i+1 for i,b in enumerate(data) if b == 0x3E), None)
-                if start is None: raise BacnetProtocolError("ReadProperty ACK missing value opening tag")
+                # A matching Invoke ID is not sufficient: validate the returned
+                # object/property/array identity before publishing any value.
+                context, number, length, start, end = _tag(data, 0)
+                if not context or number != 0 or length != 4:
+                    raise BacnetProtocolError("ReadProperty ACK has invalid object identifier")
+                if data[start:end] != _object_id(object_type, object_instance):
+                    raise BacnetProtocolError("ReadProperty ACK object identifier does not match request")
+                pos = end
+                context, number, length, start, end = _tag(data, pos)
+                if not context or number != 1 or not 1 <= length <= 4:
+                    raise BacnetProtocolError("ReadProperty ACK has invalid property identifier")
+                returned_property = int.from_bytes(data[start:end], "big")
+                if returned_property != property_id:
+                    raise BacnetProtocolError("ReadProperty ACK property identifier does not match request")
+                pos = end
+                if array_index is not None:
+                    context, number, length, start, end = _tag(data, pos)
+                    if not context or number != 2 or not 1 <= length <= 4:
+                        raise BacnetProtocolError("ReadProperty ACK has invalid array index")
+                    if int.from_bytes(data[start:end], "big") != array_index:
+                        raise BacnetProtocolError("ReadProperty ACK array index does not match request")
+                    pos = end
+                elif pos < len(data) and data[pos] >> 4 == 2 and data[pos] & 0x08:
+                    raise BacnetProtocolError("ReadProperty ACK contains an unexpected array index")
+                if data[pos:pos + 1] != b"\x3e":
+                    raise BacnetProtocolError("ReadProperty ACK missing value opening tag")
+                start = pos + 1
                 end = data.find(b"\x3f", start)
                 if end < 0: raise BacnetProtocolError("ReadProperty ACK missing value closing tag")
                 values = _application_values(data[start:end])
+                if not values:
+                    raise BacnetProtocolError("ReadProperty ACK contains no application value")
                 return values[0][1] if len(values) == 1 else [v for _,v in values]
             if apdu[0] == 0x50 and apdu[1] == invoke:
                 raise BacnetProtocolError(f"BACnet Error response: {apdu[2:].hex()}")
