@@ -2357,6 +2357,154 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     @app.get("/api/stations/{station_id}/devices/{device_id}/time-sync-permission")
     def time_device_permission_get(station_id: str, device_id: str) -> dict: return app.state.core.time_management.device_sync_permission(station_id,device_id)
 
+    @app.get("/station-transfer", response_class=HTMLResponse, include_in_schema=False)
+    def station_transfer_workspace() -> str:
+        return render_workspace("station-transfer.html", "transfer")
+
+    @app.get("/api/station-transfer/catalog")
+    def station_transfer_catalog() -> dict:
+        records = app.state.core.repository.list_records()
+        projects = [row for row in records if row.get("entity_type") == "Project"]
+        stations = [row for row in records if row.get("entity_type") == "Station"]
+        result = []
+        for project in sorted(projects, key=lambda row: row.get("name", "").casefold()):
+            result.append({"id": project["entity_id"], "name": project["name"],
+                "archived": bool(project.get("payload", {}).get("archived", False)),
+                "stations": [{"id": row["entity_id"], "name": row["name"]}
+                    for row in sorted(stations, key=lambda item: item.get("name", "").casefold())
+                    if row.get("payload", {}).get("project_id") == project["entity_id"]]})
+        return {"projects": result, "core_version": "1.0.0.dev148"}
+
+    @app.post("/api/station-transfer/export")
+    def station_transfer_export(payload: StationTransferExportInput, request: Request) -> Response:
+        require_local_operator(request)
+        core = app.state.core
+        try:
+            station_record = core.repository.get_record(payload.station_id)
+            if station_record.get("entity_type") != "Station":
+                raise StationTransferError("Выбранный объект не является станцией")
+            try:
+                runtime = core.runtime.get(payload.station_id)
+            except KeyError:
+                runtime = None
+            if runtime is not None and runtime.state.value != "STOPPED":
+                raise StationTransferError("Перед экспортом остановите Station Runtime")
+            if any(x.get("state") != "STOPPED" or x.get("enabled")
+                   for x in core.driver_manager.list_instances(payload.station_id)):
+                raise StationTransferError("Перед экспортом остановите все драйверы станции")
+            export_dir = Path(tempfile.mkdtemp(prefix="avic-station-export-"))
+            try:
+                package_path = export_dir / "station.avicstation"
+                core.station_transfer.export_station(
+                    core, payload.station_id, package_path, source_core_version="1.0.0.dev148")
+                content = package_path.read_bytes()
+            finally:
+                shutil.rmtree(export_dir, ignore_errors=True)
+            return Response(content=content, media_type="application/vnd.avic.station+zip",
+                headers={"Content-Disposition": "attachment; filename=avic-station.avicstation",
+                         "Cache-Control": "no-store"})
+        except StationTransferError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция не найдена") from exc
+
+    @app.post("/api/station-transfer/inspect")
+    async def station_transfer_inspect(request: Request) -> dict:
+        require_local_operator(request)
+        length = request.headers.get("content-length")
+        if length and (not length.isdigit() or int(length) > app.state.core.station_transfer.MAX_PACKAGE_BYTES):
+            raise HTTPException(status_code=413, detail="Размер пакета превышает допустимый предел")
+        raw = await request.body()
+        if not raw or len(raw) > app.state.core.station_transfer.MAX_PACKAGE_BYTES:
+            raise HTTPException(status_code=413 if raw else 400, detail="Пустой или слишком большой пакет станции")
+        inbox = app.state.core.paths.backups / "station-transfer-inbox"
+        inbox.mkdir(parents=True, exist_ok=True)
+        token = uuid4().hex
+        package_path = inbox / (token + ".avicstation")
+        try:
+            with package_path.open("xb") as stream:
+                stream.write(raw)
+            preview = app.state.core.station_transfer.inspect_package(
+                package_path, target_core_version="1.0.0.dev148")
+        except StationTransferError as exc:
+            package_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            package_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="Не удалось прочитать пакет станции") from exc
+        app.state.station_transfer_tokens[token] = {
+            "package_path": package_path, "package_id": preview.package_id, "stage_path": None}
+        warnings = list(preview.warnings) + [
+            "Пакет не имеет цифровой подписи издателя. Его происхождение не подтверждено; проверьте источник файла."]
+        return {
+            "upload_token": token, "package_id": preview.package_id,
+            "station_id": preview.station_id, "station_name": preview.station_name,
+            "source_project_id": preview.source_project_id,
+            "source_core_version": preview.source_core_version,
+            "target_core_version": "1.0.0.dev148",
+            "entity_count": preview.entity_count,
+            "auxiliary_record_count": preview.auxiliary_record_count,
+            "compatible": preview.compatible, "warnings": warnings,
+            "trust_status": "UNSIGNED_UNVERIFIED",
+            "requires_unsigned_acknowledgement": True,
+            "activation": "NOT_ACTIVATED"}
+
+    @app.post("/api/station-transfer/stage")
+    def station_transfer_stage(payload: StationTransferStageInput, request: Request) -> dict:
+        require_local_operator(request)
+        item = app.state.station_transfer_tokens.get(payload.upload_token)
+        if not item or item.get("package_id") != payload.package_id:
+            raise HTTPException(status_code=404, detail="Загрузка пакета не найдена или устарела")
+        if not payload.acknowledge_unsigned:
+            raise HTTPException(status_code=400, detail="Требуется явное подтверждение, что пакет не подписан издателем")
+        if item.get("stage_path") is not None:
+            raise HTTPException(status_code=409, detail="Этот пакет уже подготовлен к импорту")
+        try:
+            stage_path = app.state.core.station_transfer.stage_import(
+                item["package_path"], app.state.core.paths.backups / "station-transfer-staging",
+                expected_package_id=payload.package_id, target_core_version="1.0.0.dev148")
+            item["stage_path"] = stage_path
+            return {"stage_token": payload.upload_token, "package_id": payload.package_id,
+                    "state": "STAGED_NOT_ACTIVATED", "activation": "NOT_ACTIVATED"}
+        except StationTransferError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/api/station-transfer/commit")
+    def station_transfer_commit(payload: StationTransferCommitInput, request: Request) -> dict:
+        require_local_operator(request)
+        item = app.state.station_transfer_tokens.get(payload.stage_token)
+        if not item or item.get("package_id") != payload.package_id or item.get("stage_path") is None:
+            raise HTTPException(status_code=404, detail="Подготовленный пакет не найден или устарел")
+        expected = "CLONE" if payload.mode == "clone" else "IMPORT"
+        if payload.confirmation != expected:
+            raise HTTPException(status_code=400, detail="Для подтверждения введите " + expected)
+        if payload.mode == "clone" and not payload.clone_station_name:
+            raise HTTPException(status_code=400, detail="Для клона требуется новое имя станции")
+        try:
+            target = app.state.core.repository.get_record(payload.target_project_id)
+            if target.get("entity_type") != "Project" or target.get("payload", {}).get("archived", False):
+                raise StationTransferError("Выберите действующий целевой проект")
+            if payload.mode == "clone":
+                duplicate = [row for row in app.state.core.repository.list_records(entity_type="Station")
+                    if row.get("payload", {}).get("project_id") == payload.target_project_id
+                    and row.get("name", "").casefold() == payload.clone_station_name.strip().casefold()]
+                if duplicate:
+                    raise StationTransferError("В целевом проекте уже есть станция с таким именем")
+            result = app.state.core.station_transfer.commit_import(
+                app.state.core, item["stage_path"], expected_package_id=payload.package_id,
+                target_project_id=payload.target_project_id, actor="local-engineer",
+                clone=payload.mode == "clone", clone_station_name=payload.clone_station_name)
+            package_path, stage_path = item["package_path"], item["stage_path"]
+            app.state.station_transfer_tokens.pop(payload.stage_token, None)
+            package_path.unlink(missing_ok=True)
+            shutil.rmtree(stage_path, ignore_errors=True)
+            return {**result, "activation": "NOT_ACTIVATED",
+                "message": "Импорт завершён. Станция остановлена; выполните привязку площадки и пусконаладку вручную."}
+        except StationTransferError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Целевой проект не найден") from exc
+
     @app.get("/api/platform/status")
     def platform_status() -> dict:
         records = app.state.core.repository.list_records()
