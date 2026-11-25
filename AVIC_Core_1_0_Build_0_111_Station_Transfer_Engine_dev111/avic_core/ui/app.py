@@ -14,6 +14,7 @@ from avic_core.domain.models import Point, PointQuality, PhysicalNetwork, Protoc
 from avic_core.network.bacnet_ip import BacnetObjectIdentifier
 from avic_core.ui.project_station import ProjectStationService
 from avic_core.ui.device_import import DeviceImportService
+from avic_core.ui.protocol_point_import import ProtocolDeviceImportService
 from avic_core.ui.engineering_tree import EngineeringTreeService
 from avic_core.graphics import GraphicsService
 from avic_core.graphics.svg_library import SVG_SYMBOLS, list_symbols, read_symbol_svg
@@ -368,6 +369,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     app.state.core = CoreApplication(root)
     app.state.project_station = ProjectStationService(app.state.core)
     app.state.device_import = DeviceImportService(app.state.core)
+    app.state.protocol_point_import = ProtocolDeviceImportService(app.state.core)
     app.state.engineering_tree = EngineeringTreeService(app.state.core)
     app.state.graphics = GraphicsService(app.state.core)
     app.state.driver_manager = app.state.core.driver_manager
@@ -1838,6 +1840,39 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             raise HTTPException(status_code=404, detail="Станция не найдена") from exc
         except (ValueError, OSError, TimeoutError) as exc:
             raise HTTPException(status_code=400, detail=f"Импорт устройства не выполнен: {exc}") from exc
+
+
+    @app.post("/api/stations/{station_id}/protocol-devices/import-preview")
+    def preview_protocol_device_import(station_id: str, payload: dict, request: Request) -> dict:
+        """Preview normalized discovery data for any implemented protocol; performs no field I/O."""
+        require_local_operator(request)
+        inspection = payload.get("inspection")
+        if not isinstance(inspection, dict):
+            raise HTTPException(status_code=400, detail="inspection должен быть объектом")
+        try:
+            return app.state.protocol_point_import.preview(
+                station_id, str(payload.get("driver_instance_id") or ""), inspection,
+                payload.get("selected_native_ids"), bool(payload.get("import_all", False)))
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция или драйвер не найдены") from exc
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/stations/{station_id}/protocol-devices/import")
+    def import_protocol_device(station_id: str, payload: dict, request: Request) -> dict:
+        """Transactionally import selected normalized device points; never writes to field devices."""
+        require_local_operator(request)
+        inspection = payload.get("inspection")
+        if not isinstance(inspection, dict):
+            raise HTTPException(status_code=400, detail="inspection должен быть объектом")
+        try:
+            return app.state.protocol_point_import.import_points(
+                station_id, str(payload.get("driver_instance_id") or ""), inspection,
+                payload.get("selected_native_ids"), bool(payload.get("import_all", False)))
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция или драйвер не найдены") from exc
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/stations/{station_id}/device-tree")
     def station_device_tree(station_id: str) -> dict:
