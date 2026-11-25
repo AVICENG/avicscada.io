@@ -45,7 +45,7 @@ def test_driver_config_rejects_secrets(tmp_path):
 def test_driver_instance_cannot_be_created_enabled(tmp_path):
     from avic_core.drivers.manager import DriverInstance
     import uuid
-    with pytest.raises(ValueError,match='остановленным'):
+    with pytest.raises(ValueError,match='enabled не соответствует состоянию'):
         DriverInstance('x',str(uuid.uuid4()),'bacnet-ip','BACnet/IP',enabled=True)
 
 
