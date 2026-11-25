@@ -87,7 +87,7 @@ class CoreApplication:
         self.station_transfer_recovery = self.station_transfer.recover_pending(self)
         self.events.record("core.initialized", "AVIC Core initialized", severity="INFO", details={"api_version": "1.0.0.dev112"})
         self.audit.append(actor_id="system", action="core.initialized", resource_type="core",
-                          resource_id="local", details={"data_dir": str(self.paths.root), "api_version": "1.0.0.dev111"})
+                          resource_id="local", details={"data_dir": str(self.paths.root), "api_version": "1.0.0.dev112"})
 
     @property
     def closed(self) -> bool:
