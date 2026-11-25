@@ -11,7 +11,8 @@ DEV112 устраняет ложное сообщение об ошибке Stat
 - Событие и аудит используют детерминированные ID; повторная доставка безопасна.
 - При сбое доставки `commit_import` возвращает импорт как зафиксированный с `journal_status=PENDING_RETRY`, а не сообщает об откате.
 - `CoreApplication` при старте повторяет `JOURNAL_PENDING` и переводит оставшиеся `PREPARED` в `NEEDS_RECONCILIATION` без ложного подтверждения успеха.
-- Добавлены fault-injection тесты отказа EventService и AuditService.
+- Добавлены fault-injection тесты отказа EventService и AuditService, включая восстановление после перезапуска Core.
+- Добавлен API `list_recovery_operations(core)` для просмотра незавершённых операций администратором.
 - Версия пакета: `1.0.0.dev112`.
 
 ## Проверки
