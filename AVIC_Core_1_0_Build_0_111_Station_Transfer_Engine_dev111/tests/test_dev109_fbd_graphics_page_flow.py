@@ -184,6 +184,11 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
         assert "getData('point')||e.dataTransfer.getData('fbd-point')" in graphics_ui
         assert "bindDroppedPoint(pointId,target)" in graphics_ui
         assert "getScreenCTM().inverse()" in graphics_ui
+        pages_ui = (source_root / "static" / "pages.html").read_text(encoding="utf-8")
+        assert 'id="publish"' in pages_ui and "function publishPage()" in pages_ui
+        assert 'id="openPublished"' in pages_ui and "function openPublishedPage()" in pages_ui
+        assert 'id="unpublish"' in pages_ui and "function unpublishPage()" in pages_ui
+        assert "/unpublish" in pages_ui and "/publish" in pages_ui
 
         client.post(f"/api/fbd-runtime/{core_document_id}/stop")
         app.state.core.close()
