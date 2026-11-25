@@ -168,7 +168,7 @@ class CoreApplication:
     def create_system_backup(self, destination: str | Path | None = None, *, passphrase: str) -> Path:
         with self._lock:
             self._ensure_open()
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         output = Path(destination) if destination is not None else self.paths.backups / f"avic-system-{stamp}.avicbackup"
         result = self.system_backups.create_backup(
             self, output, passphrase=passphrase, core_version="1.0.0.dev145"
@@ -206,8 +206,11 @@ class CoreApplication:
                               passphrase: str, expected_backup_id: str) -> Path:
         with self._lock:
             self._ensure_open()
+        target = Path(target_root).expanduser().resolve()
+        if target == self.paths.root or self.paths.root in target.parents:
+            raise ValueError("System restore target must be outside the currently running Core data directory")
         result = self.system_backups.restore_backup(
-            backup_path, target_root, passphrase=passphrase, expected_backup_id=expected_backup_id
+            backup_path, target, passphrase=passphrase, expected_backup_id=expected_backup_id
         )
         details = {"target": str(result), "backup_id": expected_backup_id}
         self.events.record("system_backup.restored", f"System backup restored to {result}",
