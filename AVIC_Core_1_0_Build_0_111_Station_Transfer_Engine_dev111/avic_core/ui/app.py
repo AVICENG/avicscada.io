@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from tempfile import gettempdir
 import os
+from urllib.parse import urlsplit
 import shutil
 import tempfile
 from uuid import uuid4
@@ -43,6 +44,7 @@ WORKSPACES = [
     ("dashboard", "Главная", "Общее состояние инженерной среды и быстрые сценарии", "⌂", "implemented"),
     ("projects", "Проекты и объекты", "Иерархия Company → Site → Building → Project → Station", "▣", "partial"),
     ("stations", "Станции", "Независимые конфигурации, версии и жизненный цикл", "▤", "partial"),
+    ("station-transfer", "Перенос станций", "Экспорт, проверка, перенос и безопасное клонирование", "⇄", "implemented"),
     ("equipment", "Оборудование", "Системы, установки, агрегаты и паспорта оборудования", "▦", "planned"),
     ("documents", "Документы и AI-анализ", "Реестр, ревизии, извлечение данных и доказательные замечания", "▧", "designed"),
     ("network", "Сети и топология", "Сегменты, интерфейсы, шлюзы и карта связности", "⌘", "partial"),
@@ -385,7 +387,7 @@ class ObjectPatch(BaseModel):
 
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
-    """Create the DEV140 local-only Workbench host. Drivers and OT commands remain stopped."""
+    """Create the DEV148 local-only Workbench host. Drivers and OT commands remain stopped."""
     app = FastAPI(title=title, version="1.0.0.dev148")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     app.state.core = CoreApplication(root)
@@ -411,8 +413,13 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         if host not in {"127.0.0.1", "::1", "localhost", "testclient"}:
             raise HTTPException(status_code=403, detail="Изменение доступно только локальному оператору Workbench")
         origin = request.headers.get("origin")
-        if origin and not any(origin.startswith(prefix) for prefix in ("http://127.0.0.1", "http://localhost", "http://[::1]")):
-            raise HTTPException(status_code=403, detail="Недопустимый Origin")
+        if origin:
+            parsed_origin = urlsplit(origin)
+            if (parsed_origin.scheme not in {"http", "https"}
+                    or parsed_origin.hostname not in {"127.0.0.1", "localhost", "::1"}
+                    or parsed_origin.username is not None or parsed_origin.password is not None
+                    or parsed_origin.path not in {"", "/"} or parsed_origin.query or parsed_origin.fragment):
+                raise HTTPException(status_code=403, detail="Недопустимый Origin")
 
     def render_workspace(filename: str, active: str) -> str:
         html = (_UI_DIR / filename).read_text(encoding="utf-8")
@@ -2524,7 +2531,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                     "generation": item.generation, "last_error": item.last_error}
                    for item in app.state.core.runtime.all()]
         backup_files = sorted(p.name for p in app.state.core.paths.backups.glob("*.avicbackup.zip") if p.is_file())
-        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev77",
+        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev148",
                 "core_open": not app.state.core.closed, "object_counts": counts,
                 "runtime_stations": runtime, "backup_archives": backup_files,
                 "safety": {"driver_autostart": False, "field_writes_enabled": False,
@@ -2590,6 +2597,6 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
 
     @app.get("/api/ui/health")
     def ui_health() -> dict:
-        return {"status": "ok", "ui": "available", "version": "1.0.0.dev109", "mode": "safe-workbench-project-station"}
+        return {"status": "ok", "ui": "available", "version": "1.0.0.dev148", "mode": "safe-workbench-project-station"}
 
     return app
