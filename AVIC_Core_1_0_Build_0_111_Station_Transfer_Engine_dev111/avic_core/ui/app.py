@@ -594,7 +594,16 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 body_tag = body_tag[:-1] + f' class="{workspace_class}">'
             insertion = shared_rail + shared_tree
             html = html[:body_match.start()] + body_tag + insertion + html[body_match.end():]
+        if active in {"graphics", "logic", "repository"}:
+            html = html.replace("</head>",
+                '<script src="/avic-static/save-manager.js" defer></script></head>', 1)
         return html
+
+    @app.get("/avic-static/save-manager.js", include_in_schema=False)
+    def engineering_save_manager_script() -> Response:
+        source = (_UI_DIR / "save-manager.js").read_text(encoding="utf-8")
+        return Response(content=source, media_type="application/javascript",
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def index() -> str:

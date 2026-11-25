@@ -75,6 +75,7 @@
       [editor, stationId, resourceId].map(encodeURIComponent).join("/");
     let draftRevision = 0;
     let timer = null;
+    let localTimer = null;
     let busy = false;
     let pending = false;
     let conflict = false;
@@ -154,6 +155,7 @@
 
     async function flush() {
       if (timer) { clearTimeout(timer); timer = null; }
+      if (localTimer) { clearTimeout(localTimer); localTimer = null; }
       if (busy) { pending = true; return false; }
       busy = true;
       try {
@@ -193,7 +195,14 @@
 
     function schedule() {
       if (timer) clearTimeout(timer);
+      if (localTimer) clearTimeout(localTimer);
       state("Есть изменения · сохранение черновика…");
+      const snapshot = config.getContent();
+      localTimer = setTimeout(async () => {
+        localTimer = null;
+        try { await persistLocal(snapshot); state("Локальный черновик надёжно сохранён · синхронизация с Core…"); }
+        catch (error) { state("Не удалось сохранить локальный черновик: " + error.message); }
+      }, 80);
       timer = setTimeout(() => { timer = null; flush(); }, 350);
     }
 
@@ -222,6 +231,10 @@
       schedule, flush, clear,
       dispose() {
         if (timer) { clearTimeout(timer); timer = null; flush(); }
+        else if (localTimer) {
+          clearTimeout(localTimer); localTimer = null;
+          persistLocal(config.getContent()).catch(() => {});
+        }
         window.removeEventListener("online", handleOnline);
         window.removeEventListener("pagehide", handlePageHide);
         bar.remove();
