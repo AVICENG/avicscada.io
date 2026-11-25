@@ -79,7 +79,7 @@ def test_station_transfer_export_refuses_running_station(tmp_path):
             response = client.post("/api/station-transfer/export", json={
                 "station_id": station["id"]})
             assert response.status_code == 409
-            assert "STOPPED" in response.json()["detail"]
+            assert "остановите Station Runtime" in response.json()["detail"]
     finally:
         app.state.core.close()
 
