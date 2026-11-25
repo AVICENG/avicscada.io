@@ -8,6 +8,7 @@ from avic_core.alarm.service import AlarmService
 from avic_core.audit.service import AuditService
 from avic_core.config.manager import ConfigurationManager
 from avic_core.config.project_backup import ProjectBackupManager
+from avic_core.backup import SystemBackupManager
 from avic_core.deployment import DeploymentManager
 from avic_core.transfer import StationTransferManager
 from avic_core.domain.service import CoreObjectService
@@ -76,6 +77,7 @@ class CoreApplication:
         self.module_catalog = ModuleCatalog()
         self.configuration = ConfigurationManager(self.paths.configuration)
         self.backups = ProjectBackupManager()
+        self.system_backups = SystemBackupManager()
         self.deployment = DeploymentManager()  # Legacy generic project-package API; Station transfer is separate.
         self.station_transfer = StationTransferManager()
         self.objects = CoreObjectService(self.repository)
@@ -160,6 +162,40 @@ class CoreApplication:
         self.events.record("backup.restored", f"Backup restored to {Path(target_root).name}", severity="NOTICE", details={"backup_id": expected_backup_id})
         self.audit.append(actor_id="system", action="backup.restored", resource_type="project",
                           resource_id=Path(target_root).name, details={"backup_id": expected_backup_id})
+        return result
+
+    def create_system_backup(self, destination: str | Path | None = None, *, passphrase: str) -> Path:
+        with self._lock:
+            self._ensure_open()
+        stamp = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        output = Path(destination) if destination is not None else self.paths.backups / f"avic-system-{stamp}.avicbackup"
+        result = self.system_backups.create_backup(
+            self, output, passphrase=passphrase, core_version="1.0.0.dev145"
+        )
+        details = {"path": str(result), "encrypted": True}
+        self.events.record("system_backup.created", f"Encrypted system backup created: {result.name}",
+                           severity="INFO", details=details)
+        self.audit.append(actor_id="system", action="system_backup.created", resource_type="system_backup",
+                          resource_id=result.name, details=details)
+        return result
+
+    def inspect_system_backup(self, backup_path: str | Path, *, passphrase: str):
+        with self._lock:
+            self._ensure_open()
+        return self.system_backups.inspect_backup(backup_path, passphrase=passphrase)
+
+    def restore_system_backup(self, backup_path: str | Path, target_root: str | Path, *,
+                              passphrase: str, expected_backup_id: str) -> Path:
+        with self._lock:
+            self._ensure_open()
+        result = self.system_backups.restore_backup(
+            backup_path, target_root, passphrase=passphrase, expected_backup_id=expected_backup_id
+        )
+        details = {"target": str(result), "backup_id": expected_backup_id}
+        self.events.record("system_backup.restored", f"System backup restored to {result}",
+                           severity="NOTICE", details=details)
+        self.audit.append(actor_id="system", action="system_backup.restored", resource_type="system_backup",
+                          resource_id=expected_backup_id, details=details)
         return result
 
     def close(self) -> None:
