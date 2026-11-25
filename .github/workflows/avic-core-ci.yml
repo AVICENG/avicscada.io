@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - dev112-station-transfer-reliability
+      - dev113-network-drivers
   pull_request:
     branches:
       - main
       - dev112-station-transfer-reliability
+      - dev113-network-drivers
   workflow_dispatch:
 
 permissions:
