@@ -77,3 +77,17 @@ def test_modbus_adapter_checks_driver_ownership(tmp_path):
     assert not result["results"][0]["ok"]
     assert "does not match" in result["results"][0]["error"] or "не совпадает" in result["results"][0]["error"]
     app.state.core.close()
+
+
+def test_modbus_adapter_coalesces_adjacent_register_bindings(tmp_path):
+    app, pts = _setup(tmp_path, 2)
+    client = FakeModbusClient({0: [100, 200]})
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test", [
+        ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16"),
+        ModbusTcpPointBinding(pts[1].id, 3, 1, data_type="uint16"),
+    ])
+    result = adapter.poll_once()
+    assert result["group_count"] == 1
+    assert client.calls == [(3, 0, 2)]
+    assert [app.state.core.point_runtime.read(point.id).value for point in pts] == [100, 200]
+    app.state.core.close()

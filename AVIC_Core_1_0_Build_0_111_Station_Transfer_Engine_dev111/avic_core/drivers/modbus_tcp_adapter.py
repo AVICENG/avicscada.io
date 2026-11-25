@@ -59,45 +59,96 @@ class ModbusTcpPointAdapter:
         self._last_errors: dict[str, str] = {}
         self._success_count = self._failure_count = 0
 
-    def _read_binding(self, b: ModbusTcpPointBinding):
-        if b.function == 1:
-            return bool(self.client.read_coils(b.address, 1)[0])
-        if b.function == 2:
-            return bool(self.client.read_discrete_inputs(b.address, 1)[0])
-        regs = (self.client.read_holding_registers(b.address, b.count) if b.function == 3
-                else self.client.read_input_registers(b.address, b.count))
-        value = decode_registers(regs, b.data_type, byte_order=b.byte_order, word_order=b.word_order)
-        if b.data_type.startswith("float") or b.scale != 1.0 or b.offset != 0.0:
-            value = float(value) * float(b.scale) + float(b.offset)
-            if not isfinite(value):
-                raise ValueError("decoded/scaled Modbus value is not finite")
-        return value
+    def _read_group(self, function: int, address: int, count: int) -> list:
+        if function == 1:
+            return self.client.read_coils(address, count)
+        if function == 2:
+            return self.client.read_discrete_inputs(address, count)
+        if function == 3:
+            return self.client.read_holding_registers(address, count)
+        return self.client.read_input_registers(address, count)
+
+    def _plan_groups(self) -> list[dict]:
+        """Coalesce contiguous read-only bindings to reduce PLC request load."""
+        groups: list[dict] = []
+        ordered = sorted(self.bindings, key=lambda item: (item.function, item.address, item.count))
+        for binding in ordered:
+            maximum = 2000 if binding.function in (1, 2) else 125
+            binding_end = binding.address + binding.count
+            if groups:
+                current = groups[-1]
+                combined_end = max(current["end"], binding_end)
+                if (current["function"] == binding.function
+                        and binding.address <= current["end"]
+                        and combined_end - current["address"] <= maximum):
+                    current["end"] = combined_end
+                    current["bindings"].append(binding)
+                    continue
+            groups.append({"function": binding.function, "address": binding.address,
+                           "end": binding_end, "bindings": [binding]})
+        return groups
+
+    def _publish_failure(self, binding: ModbusTcpPointBinding, message: str, quality) -> dict:
+        self._last_errors[binding.point_id] = message
+        self._failure_count += 1
+        try:
+            sample = self.point_runtime.mark_quality(
+                binding.point_id, quality, source_driver_id=self.driver_instance_id)
+            return {"point_id": binding.point_id, "ok": False, "value": sample.value,
+                    "quality": sample.quality, "error": message}
+        except Exception as qexc:
+            return {"point_id": binding.point_id, "ok": False, "quality": "UNKNOWN",
+                    "error": message, "quality_error": f"{type(qexc).__name__}: {qexc}"}
 
     def poll_once(self) -> dict:
         from avic_core.domain.models import PointQuality
-        results = []
-        for b in self.bindings:
+        results_by_id: dict[str, dict] = {}
+        group_count = 0
+        for group in self._plan_groups():
+            group_count += 1
+            count = group["end"] - group["address"]
             try:
-                value = self._read_binding(b)
-                sample = self.point_runtime.publish(
-                    b.point_id, value, quality=PointQuality.GOOD, source_driver_id=self.driver_instance_id)
-                self._last_errors.pop(b.point_id, None)
-                self._success_count += 1
-                results.append({"point_id": b.point_id, "ok": True, "value": sample.value, "quality": sample.quality})
+                values = self._read_group(group["function"], group["address"], count)
+                if len(values) != count:
+                    raise ValueError(f"Modbus read returned {len(values)} values; expected {count}")
             except Exception as exc:
                 message = f"{type(exc).__name__}: {exc}"
-                self._last_errors[b.point_id] = message
-                self._failure_count += 1
+                for binding in group["bindings"]:
+                    results_by_id[binding.point_id] = self._publish_failure(
+                        binding, message, PointQuality.BAD_COMMUNICATION)
+                continue
+
+            for binding in group["bindings"]:
                 try:
-                    sample = self.point_runtime.mark_quality(
-                        b.point_id, PointQuality.BAD_COMMUNICATION, source_driver_id=self.driver_instance_id)
-                    results.append({"point_id": b.point_id, "ok": False, "value": sample.value,
-                                    "quality": sample.quality, "error": message})
-                except Exception as qexc:
-                    results.append({"point_id": b.point_id, "ok": False, "quality": "UNKNOWN",
-                                    "error": message, "quality_error": f"{type(qexc).__name__}: {qexc}"})
+                    offset = binding.address - group["address"]
+                    segment = values[offset:offset + binding.count]
+                    if len(segment) != binding.count:
+                        raise ValueError("Modbus grouped response does not cover binding range")
+                    if binding.function in (1, 2):
+                        value = bool(segment[0])
+                    else:
+                        value = decode_registers(segment, binding.data_type,
+                            byte_order=binding.byte_order, word_order=binding.word_order)
+                        if binding.data_type.startswith("float") or binding.scale != 1.0 or binding.offset != 0.0:
+                            value = float(value) * float(binding.scale) + float(binding.offset)
+                            if not isfinite(value):
+                                raise ValueError("decoded/scaled Modbus value is not finite")
+                    sample = self.point_runtime.publish(
+                        binding.point_id, value, quality=PointQuality.GOOD,
+                        source_driver_id=self.driver_instance_id)
+                    self._last_errors.pop(binding.point_id, None)
+                    self._success_count += 1
+                    results_by_id[binding.point_id] = {"point_id": binding.point_id, "ok": True,
+                        "value": sample.value, "quality": sample.quality}
+                except Exception as exc:
+                    message = f"{type(exc).__name__}: {exc}"
+                    results_by_id[binding.point_id] = self._publish_failure(
+                        binding, message, PointQuality.BAD_COMMUNICATION)
+
+        results = [results_by_id[b.point_id] for b in self.bindings]
         return {"driver_instance_id": self.driver_instance_id, "polled": len(results),
-                "success_count": self._success_count, "failure_count": self._failure_count, "results": results}
+                "group_count": group_count, "success_count": self._success_count,
+                "failure_count": self._failure_count, "results": results}
 
     def diagnostics(self) -> dict:
         return {"driver_id": "modbus-tcp", "mode": "READ_ONLY", "write_supported": False,
