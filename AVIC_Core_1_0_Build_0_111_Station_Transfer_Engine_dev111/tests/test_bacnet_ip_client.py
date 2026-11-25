@@ -186,7 +186,7 @@ def test_read_object_list_rejects_excessive_array_count(monkeypatch):
         def bind(self, *args): pass
         def sendto(self, data, target): pass
         def settimeout(self, value): pass
-        def recvfrom(self, size): return _read_property_ack(1, b"\x22\x13\x89"), ("127.0.0.2", 47808)
+        def recvfrom(self, size): return _read_property_ack(1, b"\x22\x13\x89", array_index=0), ("127.0.0.2", 47808)
         def close(self): pass
 
     monkeypatch.setattr(socket, "socket", lambda *args: FakeSocket())
