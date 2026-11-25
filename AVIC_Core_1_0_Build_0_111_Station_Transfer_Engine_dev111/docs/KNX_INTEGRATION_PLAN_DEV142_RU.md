@@ -11,6 +11,12 @@ KNXnet/IP — приоритетный протокол автоматизаци
 6. Engineering UI, диагностика и hardware acceptance.
 7. Управление — только после RBAC, явных разрешений, аудита, quality guards и подтверждения на оборудовании.
 
+## DEV152 — Point Runtime / Driver Manager
+- KNX read-only passive group monitor подключён к Driver Manager и публикует значения в общий Point Runtime.
+- Качество связи и конфигурации переводится в BAD_COMMUNICATION/BAD_CONFIGURATION без подмены последнего значения.
+- Каталог показывает KNX как READ_ONLY_TRANSPORT, field writes запрещены.
+- DPT 9.001 corrected to signed 11-bit two's-complement; invalid 0x7FFF rejected.
+
 ## DEV151 — cEMI parser
 - Добавлен строгий парсер cEMI L_Data.req/con/ind, GroupValueRead/Response/Write, адресов, TPCI/APCI, короткого значения и payload.
 - DPT metadata ещё не связывается автоматически: DPT берётся из инженерного проекта/ETS, не из самого telegram.

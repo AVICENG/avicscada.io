@@ -17,6 +17,9 @@ def test_driver_catalog_is_read_only_and_explicit_about_capabilities(tmp_path):
     core,station=make_station(tmp_path)
     catalog=DriverManagerService(core).catalog()
     assert {x['driver_id'] for x in catalog} >= {'bacnet-ip','modbus-tcp'}
+    knx = next(x for x in catalog if x['driver_id'] == 'knxnet-ip')
+    assert knx['read_supported'] is True and knx['runtime_start_supported'] is True
+    assert knx['write_supported'] is False
     assert all(x['write_supported'] is False for x in catalog)
 
 

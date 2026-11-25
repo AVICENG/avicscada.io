@@ -116,9 +116,11 @@ def decode_datapoint(payload:bytes,datapoint_type:str):
         return payload[0]*100.0/255.0
     if dpt in {"9.001","DPT-9.001"}:
         if len(payload)!=2: raise KnxProtocolError("DPT 9.001 requires two bytes")
-        raw=int.from_bytes(payload,"big"); mantissa=raw&0x7ff
-        value=0.01*mantissa*(2**((raw>>11)&15))
-        return -value if raw&0x8000 else value
+        raw=int.from_bytes(payload,"big")
+        if raw == 0x7FFF: raise KnxProtocolError("DPT 9.001 invalid data pattern")
+        mantissa=raw&0x07FF
+        if raw&0x8000: mantissa-=2048
+        return 0.01*mantissa*(2**((raw>>11)&15))
     if dpt in {"14.000","DPT-14.000"}:
         if len(payload)!=4: raise KnxProtocolError("DPT 14.000 requires four bytes")
         value=struct.unpack(">f",payload)[0]

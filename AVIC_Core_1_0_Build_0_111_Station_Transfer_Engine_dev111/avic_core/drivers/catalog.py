@@ -89,10 +89,11 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         DriverCategory.BUILDING_AUTOMATION,
         "One protocol driver with manufacturer/device profiles; media and interface support to be validated.",
     ),
-    _planned(
+    DriverCatalogEntry(
         "knxnet-ip", "KNXnet/IP (EIB)", "KNXnet/IP",
-        DriverCategory.BUILDING_AUTOMATION,
-        "KNXnet/IP tunnelling/routing and group-address datapoint profiles planned.",
+        DriverLifecycle.READ_ONLY_TRANSPORT, True,
+        notes="Read-only KNXnet/IP tunnelling and passive GroupValue monitor with explicit group-address/DPT bindings; no GroupValueWrite transmit, ETS import or Routing yet.",
+        category=DriverCategory.BUILDING_AUTOMATION, license_feature="driver.knxnet-ip",
     ),
     _planned(
         "mqtt", "MQTT", "MQTT 3.1.1 / 5.0",

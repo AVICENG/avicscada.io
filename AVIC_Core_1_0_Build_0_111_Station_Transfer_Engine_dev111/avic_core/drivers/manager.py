@@ -11,9 +11,11 @@ from avic_core.drivers.catalog import list_builtin_drivers
 from avic_core.drivers.polling import PollingSession
 from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTcpPointBinding
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
+from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
 from avic_core.network.modbus_tcp import ModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
+from avic_core.network.knx_tunneling import KnxTunnelingSession
 
 
 def _now():
@@ -71,6 +73,7 @@ class DriverManagerService:
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
+            "knxnet-ip": self._build_knx_adapter,
         }
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
@@ -142,6 +145,27 @@ class DriverManagerService:
                 item["address"] = tuple(item["address"])
             bindings.append(BacnetIpPointBinding(**item))
         return BacnetIpPointAdapter(client, core.point_runtime, instance.id, bindings)
+
+    def _build_knx_adapter(self, core, instance: DriverInstance):
+        cfg = dict(instance.config)
+        allowed = {
+            "gateway_host", "gateway_port", "local_host", "local_port", "timeout",
+            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings",
+        }
+        unknown = set(cfg) - allowed
+        if unknown:
+            raise ValueError(f"Неизвестные параметры KNXnet/IP: {sorted(unknown)}")
+        required = ("gateway_host", "local_host")
+        if any(not cfg.get(key) for key in required) or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
+            raise ValueError("Для KNXnet/IP требуются gateway_host, local_host и непустой bindings")
+        session = KnxTunnelingSession(
+            cfg["gateway_host"], gateway_port=int(cfg.get("gateway_port", 3671)),
+            local_host=cfg["local_host"], local_port=int(cfg.get("local_port", 0)),
+            timeout_seconds=float(cfg.get("timeout", 1.0)), retries=int(cfg.get("retries", 2)),
+            heartbeat_interval_seconds=float(cfg.get("heartbeat_interval_seconds", 60.0)),
+        )
+        bindings = [KnxPointBinding(**item) for item in cfg["bindings"]]
+        return KnxPointAdapter(session, core.point_runtime, instance.id, bindings)
 
     def catalog(self):
         return [{"driver_id": x.driver_id, "name": x.display_name, "protocol": x.protocol,
