@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime, timezone
 
 from avic_core.domain.models import Device, Point, PointDirection, PointQuality
 from avic_core.drivers.manager import DriverInstance
@@ -223,83 +224,85 @@ class ProtocolDeviceImportService:
         selected_items = [item for item in points if item["native_identity"] in chosen]
         templates = {item["native_identity"]: self._binding_template(info["protocol"], device_meta, item)
                      for item in selected_items}
-        driver_item, driver_version = self.repository.get(driver_instance_id, DriverInstance)
-        if driver_item.state != "STOPPED" or driver_item.enabled:
-            raise RuntimeError("Импорт точек и изменение bindings разрешены только при остановленном драйвере")
-        created_device = False
-        added: list[str] = []
-        skipped: list[str] = []
-        with self.repository.transaction() as connection:
-            existing_device = next((r for r in self.repository.list_records(
-                entity_type="Device", station_id=station_id, connection=connection)
-                if r["payload"].get("protocol", "").casefold() == info["protocol"]
-                and r["payload"].get("native_identity") == info["device_native_identity"]), None)
-            if existing_device:
-                if existing_device["payload"].get("driver_instance_id") != driver_instance_id:
-                    raise ValueError("Устройство уже связано с другим экземпляром драйвера")
-                device, version = self.repository.get(existing_device["entity_id"], Device)
-                if device.address != info["address"]:
-                    raise ValueError("Адрес устройства изменился; требуется отдельная процедура переноса")
-            else:
-                device = Device(
-                    name=info["device_name"], station_id=station_id,
-                    driver_instance_id=driver_instance_id, address=info["address"],
-                    protocol=info["protocol"], network_id=str(inspection.get("network_id") or ""),
-                    native_identity=info["device_native_identity"],
-                    manufacturer=str(device_meta.get("manufacturer") or ""),
-                    model=str(device_meta.get("model") or ""),
-                    firmware_revision=str(device_meta.get("firmware_revision") or ""),
-                    vendor_id=device_meta.get("vendor_id"),
-                    identity_sources=dict(device_meta.get("identity_sources") or {}),
-                    engineering_description=str(device_meta.get("engineering_description") or ""),
-                )
-                self.repository.save(device, connection=connection)
-                created_device = True
-
-            existing_rows = self.repository.list_records(entity_type="Point", connection=connection)
-            existing_native = {r["payload"].get("native_identity") for r in existing_rows
-                               if r["payload"].get("device_id") == device.id}
-            for item in points:
-                native = item["native_identity"]
-                if native not in chosen:
-                    continue
-                if native in existing_native:
-                    skipped.append(native)
-                    continue
-                point = Point(
-                    name=item["name"], device_id=device.id, data_type=item["data_type"],
-                    unit=item["unit"], direction=PointDirection(item["direction"]),
-                    source_ref=native, native_identity=native, object_type=item["object_type"],
-                    engineering_description=item["engineering_description"],
-                    quality=PointQuality.UNCERTAIN,
-                )
-                self.repository.save(point, connection=connection)
-                added.append(point.id)
-                existing_native.add(native)
-
-            # Driver configuration and engineering records commit together. Existing
-            # bindings are preserved; a point can never be bound twice.
-            if added:
-                config = dict(driver_item.config)
-                bindings = list(config.get("bindings") or [])
-                existing_binding_ids = {str(x.get("point_id")) for x in bindings if isinstance(x, dict)}
-                new_bindings = []
-                for point_id, item in zip(added, [x for x in selected_items
-                                                  if x["native_identity"] not in skipped]):
-                    if point_id in existing_binding_ids:
-                        raise ValueError(f"Для точки {point_id} уже существует binding драйвера")
-                    new_bindings.append({"point_id": point_id, **templates[item["native_identity"]]})
-                config["bindings"] = bindings + new_bindings
-                if info["protocol"] == "modbus/tcp":
-                    host, sep, port_text = info["address"].rpartition(":")
-                    if not sep:
-                        host, port_text = info["address"], "502"
-                    config.setdefault("host", host)
-                    config.setdefault("port", int(port_text))
-                    config.setdefault("unit_id", 1)
-                driver_item.config = config
-                driver_item.updated_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
-                self.repository.save(driver_item, expected_version=driver_version, connection=connection)
+        # Serialize import against driver start/stop/config changes.
+        with self.core.driver_manager._lock:
+            driver_item, driver_version = self.repository.get(driver_instance_id, DriverInstance)
+            if driver_item.state != "STOPPED" or driver_item.enabled:
+                raise RuntimeError("Импорт точек и изменение bindings разрешены только при остановленном драйвере")
+            created_device = False
+            added: list[str] = []
+            skipped: list[str] = []
+            with self.repository.transaction() as connection:
+                existing_device = next((r for r in self.repository.list_records(
+                    entity_type="Device", station_id=station_id, connection=connection)
+                    if r["payload"].get("protocol", "").casefold() == info["protocol"]
+                    and r["payload"].get("native_identity") == info["device_native_identity"]), None)
+                if existing_device:
+                    if existing_device["payload"].get("driver_instance_id") != driver_instance_id:
+                        raise ValueError("Устройство уже связано с другим экземпляром драйвера")
+                    device, version = self.repository.get(existing_device["entity_id"], Device)
+                    if device.address != info["address"]:
+                        raise ValueError("Адрес устройства изменился; требуется отдельная процедура переноса")
+                else:
+                    device = Device(
+                        name=info["device_name"], station_id=station_id,
+                        driver_instance_id=driver_instance_id, address=info["address"],
+                        protocol=info["protocol"], network_id=str(inspection.get("network_id") or ""),
+                        native_identity=info["device_native_identity"],
+                        manufacturer=str(device_meta.get("manufacturer") or ""),
+                        model=str(device_meta.get("model") or ""),
+                        firmware_revision=str(device_meta.get("firmware_revision") or ""),
+                        vendor_id=device_meta.get("vendor_id"),
+                        identity_sources=dict(device_meta.get("identity_sources") or {}),
+                        engineering_description=str(device_meta.get("engineering_description") or ""),
+                    )
+                    self.repository.save(device, connection=connection)
+                    created_device = True
+    
+                existing_rows = self.repository.list_records(entity_type="Point", connection=connection)
+                existing_native = {r["payload"].get("native_identity") for r in existing_rows
+                                   if r["payload"].get("device_id") == device.id}
+                for item in points:
+                    native = item["native_identity"]
+                    if native not in chosen:
+                        continue
+                    if native in existing_native:
+                        skipped.append(native)
+                        continue
+                    point = Point(
+                        name=item["name"], device_id=device.id, data_type=item["data_type"],
+                        unit=item["unit"], direction=PointDirection(item["direction"]),
+                        source_ref=native, native_identity=native, object_type=item["object_type"],
+                        engineering_description=item["engineering_description"],
+                        quality=PointQuality.UNCERTAIN,
+                    )
+                    self.repository.save(point, connection=connection)
+                    added.append(point.id)
+                    existing_native.add(native)
+    
+                # Driver configuration and engineering records commit together. Existing
+                # bindings are preserved; a point can never be bound twice.
+                if added:
+                    config = dict(driver_item.config)
+                    bindings = list(config.get("bindings") or [])
+                    existing_binding_ids = {str(x.get("point_id")) for x in bindings if isinstance(x, dict)}
+                    new_bindings = []
+                    for point_id, item in zip(added, [x for x in selected_items
+                                                      if x["native_identity"] not in skipped]):
+                        if point_id in existing_binding_ids:
+                            raise ValueError(f"Для точки {point_id} уже существует binding драйвера")
+                        new_bindings.append({"point_id": point_id, **templates[item["native_identity"]]})
+                    config["bindings"] = bindings + new_bindings
+                    if info["protocol"] == "modbus/tcp":
+                        host, sep, port_text = info["address"].rpartition(":")
+                        if not sep:
+                            host, port_text = info["address"], "502"
+                        config.setdefault("host", host)
+                        config.setdefault("port", int(port_text))
+                        config.setdefault("unit_id", 1)
+                    driver_item.config = config
+                    driver_item.updated_at = datetime.now(timezone.utc)
+                    self.repository.save(driver_item, expected_version=driver_version, connection=connection)
 
         return {
             "device_id": device.id, "device_created": created_device,
