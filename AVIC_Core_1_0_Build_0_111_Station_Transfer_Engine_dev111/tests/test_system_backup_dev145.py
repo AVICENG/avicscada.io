@@ -17,7 +17,6 @@ def test_encrypted_system_backup_inspect_and_restore(tmp_path):
     target_root = tmp_path / "restored"
     with CoreApplication(source_root) as core:
         project = ProjectStationService(core).create_project("Backup integration project")
-        core.repository.save_graph([])
         backup = core.create_system_backup(tmp_path / "system.avicbackup", passphrase=PASSPHRASE)
         assert backup.is_file()
         assert backup.read_bytes().startswith(core.system_backups.MAGIC)
