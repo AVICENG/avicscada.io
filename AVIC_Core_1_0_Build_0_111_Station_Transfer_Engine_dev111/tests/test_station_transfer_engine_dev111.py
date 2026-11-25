@@ -253,12 +253,12 @@ def test_station_import_journal_failure_is_retryable_and_idempotent(tmp_path, mo
     try:
         package = source.station_transfer.export_station(
             source, station["id"], tmp_path / "ahu.avicstation",
-            source_core_version="1.0.0.dev111",
+            source_core_version="1.0.0.dev112",
         )
-        preview = target.station_transfer.inspect_package(package, target_core_version="1.0.0.dev111")
+        preview = target.station_transfer.inspect_package(package, target_core_version="1.0.0.dev112")
         stage = target.station_transfer.stage_import(
             package, tmp_path / "staging", expected_package_id=preview.package_id,
-            target_core_version="1.0.0.dev111",
+            target_core_version="1.0.0.dev112",
         )
 
         service = target.events if failure_target == "events" else target.audit
@@ -286,7 +286,9 @@ def test_station_import_journal_failure_is_retryable_and_idempotent(tmp_path, mo
         assert target.repository.get_record(station["id"])["entity_type"] == "Station"
 
         monkeypatch.setattr(service, method_name, original)
-        recovered = target.station_transfer.recover_pending(target)
+        target.close()
+        target = CoreApplication(tmp_path / "target")
+        recovered = target.station_transfer_recovery
         assert recovered["recovered"] == 1
         assert recovered["pending"] == 0
 
