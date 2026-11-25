@@ -94,10 +94,11 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         DriverCategory.BUILDING_AUTOMATION,
         "KNXnet/IP tunnelling/routing and group-address datapoint profiles planned.",
     ),
-    _planned(
+    DriverCatalogEntry(
         "mqtt", "MQTT", "MQTT 3.1.1 / 5.0",
-        DriverCategory.INTEGRATION,
-        "Broker client, TLS, topic mapping and retained/LWT quality semantics planned; Sparkplug B profile evaluated separately.",
+        DriverLifecycle.READ_ONLY_TRANSPORT, True,
+        notes="Read-only subscribe adapter with JSON/raw payload mapping and connection-quality handling; TLS/auth configured on injected Paho client.",
+        category=DriverCategory.INTEGRATION, license_feature="driver.mqtt",
     ),
     _planned(
         "opc-ua-client", "OPC UA Client", "OPC UA",
