@@ -180,6 +180,23 @@ class CoreApplication:
                           resource_id=result.name, details=details)
         return result
 
+    def list_system_backups(self):
+        with self._lock:
+            self._ensure_open()
+        return self.system_backups.list_backups(self.paths.backups)
+
+    def prune_system_backups(self, *, keep_last: int):
+        with self._lock:
+            self._ensure_open()
+        removed = self.system_backups.prune_backups(self.paths.backups, keep_last=keep_last)
+        if removed:
+            details = {"removed": [item.name for item in removed], "keep_last": keep_last}
+            self.events.record("system_backup.retention_applied", "System backup retention applied",
+                               severity="NOTICE", details=details)
+            self.audit.append(actor_id="system", action="system_backup.retention_applied",
+                              resource_type="system_backup_catalog", resource_id="local", details=details)
+        return removed
+
     def inspect_system_backup(self, backup_path: str | Path, *, passphrase: str):
         with self._lock:
             self._ensure_open()
