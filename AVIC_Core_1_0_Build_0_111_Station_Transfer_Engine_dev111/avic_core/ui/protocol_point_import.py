@@ -11,9 +11,9 @@ _PROTOCOL_DRIVERS = {
     "modbus/tcp": ("modbus-tcp", "Modbus TCP"),
 }
 _DATA_TYPES = {
-    "bool", "boolean", "binary", "digital", "digital input", "digital output",
-    "float", "double", "real", "analog", "numeric", "number",
-    "int", "integer", "uint", "counter", "long", "string", "text", "char",
+    "bool", "boolean", "binary", "digital", "digital input", "digital output", "binary-input", "binary-output",
+    "float", "double", "real", "analog", "numeric", "number", "analog-input", "analog-output",
+    "int", "integer", "uint", "counter", "long", "multi-state-input", "multi-state-output", "integer-value", "multi-state-value", "string", "text", "char",
 }
 
 
@@ -71,7 +71,10 @@ class ProtocolDeviceImportService:
             native = str(raw.get("native_identity") or "").strip()
             name = str(raw.get("name") or "").strip()
             data_type = str(raw.get("data_type") or "").strip().casefold()
-            direction = str(raw.get("direction") or "input").strip().casefold()
+            direction_value = raw.get("direction")
+            if direction_value is None:
+                raise ValueError(f"Направление точки должно быть задано явно: {raw.get('native_identity', '')}")
+            direction = str(direction_value).strip().casefold()
             unit = str(raw.get("unit") or "").strip()
             object_type = str(raw.get("object_type") or "").strip()
             if not native or len(native) > 512 or native in seen:
