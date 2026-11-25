@@ -660,7 +660,72 @@ class StationTransferManager:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    @staticmethod
+    def _replace_clone_references(value: Any, id_map: dict[str, str]) -> Any:
+        if isinstance(value, str): return id_map.get(value, value)
+        if isinstance(value, list): return [StationTransferManager._replace_clone_references(item, id_map) for item in value]
+        if isinstance(value, dict): return {key: StationTransferManager._replace_clone_references(item, id_map) for key, item in value.items()}
+        return value
+
+    @classmethod
+    def _prepare_clone_payload(cls, records: list[dict[str, Any]], auxiliary: dict[str, Any], *, target_project_id: str, station_name: str) -> tuple[list[dict[str, Any]], dict[str, Any], str]:
+        if not isinstance(station_name, str) or not station_name.strip() or len(station_name.strip()) > 160:
+            raise StationTransferError('Clone Station name must contain 1–160 characters')
+        cloned_records = json.loads(json.dumps(records, ensure_ascii=False))
+        cloned_aux = json.loads(json.dumps(auxiliary, ensure_ascii=False))
+        station_rows = [row for row in cloned_records if row.get('entity_type') == 'Station']
+        if len(station_rows) != 1: raise StationTransferError('Clone package must contain exactly one Station root')
+        source_station_id = str(station_rows[0].get('entity_id', ''))
+        source_project_id = station_rows[0].get('payload', {}).get('project_id')
+        if not source_station_id: raise StationTransferError('Clone source Station ID is missing')
+        id_map: dict[str, str] = {}
+        for row in cloned_records:
+            old_id = str(row.get('entity_id', ''))
+            if not old_id or old_id in id_map: raise StationTransferError('Clone source contains missing or duplicate entity IDs')
+            id_map[old_id] = str(uuid4())
+        if source_project_id: id_map[str(source_project_id)] = target_project_id
+        aux_id_groups = (('custom_svg','custom_svg_assets','symbol_id','custom_'),('dependencies','dependencies','edge_id',''),('schedules','schedules','schedule_id',''),('schedules','weekly_events','event_id',''),('schedules','special_events','event_id',''))
+        for db_key, table, field, prefix in aux_id_groups:
+            for row in cloned_aux.get(db_key, {}).get(table, []):
+                old_id = str(row.get(field, ''))
+                if not old_id or old_id in id_map: raise StationTransferError(f'Clone auxiliary identity is missing or duplicated: {table}.{field}')
+                id_map[old_id] = prefix + uuid4().hex if prefix else str(uuid4())
+        cloned_records = cls._replace_clone_references(cloned_records, id_map)
+        for row in cloned_aux.get('custom_svg', {}).get('custom_svg_assets', []):
+            row['station_id'] = id_map.get(str(row.get('station_id')), row.get('station_id'))
+        for row in cloned_aux.get('dependencies', {}).get('dependencies', []):
+            for field in ('dependent_id','dependency_id','station_id'):
+                if row.get(field) is not None: row[field] = id_map.get(str(row[field]), row[field])
+            raw = row.get('metadata_json')
+            if isinstance(raw, str):
+                try: row['metadata_json'] = json.dumps(cls._replace_clone_references(json.loads(raw), id_map), ensure_ascii=False, sort_keys=True)
+                except json.JSONDecodeError as exc: raise StationTransferError('Dependency metadata contains invalid JSON') from exc
+        for row in cloned_aux.get('time_management', {}).get('station_time_policy', []):
+            row['station_id'] = id_map.get(str(row.get('station_id')), row.get('station_id'))
+        for row in cloned_aux.get('time_management', {}).get('device_time_permission', []):
+            for field in ('station_id','device_id'): row[field] = id_map.get(str(row.get(field)), row.get(field))
+        for table in ('schedules','weekly_events','special_events','schedule_bindings'):
+            for row in cloned_aux.get('schedules', {}).get(table, []):
+                for field in ('station_id','schedule_id','point_id'):
+                    if row.get(field) is not None: row[field] = id_map.get(str(row[field]), row[field])
+        for row in cloned_aux.get('analytics', {}).get('point_tags', []):
+            row['point_id'] = id_map.get(str(row.get('point_id')), row.get('point_id'))
+        for row in cloned_aux.get('analytics', {}).get('point_hierarchy', []):
+            row['point_id'] = id_map.get(str(row.get('point_id')), row.get('point_id'))
+            raw = row.get('metadata_json')
+            if isinstance(raw, str):
+                try: row['metadata_json'] = json.dumps(cls._replace_clone_references(json.loads(raw), id_map), ensure_ascii=False, sort_keys=True)
+                except json.JSONDecodeError as exc: raise StationTransferError('Point hierarchy metadata contains invalid JSON') from exc
+        for row in cloned_records:
+            if row.get('project_id') is not None: row['project_id'] = id_map.get(str(row['project_id']), target_project_id)
+        cloned_station = next(row for row in cloned_records if row.get('entity_type') == 'Station')
+        cloned_station['name'] = station_name.strip()
+        cloned_station['payload']['project_id'] = target_project_id
+        if 'name' in cloned_station['payload']: cloned_station['payload']['name'] = station_name.strip()
+        return cloned_records, cloned_aux, cloned_station['entity_id']
     def commit_import(self, core, staged_path: str | Path, *, expected_package_id: str, target_project_id: str,
+                      actor: str = 'local-engineer', clone: bool = False,
+                      clone_station_name: str | None = None) -> dict[str, Any]:
                       actor: str = "local-engineer") -> dict[str, Any]:
         stage_input = Path(staged_path).expanduser()
         if stage_input.is_symlink():
@@ -700,6 +765,14 @@ class StationTransferManager:
             station_id = stage_meta.get("station_id")
             if not records or records[0] is None:
                 raise StationTransferError("Staged package has no entities")
+            if clone:
+                if not clone_station_name:
+                    raise StationTransferError("Clone Station name is required")
+                records, payload["auxiliary"], station_id = self._prepare_clone_payload(
+                    records, payload.get("auxiliary", {}), target_project_id=target_project_id,
+                    station_name=clone_station_name,
+                )
+                payload["entities"] = records
             incoming_ids = {str(r.get("entity_id")) for r in records}
             if len(incoming_ids) != len(records):
                 raise StationTransferError("Duplicate entity IDs in staged Station")
@@ -831,5 +904,5 @@ class StationTransferManager:
             delivered = self._deliver_outbox(core, operation_id, allow_prepared=True)
             return {"station_id": station_id, "station_name": station_record["name"], "entity_count": len(records),
                     "activation": "NOT_ACTIVATED", "site_binding_required": True,
-                    "operation_id": operation_id,
+                    "operation_id": operation_id, "cloned": bool(clone),
                     "journal_status": "DELIVERED" if delivered else "PENDING_RETRY"}
