@@ -345,6 +345,9 @@ class WebPagesService:
         n.published_layout = deepcopy(target.get("layout", []))
         if not isinstance(n.published_layout, list):
             raise ValueError("История публикации повреждена: снимок страницы недоступен")
+        for block in n.published_layout:
+            if isinstance(block, dict) and block.get("type") == "graphic" and not isinstance(block.get("graphic_snapshot"), dict):
+                raise ValueError("Эта историческая версия не содержит замороженного снимка мнемосхемы; откат запрещён")
         n.published_revision = version + 1
         n.published_versions.append({"revision": n.published_revision, "published_at": now.isoformat(),
                                      "layout": deepcopy(n.published_layout), "rollback_of": target_published_revision})

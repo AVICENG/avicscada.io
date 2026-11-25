@@ -228,6 +228,8 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
         assert 'id="publish"' in pages_ui and "function publishPage()" in pages_ui
         assert 'id="openPublished"' in pages_ui and "function openPublishedPage()" in pages_ui
         assert 'id="unpublish"' in pages_ui and "function unpublishPage()" in pages_ui
+        assert 'id="rollback"' in pages_ui and "function rollbackPage()" in pages_ui
+        assert 'id="publishedVersion"' in pages_ui and "/rollback" in pages_ui
         assert "/unpublish" in pages_ui and "/publish" in pages_ui
 
         client.post(f"/api/fbd-runtime/{core_document_id}/stop")
@@ -240,5 +242,12 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
         assert page_after_restart.status_code == 200, page_after_restart.text
         graphic_after_restart = client.get(f"/api/graphics/{graphics['id']}")
         assert graphic_after_restart.status_code == 200, graphic_after_restart.text
-        assert graphic_after_restart.json()["elements"][0]["bindings"][0]["point_id"] == point_id
+        # The editable source graphic reflects the deliberate post-publication edit.
+        assert graphic_after_restart.json()["elements"][0]["bindings"] == []
+        # The published revision still owns the original frozen two bindings after restart.
+        published_bindings_after_restart = client.get(
+            f"/published-graphics/{station['id']}/{graphics['id']}/bindings?page_id={page['id']}"
+        )
+        assert published_bindings_after_restart.status_code == 200
+        assert len(published_bindings_after_restart.json()["bindings"]) == 2
         reopened_app.state.core.close()
