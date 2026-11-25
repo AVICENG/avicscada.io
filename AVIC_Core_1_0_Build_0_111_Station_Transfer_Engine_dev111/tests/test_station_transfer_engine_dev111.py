@@ -243,3 +243,62 @@ def test_station_transfer_keeps_graphics_fbd_and_web_page_child_graphs(tmp_path)
     finally:
         source.close()
         target.close()
+
+
+@pytest.mark.parametrize("failure_target", ["events", "audit"])
+def test_station_import_journal_failure_is_retryable_and_idempotent(tmp_path, monkeypatch, failure_target):
+    source, _, station, *_ = _source_core(tmp_path / "source")
+    target = CoreApplication(tmp_path / "target")
+    target_project = ProjectStationService(target).create_project("Target")
+    try:
+        package = source.station_transfer.export_station(
+            source, station["id"], tmp_path / "ahu.avicstation",
+            source_core_version="1.0.0.dev111",
+        )
+        preview = target.station_transfer.inspect_package(package, target_core_version="1.0.0.dev111")
+        stage = target.station_transfer.stage_import(
+            package, tmp_path / "staging", expected_package_id=preview.package_id,
+            target_core_version="1.0.0.dev111",
+        )
+
+        service = target.events if failure_target == "events" else target.audit
+        method_name = "record" if failure_target == "events" else "append"
+        original = getattr(service, method_name)
+        failed = {"value": False}
+
+        def fail_once(*args, **kwargs):
+            is_target_record = (
+                args and args[0] == "station.imported"
+                if failure_target == "events"
+                else kwargs.get("action") == "station.imported"
+            )
+            if is_target_record and not failed["value"]:
+                failed["value"] = True
+                raise RuntimeError("simulated journal outage")
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(service, method_name, fail_once)
+        result = target.station_transfer.commit_import(
+            target, stage, expected_package_id=preview.package_id,
+            target_project_id=target_project["id"],
+        )
+        assert result["journal_status"] == "PENDING_RETRY"
+        assert target.repository.get_record(station["id"])["entity_type"] == "Station"
+
+        monkeypatch.setattr(service, method_name, original)
+        recovered = target.station_transfer.recover_pending(target)
+        assert recovered["recovered"] == 1
+        assert recovered["pending"] == 0
+
+        imported_events = target.events.list(station_id=station["id"], event_type="station.imported")
+        assert len(imported_events) == 1
+        assert target.audit.verify_chain()[0] is True
+        with target.repository._connect() as db:
+            status = db.execute(
+                "SELECT status FROM station_transfer_outbox WHERE operation_id=?",
+                (result["operation_id"],),
+            ).fetchone()[0]
+        assert status == "COMPLETE"
+    finally:
+        source.close()
+        target.close()
