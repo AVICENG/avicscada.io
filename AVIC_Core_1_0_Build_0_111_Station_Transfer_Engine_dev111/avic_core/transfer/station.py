@@ -460,6 +460,59 @@ class StationTransferManager:
             core.audit.append(actor_id="system", action="station.exported", resource_type="station", resource_id=station_id, details={"package": output.name, "entity_count": len(records)})
             return output
 
+    @staticmethod
+    def _validate_auxiliary_references(records: list[dict[str, Any]], auxiliary: dict[str, Any]) -> None:
+        """Validate station-scoped auxiliary rows before staging an untrusted package."""
+        entity_ids = {str(row["entity_id"]) for row in records}
+        point_ids = {str(row["entity_id"]) for row in records
+                     if row.get("entity_type") in {"Point", "FBDExposedPoint"}}
+        station_rows = [row for row in records if row.get("entity_type") == "Station"]
+        if len(station_rows) != 1:
+            raise StationTransferError("Auxiliary validation requires exactly one Station root")
+        station_id = str(station_rows[0]["entity_id"])
+
+        def rows(db_key: str, table: str) -> list[dict[str, Any]]:
+            database = auxiliary.get(db_key, {})
+            if not isinstance(database, dict):
+                raise StationTransferError(f"Auxiliary database {db_key} must be an object")
+            values = database.get(table, [])
+            if not isinstance(values, list) or any(not isinstance(row, dict) for row in values):
+                raise StationTransferError(f"Auxiliary table {db_key}.{table} must contain objects")
+            return values
+
+        for row in rows("custom_svg", "custom_svg_assets"):
+            if row.get("station_id") != station_id:
+                raise StationTransferError("Custom SVG row references a Station outside the package")
+        for row in rows("dependencies", "dependencies"):
+            if row.get("station_id") != station_id:
+                raise StationTransferError("Dependency row references a Station outside the package")
+            if row.get("dependent_id") not in entity_ids or row.get("dependency_id") not in entity_ids:
+                raise StationTransferError("Dependency graph contains a dangling entity reference")
+        for table in ("station_time_policy", "device_time_permission"):
+            for row in rows("time_management", table):
+                if row.get("station_id") != station_id:
+                    raise StationTransferError(f"{table} references a Station outside the package")
+                if table == "device_time_permission" and row.get("device_id") not in entity_ids:
+                    raise StationTransferError("Device time permission references a missing device")
+        schedule_rows = rows("schedules", "schedules")
+        schedule_ids = {row.get("schedule_id") for row in schedule_rows}
+        for row in schedule_rows:
+            if row.get("station_id") != station_id:
+                raise StationTransferError("Schedule references a Station outside the package")
+        for table in ("weekly_events", "special_events"):
+            for row in rows("schedules", table):
+                if row.get("schedule_id") not in schedule_ids:
+                    raise StationTransferError(f"{table} references a missing schedule")
+        for row in rows("schedules", "schedule_bindings"):
+            if row.get("station_id") != station_id or row.get("schedule_id") not in schedule_ids:
+                raise StationTransferError("Schedule binding references a missing schedule or Station")
+            if row.get("point_id") not in point_ids:
+                raise StationTransferError("Schedule binding references a missing Point")
+        for table in ("point_tags", "point_hierarchy"):
+            for row in rows("analytics", table):
+                if row.get("point_id") not in point_ids:
+                    raise StationTransferError(f"{table} references a missing Point")
+
     def _read_package(self, package_path: str | Path) -> tuple[dict[str, Any], dict[str, Any], str]:
         path = Path(package_path)
         if not path.is_file() or path.stat().st_size > self.MAX_PACKAGE_BYTES:
@@ -496,7 +549,11 @@ class StationTransferManager:
                 payload = json.loads(raw)
                 if not isinstance(payload, dict):
                     raise StationTransferError("Station payload must be a JSON object")
-                package_id = hashlib.sha256(path.read_bytes()).hexdigest()[:24]
+                digest = hashlib.sha256()
+                with path.open("rb") as package_stream:
+                    for chunk in iter(lambda: package_stream.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                package_id = digest.hexdigest()[:24]
                 return manifest, payload, package_id
         except (OSError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
             raise StationTransferError("Station package is invalid or unreadable") from exc
@@ -532,6 +589,14 @@ class StationTransferManager:
             warnings.append("Core version differs; explicit migration rules are required")
         if manifest.get("security", {}).get("authenticity") != "unsigned; publisher signature not implemented":
             warnings.append("Package authenticity metadata is not recognized")
+        # Validate internal references during inspection, before staging.
+        for row in payload["entities"]:
+            if not isinstance(row.get("entity_id"), str) or not row["entity_id"]:
+                raise StationTransferError("Station entity ID must be a non-empty string")
+            if not isinstance(row.get("entity_type"), str) or not isinstance(row.get("payload"), dict):
+                raise StationTransferError("Station entity type/payload is invalid")
+        self._validate_engineering_references(payload["entities"], auxiliary)
+        self._validate_auxiliary_references(payload["entities"], auxiliary)
         if not payload.get("transfer_policy", {}).get("target_site_binding_required"):
             raise StationTransferError("Station package does not require target-site binding")
         return StationTransferPreview(
