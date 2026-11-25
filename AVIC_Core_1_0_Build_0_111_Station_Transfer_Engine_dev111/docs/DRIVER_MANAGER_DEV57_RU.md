@@ -30,3 +30,10 @@
 - Вложенные секреты запрещены рекурсивно.
 - Добавлены тесты lifecycle/factory, persisted state, close и secret rejection.
 - Это первый runtime lifecycle слой, не финальный промышленный Driver Manager: пока нет recovery после аварийного завершения процесса, лицензирования пакетов, heartbeat/watchdog и UI настройки параметров.
+
+
+## DEV125 — корректное закрытие BACnet транспорта
+
+- Добавлен close() у BACnet/IP Point Adapter: остановка Driver Manager освобождает UDP socket клиента.
+- Исправлена защита register_adapter_factory: factory нельзя менять, пока существует активная polling session.
+- Modbus TCP не держит постоянный socket: каждая транзакция открывает и закрывает ограниченное соединение.

@@ -98,6 +98,12 @@ class BacnetIpPointAdapter:
         return {"driver_instance_id": self.driver_instance_id, "polled": len(results),
                 "success_count": self._success_count, "failure_count": self._failure_count, "results": results}
 
+    def close(self) -> None:
+        """Release the BACnet/IP UDP socket owned by this adapter."""
+        close = getattr(self.client, "close", None)
+        if callable(close):
+            close()
+
     def diagnostics(self) -> dict:
         return {"driver_id": "bacnet-ip", "mode": "READ_ONLY", "write_supported": False,
                 "configured_points": len(self.bindings), "success_count": self._success_count,
