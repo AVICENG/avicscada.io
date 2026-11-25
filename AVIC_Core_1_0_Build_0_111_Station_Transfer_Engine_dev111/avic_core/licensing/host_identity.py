@@ -149,10 +149,10 @@ class HostIdentity:
 
                 ps_path = str(identity_dir).replace("'", "''")
                 ps_user_sid = current_sid.replace("'", "''")
-                ps_script = f"""
+                ps_script = r"""
 $ErrorActionPreference = 'Stop'
-$path = '{ps_path}'
-$userSid = '{ps_user_sid}'
+$path = '' + ps_path + ''
+$userSid = '' + ps_user_sid + ''
 $acl = Get-Acl -LiteralPath $path
 $acl.SetAccessRuleProtection($true, $false)
 foreach ($existingRule in @($acl.Access)) {
@@ -175,7 +175,7 @@ foreach ($principal in $principals) {
     [void]$acl.AddAccessRule($rule)
 }
 Set-Acl -LiteralPath $path -AclObject $acl
-"""
+""".replace("__AVIC_PATH__", ps_path).replace("__AVIC_USER_SID__", ps_user_sid)
                 encoded_script = base64.b64encode(ps_script.encode("utf-16le")).decode("ascii")
                 subprocess.run(
                     [
