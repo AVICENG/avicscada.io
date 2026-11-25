@@ -1,0 +1,240 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="Auslösen" >
+  <topic name="Eine Alarmaktion manuell auslösen" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+  <key name="963-Aktion" >
+    <topic name="Eine Alarmaktion manuell auslösen" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+  </key>
+  <key name="Alarmaktionen manuell" >
+    <topic name="Alarmaktionen manuell auslösen" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+  </key>
+  <key name="Manuelle Alarmaktion" >
+    <topic name="Eine Alarmaktion manuell auslösen" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+  </key>
+</key>
+<key name="Ausnahmen" >
+  <topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  <key name="Anzeigen" >
+    <topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Bearbeiten" >
+    <topic name="Eine Ausnahme bearbeiten" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+    <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+  <key name="Hinzufügen" >
+    <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+  <key name="Löschen" >
+    <topic name="Eine Ausnahme löschen" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  </key>
+</key>
+<key name="Ausnahmevorlagen" >
+  <topic name="Ausnahmevorlagen einrichten" url="Using_963_From_a_Web_Browser_Setup_Exception_Templates.htm" />
+  <key name="Einrichten" >
+    <topic name="Ausnahmevorlagen einrichten" url="Using_963_From_a_Web_Browser_Setup_Exception_Templates.htm" />
+  </key>
+</key>
+<key name="Bearbeiten" >
+  <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  <key name="Analoge Werte" >
+    <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Ausnahmen" >
+    <topic name="Eine Ausnahme bearbeiten" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+    <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+  <key name="Belegungszeiten" >
+    <topic name="Belegungszeiten einstellen" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Eine Standardwoche ändern" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Digitale Werte" >
+    <topic name="Einen digitalen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+  <key name="Vorlagen" >
+    <topic name="Eine Vorlage bearbeiten" url="Using_963_From_a_Web_Browser_Edit_a_Template.htm" />
+  </key>
+  <key name="Zeitzonen" >
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Bediener" >
+  <topic name="Abmelden" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+  <key name="Abmelden" >
+    <topic name="Abmelden" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+  </key>
+  <key name="Anmelden" >
+    <topic name="Anmelden" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  </key>
+</key>
+<key name="Belegungszeiten" >
+  <topic name="Standardwoche anzeigen" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+  <key name="Anzeigen" >
+    <topic name="Standardwoche anzeigen" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Einstellen" >
+    <topic name="Belegungszeiten einstellen" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+    <topic name="Eine Standardwoche ändern" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Client-Anzeigen" >
+  <topic name="Client-Seitenanzeige (Anlagenbilder)" url="About_963_Schematic_Page_Client_Display.htm" />
+  <topic name="Die 963 Client-Anzeigen" url="About_963_The_963_Client_Displays.htm" />
+  <topic name="Zeitplaner" url="About_963_Diary_Diary_Display.htm" />
+  <key name="963 Konfigurationsanzeige" >
+    <topic name="Konfigurationsanzeige" url="About_963_Configuration_Mode_Display.htm" />
+  </key>
+  <key name="963 Seitenanzeige (Anlagenbilder)" >
+    <topic name="Client-Seitenanzeige (Anlagenbilder)" url="About_963_Schematic_Page_Client_Display.htm" />
+  </key>
+  <key name="963 Startseite" >
+    <topic name="963 Server-Startseite" url="About_963_963_Server_Start_up_Page.htm" />
+  </key>
+  <key name="963 Zeitplaner" >
+    <topic name="Zeitplaner" url="About_963_Diary_Diary_Display.htm" />
+  </key>
+  <key name="963-Alarmanzeige" >
+    <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+  </key>
+  <key name="963-Standard" >
+    <topic name="963 Server-Standardseite" url="About_963_963_Server_Default_Page.htm" />
+  </key>
+</key>
+<key name="Client-Zugriff auf 963" >
+  <topic name="Die 963 über einen Client bedienen" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client_.htm" />
+  <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+</key>
+<key name="DDC-Station" >
+  <topic name="DDC-Stationen konfigurieren" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  <key name="Konfiguration" >
+    <topic name="DDC-Stationen konfigurieren" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  </key>
+  <key name="Konfigurationsmodus" >
+    <topic name="Konfigurationsanzeige" url="About_963_Configuration_Mode_Display.htm" />
+  </key>
+</key>
+<key name="Digitaler Wert" >
+  <topic name="Einen digitalen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  <key name="Einstellen" >
+    <topic name="Einen digitalen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+</key>
+<key name="Dr Technicare" >
+  <topic name="Kontaktadresse von Trend" url="963_Manual_Contacting_Trend.htm" />
+</key>
+<key name="Dynamisch" >
+  <topic name="Koordinaten eines Werts anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Points_Co-ordinates.htm" />
+  <key name="Koordinaten anzeigen" >
+    <topic name="Koordinaten eines Werts anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Points_Co-ordinates.htm" />
+  </key>
+</key>
+<key name="Dynamische Trendkurve" >
+  <topic name="Eine dynamische Trendkurve anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  <key name="Anzeigen" >
+    <topic name="Eine dynamische Trendkurve anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  </key>
+</key>
+<key name="Ein-/Ausschalten" >
+  <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Alarmaktionen" >
+    <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Eingehende Alarme" >
+  <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  <key name="Aufheben" >
+    <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+</key>
+<key name="Eingehende Alarme aufheben" >
+  <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+</key>
+<key name="Einrichten" >
+  <topic name="Ausnahmevorlagen einrichten" url="Using_963_From_a_Web_Browser_Setup_Exception_Templates.htm" />
+  <key name="Ausnahmevorlagen" >
+    <topic name="Ausnahmevorlagen einrichten" url="Using_963_From_a_Web_Browser_Setup_Exception_Templates.htm" />
+    <topic name="Eine Wochenprogrammvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Week_Set_Template.htm" />
+  </key>
+  <key name="Sondertagvorlage" >
+    <topic name="Eine Sondertagvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Special_Day_Template.htm" />
+  </key>
+</key>
+<key name="Einstellen" >
+  <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  <key name="Analoge Werte" >
+    <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Belegungszeiten" >
+    <topic name="Belegungszeiten einstellen" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Digitale Werte" >
+    <topic name="Einen digitalen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+  <key name="Zeitzonen" >
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Fehlermeldungen" >
+  <topic name="Fehlermeldungen" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+</key>
+<key name="Festlegen" >
+  <topic name="Anzuzeigende Spalten festlegen" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+  <key name="Anzuzeigende Spalten" >
+    <topic name="Anzuzeigende Spalten festlegen" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+  </key>
+</key>
+<key name="Freigeben" >
+  <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Alarmaktionen" >
+    <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Grundfunktionen" >
+  <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+</key>
+<key name="Hinzufügen" >
+  <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  <key name="Ausnahmen" >
+    <topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+  <key name="Sondertagvorlage" >
+    <topic name="Eine Sondertagvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Special_Day_Template.htm" />
+  </key>
+  <key name="Wochenprogrammvorlage" >
+    <topic name="Eine Wochenprogrammvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Week_Set_Template.htm" />
+  </key>
+</key>
+<key name="Informationen" >
+  <topic name="Was ist die Leitstation 963?" url="About_963_About_963.htm" />
+  <key name="Zu dieser Bedienungsanleitung" >
+    <topic name="Informationen zu dieser Bedienungsanleitung" url="963_Manual_About_This_Manual.htm" />
+  </key>
+  <key name="zur Leitstation 963" >
+    <topic name="Was ist die Leitstation 963?" url="About_963_About_963.htm" />
+  </key>
+</key>
+<key name="Konfiguration" >
+  <topic name="DDC-Stationen konfigurieren" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  <key name="DDC-Stationen" >
+    <topic name="DDC-Stationen konfigurieren" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  </key>
+</key>
+<key name="Konfigurationsmodus" >
+  <topic name="Konfigurationsanzeige" url="About_963_Configuration_Mode_Display.htm" />
+  <key name="963 Konfigurationsanzeige" >
+    <topic name="Konfigurationsanzeige" url="About_963_Configuration_Mode_Display.htm" />
+  </key>
+</key>
+<key name="Kontaktadresse von Trend" >
+  <topic name="Kontaktadresse von Trend" url="963_Manual_Contacting_Trend.htm" />
+</key>
+<key name="Konventionen in dieser Bedienungsanleitung" >
+  <topic name="Konventionen in dieser Bedienungsanleitung" url="963_Manual_Conventions_Used_in_this_Manual.htm" />
+</key>
+
+</indexdata>

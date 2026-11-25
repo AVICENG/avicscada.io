@@ -1,0 +1,628 @@
+v1.44 08jan09 (build 30)
+========================
+Release Version
+
+v1.4C 01oct08 (build 30)
+========================
+Fixed bug in TUA creation where valid IP name was not put in the TUA.
+Added TOPS support - Note - no editable functionality is expected !
+
+v1.43 03aug07 (build 29)
+========================
+Release Version
+
+v1.4B BETA 03aug07 (build 1.4.1.29)
+==============================
+Fixed bug in Save/Open File where some vcnc data was not being saved, which caused some of the loaded data to be lost. 
+Fixed bug in TUA creation where neither IP address nor name was put in the TUA.
+Refresh now ignores imported items.
+
+Known issues
+------------
+Old saved files may not load correctly, but may be recoverable by manually inserting the missing column in the header line.
+
+v1.4A BETA 25jun07 (build 1.4.1.28)
+==============================
+Added support for new Vcnc fault codes.
+
+v1.4z 20jun07 (build 1.4.1.27)
+==============================
+Fixed Iq3 and Einc Vcnc-setup bug. Was ok before build 25, as was introduced by nxip-vcnc-fix.
+
+v1.4y 06jun07 (build 1.4.1.26)
+==============================
+Fixed bug with 'make tua' crashing in vista.
+Added check for device address in vcnc address changing.
+
+v1.4x 26apr07 (build 1.4.1.25)
+==============================
+Fixed bug with 'Autonumber Vcncs' causing crash.
+Fixed bug with allowing Nxip Vcncs to be set up.
+
+v1.4w 25jan07 (build 1.4.1.24)
+==============================
+Now uses HTML Help (IP-Tool-Manual.chm) from the SET Documentation directory.
+
+v1.4w 27dec06 (build 1.4.1.23)
+==============================
+Improved vcnc and remote device data handling to fix problem with xtend sometimes not accepting data..
+
+v1.4v 18oct06 (build 1.4.1.22)
+==============================
+Fixed bug with refresh of an item immediately after 'show this group only' is selected.
+Fixed crash if trying to edit an alarm vcnc which has no ip/name details (a seperate xtend bug).
+Changed vcnc editing to prevent editing if not all data has been received.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4u 15aug06 (build 1.4.1.21) RELEASE VERSION
+==============================
+Fixed bug with refresh status icons not being displayed on startup.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4t 14aug06 (build 1.4.1.20)
+==============================
+Fixed bug with Vcnc-Alarm-names not being refreshed correctly after edit causing subsequent edits to be corrupted.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4s 08aug06 (build 1.4.1.19)
+==============================
+Fixed bug with list not being drawn when 'show this group only' is selected.
+Fixed bug with Vcnc-Alarm-mode details not being accepted.
+Fixed bug with Vcnc-Alarm-names not being read or written.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4r 06jun06 (build 1.4.1.18)
+==============================
+Fixed bug with debug systems crashing with 'make tua'.
+Fixed bug with devices not being refreshed with 'this group only' checked.
+Added registry overrides for retry times.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4q 01jun06 (build 1.4.1.17)
+==============================
+Fixed bug with 'make tua' using hostname when device not in auto-ip.
+Now inhibits extra-info-requests to iqviews running a current-loop connection.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4p 26may06 (build 1.4.1.16)
+==============================
+Fixed bug with ip address, hostname and wins not being locked by 'lock data'.
+Fixed crash when default is used for remote trend devices.
+Fixed bug with show/hide the editing panel.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Files saved with early betas may not load correctly.
+
+v1.4o 24may06 (build 1.4.1.15)
+==============================
+Fixed bug with setting a hostname for alarm-vcncs.
+Fixed bug with default settings not all working correctly.
+Improved data collection on big networks.
+Fixed bug with iq3 addressing wizard.
+Iq3 addressing wizard now allows just lan and node to be set up.
+Check group now also checks the wins server address.
+Check group now also checks the ip-addressign mode.
+Check group now also checks that there is a hostname if dhcp is in use and a vcnc has been set up.
+
+Known issues
+------------
+Hostname, Wins and remote devices do not sort.
+Bug with show/hide the editing panel.
+Files saved with early betas may not load correctly.
+
+v1.4n 09may06 (build 1.4.1.14)
+==============================
+Textcomms syntax no longer shown in table.
+Added multi-state data status icons.
+Improved data refresh after a write.
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+Files saved with early betas may not load correctly.
+
+v1.4m BETA2c 05may06 (build 1.4.1.13)
+=====================================
+Fixed file save/open bug.
+Fixed bug with clear list.
+Fixed bug with 'write data' being disabled when new data comes in for the device being edited and the panel is locked for editing.
+Fixed inconsistent pc router/dhcp/wins descriptions when they do not exist.
+Moved msg info column to be 2nd column.
+
+Known issues
+------------
+Textcomms syntax shown in table.
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+Files saved with early betas may not load correctly.
+
+v1.4l BETA2b 03apr06 (build 1.4.1.12)
+=====================================
+Added data status icon to msg time column.
+Changed data status icon in corner of edit window to show tick and hourglass appropriately.
+
+v1.4k BETA2b 31mar06 (build 1.4.1.11)
+=====================================
+Added iq3 'Aquiring address' detection (auto-ip but dhcp server not found yet).
+Help button now works.
+Added 'data incomplete' icon in corner of edit window.
+Added 'refresh this Group' button.
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+
+v1.4j BETA2a 30mar06 (build 1.4.1.10)
+=====================================
+Fixed bug with writing to iq2v1.2 which rejected the wins entry !
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+
+v1.4i BETA2a 30mar06 (build 1.4.1.9)
+===================================
+Remote Device details request now resolves Hostnames.
+Remote Device details request now gets new data.
+Refresh now works for remote devices.
+N/a put in columns if devices do not support that feature.
+Removed 'Address Changed' alert message box.
+Now re-tries the 'new data' packets if the response was missed/lost.
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+
+v1.4h BETA2 27mar06 (build 1.4.1.8)
+===================================
+Now update the top panel when data arrives late.
+Request by IP address now accepts hostnames.
+Request by IP address now saves previous (successfull) addresses.
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+Obscured 'Address Changed' window can cause main window to appear locked up.
+Does not re-try the 'new data' packets if the response was missed/lost.
+
+v1.4g BETA2 22mar06 (build 1.4.1.7)
+===================================
+Reinstated the '?' icon for devices that are not on the local subnet.
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+Obscured 'Address Changed' window can cause main window to appear locked up.
+Does not re-try the 'new data' packets if the response was missed/lost.
+
+v1.4f BETA2 22mar06 (build 1.4.1.6)
+==================================
+Fixed crash on connect if ethernet cable is not connected.
+Changed dhcp and static back to auto and manual.
+Will now accept lowercase letters in hostnames.
+Added Wins editing.
+Moved all Default Settings to the Defaults window.
+Major User-Interface re-organisation.
+
+Known issues
+------------
+Hostname and remote devices do not sort.
+Bug with show/hide the editing panel.
+Obscured 'Duplicates' window can cause main window to appear locked up.
+Does not re-try the 'new data' packets if the response was missed/lost.
+
+v1.4e BETA 16feb06 (build 1.4.1.5)
+==================================
+Changed the conditions under which the new v3 requests are sent out,
+ in order to stop every copy of iptool duplicating the update request messages.
+
+Known issues
+------------
+File save/open do not work properly.
+Hostname and remote devices do not sort.
+Cannot edit the wins server.
+Bug with show/hide the editing panel.
+Hostnames do not accept lowercase letters.
+Shows xtend's named  vcnc-alarm-ip entries as 128.128.128.128
+Does not support vcnc-alarm-ip name entry for xtend.
+Does not read old mac files.
+
+v1.4d BETA 15feb06 (build 1.4.1.4)
+==================================
+Now shows DHCP for iq3 auto-addr-mode.
+Added button to show/hide the editing panel.
+Aligned minor version numbers to iq3 format.
+Fixed bug which sometimes caused a crash when querying remote devices.
+Fixed bug with pinging named remote device.
+
+v1.4 BETA build72 20jan06
+=========================
+Reads and Writes Hostnames to xtend v1.1b and iq3 v1.3.6.18
+Reads and Writes Remote Device Names to xtend v1.1b and iq3 v1.3.6.18
+Supports 15-char WINS names only.
+Puts hostname in vcnc-tua if device is in dhcp
+Supports v3 frames with trend continuation frames.
+Does not support ethernet continuation frames.
+Implements 'device snoozing' for more reliable large system query.
+Removed 'Focus on Newest' button.
+Added 'Lock for Editing' button.
+(Note - the list item for remote devices may not show all the data)
+
+v1.4 BETA build71 09jan06
+=========================
+Ipconfig v3 frame support
+Supports v2 frame with 128's instead of names.
+Reads Hostname - nx($)
+Reads Remote Devices - nx(b) & nx(s)
+Supports 1500 byte ipconfig frames
+Does NOT support continuation frames (trend or ethernet)
+Removed 'Temp PC addr' button.
+
+v1.4 BETA build70 03nov05
+=========================
+Added first level of named boys list support.
+WIP on Directed IP request
+
+v1.3 build69 20jul05
+====================
+Added extra file error box for tua creation
+Fixed bug with tuas.txt conversion to unicode.
+
+v1.3 build68 06apr05
+====================
+Fixed bug with Remote Einc table.
+
+v1.3 build67 08mar05
+====================
+Improved vcnc alarm ip checking.
+Reduced flicker when going to 'show this group only' mode.
+
+v1.3 build66 03mar05
+====================
+Added duplicate VCNC address check to 'Check Group' function.
+Changed vcnc port default back to standard.
+
+v1.3 build65 28feb05
+====================
+Enhanced the ip address checking and feedback.
+Now include remote einc addresses in the checking.
+Changed vcnc port defaults.
+
+v1.3 build64 21feb05
+====================
+Fixed bug with setting vcnc to alarm port.
+
+v1.3 BETA build63 03feb05
+=========================
+Fixed bug with network icon on udp ports being displayed erratically on updates.
+Changed description for 'duplicate mac' messagebox to 'duplicate mac or another engineer online'.
+Changed tuas.txt file format to unicode. NOTE - this version will convert tuas.txt file to unicode !
+All v1.3 BETA builds until now have saved the backup files wrongly. To recover them, open them in notepad and 'save as' unicode.
+
+v1.3 BETA build62 17jan05
+=========================
+Fixed bug where Iqview_3inc vcnc auto-number changed iqview address and port.
+Fixed bug where Iqview_3inc vcnc auto-number didnt work when remote devices were set up.
+Fixed random crashing bug due to the 'TUA' tool-tip being longer than 80 characters.
+Fixed bug with international characters not being written correctly to SET TUA file.
+
+v1.3 BETA build61 15nov04
+=========================
+Fixed bug where messages with a large number of 'remote devices' were dumped. (Buffer was too small)
+Added identifier and type to group check results dialog.
+
+v1.3 BETA build60 07oct04
+=========================
+Added international character support for identifier.
+Fixed bug with vcnc auto-numbering only doing 1 vcnc.
+Fixed bug where ethernet network status was shown incorrectly.
+Auto-ip check-box now indicates when dhcp is in use.
+
+v1.2 build59 25aug04
+====================
+Added NXIP identification.
+
+v1.2 build58 23aug04
+====================
+More bug fixing which would cause vcnc's to be accidentally set as alarm ports.
+
+v1.2 build57 12aug04
+====================
+Changed strings to identify 'lern' as '3inc/l' and 'iqview/pro' as 'iqview/3inc'.
+Fixed bug which would cause vcnc's to be accidentally set as alarm ports.
+
+v1.2 build56 23jul04
+====================
+Added support for iqview/pro AND lern aka node3 aka inc3.
+Added support for more than 4 vcnc's.
+Added new check-box to filter the current udp group only.
+Changed wording in mode column to show all details.
+Added highlight to mode icon if it is in auto-ip mode.
+
+v1.1 build55 12jan04
+====================
+Added more ip address validation.
+Added filtering of locked devices to iq3-auto-addressing.
+Added disabling of 'Write' button if device is locked.
+Now disable 'auto' box if device is an iq3.
+
+v1.1 build54 10dec03
+====================
+Removed 'change mode' button and 'device mode' display.
+Added 'Networked', 'Auto-IP' and 'Locked' check boxes.
+Now allow 'Network/Standalone' mode and 'Auto-IP/Manual-IP' mode to be set individualy.
+Added 'Locked' Mode icon.
+
+v1.1 build53 10nov03
+====================
+Fixed bug which prevented settings being written to einc (node address was rejected !)
+
+v1.0 build52 04nov03
+====================
+Added invalid IP address checking.
+
+v1.0 build51 30oct03
+====================
+Now limits lan and node addresses to 119.
+
+v1.0 build50 09oct03
+====================
+Changes for iqview
+- recognises both iqview builds.
+- lan and addr changes work.
+- added internal vcnc recognition.
+
+v1.0 build49 19sep03
+====================
+Small change to fix strange bug with winxp which stopped list selection being recognised.
+
+v1.0 build48 26mar03
+====================
+Web page button now disabled if device is not 'local' or 'remote'.
+'Check group' now tests for EINC lan clashes.
+Fixed bug with deleting the last remote device from an einc.
+Selected device details now update when the device refreshes.
+'Duplicate MAC' message should not now be shown when changing the IP address.
+
+v1.0 Beta build47 05feb03
+=========================
+Some text changes only.
+
+v1.0 Beta build46 03feb03
+=========================
+Fixed bug with virtual cnc not having port number after edit.
+Fixed bug with auto-address not showing udp port nummber if no device selected.
+Now automatically updates internetwork group icons when list item changes.
+Internetwork Group check now reports when finished, not one thing at a time, and copies results to clipboard.
+
+v1.0 Beta build45 31jan03
+=========================
+Added button 'Temp PC IP addr'.
+'Check group' button 'internetwork master' tests corrected.
+
+v1.0 Beta build44 29jan03
+=========================
+Filename changed.
+New 'Check group' button which checks settings of the current inetwork group.
+Default for internetwork group selection changed.
+Now flags units that have been left in factory mode.
+
+build43 27jan03
+===============
+NT version should now show ethernet settings on title bar.
+NT version now remembers IP/SUB settings.
+Fixed bug with udp when importing exported files.
+Fixed bug with dragging imported exported items.
+Fixed bug with adding Tua to Set.
+Fixed bug editing remote trend device data.
+Ip-address and number range checking improved.
+
+build42 22jan03
+===============
+NT version should now allow ethernet settings to be entered manually.
+Default UDP port setting now defaults to 57612 even if there is nothing in your registry.
+
+build41 22jan03
+===============
+Now has 'Change Mode' button for networked/standalone. (Only for devices built today onwards)
+Now has 'Default Settings' button which saves user preferences.
+Default UDP port setting now changed via 'settings' button.
+
+build40 21jan03
+===============
+Standalone devices (udp = 0) now flagged with special icon.
+Can now set udp to 0.
+About box now shows version.
+Drag and Drop of imported data now asks before over-writing.
+Fixed other bug with 'Focus on Newest' after list cleared.
+
+build39 21jan03
+===============
+Imported data can now be dragged and dropped.
+Fixed bug with 'Focus on Newest' after list cleared.
+Changed icon for 'local' internetwork group devices.
+Fixed bug with incoming messages updating imported items.
+Default VCNC Alarm port is now 2774.
+VCNC Alarm mode now not available for iq3.
+
+build38 15jan03
+===============
+Added button to refresh device details.
+Improved ethernet error messages.
+Auto-Address file selection changed.
+Auto-Address from file now supported.
+
+build37 15jan03
+===============
+Now works on Windows NT.
+
+build36 14jan03
+===============
+Can now add remote eincs !
+Auto-address dialog reworked.
+Auto-address now tells you when its finished.
+Auto-address lan/node limiting changed.
+Auto-address now allows you to change the identifiers.
+
+build35 14jan03
+===============
+Can now edit remote einc data.
+Can now ping multiple remote eincs.
+Now has button to refresh udp flag in list.
+
+build34 14jan03
+===============
+Some user-interface changes made.
+Some terminology changes made.
+Note - Auto-Address 'file mode' not yet implemented.
+UDP port 'default' changed to 57612.
+Vcnc auto address - 'use default port' now shows what that will be.
+
+build33 13jan03
+===============
+UDP recommendations added.
+Can now make TUA for IQ3 VCNC.
+Can now only run one instance.
+Now shows tooltips.
+Icons changed to similar to SET.
+Now uses 'Conventions' when writing data.
+Fixed bug with port number missing from TUA.
+Auto-Address now works.
+
+build32 03jan03
+===============
+changed default screen width to about 1024.
+renamed 'defaults' to 'conventions'
+renamed 'remote nets' to 'remote trend devices'
+renamed 'gateway ip' to 'default router'
+Changed 'Auto Address' dialog drastically.
+Now flags imported items as mode 'imported'.
+Now flags default UDP.
+
+build31 12dec02
+===============
+Fixed bug sorting empty ids.
+Fixed bug sorting imported items.
+Added icon for imported items.
+
+build30 05dec02
+===============
+Added adapter fault code.
+
+build29 05dec02
+===============
+Fixed bug writing to iqs.
+
+build28 05dec02
+===============
+Added support for multiple ethernet adapters.
+Added support for writing Remote Eincs.
+Added support for deleting Vcncs.
+Added limited duplicate mac and ip checking.
+
+build27 02dec02
+===============
+Added setup of vcncs not yet set up !
+Changed 'Auto Address' function to work through a new dialog.
+Note - the new dialog's 'set' function is not yet enabled !
+
+build26 25nov02
+===============
+Added 'stand-alone' mode recognition.
+
+build25 21nov02
+===============
+Fixed bug with Export crashing.
+Changed some button text.
+
+build24 18nov02
+===============
+Added a header line to the export file.
+
+build23 18nov02
+===============
+Fixed bug with einc-v4.2f having more than 1 rem net.
+
+build22 31oct02
+===============
+New 'Focus on Newest' button.
+Now allows columns to be re-ordered.
+Now shows icons for 'Local' etc in ip column not mac column.
+
+build21 30oct02
+===============
+Fixed bug with defaults button.
+VCNC set as Alarm destination now shows when editing.
+Now shows Remote Einc IPs (with EINC v4.2f of today's date !)
+New 'Ping Rem Einc' button.
+New 'Get Rem Einc' button.
+
+build20 28oct02
+===============
+Now shows Ethernet Status and Current Loop Status (with EINC v4.2e of today's date !)
+Now allows VCNCs to be changed (with EINC v4.2e of today's date !)
+Has a 'Default Port' button for vcncs.
+Now has a 'Autonumber' button for vcnc numbering.
+
+build19 25oct02
+===============
+Reorganised display.
+Renamed some stuff.
+Added 'hide all ip stuff' button.
+Now disables the 'other' edit boxes when check boxes are selected.
+Added 'Use defaults' button.
+Changed vcnc window to a proper list.
+Now sorts on version number.
+Moved identifier to be second column.
+Added minimize and maximize buttons.
+
+Fixed bug with loss of table selection when new message arrives.
+Fixed bug with 'restore'.
+Fixed bug in identifier sorting.
+
+build18 08aug02
+===============
+Send not inhibited by loss of focus in list.
+
+build17 06aug02
+===============
+First workshop.
+Pings more reliably.
+
+build16 05aug02
+===============
+Table view has grid lines.
+Table view allows selection of item from anywhere along row.
+Tua now appended to SET file ok.

@@ -1,0 +1,5 @@
+BACnet Sensor adjustments
+<XXXX>($),The Label,Please edit direct from device view,101
+<XXXX>(V),The current value, Units,100
+<XXXX>(%),The units,Please edit direct from device view,101
+<XXXX>(!),BACnet Current Alarm status,(2=high;3=low;4=outl;5=read),xxxx,99

@@ -1,0 +1,5 @@
+BACnet Analogue Driver adjustments
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(V),The Value,Analogue value,100 
+<XXXX>(!),BACnet Current alarm status (2=high;3=low;4=outl;5=read),xxxx,99
+<XXXX>(Y),The data type,xxxx,0

@@ -1,0 +1,6 @@
+TOPS Knob Adjustment
+<XXXX>($),The label, please edit direct from device view,101
+<XXXX>(V),TheValue,Units,100
+<XXXX>(%),The units, please edit direct from the device view,101
+<XXXX>(T),Top of range,0
+<XXXX>(B), Bottom of range, Units,0

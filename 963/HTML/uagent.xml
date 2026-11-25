@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BrowserLookups version="1.0">
+	<BrowserPatterns>
+		<!--
+		//
+		// patterns listed below use regular-expressions to match browser agents to a xslGroup and browser family
+		// list in order of priority, i.e. first match takes priority
+		//
+		 -->
+		<Pattern id="1" xslgroup="1" family="GENERIC_DESKTOP_PC">Mozilla/4\..* \(compatible; MSIE .*Windows (?=95 |98 |NT).*</Pattern>
+		<Pattern id="2" xslgroup="1" family="GENERIC_DESKTOP_PC">Mozilla/5\..*Gecko/.*</Pattern>
+		<Pattern id="3" xslgroup="2" family="GENERIC_POCKET_PC">Mozilla/4\..* \(compatible; MSIE .*Windows CE; PPC;.*</Pattern>
+		<Pattern id="5" xslgroup="4" family="GENERIC_MOBILE_PHONE">.*Nokia.*9200</Pattern>		
+		<Pattern id="4" xslgroup="3" family="GENERIC_MOBILE_PHONE">.*(Geos|EPOC).*</Pattern>
+		<Pattern id="6" xslgroup="3" family="GENERIC_MOBILE_PHONE">Mozilla/4\..* \(compatible; MSIE .*Windows CE; Smartphone;.*</Pattern>
+	</BrowserPatterns>
+
+	<!--
+	//
+	// cache="false" 963 does not cache the files listed below (XSLT's)
+	//
+	-->
+	<StyleSheets cache="true">
+		<StyleSheet target="tss" xslgroup="1">HTML\XSLT\schematicPC.xsl</StyleSheet>
+		<StyleSheet target="tss" xslgroup="2">HTML\XSLT\schematicPDA.xsl</StyleSheet>
+		<StyleSheet target="tss" xslgroup="3">HTML\XSLT\schematicMobile.xsl</StyleSheet>
+		<StyleSheet target="tss" xslgroup="4">HTML\XSLT\schematicNokia9210i.xsl</StyleSheet>
+	</StyleSheets>
+</BrowserLookups>

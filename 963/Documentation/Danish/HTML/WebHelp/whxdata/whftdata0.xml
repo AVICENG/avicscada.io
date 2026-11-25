@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<ftstdata>
+<topic name="Om Denne Vejledning" url="963_Manual_About_This_Manual.htm" />
+<topic name="Kontaktoplysninger for Trend" url="963_Manual_Contacting_Trend.htm" />
+<topic name="Denne Vejlednings Regler" url="963_Manual_Conventions_Used_in_this_Manual.htm" />
+<topic name="963-Serverens Standard Side" url="About_963_963_Server_Default_Page.htm" />
+<topic name="963-Serverens Startside" url="About_963_963_Server_Start_up_Page.htm" />
+<topic name="Hvad er 963?" url="About_963_About_963.htm" />
+<topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+<topic name="Konfigurationsfunktion Klientdisplay" url="About_963_Configuration_Mode_Client_Display.htm" />
+<topic name="Enhedsoversigten Klientdisplay" url="About_963_Device_Viewer_Client_Display.htm" />
+<topic name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+<topic name="Skematisk Side Klientdisplay" url="About_963_Schematic_Page_Client_Display.htm" />
+<topic name="963s Klientdisplay" url="About_963_The_963_Client_Displays.htm" />
+<topic name="Vis en Graf" url="Using_963_From_a_Web_Browser-Display_a_Graph.htm" />
+<topic name="Godkendelse af Alarmer" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+<topic name="Godkendelse af Alarmer fra et Alarmpanel" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+<topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+<topic name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+<topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+<topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+<topic name="Justering af Driftstider" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+<topic name="Justering af Værdier" url="Using_963_From_a_Web_Browser_Adjust_Values.htm" />
+<topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+<topic name="Ændring af Normale Driftstider" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+<topic name="Ryd Indkommende Alarmer" url="Using_963_From_a_Web_Browser_Clear_the_Incoming_Alarms.htm" />
+<topic name="Konfiguration af Undercentraler" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+<topic name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+<topic name="Slet en Undtagelse" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+<topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+<topic name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+<topic name="Vis en Grafindstilling" url="Using_963_From_a_Web_Browser_Display_a_Graph_Set_Up.htm" />
+<topic name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+<topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+<topic name="Vis Grafdata" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+<topic name="Vis Logget Data" url="Using_963_From_a_Web_Browser_Display_Logged_Data.htm" />
+<topic name="Vis 963s Start-Side" url="Using_963_From_a_Web_Browser_Display_the_963_s_Startup_Page.htm" />
+<topic name="Vis Enhedsoversigten" url="Using_963_From_a_Web_Browser_Display_the_Device_Viewer.htm" />
+<topic name="Redigering af en Undtagelse" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+<topic name="Fejlmeddelelser" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+<topic name="Gem Alarmpaneler" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+<topic name="Log På" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+<topic name="Log Af" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+<topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+<topic name="Dæmpning af et Alarmpanel" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+<topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+<topic name="Kør en Manuel Alarmhandling" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+<topic name="Kør Alarmhandlinger Manuelt" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+<topic name="Angiv Hvilke Kolonner Vises" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+<topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+<topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+<topic name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+<topic name="Se Alarmer" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+<topic name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+<topic name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+<topic name="Se Normale Driftstider" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+<topic name="Se Driftstider" url="Using_963_From_a_Web_Browser_View_Occupation_Times.htm" />
+<topic name="Se Serverstatus" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+<topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+
+</ftstdata>  

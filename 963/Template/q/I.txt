@@ -1,0 +1,6 @@
+Digital inputs adjustments for IQ3
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(S),Current state,O or I,99
+<XXXX>(H),Hours run,Hrs,99
+<XXXX>(N),Number of starts,Starts,99
+<XXXX>(R),Required state,O or I,99

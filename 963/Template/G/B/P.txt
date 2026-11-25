@@ -1,0 +1,13 @@
+BACnet Plot Module
+<XXXX>($),Label,Plot Label,-1
+<XXXX>(Y),Type,2=triggered; 3=period; 4=COV,-1
+<XXXX>(S),Source,Plot source module,-1
+<XXXX>(N),Number of Records,Maximum number of records for the plot module,-1
+<XXXX>(R),Record Count,Number of actual records,-1
+<XXXX>(C),Total Record Count,Total number of records since strategy upload,-1
+<XXXX>(T),Time,The time of the last record,-1
+<XXXX>(P),Period,0=1 Hr; 1=15min; 2=24hr; 3=1min; 4=5min; 5=10min; 6=20min; 7=30min; 8=6hr; 9=1s,-1
+<XXXX>(G),Triggered Plot,,-1
+<XXXX>(I),(Periodic Plot) Interval,Logging interval in seconds,-1
+<XXXX>(E),(Periodic Plot) Log Enable,,-1
+<XXXX>(W),Stop When Full,,-1

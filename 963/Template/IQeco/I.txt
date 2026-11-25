@@ -1,0 +1,11 @@
+IQeco Digital Input Parameters
+<XXXX>($),The label,String - please edit direct from device view,101
+<XXXX>(S),The state of this module,Boolean,101
+<XXXX>(Y),The subtype for this module,Integer,101
+<XXXX>(d),Alarm state,String,99
+<XXXX>(R),Required state,String,99
+<XXXX>(H),The current hour value of an outstation time,String,99
+<XXXX>(N),Number of starts,Integer,99
+<XXXX>(!),In Alarm,Boolean,99
+<XXXX>(c),Hardware Channel,Integer,99
+<XXXX>(I),The source state,Boolean,99

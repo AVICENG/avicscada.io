@@ -1,0 +1,34 @@
+/* Trend control systems, 
+   Date: 9th July, 2012
+	
+Documentation: This css file is used to apply the styling to the Edit Time Scheme View. 
+*/
+
+
+.label-column .control-label{width:100px;}
+.label-column .controls{margin-left:110px;}
+.label-column input{width:95%;}
+
+.timing-column .control-label{width:100px;}
+.timing-column .controls{margin-left:110px;}
+.lt-ie8 .label-column input{
+width:200px;
+}
+.lt-ie8 .timing-column  input
+ {
+width:100px;display:inline;
+}
+
+.lt-ie8 .timing-column .btn-group{display:inline;}
+
+.lt-ie8 .form-horizontal .controls {
+  display: inline-block;
+  padding-left: 20px;
+  margin-left: 0;
+}
+
+.lt-ie8 .form-horizontal .controls:first-child {
+  padding-left: 110px;
+}
+
+.timeSchemeTypeSelection{padding-top:28px;}

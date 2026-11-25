@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<ftstdata>
+<topic name="963 Server Default Page" url="963_Server_Default_Page.htm" />
+<topic name="963 Server Start up Page" url="963_Server_Start_up_Page.htm" />
+<topic name="Over963" url="About_963.htm" />
+<topic name="Over deze handleiding" url="About_This_Manual.htm" />
+<topic name="Behandeling van Alarmen" url="Action_Alarms.htm" />
+<topic name="Behandeling van Alarmen vanaf een Alarm Panel" url="Action_Alarms_from_an_Alarm_Panel.htm" />
+<topic name="Een speciale dag Template toevoegen" url="Add_a_Special_Day_Template.htm" />
+<topic name="Toevoegen van een Week Template" url="Add_a_Week_Set_Template.htm" />
+<topic name="Toevoegen van een uitzondering" url="Add_an_Exception.htm" />
+<topic name="Verstellen van een Knob (Analoge waarde) in een BACnet Controller" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+<topic name="Verstellen van een Knob in een Trend Controller" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+<topic name="Adjust a Module Parameter" url="Adjust_a_Module_Parameter.htm" />
+<topic name="Verstellen van een Switch (Digitale Waarde) in een BACnet Controller" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+<topic name="Verstellen van een switch in een Trend Controller" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+<topic name="Verstellen van een tijdzone" url="Adjust_a_Timezone.htm" />
+<topic name="Verstellen van bezettingstijden" url="Adjust_Occupation_Times.htm" />
+<topic name="Alarm Viewer" url="Alarm_Viewer.htm" />
+<topic name="Basis Gebruik" url="Basic_Use.htm" />
+<topic name="Wijzigen van normale bezettingstijden" url="Change_Normal_Occupation_Times.htm" />
+<topic name="Configuratie Mode Display" url="Configuration_Mode_Display.htm" />
+<topic name="Connect to 963 Server" url="Connect_to_963_Server.htm" />
+<topic name="Contact met Trend" url="Contacting_Trend.htm" />
+<topic name="Afspraken gebruikt in deze handleiding" url="Conventions_Used_in_this_Manual.htm" />
+<topic name="Verwijderen van een Template" url="Delete_a_Template.htm" />
+<topic name="Een uitzondering verwijderen" url="Delete_an_Exception.htm" />
+<topic name="Device Viewer" url="Device_Viewer.htm" />
+<topic name="Diary Display" url="Diary_Display.htm" />
+<topic name="Tonen van een grafiek" url="Display_a_Chart.htm" />
+<topic name="Tonen van een Compact Grafiek" url="Display_a_Compact_Graph.htm" />
+<topic name="Display a Compact Graph from a Schematic Page" url="Display_a_Compact_Graph_from_a_Schematic_Page.htm" />
+<topic name="Display a Compact Graph from the Device Viewer" url="Display_a_Compact_Graph_from_the_Device_Viewer.htm" />
+<topic name="Tonen van een Grid in een grafiek" url="Display_a_Grid_on_a_Graph.htm" />
+<topic name="Display a Point's Co-ordinates" url="Display_a_Points_Co-ordinates.htm" />
+<topic name="Tonen van een precisie grafiek" url="Display_a_Precision_Graph.htm" />
+<topic name="Display a Precision Graph from a Schematic Page" url="Display_a_Precision_Graph_from_a_Schematic_Page.htm" />
+<topic name="Display a Precision Graph from the Device Viewer" url="Display_a_Precision_Graph_from_the_Device_Viewer.htm" />
+<topic name="Tonen van een schematische pagina" url="Display_a_Schematic_Page.htm" />
+<topic name="Tonen van grafiek data" url="Display_Graph_Data.htm" />
+<topic name="Tonen van IQ3 Web Pagina's" url="display_iq3_web_pages.htm" />
+<topic name="Display Logged Data" url="Display_Logged_Data.htm" />
+<topic name="Tonen van de 963 opstart pagina" url="Display_the_963_s_Startup_Page.htm" />
+<topic name="Tonen van het IQ systeem" url="Display_the_IQ_System.htm" />
+<topic name="Aanpassen van een template" url="Edit_a_Template.htm" />
+<topic name="Een uitzondering wijzigen" url="Edit_an_Exception.htm" />
+<topic name="Configuratie mode openen in IQ1 en IQ2 controllers" url="Enter_Configuration_Mode_on_Pre_IQ3_Controllers.htm" />
+<topic name="Error Messages" url="Error_Messages.htm" />
+<topic name="Verbergen van Alarm panelen" url="Hide_Alarm_Panels.htm" />
+<topic name="Laden van een grafiek definitie" url="Load_a_Graph_Definition.htm" />
+<topic name="Log In" url="Log_In.htm" />
+<topic name="Uitloggen" url="Log_Off.htm" />
+<topic name="Een Client gebruiker uitloggen" url="Log_Off_a_Client_User.htm" />
+<topic name="Dempen van een Alarm Paneel" url="Mute_an_Alarm_Panel.htm" />
+<topic name="Tonen van een opgeslagen grafiek" url="Playback_a_Recorded_Graph.htm" />
+<topic name="Playback Recorded Data" url="Playback_Recorded_Data.htm" />
+<topic name="Relinquish Control van een BACnet waarde" url="Relinquish_Control_of_a_BACnet_Value.htm" />
+<topic name="Starten van een handmatige Alarm Actie" url="Run_a_Manual_Alarm_Action.htm" />
+<topic name="Uitvoeren van handmatige alarmacties" url="Run_Alarm_Actions_Manually.htm" />
+<topic name="Schematic Page Client Display" url="Schematic_Page_Client_Display.htm" />
+<topic name="Server Status Pagina" url="Server_Status_Page.htm" />
+<topic name="Opzetten van uitzonderings templates" url="Setup_Exception_Templates.htm" />
+<topic name="Specificeren welke kolommen er getoond moeten worden" url="Specify_What_Columns_are_Displayed.htm" />
+<topic name="Alarm acties AAN/UIT schakelen" url="Turn_Alarm_Actions_ON_OFF.htm" />
+<topic name="Bediening 963 vanaf een Client" url="Using_963_From_a_Client.htm" />
+<topic name="Tonen van de alarm historie" url="View_Alarm_History.htm" />
+<topic name="Tonen van Alarmen" url="View_Alarms.htm" />
+<topic name="Tonen van uitzonderingen" url="View_Exceptions.htm" />
+<topic name="Tonen van inkomende Alarmen" url="View_Incoming_Alarms.htm" />
+<topic name="Tonen van normale bezettingstijden" url="View_Normal_Occupation_Times.htm" />
+<topic name="View Server Status" url="View_Server_Status.htm" />
+<topic name="In- en uitzoomen van een grafiek" url="Zoom_in_and_Out_of_a_Graph.htm" />
+
+</ftstdata>  

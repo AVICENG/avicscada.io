@@ -1,0 +1,22 @@
+﻿.wizard-page{display:none;margin-bottom:30px;}
+.wizard-page.scrollable{position:absolute;left:0;right:0;top:0;bottom:20px;}
+.lt-ie8 .wizard-page.scrollable .table{width:97%;margin:auto}
+
+.wizard-page.active{display:block;}
+.wizard-sub-title{
+    margin:-6px -1em 5px;
+    padding: 5px 15px;
+    background:#fff;
+    font-weight:bold;
+     border-bottom:1px solid #ccc
+}
+/* have to cancel overflow on dialog because it hides content where the vertical scrollbar would be in IE 7 */
+.lt-ie8 .ui-dialog .ui-dialog-content{overflow:visible;}
+.lt-ie8 .wizard-sub-title{
+    margin-right:-1em;
+    position:relative;
+    z-index:0;
+    zoom:1;
+}
+.wizard legend{font-size:1.2em;margin-bottom:0.1em;}
+.wizard-buttons{padding:10px 10px 0; border-top:1px solid #ccc;position:absolute;bottom:10px;left:0px;right:0px;}

@@ -1,0 +1,11 @@
+Sensor adjustments
+<XXXX>(%),The units,Please edit direct from device view,101
+<XXXX>($),The label,Please edit direct from device view,101
+<XXXX>(V),The current value,Units,100
+<XXXX>(H),The high alarm,Units,30
+<XXXX>(L),The low alarm,Units,30
+<XXXX>(N),IQ1/2 Alarm enable bits (ROLH),text I's and O's only,90
+<XXXX>(M),IQ1/2 Current alarm status (ROLH),ROLH,99
+<XXXX>(O),The offset ('real' sensors only),Units,80
+<XXXX>(D),The high delay,mins,60
+<XXXX>(A),The low alarm delay,mins,60

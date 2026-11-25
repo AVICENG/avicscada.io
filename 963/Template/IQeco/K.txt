@@ -1,0 +1,9 @@
+IQeco Knob Parameters
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(%),The units,please edit direct from device view,90
+<XXXX>(V),The value,Float,90
+<XXXX>(T),Top of range,Float,90
+<XXXX>(B),Bottom of range,Float,90
+<XXXX>(D),Destination,Float,90
+<XXXX>(P),User Level,Integer (0-99),90
+<XXXX>(N),Clip to Limits - if true knob will clip output to limits,Boolean,90

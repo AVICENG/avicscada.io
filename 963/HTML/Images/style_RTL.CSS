@@ -1,0 +1,254 @@
+/*
+ * style_RTL.css - The style sheet for right to left locales.
+ *
+ * (c) Trend Control Systems 2004
+ *
+ */
+
+body {
+	background-color : #FFFFFF;
+	font-size : 12px;
+	font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+}
+form{
+	display : inline;
+}
+.mainlink{
+	color : #FFFFFF;
+	text-align: center;
+	vertical-align: middle;
+	font-weight : bold;
+	font-size: 12px;
+	text-decoration : none;
+}
+.disabledMainlink{
+	color : #C0C0C0;
+	text-align: center;
+	vertical-align: middle;
+	font-weight : bold;
+	font-size: 12px;
+	text-decoration : none;
+}
+.pageTitle {
+	font-style : normal;
+	font-family : inherit;
+	font-size : 18px;
+	font-weight : bold;
+	color : #FF6600;
+	text-align : left;
+}
+.tableTitle {
+	font-style : normal;
+	font-family : inherit;
+	font-size : 18px;
+	font-weight : bold;
+	color : #FF6600;
+	text-align : right;
+}
+a:hover.mainlink{
+	text-align: center;
+	vertical-align: middle;
+	color: #98C1CA;
+}
+a:hover {
+	color : #000000;
+}
+.heading {
+	background-color : #98C1CA;
+	color : #000000;
+	font-family : Verdana;
+	font-size : 12px;
+	font-weight : bold;
+	text-align: right;
+}
+.data{
+	background-color : #E9F1F3;
+	color : #000000;
+	font-family : Verdana;
+	font-size : 12px;
+	clip: rect( );
+	vertical-align: top; 
+}
+.pName{
+	background-color : #E9F1F3;
+	color : #000000;
+	font-family : Verdana;
+	font-size : 12px;
+	clip: rect( );
+	font-weight : bold;
+}
+.pValue{
+	background-color : #E9F1F3;
+	color : #000000;
+	font-family : Verdana;
+	font-size : 12px;
+	clip: rect( );
+}
+a.mainData{
+	background-color : #ffffff;
+	color : #000000;
+	font-family : Verdana;
+	font-size : 10px;
+}
+a:hover.mainData{
+	background-color : #FF6600;
+	color : #FFFFFF;
+	font-family : Verdana;
+	font-size : 10px;
+}
+
+.mainData{
+	background-color : #ffffff;
+	color : #000000;
+	font-family : Verdana;
+	font-size : 10px;
+}
+.submenu {
+	text-decoration : none;
+	font-weight : bold;
+	font-size: 12px;
+	color : #000000;
+}
+a.submenu {
+	color : #000000;
+	text-decoration : none;
+}
+a:hover.submenu {
+	background-color : #98C1CA;
+	color : #000000;
+	text-decoration : none;
+}
+a.selected {
+	text-decoration : none;
+	font-weight : bold;
+	font-size: 12px;
+	color : #000000;
+	text-decoration : none;
+}
+a:hover.selected {
+	color: #000000;
+	text-decoration : none;
+}
+.selected {
+	background-color : #98C1CA;
+	color : #FFFFFF;
+	text-decoration : none;
+}
+
+a.here {
+	color: #FF6600;
+	text-decoration: none;
+}
+
+a:hover.here{
+	color: #FF6600;
+	text-decoration: none;	
+}
+
+a.submit {
+	color: #FF6600;
+	text-decoration: none;
+}
+
+a:hover.submit{
+	color: #FF6600;
+	text-decoration: none;	
+}
+table {
+	font-size: 12px;
+}
+.mainTable {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	clip:  rect(   )
+}
+select {
+	background : #FFFFFF;
+	color : #000000;
+	text-align : left;
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 12px;
+}
+select.data {
+	background : #FFFFFF;
+	color : #000000;
+	text-align : left;
+	font-size : 12px;
+}
+.menuBar {
+	BACKGROUND-COLOR: #FF6600;
+	color : #FFFFFF;
+	font-weight: bold;
+	text-align: right;
+}
+.supervisorName {
+	font-size: 12px;
+	font-weight: bold;
+	text-align: right;
+}
+.configSession {
+	background-color : #ffffff;
+	color : #000000;
+	font-family : Courier New;
+	font-size : 14px;
+	text-align: left;
+}
+.tableheading{
+	background-color : #98C1CA;
+	color : #000000;
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 12px;
+	font-weight : bold;
+	text-align: center;
+}
+.tablebody{ /* CENTRE ALIGNED */
+	background-color : #EFF3F7;
+	color : #000000;
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 12px;
+	text-align: center;
+}
+.texttable{ /* LEADING ALIGNED */
+	background-color : #EFF3F7;
+	color : #000000;
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 12px;
+	text-align: right;
+}
+.timeZoneOccupied{
+	background-color : #9CC3CE;
+	color : #000000;
+}
+.timeZoneNonOccupied{
+	background-color : #EFF3F7;
+	color : #000000;
+}
+.hoizontalSpacerBar{
+	background-color : #FF6600;
+}
+.helpInformation{
+	background-color : #FFFFE7;
+	color : #000000;
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 12px;
+	text-align: right;
+	padding: 1em 1em 1em 1em;
+}
+.trailingParagraph {
+	text-align: left;
+}
+.leadingParagraph {
+	text-align: right;
+}
+.centeredParagraph {
+	text-align: center;
+}
+.zoneplannerTimeLabel {
+	text-align: right;
+	height: 25px;
+	width: 90px;
+}
+.imageIcon {
+	vertical-align: middle;
+}

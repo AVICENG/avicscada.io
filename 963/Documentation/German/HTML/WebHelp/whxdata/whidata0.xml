@@ -1,0 +1,230 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="963" >
+  <topic name="Die 963 Client-Anzeigen" url="About_963_The_963_Client_Displays.htm" />
+  <key name="Anzeigen" >
+    <topic name="Die 963 Client-Anzeigen" url="About_963_The_963_Client_Displays.htm" />
+  </key>
+  <key name="Bedienung" >
+    <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+  <key name="Zugriff" >
+    <topic name="Anmelden" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  </key>
+  <key name="über einen Client bedienen" >
+    <topic name="Die 963 über einen Client bedienen" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client_.htm" />
+  </key>
+</key>
+<key name="963 bedienen" >
+  <topic name="Die 963 über einen Client bedienen" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client_.htm" />
+  <key name="Von einem Client aus" >
+    <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  </key>
+</key>
+<key name="963 Server" >
+  <topic name="Die 963 über einen Client bedienen" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client_.htm" />
+  <key name="Standardseite" >
+    <topic name="963 Server-Standardseite" url="About_963_963_Server_Default_Page.htm" />
+  </key>
+  <key name="Startseite" >
+    <topic name="963 Server-Startseite" url="About_963_963_Server_Start_up_Page.htm" />
+  </key>
+  <key name="Verbindung herstellen zu" >
+    <topic name="Verbindung zum 963 Server herstellen" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="963-Clientzugriff" >
+  <topic name="Fehlermeldungen" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+  <key name="Fehlermeldungen" >
+    <topic name="Fehlermeldungen" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+  </key>
+</key>
+<key name="963-Fenster" >
+  <topic name="Geräteansicht" url="About_963_Device_Viewer.htm" />
+  <key name="Geräteansicht0" >
+    <topic name="Geräteansicht" url="About_963_Device_Viewer.htm" />
+  </key>
+  <key name="Seitenanzeige (Anlagenbilder)" >
+    <topic name="Client-Seitenanzeige (Anlagenbilder)" url="About_963_Schematic_Page_Client_Display.htm" />
+  </key>
+  <key name="Zeitplaner" >
+    <topic name="Zeitplaner" url="About_963_Diary_Diary_Display.htm" />
+  </key>
+</key>
+<key name="Abmelden" >
+  <topic name="Abmelden" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+</key>
+<key name="Alarm" >
+  <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+  <key name="Alarmanzeige" >
+    <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+  </key>
+  <key name="Anzeige" >
+    <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Anzeigen" >
+    <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+    <topic name="Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+    <topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+  <key name="Historie anzeigen" >
+    <topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+  <key name="Quittieren" >
+    <topic name="Alarme quittieren" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+  </key>
+  <key name="Quittierung" >
+    <topic name="Alarmquittierung über ein Alarmfeld" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+</key>
+<key name="Alarmaktion simulieren" >
+  <topic name="Alarmaktionen manuell auslösen" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+</key>
+<key name="Alarmaktionen" >
+  <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Ein-/Ausschalten" >
+    <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+  <key name="Manuell auslösen" >
+    <topic name="Alarmaktionen manuell auslösen" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+  </key>
+</key>
+<key name="Alarme quittieren" >
+  <topic name="Alarme quittieren" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+  <key name="Über ein Alarmfeld" >
+    <topic name="Alarmquittierung über ein Alarmfeld" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+</key>
+<key name="Alarmfelder" >
+  <topic name="Alarmquittierung über ein Alarmfeld" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  <key name="Alarme quittieren" >
+    <topic name="Alarmquittierung über ein Alarmfeld" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Ausblenden" >
+    <topic name="Alarmfelder ausblenden" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+  </key>
+  <key name="Stummschalten" >
+    <topic name="Ein Alarmfeld stummschalten" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+  </key>
+</key>
+<key name="Alarmfelder stummschalten" >
+  <topic name="Ein Alarmfeld stummschalten" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+</key>
+<key name="Analoge Werte" >
+  <topic name="Eine dynamische Trendkurve anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  <key name="Dynamisch darstellen" >
+    <topic name="Eine dynamische Trendkurve anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  </key>
+  <key name="Einstellen" >
+    <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Trendkurve" >
+    <topic name="Eine Trendkurve mit kompaktem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+    <topic name="Eine Trendkurve mit präzisem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+</key>
+<key name="Anmelden" >
+  <topic name="Anmelden" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  <topic name="Verbindung zum 963 Server herstellen" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+</key>
+<key name="Ansicht" >
+  <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  <key name="Alarme" >
+    <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Eingehende Alarme" >
+    <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Trendkurvendaten" >
+    <topic name="Trendkurvendaten anzeigen" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+  </key>
+</key>
+<key name="Anzeige" >
+  <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+  <key name="Alarme" >
+    <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+    <topic name="Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+    <topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+  <key name="Anlagenbilder" >
+    <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  </key>
+  <key name="Ausnahmen" >
+    <topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Belegungszeiten" >
+    <topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Startseite der 963" >
+    <topic name="Startseite der 963 anzeigen" url="Using_963_From_a_Web_Browser_Display_the_963_s_Startup_Page.htm" />
+  </key>
+</key>
+<key name="Anzeigen" >
+  <topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  <key name="Alarm" >
+    <topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+  <key name="Alarm-Historie" >
+    <topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+  <key name="Alarme" >
+    <topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+    <topic name="Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+    <topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Anlagenbilder" >
+    <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+  <key name="Aufgezeichnete Daten" >
+    <topic name="Aufgezeichnete Daten anzeigen" url="Using_963_From_a_Web_Browser_Display_Logged_Data.htm" />
+    <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Aufgezeichnete Trendkurve" >
+    <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Belegungszeiten" >
+    <topic name="Standardwoche anzeigen" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Das Trend-System" >
+    <topic name="Das Trend-System anzeigen" url="Using_963_From_a_Web_Browser_Display_the_IQ_System.htm" />
+  </key>
+  <key name="Ein Raster auf einer Trendkurve" >
+    <topic name="Ein Raster auf einer Trendkurve anzeigen" url="Using_963_Display_a_Grid_on_a_Graph.htm" />
+  </key>
+  <key name="Serverstatus" >
+    <topic name="Serverstatus anzeigen" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+  </key>
+  <key name="Trendkurve mit kompaktem Datenformat" >
+    <topic name="Eine Trendkurve mit kompaktem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+  </key>
+  <key name="Trendkurven" >
+    <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+    <topic name="Eine Trendkurve mit kompaktem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+    <topic name="Eine Trendkurve mit präzisem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+    <topic name="Eine Trendkurvendefinition laden" url="Using_963_From_a_Web_Browser_Load_a_Graph_Definition.htm" />
+  </key>
+  <key name="Trendkurvendaten" >
+    <topic name="Trendkurvendaten anzeigen" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+  </key>
+  <key name="Vergrößern" >
+    <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Verkleinern" >
+    <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Wertekoordinaten" >
+    <topic name="Koordinaten eines Werts anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Points_Co-ordinates.htm" />
+  </key>
+</key>
+<key name="Auf eine Seite wechseln" >
+  <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+</key>
+<key name="Ausblenden" >
+  <topic name="Alarmfelder ausblenden" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+  <key name="Alarmfelder" >
+    <topic name="Alarmfelder ausblenden" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+  </key>
+</key>
+
+</indexdata>

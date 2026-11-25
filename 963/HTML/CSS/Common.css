@@ -1,0 +1,330 @@
+html, body
+{
+    height: 100%;
+    overflow:hidden; /* scrollbars are on the grouped scrollable panels */
+}
+body
+{
+    font-family: Arial, Verdana, Sans-Serif;
+    background:#f9f9f9;
+   
+}
+
+table, td, th{font-size:1em;}
+
+.pre{white-space: pre;}
+
+.lt-ie8 legend{width:auto}
+
+.ui-widget
+{
+    font-family: Arial, Verdana, Sans-Serif;
+    font-size:1em;
+}
+.ui-dialog{
+    -webkit-box-shadow:#999 3px 3px 10px;
+    -moz-box-shadow:#999 3px 3px 10px;
+    -o-box-shadow:#999 3px 3px 10px;
+    box-shadow:#999 3px 3px 10px;
+    border-color:#999;
+}
+
+.scrollable
+{
+    overflow: auto;
+    position: relative;
+}
+
+.panel
+{
+    height: 100%;
+}
+
+.panel-divider
+{   border: solid gray;
+    border-width: 0 1px 0 0;
+}
+body[dir="rtl"] .panel-divider{
+    border-width:0 0 0 1px;
+}
+.explorer{background:#fff;}
+.tab-view{padding-left:0;min-width:700px}
+.tab-view > .tab-page{margin-right:20px;}
+.tab-view > .nav-tabs{margin-right:20px;}
+body[dir="rtl"] .tab-view > .tab-page, body[dir="rtl"] .tab-view > .nav-tabs{margin-right:0;margin-left:20px;}
+
+.tab-page{display:none;background:#fff;border:1px solid #ddd; border-top:0 solid; padding:10px}
+.tab-page.active{display:block;}
+
+.tooltip{min-width:100px;z-index:2004}
+.tooltip-inner{background-color:#666;max-width:100%}
+.tooltip.top .tooltip-arrow {
+  border-top-color: #666;
+}
+.tooltip.right .tooltip-arrow {
+  border-right-color: #666;
+}
+.tooltip.left .tooltip-arrow {
+  border-left-color: #666;
+}
+.tooltip.bottom .tooltip-arrow {
+  border-bottom-color: #666;
+}
+
+.tooltip.in{
+    opacity:1;
+    filter: alpha(opacity=100);
+}
+.tooltip-nowrap, .nowrap{white-space:nowrap;}
+.context-menu-item.disabled {color: #999;}
+
+#RepetitionFieldset{margin-top:4em;}
+
+
+.nav-tabs{margin-top:10px;}
+.nav{margin-bottom:0;}
+
+.btn-row{text-align:right;}
+body[dir="rtl"] .btn-row{text-align:left;}
+.btn{margin-right:10px;}
+
+.btn-group-container{margin-top:10px;white-space:nowrap;display:inline-block;}
+body[dir="rtl"] .btn{margin-left:10px;margin-right:0}
+
+
+.btn-group .btn{margin:0}
+
+.form-horizontal .control-label{text-align:left;}
+body[dir="rtl"] .form-horizontal .control-label{text-align:right;}
+
+.form-horizontal .control-group{margin-bottom:9px;}
+
+input{box-sizing:content-box;-webkit-box-sizing:content-box;-moz-box-sizing:content-box;}
+
+#DisplayDiaryViewElement
+{
+    height: 100%;
+    min-width: 100px;
+    max-width: 300px;
+}
+
+.loading > .folder .jstree-icon:before,
+.loading > .timezone .jstree-icon:before{
+    content: '';
+    display:inline-block;
+    width:16px;
+    height:16px;
+    margin:16px 0 0;
+    float:left;
+    background:url(images/wait-16.gif) 50% 50% no-repeat;
+    -webkit-border-radius:100%;
+    -moz-border-radius:100%;
+    border-radius:100%;
+    vertical-align:bottom;  
+}
+
+
+.error, .error .bubble-anchor{position:relative;}
+.lt-ie8 .error, .lt-ie8 .error .bubble-anchor{z-index:1;}
+.alert-static{padding:8px;font-size:11px;line-height:1.5em}
+.error .alert{
+    border:1px solid;
+    box-shadow:1px 2px 7px #999;
+    top:0em;
+    left:0;
+    margin-top:-0.8em;
+    z-index:200;
+    display:block;
+    position:absolute;
+    width:200px;
+}
+
+.error .viewport-size-error{
+	top: 1em;
+	left: 10px;
+	z-index: 3000;
+}
+
+.error .alert:after{
+    border:solid ;border-width:0 0 1px 1px;
+    background:#F2DEDE;
+    content:'';
+    display:block;
+    left:-7px;
+    position:absolute;
+    top:1em;
+    width:10px;height:10px; 
+    -webkit-transform:rotate(45deg);
+    -moz-transform:rotate(45deg);
+    -ms-transform:rotate(45deg);
+    -o-transform:rotate(45deg);
+}
+.no-csstransforms .error .alert:after{display:none;}
+.error .point-down:after{
+    border-width:0 1px 1px 0;
+    left:50%;
+    top:100%;
+    margin-top:-5px;
+    
+}   
+.error .point-down{
+    left:0;right:0; /* make full width if can't work out centre */
+    width:auto;
+}
+
+
+
+
+#DisplayTimeSchemeViewElement.loading{
+    display:none;
+}
+#DisplayTimeSchemeViewElement.disabled 
+{
+    display:none
+}
+
+#activationTimePlannerWidgetElement
+{
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+
+
+.hour-glass-dialog{background: #fff; 
+    -webkit-border-radius:0.7em;
+    -moz-border-radius:0.7em;
+    -o-border-radius:0.7em;
+    -ms-border-radius:0.7em;
+    border-radius:0.7em;
+    -webkit-box-shadow:#999 3px 3px 10px;
+    -moz-box-shadow:#999 3px 3px 10px;
+    -o-box-shadow:#999 3px 3px 10px;
+    box-shadow:#999 3px 3px 10px;
+
+}
+
+.hour-glass-dialog .ui-dialog-content{
+    padding:5px;
+    overflow:hidden;
+}
+
+.hour-glass{
+    background:url(images/waitwheel.png) 50% 50% no-repeat;
+    animation: rotate 1.5s infinite ease-in-out;
+    -webkit-animation: rotate 1.5s infinite ease-in-out;
+    -moz-animation: rotate 1.5s infinite ease-in-out;
+    -o-animation: rotate 1.5s infinite ease-in-out;  
+    border-radius:100%;
+    -webkit-border-radius: 100%;
+    -moz-border-radius: 100%;
+    -o-border-radius:100%;
+  
+    display:block;
+    width:50px;
+    height:50px;
+}
+
+.no-cssanimations .hour-glass{background-image:url(images/wait.gif);}
+
+.timeinput-container .time-input{width:100px}
+.timeinput-container .btn-group{display:inline-block;vertical-align:middle;}
+
+.exception-date-list{border:1px solid gray;padding:10px;background:#fff;height:6em;overflow:auto}
+
+label[for="DefaultTimeSchemeList"]{border-top: 1px solid #ddd;padding:7px 0 0; margin:13px 0 0;display:block }
+
+
+@-moz-keyframes rotate 
+{
+from {-moz-transform: rotate(0deg);transform: rotate(0deg);}
+to {-moz-transform: rotate(360deg);transform: rotate(360deg);}
+}
+
+@-webkit-keyframes rotate 
+{
+from {-webkit-transform: rotate(0deg);transform: rotate(0deg);}
+to {-webkit-transform: rotate(360deg);transform: rotate(360deg);}
+}
+
+@-o-keyframes rotate 
+{
+0% {transform: rotate(0deg);-o-transform: rotate(0deg);}
+100% {transform: rotate(360deg);-o-transform: rotate(360deg);}
+}
+
+
+@keyframes rotate
+{
+from {transform: rotate(0deg)}to {transform: rotate(360deg)}
+}
+
+/* bootstrap corrections */
+.lt-ie9 .row-fluid input[class*="span"]{min-height:20px;}
+
+/* Bootstrap RTL */
+body[dir="rtl"] .row{margin-left:0;margin-right:-20px;}
+body[dir="rtl"] ul, body[dir="rtl"] ol{
+    margin-right: 25px;
+    margin-left:0;
+}
+body[dir="rtl"] ul.unstyled,
+body[dir="rtl"] ol.unstyled
+{margin-right:0;}
+body[dir="rtl"] .row-fluid [class*="span"]{
+    float:right;
+    margin-right:2.127659574%;
+    margin-left:0
+}
+body[dir="rtl"] .row-fluid [class*="span"]:first-child {
+    margin-right:0;
+}
+body[dir="rtl"] .nav{margin-left:0; margin-right:0;}
+body[dir="rtl"] .nav-tabs > li, 
+body[dir="rtl"] .nav-pills > li{
+    float:right;
+}
+body[dir="rtl"] .radio, 
+body[dir="rtl"] .checkbox{padding-left:0;padding-right:18px;}
+body[dir="rtl"] .radio input[type="radio"], 
+body[dir="rtl"] .checkbox input[type="checkbox"]{
+    float:right;
+    margin-left:0;
+    margin-right:-18px;
+}
+body[dir="rtl"] .form-horizontal .control-label{float:right;text-align:right}
+body[dir="rtl"] .form-horizontal .controls{margin-left:0;margin-right:110px;}
+.lt-ie8 body[dir="rtl"] .form-horizontal .controls{margin-right:0;}
+
+body[dir="rtl"] .btn-group>.btn:first-child{
+
+    -webkit-border-radius:0px 4px 4px 0;
+    -moz-border-radius:0 4px 4px 0;
+    border-radius:0 4px 4px 0;
+}
+body[dir="rtl"] .btn-group>.btn:last-child,
+body[dir="rtl"] .btn-group>.dropdown-toggle
+{
+    -webkit-border-radius:4px 0px 0px 4px;
+    -moz-border-radius:4px 0px 0px 4px;
+    border-radius:4px 0px 0px 4px;
+}
+body[dir="rtl"] .btn-group {margin-right:10px;}
+body[dir="rtl"] .btn-group > .btn + .btn{margin-left:0;margin-right:-1px;}
+body[dir="rtl"] .btn-group > .btn {margin-left:0;margin-right:0;}
+.exceptionMenu{font-size:0;width:0;height:0;z-index:-1;position:absolute}
+
+#ChangeDefaultTimeScheme{
+    text-align:center
+    
+}
+#ChangeDefaultTimeScheme select{
+    margin-top:35px;
+}
+
+/*JQuery ui dialog title RTL*/
+body[dir="rtl"] .ui-dialog .ui-dialog-title { float: right; margin: .1em 0 .1em 16px; } 
+body[dir="rtl"] .ui-dialog .ui-dialog-titlebar-close {right:auto; left: .3em; margin: -10px 0 0 0;}
+body[dir="rtl"] .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset { float: left; }
+
+

@@ -1,0 +1,888 @@
+﻿#IQ3xcite Translation File
+#File Format: 2
+#Firmware version: 2.10
+#File version: 6
+#Language: Suomi
+#Notes:
+#Data:
+1,.
+2,ltr
+11,Ei||On
+12,Koodattu||Teksti||Atribuutti||Parannettu
+13,PV||OP||Jää||Pysäytä||Jatkuva
+14,0: Analoginen||1: Sis. analoginen||2: Digitaalinen||3: Sis. digitaalinen
+15,Käytettävät tyypit:||1:  Suodatin D= E*D+(1-E)*G||2:  Skaalaa G from 0-100 to E-F||3:  Skaalaa G to 0-100 from E-F||4:  Rajoitus : F jos G<F tai E jos G>E||5:  Rajoitus : 0 jos G<F tai 100 jos G>E||6:  Logaritmi D=E*log(G)||7:  Neliöjuuri D=E*sqrt(G)||8:  Summa Skaala D=(E*G)+(F*H)||9:  Kertolasku D=G*E*F||10: Jakolasku D=(G/E)*F||11: Minimi||12: Maksimi||13: Keskiarvo||14: Portti D=E if 0 or =F if 1||15: Vertailu D=1 if F>E||16: Entalpia E=rh F=degC D=kJ/kg||17: Hystereesi level E band F||18: AD-muunnos||19: Taulukointi||20: Summa D=E+F+G+H||21: Hystereesi Alaraja E yläraja F||22: Proximity level E error F||23: Eksponentti : D=E^F||24: Itseisarvo : D=ABS G||25: Pyöristys : D=TRUNC G||26: Trigonometria
+16,Käytettävät tyypit:||1: Digitaalinen||2: Analoginen||3: Aikaverrannollinen||4: 3-pisteohjaus jatkuva||5: Binäärihystereesi||6: Aikaverrannollinen käsikäyttö||7: 3-pisteohjaus
+17,Käytettävät tyypit:||1: Totuustaulu||2: Ajastin||3: Ristiriita||4: Laskuri||5: Viive||6: Käyttötunnit||7: Logiikkalähdön monistus||8: DA-muunnos
+18,Ei||Vetoviive||Min. päällä||Päästöviive||On
+19,Ei läsnäoloa||Läsnäolo
+20,Automaatilla||Käsikäytöllä
+21,Ei||Pysyvä||Laskee||Nousee
+22,Ei ohituskäyttöä||Ohituskäytöllä
+23,Ei invertoitu||Invertoitu
+24,Sini||Kosini||Tangentti
+25,Asteina||Radiaaneina
+26,Ei||Kyllä
+27,Kyllä||Ei
+28,Kuittaamaton||Kuitattu
+29,0:Lineaarinen||1:Logaritminen||2:Termistorijännite||3:Jännite||4:Thermistori Ohmit||5:Taulukko
+30,0:Jännite||1:Thermistorijännite||2:Virta||3:Thermistori Ohmit||4:Analoginen
+31,||Ma||Ti||Ke||To||Pe||La||Su
+32,||Tam||Hel||Maa||Huh||Tou||Kes||Hei||Elo||Syy||Lok||Mar||Jou
+33,OK||Epäonnistui
+34,||Synkronoitu||Tapahtumasta||Jaksotettu||Arvonmuutos (COV)
+35,1 tunti||15 minuuttia||24 tuntia||1 Minuutti||5 Minuuttia||10 Minuuttia||20 Minuuttia||30 Minuuttia||6 Tuntia||1 Sekunti
+36,Ulkona||Sisällä
+37,Yläraja||Alaraja||Lukee||Raja-arvojen ulkopuolella
+38,0: Ulkoinen||1: Sisäinen
+39,Poikkeama||Anturivika||Oletus
+40,Poikkeama||Anturivika
+41,Ristiriita||Huolto
+42,Digitaalinen
+43,||1:Siirto||2:Globaali Siirto||3:Min||4:Max||5:Summa||6:Keskiarvo||7:Analogia pisteeltä||8:Byteltä||9:Bitiltä
+44,0:Analogi||1:Dig. Tavu||2:Bitti
+45,0:Tiedonsiirto estetty||1:Tunniste||2:Atribuutti 2||3:Atribuutti 3||4:Atribuutti 4||5:Atribuutti 5||6:Atribuutti 6||7:Atribuutti 7
+46,Seuraava||Joka||Vapaa
+47,Ei hälytystä||Hälytys||Yläraja||Alaraja||Alueylitys||Lukee||Raja-arvo||Anturivika||Huolto||Ristiriita
+48,Passiivinen||Lämmitys||Jäähdytys
+49,Ei yhteyttä||Itsetestaus||Odottaa||Toiminnassa||Vakava palautuva virhe||Vakava palautumaton virhe
+50,Serif||Sans-Serif||Cursive||Fantasy||Monospace
+51,Vasemmalle||Keskellä||Oikealle
+52,||Staattinen teksti||Dynaaminen teksti||Ei käytössä||Ei käytössä||Appletti
+53,||Päiväpoikkeus||Viikkopoikkeus
+54,Ei||Kyllä
+55,AK linjalla||Virhe AK-ohjelmassa||Ulkoinen I/O-liityntäkortti virhe||RTC-virhe||RAM-virhe||Virhe ohjelmassa||Sarjaliikennevirhe||PROM-virhe
+56,Ohjelma-askelten ylivuoto||Alhainen muisti||IO-väylä häiriö||Alhainen Flash||Arkistointi virhe||Virheellinen aika||Tiedosto virhe
+57,Digitaaliset tulot
+58,Lähtö
+59,Hälytysryhmä
+60,Hälytysreitti
+61,Hälytys määränpää
+62,Funktio
+63,Säädin
+64,Anturi
+65,Asetusarvo
+66,Tekstipiste
+67,Askeltaulukko
+68,Anturityyppi
+69,Logiikka
+70,Kytkin
+71,Osoitteisto
+72,Hakemisto
+73,Näyttö
+74,Aika
+75,Trendipisteet
+76,Käyttäjä
+77,Aikaohjelma
+78,Päiväprofiili
+79,Poikkeuspäivä
+80,Aikaohjelmajakso
+81,Siirtopisteet
+82,Hälytys tulomoduli
+83,Optimoitu käynnistys ja pysäytys
+84,Optimoitu lämmitys
+85,Optimoitu jäähdytys
+86,Digitaalitavu
+87,Analogiasolmut
+88,IO Moduli
+89,vCNC
+90,Sivupiste
+91,Tunnus
+92,Tulon tyyppi
+93,Tyyppi
+94,Kulman tyyppi
+95,Ohjelma-askel
+96,Kytkentäpiste
+97,Modulissa
+98,Sivulla
+99,X-koordinaatti
+100,Y-koordinaatti
+101,Tila
+102,Sisääntulo
+103,Vaadittu taso
+104,Hälytys kuitattu
+105,Hälytys sallittu
+106,Hälytys lähetetty
+107,Hälytys viive (s)
+108,Aika hälytyksessä (s)
+109,Käänteinen
+110,Suora lähtö
+111,Käänteinen lähtö
+112,Suoran lähdön piste
+113,Käänteisen lähdön piste
+114,Full Scale Drive
+115,Lähdön asento
+116,Takaisinkytkentä
+117,Alue
+118,Korjaus
+119,Käyttötunnit
+120,Käyntikerrat
+121,Näytteenottoväli
+122,Päällä-taso
+123,Pois-taso
+124,Pyörahdysaika
+125,Ohituskäytöllä
+126,Viimeinen askel
+127,Maksimi jono
+128,Epäonnistui
+129,Viestin muoto
+130,Osoite
+131,LAN
+132,Intervalli
+133,Estä poistuvat
+134,Uusi hälytys
+135,Estoprioriteetti
+136,Kyllä
+137,Ulostulo
+138,Ryhmä
+139,Kohde
+140,Ota käyttöön
+141,Arvo
+142,Tulo B
+143,Tulo E
+144,Tulo F
+145,Tulo G
+146,Tulo H
+147,Tulo I
+148,Tulo J
+149,Tulo K
+150,Tulo L
+151,Hälytys tila
+152,Prosessiarvo
+153,Läsnäoloasetusarvo (OCC)
+154,poissaoloasetusarvo (UNOCC)
+155,Asetusarvon valinta
+156,Käsikäytön taso
+157,Käsikäytön valinta
+158,Anturivirhe
+159,Virkistysväli
+160,Vahvistus
+161,Integrointiaika (min)
+162,Derivointiaika (min)
+163,Asetusarvopoikkeama
+164,Integraali
+165,Derivaatta
+166,Ulostulo
+167,Hälytys Sallittu
+168,Hälytys lähetetty
+169,Oletusarvo
+170,Yksikkö
+171,Arvo
+172,Ulostulo
+173,Käyttäjätaso
+174,Yläraja alue
+175,Alaraja alue
+176,Yksikkö
+177,Ylärajahälytys raja
+178,Alarajahälytys raja
+179,Yläraja viive
+180,Alaraja viive
+181,Anturityyppi
+182,Tulon tyyppi
+183,Eksponentti
+184,Pistemassa
+185,Tulo
+186,Ulostulo
+187,Yläraja
+188,Alaraja
+189,Ehtotaulu J
+190,Ehtotaulu K
+191,Ehtotaulu L
+192,Ehtotaulu M
+193,Vetoviive
+194,Minimi päällä
+195,Päästöviive
+196,Ajastimen numero
+197,Hälytysviive
+198,Ulostulo J
+199,Ulostulo K
+200,Ulostulo L
+201,Ulostulo M
+202,Ulostulo N
+203,Ulostulo O
+204,Kulutus
+205,Kumulatiivinen arvo
+206,Kerroin
+207,Nollaus
+208,Käyntitunnit
+209,Käyntituntihälytys
+210,Tila
+211,Versio
+212,Tunniste
+213,Atribuutti2
+214,Atribuutti3
+215,Atribuutti4
+216,Atribuutti5
+217,Atribuutti6
+218,Atribuutti7
+219,Paikallisosoite
+220,Paikallisverkko (LAN)
+221,Valvomoportti
+222,IP osoite
+223,Aliverkon peite
+224,UDP-portti
+225,MAC-osoite
+226,Reititin 1
+227,Tarkistussumma OK
+228,Jännite Resetti
+229,Hierarkiataso
+230,PIN
+231,Piste nro.
+232,Tunnit
+233,Minuutit
+234,Sekunnit
+235,päivä
+236,Kuukausi
+237,Vuosi
+238,Viikonpäivä
+239,Kesäajan muutos (h)
+240,Kesäaika alkaa (pv)
+241,Kesäaika alkaa (kk)
+242,Kesäaika päättyy (pv)
+243,Kesäaika päättyy (kk)
+244,Nykyinen aika
+245,Minuutteja keskiyöstä
+246,Sekuntipulssi
+247,Minuuttipulssi
+248,5 minuutin pulssi
+249,10 minuutin pulssi
+250,15 minuutin pulssi
+251,20 minuutin pulssi
+252,30 minuutin pulssi
+253,60 minuutin pulssi
+254,6 Tunnin pulssi
+255,24 Tunnin pulssi
+256,Päiväbitti 5
+257,Päiväbitti 6
+258,Päiväbitti 7
+259,Viikkopulssi
+260,Kuukausipulssi
+261,Vuosipulssi
+262,Tallennuksien määrä
+263,Käynnistystulo
+264,Käyttäjätunnus
+265,Salasana
+266,Taso
+267,Kotisivu
+268,Aikavalvonta
+269,Kirjautunut
+270,Aika
+271,Viikkoprofiili
+272,Huoltoryhmä
+273,Ristiriitahälytysryhmä
+274,Ylärajahälytysryhmä
+275,Alarajahälytysryhmä
+276,Lukuvirhehälytysryhmä
+277,Alueylityshälytysryhmä
+278,Säätötulonryhmä
+279,Liukuvaraja-arvoryhmä
+280,Prioriteetti
+281,Poikkeuspäivät
+282,Aloituspäivä
+283,Aloituskuukausi
+284,Lopetuspäivä
+285,Lopetuskuukausi
+286,Päiväprofiili
+287,Uudelleen yritysväli
+288,Yleishälytysryhmä
+289,Yleishälytyksen tila
+290,Aika-arvopari
+291,Tiedonsiirron suunta
+292,Etäalakeskuksen osoite
+293,Atribuutti
+294,Etäverkko
+295,Uudelleen yritysväli
+296,Aika uudelleen yritykseen
+297,Muuttujatyyppi
+298,Merkittävä muutos
+299,Viimeisin lähetetty
+300,Lukuvirhehälytys
+301,Alueylityshälytys
+302,Alarajahälytys
+303,Ylärajahälytys
+304,Ylähälytysraja
+305,Alahälytysraja
+306,Huoltohälytys
+307,Ristiriitahälytys
+308,Säätötulohälytys
+309,Liukuva raja-arvohälytys
+310,Oletushälytyksessä
+311,Käyttö
+312,Ulkolämpötila
+313,Huonelämpötila
+314,Lämmitysrajoitus
+315,Jäähdytysrajoitus
+316,Aikavakio
+317,Aineen valinta
+318,Sovituksen esto
+319,OTP-tila
+320,OSS-tila
+321,Miehittämätön
+322,Lämmitystila
+323,Miehitetty
+324,Jäähdytystila
+325,Tila
+326,Optimoitu Päällä-aika
+327,Optimoitu POIS-aika
+328,OSS Asetusravo
+329,Aineen lämpötila
+330,Aloituspoikkeama
+331,lopetuspoikkeama
+332,Vahvistuksen aikavakio
+333,Aineen keskiarvo lt
+334,Lämmitysaine
+335,Jäähdytysaine
+336,Hälytystila
+337,Bitti 0
+338,Bitti 1
+339,Bitti 2
+340,Bitti 3
+341,Bitti 4
+342,Bitti 5
+343,Bitti 6
+344,Bitti 7
+345,Hälytystila
+346,Valittu tyyppi
+347,Oikea tyyppi
+348,I/O-Tyypit
+349,Valmistaja
+350,Sarjanumero
+351,Ohjelmistoversio
+352,Sähkökatkoviive(s)
+353,Alatyyppi
+354,Anturityyppi
+355,Huollon tila
+356,Takaisinkytkennän tila
+357,Käännösversio
+358,Ulkoisia I/O:ta jäljellä
+359,Ulkoisia I/O:ta käytössä
+360,Etämoduuli
+361,Paikallinen moduuli
+362,Portti
+363,Aikavalvonta
+364,Taustakuva
+365,Taustaväri
+366,Virkistysväli
+367,Leveys
+368,Korkeus
+369,Edustan väri
+370,Fontti
+371,Fontin koko
+372,Kohdistus
+373,URL
+374,Hälytyksessä-väri
+375,Klikattava
+376,Vasemmalta
+377,Ylhäältä
+378,Poista käytöstä
+379,Modulin esto
+380,Tyyppi
+381,Ajan haltija
+382,brIQ Määrä
+383,brIQ Käytetty
+384,Suora lähtö(mV)
+385,Käänteinen lähtö(mV)
+386,Tuloarvo(mV)
+387,Liityntä
+388,Enumeraatio
+389,NYKYIN.
+390,POISTUI
+391,TAPAHTUI  
+392,POISTUI   
+393,TILA OFF   
+394,TILA ON    
+395,EI MITAAN  
+396,YLA ARVO   
+397,ALA ARVO   
+398,Anturivirhe
+399,TULOVIRHE  
+400,POIKKEAMA  
+401,MIITAUSVIRH
+402,RISTIRIITA 
+403,HUOLTO     
+404,ALUSTUS    
+405,DATA VIRHE 
+406,PIA VIRHE  
+407,KELLOVIRHE 
+408,RAM VIRHE  
+409,OHJELMAVIRH
+410,DART VIRHE 
+411,EPROM VIRHE
+412,ASKELYLITYS
+413,MUISTI LOW 
+414,IO-VÄYLÄ VIKA
+415,FLASH LOW  
+416,ARKIST VIKA
+417,RTC VIRHE  
+418,Tuntematon
+419,Taulukko
+420,Luo uusi
+421,Muuta
+422,Tuhoa
+423,Piste
+424,Hae
+425,Lähetä
+426,Parametri
+427,Diagnostiikka
+428,Yksikkö
+429,Trendi
+430,Arvon kirjoitus ONNISTUI
+431,Arvon kirjoitus EPÄONNISTUI
+432,Ei muuttuneita arvoja
+433,Edellinen
+434,Seuraava
+435,pisteelle ei löydy tietoja
+436,Siirry taaksepäin
+437,Siirry eteenpäin
+438,Vieras
+439,Oletuskäyttäjä
+440,Alustamaton
+441,Nykyinen käyttäjä
+442,Istunto vanhentui
+443,Käyttäjä Kirjautui Ulos
+444,IQ3 kirjautuminen
+445,Oletusjärjestelmä
+446,Aloita kirjautumalla sisään...
+447,Oletus hyväksytty
+448,Kiitos käynnistä ja tervetuloa uudelleen
+449,istunto on vanhentunut. Sulje selainikkuna ja kirjaudu uudelleen sisälle
+450,Sisäänkirjautumisvirhe
+451,käyttäjänimeä ei ole
+452,virheellinen salasana
+453,voit jatkaa nykyisenä käyttäjänä tai kirjautua uudelleen toisena käyttäjänä
+454,Sulje selainikkuna uloskirjautumisen loppuun saattamiseksi
+455,Aloita kirjautumalla sisään...
+456,Oletus
+457,Tervetuloa
+458,Vahvistus
+459,Kyllä
+460,Ei
+461,Pisteen nro
+462,Pisteen Tunnus
+463,Siirtymä
+464,Nykyinen tila
+465,Ei hälytyksiä tietokannassa
+466,On
+467,Ei
+468,Yläraja
+469,Alaraja
+470,Lukee
+471,Alueylitys
+472,Anturivika
+473,Raja-arvo
+474,Ristiriita
+475,Huolto
+476,Alustus
+477,Data Virhe
+478,PIA Virhe
+479,KELLOVIRHE 
+480,RAM Virhe
+481,Ohjelmavirhe
+482,Dart Virhe
+483,Flash Virhe
+484,Ohjelma-askelten ylikuormitus
+485,Muisti vähissä
+486,CAN-virhe
+487,FLASH vähissä
+488,Arkistointi virhe
+489,Virheellinen aika
+490,Tuntematon Hälytys
+491,Käyttämätön
+492,Lähetetty
+493,Odottaa
+494,Lisää
+495,Tapahtui
+496,POISTUI
+497,Hälytykset
+498,Virhe: virhe luettaessa tietoja
+499,Virhe: virheellinen pistereferenssi
+500,Tietoja ei ole nyt saatavilla tälle pisteelle
+501,näytteenottovälillä
+502,Trendinäyttö
+503,IQ3
+504,Alakeskus
+505,Virhe: paikallisia tietoja ei pysty lukemaan
+506,Mallitiedosto puuttuu
+507,verkossa
+508,Kirjaudu
+509,Ulos
+510,Osoitelohko
+511,Hälytyskohteet
+512,Hälytysryhmät
+513,Hälytysreitit
+514,Analogisolmut
+515,Digitaalitavut
+516,Digitaaliset tulot
+517,Lähdöt
+518,Funktiot
+519,Siirtopisteet
+520,I/O-moduulit
+521,Asetusarvot
+522,Logiikkapisteet
+523,Säätimet
+524,Optimoinnit
+525,Mittauspisteet
+526,Anturityypit
+527,Askeltaulukko
+528,Kytkimet
+529,Aikaohjelmat
+530,Käyttäjät
+531,Sisäinen CNC
+532,Pääsy estetty
+533,Pääsy estetty
+534,Kielletty
+535,Hyväksytty
+536,Virheellinen toiminta
+537,Ei löytynyt
+538,Palvelua ei saatavilla
+539,OK
+540,Muuttumaton
+541,Tuntematon
+542,Tuntematon pyyntö
+543,Virhe haettaessa tietoja alakeskukselta:
+544,Virheellinen pistehaku
+545,Virhe luotaessa mallitiedostoa:
+546,Virhe haettaessa trenditietoja
+547,Virheellinen
+548,edellinen piste
+549,seuraava piste
+550,Virhe kirjoittaessa tietoja
+551,muuta
+552,Trendi
+553,Hälytys
+554,Maanantai
+555,Tiistai
+556,Keskiviikko
+557,Torstai
+558,Perjantai
+559,Lauantai
+560,Sunnuntai
+561,kopioi
+562,Tuhoa
+563,näytä ajat
+564,Aloitus
+565,Lopetus
+566,Käytä
+567,muuta
+568,Lähetä
+569,Ajat
+570,(oletus)
+571,Peruuta
+572,Kirjoita uudelleen
+573,Kirjoita punaisella merkityt uudelleen
+574,Seuraa linkkiä
+575,Virheellinen käyttäjänimi tai salasana
+576,Yritä uudelleen
+577,merkkijonoa ei löytynyt
+578,istunto on vanhentunut. Kirjaudu sisään uudelleen
+579,aloittaaksesi uuden istunnon kirjaudu sisään uudelleen
+580,Viikko-ohjelma
+581,Tervetuloa IQ3xciteen, aloita kirjautumalla sisään...
+582,Kielen valinta
+583,Hälytykset
+584,Aikaohjelmat
+585,Pisteet
+586,Kaaviosivut
+587,Tervetuloa
+588,Kohde
+589,Kohdeportti
+590,Järjestelmäkartta
+591,Muokkaa trendiä
+592,Hae tallennetut arvot
+593,Normaalitrendi
+594,Taulukko
+595,Ladataan trendiä
+596,Odota...
+597,Luodaan grafiikkaa
+598,-> Tietoja ei saatavilla
+599,Ei näytettävää tietoa
+600,Listaus
+601,LADATAAN IQ3xcite NORMAALI TRENDIÄ
+602,LADATAAN IQ3xcite PISTETAULUKKOA
+603,LADATAAN IQ3xcite TALLENNETTUJA ARVOJA
+604,ODOTA
+605,Ei tallennettuja arvoja!
+606,Valitse:
+607,Palvelin ei vastaa!
+608,Käyttäjä on kirjautunut ulos!
+609,Kirjaudu sisään ja yritä uudelleen
+610,Vastaanotettu seuraava virheilmoitus:
+611,Yritetään uudelleen
+612,Kalenteri
+613,||Optimoinnit||OTP
+614,||Tila käytössä||Lämmitys||Jäähdytys||Ei läsnäoloa
+615,Vyöhyke
+616,Aloituspoikkeama
+617,Lopetuspoikkeama
+618,Miehitysarvo
+619,Aamulämmitysarvo
+620,Jäähdytysarvo
+621,Seisokkiarvo
+622,Käyttöoikeudet eivät riitä tähän näyttöön
+623,Copyright
+624,OSS-liityntä
+625,Aikaohjelma kytkentä
+626,Ei käytössä||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||xcite/IO/4AO||xcite/IO/16DI||xcite/IO/8DI||xcite/IO/MBus||xcite/IO/DALI||xcite/IO/8DO/HOA||xcite/IO/4DO/HOA||xcite/IO/8AO/HOA||xcite/IO/4AO/HOA||xcite/IO/8DI/8TI||Tuntematon
+627,Kalenteri
+628,Pisteet
+629,Takaisin
+630,Hälytykset
+631,Oletustoiminta
+632,Kohteen nimi
+633,Lähetä tämä avain ohjelman asentajille ja saat salasanan
+634,Pääkäyttäjän sivu
+635,Salasana unohtunut?
+636,Valitse tästä
+637,Oletussalasana
+638,Lähettäjän osoite
+639,Kenelle lähetetään
+640,Lisäteksti
+641,Hälytyshistoria
+642,Hälytyskuvaus
+643,Pisteen numero
+644,Pisteen arvo
+645,Käyttämätön||Valmis||Käytössä
+646,Minuutit
+647,||IQ Lan||IP||Sposti||BACnet
+648,Sähköpostipalvelin
+649,Trend IQ3 hälytys
+650,Kohde
+651,Päiväys ja aika
+652,Alakeskus hälytyksessä
+653,Käsikytkin
+654,Käsisäätöarvo
+655,Käsikäytön tila
+656,Kohteen GUID
+657,Käsikäyttöaika (min)
+658,Trendipisteille tilaa
+659,Trendipisteitä käytössä
+660,Tiedostolista
+661,Ulkoinen I/O käytössä
+662,Sisäinen I/O
+663,Alakeskusmalli
+664,Käsikäytön tila
+665,Auto||Käsin||Ei
+666,||Pysäytetty||Lataa||Suorittaa||Pysäytyspisteessä||Debuggaus||Virhe||Ei tiedostoa||Tiedostoa ei löydy||Tiedostovirhe||brIQ määrä ylitetty
+667,Ei mitään||Ohjelman lataus||Lopetus||Käynnistys||Step Into||Step Out||Step Over||Synkronoitu lataus
+668,Skriptin valvontamoduli
+669,Skriptin tulomoduli
+670,Skriptin lähtömoduli
+671,Skriptin talletusmoduli
+672,XNC-liityntä
+673,Ohjelman tekijä
+674,Ohjelman versio
+675,Ohjelman ID
+676,AK-ohjelman tila
+677,Ohjelman komennot
+678,Debuggaus käynnissä
+679,Tiedostonimi
+680,Nykyinen rivi
+681,Keskeytys rivillä
+682,Hälyttävä verkko
+683,Hälytysosoite
+684,Hälytyskohteet
+685,Viimeinen epäonnistui
+686,Sisääntulojen lukumäärä
+687,Lähtöjen lukumäärä
+688,Moduulien lukumäärä jäljellä
+689,Tallennetut skriptimuuttujat
+690,Non Volatile Value
+691,||XNC rajapinta
+692,XNC käytössä
+693,Verkko
+694,||IQ Lan||IQ lähiverkko||Lon Talk||Ethernet IP||BACnet||IP RAS Palvelin
+695,Kelvollisten MAC-kehysten lukumäärä
+696,Viallisten MAC-kehysten lukumäärä
+697,Verkon tila
+698,Verkkovirheiden lukumäärä
+699,Alakeskuksen nimi
+700,Vakionimi
+701,Pikallinen Domain nimi
+702,IP-osoitteen määritys
+703,DHCP:n tila
+704,WINS-palvelin
+705,DNS-palvelin
+706,Aikapalvelin
+707,Aikaa uudistamiseen
+708,Viimeisin DHCP-päivitys
+709,Uudista IP-osoite
+710,Upstream Naapuri
+711,Downstream Naapuri
+712,Verkon Isäntä
+713,Etäalakeskuksen IP-osoite
+714,Etäalakeskuksen aliverkon peite
+715,||Automaattinen||Manuaalinen
+716,Poista käytöstä||Hakee DHCP:n osoitetta||DHCP:n osoite löytyi||Pyytää paikallista osoitetta||Paikallinen osoite saatu
+717,Ei ole verkon isäntä||On LANin isäntä||On verkon isäntä
+718,Ohjelma
+719,Viimeisimmän tiedoston nimi
+720,Poista arkistointiaika käytöstä (min.)
+721,Ei ohjelmaa||Lataa||Suorittaa||Virhe latauksessa||Odottaa AK-ohjelman latausta||Pysäytetty||Ei tiedostoa||Tiedostoa ei löydy||Tiedostovirhe||Tiedoston versio||brIQ määrä ylitetty||Ulkoisten I/O:n määrä ylitetty||Sisäisten I/O:n määrä ylitetty||Ominaisuus virhe
+722,Ei mitään||Odottaa komentoa||AK-ohjelman lataus||Poista AK-ohjelma||Lopetus||Käynnistys||Arkistoi
+723,||Ohjelma
+724,TCL KÄYTTÄJÄ 1
+725,TCL KÄYTTÄJÄ 2
+726,TCL KÄYTTÄJÄ 3 
+727,TCL KÄYTTÄJÄ 4 
+728,TCL KÄYTTÄJÄ 5 
+729,TCL KÄYTTÄJÄ 6 
+730,TCL SKRIPTI
+731,Ei arkistoitu||Arkistointia valmistellaan||Arkistointi käynnissä||Viimeisin arkistointi onnistui||Viimeisin arkistointi epäonnistui
+732,Arkistoinnin tila
+733,Rivien lukumäärä
+734,Kiertoaika
+735,Moduulin koko (BrIQ)
+736,XML-palvelin
+737,Tiedonsiirtonopeus
+738,Ohjelmalaatajan versio
+739,Yleishälytysryhmän 2 tila
+740,Näyttää hälytystilat
+741,Näyttää aikaohjelmat
+742,Näyttää moduulit
+743,Näyttää kaaviosivut
+744,Näyttää valikkorakenteen
+745,Ohjelma-avain
+746,Parametripisteet
+747,Koodi
+748,Arkistoi
+749,Parametrit
+750,Parametrin nimi
+751,Parametrin arvo
+752,Valinta
+753,||Kortti||Ominaisuus||Näyttö
+754,Otsikko
+755,Kuvaus
+756,Kortin ID
+757,Akkukortti
+758,Trend-LAN-kortti
+759,RS232-485 ei erotettu
+760,RS485-erotettu
+761,Tuntematon lisäkortti
+762,Suoritus prosentteina
+763,Lisää kellon muistivarmennussuojaa sähkökatkon aikana useilla vuosilla
+764,LAN-kortilla voidaan IQ3 kytkeä Trendin virtasilmukkaverkkoon
+765,Ulkoinen lisäkortti käyttää tiedonsiirtoon joko RS232 tai RS485-liityntää
+766,Ulkoisen lisäkortin tiedonsiirto tapahtuu erotetun RS485-liitynnän kautta
+767,Kytkettyä lisäkorttia ei tunnisteta ja sitä ei voida liittää IQ3:n tähän versioon
+768,Hakemistot
+769,Näytöt
+770,Verkot
+771,Vaihtoehdot
+772,Trendimääritykset
+773,Kalenterit
+774,Käynnistysten lukumäärä
+775,XNC rajapinta
+776,3:n osapuolen liityntä TCL-kielellä toteutettuna
+777,Piirikortin versio
+778,Moduulin tila
+779,Normaali||Käsikäytöllä||Ei||Käsin||Ei||BACnet Ohitus
+780,FILE ERROR 
+781,Tiedosto virhe
+782,Laiteinstanssi
+783,Manuaalilaiteinstanssi
+784,Automaatilla||Käsikäytöllä
+785,UDP-portti
+786,BBMD
+787,Edit Timeout
+788,Käyntiaika nollauksen aika
+789,Edellisen arvonmuutoksen aika
+790,Käynnistysmäärän nollauksen aika
+791,EI-Trend Laite
+792,||BACnet
+793,Verkon Numero
+794,Toimittajan Nimi
+795,Mallin Nimi
+796,Laitejärjestelmän tila
+797,EI-Trend laitteita
+798,MAC Osoite
+799,Varmistettu||Vahvistamaton
+800,Palvelun Laatu
+801,Prosessi ID
+802,Siirtymä
+803,Protokolla
+804,Trend||BACnet
+805,Poistunut Hälytys
+806,EI-Trend Laitteen tila
+807,OK||Epäonnistui||Odottaa
+808,BDT Syöte Moduuli
+809,BDT Syöte
+810,BACnet Etä-IP Osoite
+811,BACnet Etä-Aliverkko
+812,BACnet Etä-UDP Portti
+813,Aktiivinen Prioriteetti Taso
+814,Sekunteja Hälytyksen Ilmaantumisesta 
+815,Sekunteja Hälytyksen poistumisesta
+816,Lähetä I-Am at Startup
+817,UTC Siirtymä (Min)
+818,Talvi/Kesäaika päällä
+819,Talvi/Kesäaika Siirtymä (Min)
+820,Prioriteetti jono
+821,BACnet Tapahtuma Aikaleima
+822,Web-palvelimen Porttinumero
+823,Strategia Revisio
+824,BACnet
+825,BACnet valinta mahdollistaa kommunikoinnin BACnet protokollalla
+826,Lisää Uusi Ominaisuus
+828,Lisää Uusi Ominaisuus
+829,Ominaisuuden aktivointiavaimen saamiseksi ota yhteyttä asiakaspalveluun, yhteystiedot alla:
+830,Syötä aktivointiavain tähän
+831,Huomioi, jos ominaisuuden aktivointi onnistuu, aiheuttaa se säätimen uudelleenkäynnistymisen
+832,Säädin käynnistetään uudelleen
+833,Ominaisuuden aktivointiavain on väärä
+834,Ominaisuuden aktivointiavain hyväksytty
+835,Aktivoi nyt
+836,Avausyrityksiä jäljellä
+837,Ajastus tyyppi
+838,Tallennuksien määrä
+839,Lähdemodulin ID
+840,Tallenteita
+841,Tallenteita yhteensä
+842,Viimeisen tallenteen aika
+843,Tarkkuusarvot
+844,Lokipuskuri
+845,Tiedote raja
+846,Tallennukset viim. tiedotteesta
+847,Viim. tallennettu tiedote
+848,Salli Loki 
+849,Lopeta kun täynnä
+850,Liipaistu ulostulo
+851,Arvon tyyppi
+852,Tallenteen tila bitit
+853,Tallenteen numero
+854,AikaLeima
+855,Ajan siirtymä
+856,Lokitila[0]||Digitaalinen arvo1]||Analoginen arvo[2]||Enum arvo[3]||Unsigned arvo[4]||Signed arvo[5]||Bitstring-arvo[6]||Null[7]||Virhe[8]||Ajan Muutos[9]||Any[10]
+857,Puskuritietueen kuvaaja
+858,Puskuri valmis
+859,BUFFER READY  
+860,Tapahtuma
+861, EVENT 
+862,COV lisäys
+863,Kaikki
+864,Edelliset 24h
+865,Edellinen viikko
+866,Edellinen kuukausi
+867,Edellinen vuosi
+868,Vapaavalintainen
+869,Päivämäärä
+870,Valitse päivät
+871,Valitse päivä
+872,Valitut päivät ->
+873,Vapaavalintainen päivä
+874,Valittu trendi
+875,Ei pysty näyttämään trendiä {0}:lle, koska:<br>{1}
+876,Virhe
+877,Zooomaa alkuperäiseen
+878,Näytä trendin arvoikkuna
+879,Aika-akseli
+880,Aseta ruudukko päälle/pois
+881,Vasemmalle
+882,Oikealle
+883,Loppu
+884,Odota...
+885,viim. ilmoituksen aika
+886,viim. virhe Strategiassa
+887,Näkymä
+888,Ruudukko
+889,Loki täynnä
+890,BTL hyväksytty

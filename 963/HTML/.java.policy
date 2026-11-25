@@ -1,0 +1,8 @@
+/*Copy this file onto client PC's that wish to have the alarm panels 'always on top'
+edit the URl to be the same as the 963 server
+*/
+
+grant codeBase "http://the name of your 963 server/html/java/-" {
+  permission java.awt.AWTPermission "setWindowAlwaysOnTop";
+};
+

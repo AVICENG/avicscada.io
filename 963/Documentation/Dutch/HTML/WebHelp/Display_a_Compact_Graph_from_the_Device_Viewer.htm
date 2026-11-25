@@ -1,0 +1,138 @@
+<!doctype HTML public "-//W3C//DTD HTML 4.0 Frameset//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="generator" content="Adobe RoboHelp - www.adobe.com">
+<title>Display a Compact Graph from the Device Viewer</title>
+<link rel="stylesheet" href="Trend-RH7_ns.css"><script type="text/javascript" language="JavaScript" title="WebHelpSplitCss">
+<!--
+if (navigator.appName !="Netscape")
+{   document.write("<link rel='stylesheet' href='Trend-RH7.css'>");}
+//-->
+</script>
+<style type="text/css">
+<!--
+img_whs1 { border:none; width:14px; height:14px; float:none; border-style:none; }
+-->
+</style><script type="text/javascript" language="JavaScript" title="BSSC Special Effects" src="ehlpdhtm.js"></script><script type="text/javascript" language="JavaScript" title="WebHelpInlineScript">
+<!--
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//-->
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute; left:0px; top:0px; z-index:4; visibility:hidden; }
+-->
+</style><script type="text/javascript" language="javascript1.2" src="whmsg.js"></script>
+<script type="text/javascript" language="javascript" src="whver.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whproxy.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whutils.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whlang.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whtopic.js"></script>
+</head>
+<body><script type="text/javascript" language="javascript1.2">
+<!--
+if (window.gbWhTopic)
+{
+	if (window.addTocInfo)
+	{
+	addButton("show",BTN_TEXT,"Show","","","","",0,0,"","","");
+
+	}
+	if (window.writeBtnStyle)
+		writeBtnStyle();
+
+	if (window.writeIntopicBar)
+		writeIntopicBar(1);
+
+	if(1)
+	{
+	
+	}
+
+	if (window.setRelStartPage)
+	{
+	setRelStartPage("963_manu.htm");
+
+		autoSync(1);
+		sendSyncInfo();
+		sendAveInfoOut();
+	}
+}
+else
+	if (window.gbIE4)
+		document.location.reload();
+
+//-->
+</script>
+<h1>Display a Compact Graph from the Device Viewer</h1>
+<p class=Topic-Text>Compact graphs of data logged in IQ controllers can 
+ be displayed. When a compact log is requested the controller transmits 
+ the highest and lowest values in the log and every other value as a percentage 
+ of the range. This allows for rapid transmission of data and for very 
+ large numbers, but has an error of 1% of the range of values in the logging 
+ channel.</p>
+<p class=Topic-Text>For values logged by periodic and triggered plots, 
+ and periodic or triggered plots compact graphs are not available. To obtain 
+ a graph it is necessary to display a precision graph.</p>
+<p class=Topic-Text-Note>Note that for values from BACnet devices a precision 
+ graph is always displayed.</p>
+<p class=Topic-Text-Procedure-head>To display a compact graph from the 
+ Device Viewer:</p>
+<ol><li class=p-Topic-Text-Numbered><p class=Topic-Text-Numbered><a href="Display_the_IQ_System.htm">View 
+ the values that are to be graphed in the <font style="font-weight: bold;">Device 
+ Viewer</font></a>. Values that can 
+ be graphed are indicated by a <img src="image/smallgraphicon.bmp" x-maintain-ratio="TRUE" width="14px" height="14px" border="0" class="img_whs1">.</p></li>
+	<li class=p-Topic-Text-Numbered-End><p class=Topic-Text-Numbered-End>Right 
+ click the value and click <span style="font-weight: bold;"><B>Collect Compact 
+ Log Graph</B></span> from the displayed menu. If the value is being logged 
+ by more than one plotting channel point to <span style="font-weight: bold;"><B>Collect 
+ Compact Log Graph</B></span> and click the required plotting channel. To graph 
+ more than one value hold down the CTRL key and click the required values, 
+ and right-click one of the values and click <span style="font-weight: bold;"><B>Collect 
+ Compact Log Graph</B></span>. When graphing more than one value 963 will use 
+ the first plotting channel for each value.</p></li>
+</ol>
+<p class=Topic-Text-See-Also>You can <a href="Zoom_in_and_Out_of_a_Graph.htm">zoom 
+ in and out of the graph</a> to make it easier to see the data. The graph’s 
+ data can be <a href="Display_Graph_Data.htm">displayed as a list of points</a>, 
+ and <a href="Playback_Recorded_Data.htm">recorded graphs can be played 
+ back</a>. For more accurate values it is possible to <a href="Display_a_Precision_Graph_from_a_Schematic_Page.htm">display 
+ a full precision log</a> by clicking <font style="font-weight: bold;">Use 
+ Precision log collection</font> on the <font style="font-weight: bold;">Precision 
+ logs</font> menu. However once a precision graph is displayed it is not 
+ possible to return to a compact graph.</p>
+<p class=Topic-Text-Note>Note that this feature is only available accessing 
+ the 963 Server in graphic mode, and is not supported for values from BACnet 
+ devices.</p>
+<p class=Topic-Text-See-Also style="x-condition: Online;">
+
+<a href="javascript:void(0);" onClick="var e; if (parseInt(navigator.appVersion)>=4){e=event;}  if (parseInt(navigator.appVersion) >=2 && typeof(PickupDialog_Invoke) == 'function') PickupDialog_Invoke(e,'','Display a Compact Graph from a Schematic Page','Display_a_Compact_Graph_from_a_Schematic_Page.htm','Display a Precision Graph from a Schematic Page','Display_a_Precision_Graph_from_a_Schematic_Page.htm','Display a Precision Graph from the Device Viewer','Display_a_Precision_Graph_from_the_Device_Viewer.htm');return false;" title=" See Also"><span style="font-family:Verdana;font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none"><nobr>  See Also </nobr></span></a>
+
+
+ </p>
+<script type="text/javascript" language="JavaScript" title="WebHelpRelatedTopics"><!--
+if (parseInt(navigator.appVersion) >= 3 && typeof (WritePopupMenuLayer) == "function")
+  WritePopupMenuLayer();
+//--></script><script type="text/javascript" language="javascript1.2">
+<!--
+highlightSearch();
+if (window.writeIntopicBar)
+	writeIntopicBar(0);
+if(0)
+{
+
+}
+//-->
+</script>
+</body>
+</html>

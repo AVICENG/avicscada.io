@@ -1,0 +1,3 @@
+Driver adjustments for IQ3
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(T),Start delay after IQ powerdown,Seconds,99

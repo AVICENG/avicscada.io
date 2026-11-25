@@ -1,0 +1,5 @@
+IQeco Switch Parameters
+<XXXX>($),Label, String - please edit direct from device viewer,101
+<XXXX>(S),Status,Boolean (on/off),90
+<XXXX>(D),Destination - output of this module,Boolean (on/off),90
+<XXXX>(P),User Level,Integer,90

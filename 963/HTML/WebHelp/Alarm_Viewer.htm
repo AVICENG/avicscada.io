@@ -1,0 +1,243 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="copyright" value="©Trend Control Systems Ltd 2003" content="" />
+<meta http-equiv="Content-Language" content="en-UK" />
+ <meta name="generator" content="Adobe RoboHelp 8" />
+<title>Alarm Viewer</title>
+<link rel="StyleSheet" href="Trend-RH7.css" type="text/css" />
+<script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+-->
+</style>
+<script type="text/javascript" language="javascript1.2" src="whmsg.js"></script>
+<script type="text/javascript" language="javascript" src="whver.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whproxy.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whutils.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whlang.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whtopic.js"></script>
+
+</head>
+
+<body><script type="text/javascript" language="javascript1.2">//<![CDATA[
+<!--
+if (window.gbWhTopic)
+{
+	var strUrl = document.location.href;
+	var bc = 0;
+	var n = strUrl.toLowerCase().indexOf("bc-");
+	if(n != -1)
+	{
+		document.location.href = strUrl.substring(0, n);
+		bc = strUrl.substring(n+3);
+	}
+
+	if (window.addTocInfo)
+	{
+	addTocInfo("963 Web User Guide\nThe 963 Client Displays\nAlarm Viewer");
+addAvenueInfo("MAIN","963_Server_Start_up_Page.htm","Configuration_Mode_Display.htm");
+addButton("show",BTN_TEXT,"Show","","","","",0,0,"","","");
+
+	}
+	if (window.writeBtnStyle)
+		writeBtnStyle();
+
+	if (window.writeIntopicBar)
+		writeIntopicBar(1);
+
+	
+	document.write("<p style=\"text-align:right\"> ");
+AddMasterBreadcrumbs("963_manu.htm", "", ">", "Home", "About_This_Manual.htm");
+document.write("<a href=\"About_This_Manual.htm\">963 Web User Guide<\/a> > <a href=\"963_Server_Default_Page.htm\">The 963 Client Displays<\/a> > Alarm Viewer<\/p>");
+
+
+	if (window.setRelStartPage)
+	{
+	setRelStartPage("963_manu.htm");
+
+		autoSync(1);
+		sendSyncInfo();
+		sendAveInfoOut();
+	}
+}
+else
+	if (window.gbIE4)
+		document.location.reload();
+
+//-->
+//]]></script>
+<script type="text/javascript" language="javascript">//<![CDATA[
+document.write("<p  style=\"text-align:left;\" class=\"breadcrumbs\">");
+AddMasterBreadcrumbs("963_manu.htm", "breadcrumbs", "&gt;", "", "About_This_Manual.htm");
+document.write("<a class=\"breadcrumbs\" href=\"About_This_Manual.htm\">963 Web User Guide<\/a> &gt; <a class=\"breadcrumbs\" href=\"963_Server_Default_Page.htm\">The 963 Client Displays<\/a> &gt; Alarm Viewer<\/p>");
+//]]></script>
+<table class="HeadingTable" style="border-top: Solid 3px #f48c1c; 
+											 border-bottom: Solid 3px #f48c1c;" 
+											 cellspacing="0" width="100%">
+	<col style="width: 100%;" />
+	<tr>
+		<td>
+  <h1>Alarm Viewer</h1></td>
+	</tr>
+ </table>
+
+<script src="./ehlpdhtm.js" type="text/javascript" language="JavaScript1.2"></script>
+
+<p class="Topic-Text">The <a class="dropspot" href="javascript:TextPopup(this)" 
+							 id="a1"><span class="Bold">Alarm Viewer</span></a> 
+ is only available when accessed from a web browser that supports the 963’s 
+ graphic mode. It is displayed on the <font style="font-weight: bold;">963 
+ Servers Start up Page</font> providing you have authority to view alarms. 
+ It displays the alarms that have been received. These alarms can be filtered 
+ to reduce the amount of data displayed.</p>
+<div class="droptext" id="POPUP160324364" style="display: none;">
+	<p class="Topic-Text-Graphic-Style"><img src="image/Alarm_Viewer1.bmp" 
+											 alt="image\Alarm_Viewer1.gif" 
+											 width="924" height="824" border="0" /></p>
+</div>
+<p class="Topic-Text">The <font style="font-weight: bold;">Alarm Viewer</font> 
+ has two tabs:</p>
+<p class="Topic-Text-List"><font style="font-weight: bold;">Alarm History</font></p>
+<p class="Topic-Text-List-End"><font style="font-weight: bold;">Incoming 
+ alarms</font></p>
+<p class="Topic-Text"><a class="dropspot" href="javascript:TextPopup(this)" 
+						 id="a2">Colours</a> are used to indicate whether 
+ the alarm is a set alarm or a cleared alarm. A red bell indicates a set 
+ alarm, and a green bell indicates a cleared alarm. If the alarm has been 
+ actioned by the user, a bell will appear with a tick over it. The table 
+ below shows the different icons.</p>
+<div class="droptext" id="POPUP160347725" style="display: none;">
+	<table cellspacing="0" width="100%">
+		<tr style="vertical-align: top;">
+			<td style="border-top: solid 0.5pt #000000; border-left: solid 0.5pt #000000; 
+				 border-right: solid 0.8pt #000000; border-bottom: solid 0.8pt #000000; 
+				 width: 10.01%; padding-left: 1px; padding-top: 1px; padding-right: 1px; 
+				 padding-bottom: 1px;"><p class="Topic-Text-Table-Heading">Icon</p></td>
+			<td style="border-top: solid 0.5pt #000000; border-right: solid 0.5pt #000000; 
+				 border-bottom: solid 0.8pt #000000; width: 89.99%; padding-left: 1px; 
+				 padding-top: 1px; padding-right: 1px; padding-bottom: 1px;"><p 
+				 class="Topic-Text-Table-Heading">Description</p></td>
+		</tr>
+		<tr style="vertical-align: top;">
+			<td style="border-left: solid 0.5pt #000000; border-right: solid 0.8pt #000000; 
+				 border-bottom: solid 0.8pt #000000; width: 10.01%; padding-left: 1px; 
+				 padding-top: 1px; padding-right: 1px; padding-bottom: 1px;"><p 
+				 class="Topic-Text-Table"><img src="image/red_bel.gif" 
+												 alt="image\red_bel.gif" 
+												 width="32" height="29" 
+												 border="0" /></p></td>
+			<td style="border-right: solid 0.5pt #000000; border-bottom: solid 0.8pt #000000; 
+				 width: 89.99%; padding-left: 1px; padding-top: 1px; padding-right: 1px; 
+				 padding-bottom: 1px;"><p class="Topic-Text-Table">Set 
+			 alarm that has not been actioned.</p></td>
+		</tr>
+		<tr style="vertical-align: top;">
+			<td style="border-left: solid 0.5pt #000000; border-right: solid 0.8pt #000000; 
+				 border-bottom: solid 0.8pt #000000; width: 10.01%; padding-left: 1px; 
+				 padding-top: 1px; padding-right: 1px; padding-bottom: 1px;"><p 
+				 class="Topic-Text-Table"><img src="image/red_bell1.gif" 
+												 alt="image\red_bell1.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td style="border-right: solid 0.5pt #000000; border-bottom: solid 0.8pt #000000; 
+				 width: 89.99%; padding-left: 1px; padding-top: 1px; padding-right: 1px; 
+				 padding-bottom: 1px;"><p class="Topic-Text-Table">Set 
+			 alarm that has been actioned.</p></td>
+		</tr>
+		<tr style="vertical-align: top;">
+			<td style="border-left: solid 0.5pt #000000; border-right: solid 0.8pt #000000; 
+				 border-bottom: solid 0.8pt #000000; width: 10.01%; padding-left: 1px; 
+				 padding-top: 1px; padding-right: 1px; padding-bottom: 1px;"><p 
+				 class="Topic-Text-Table"><img src="image/green_bell.gif" 
+												 alt="image\green_bell.gif" 
+												 width="33" height="29" 
+												 border="0" /></p></td>
+			<td style="border-right: solid 0.5pt #000000; border-bottom: solid 0.8pt #000000; 
+				 width: 89.99%; padding-left: 1px; padding-top: 1px; padding-right: 1px; 
+				 padding-bottom: 1px;"><p class="Topic-Text-Table">Cleared 
+			 alarm that has not been actioned.</p></td>
+		</tr>
+		<tr style="vertical-align: top;">
+			<td style="border-left: solid 0.5pt #000000; border-right: solid 0.8pt #000000; 
+				 border-bottom: solid 0.5pt #000000; width: 10.01%; padding-left: 1px; 
+				 padding-top: 1px; padding-right: 1px; padding-bottom: 1px;"><p 
+				 class="Topic-Text-Table"><img src="image/green_bell1.gif" 
+												 alt="image\green_bell1.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td style="border-right: solid 0.5pt #000000; border-bottom: solid 0.5pt #000000; 
+				 width: 89.99%; padding-left: 1px; padding-top: 1px; padding-right: 1px; 
+				 padding-bottom: 1px;"><p class="Topic-Text-Table">Cleared 
+			 alarm that has been actioned.</p></td>
+		</tr>
+	</table>
+</div>
+<p class="Topic-Text" style="margin-top: 4.5pt;">The <font style="font-weight: bold;">Alarm 
+ History</font> is colour coded to indicate whether the alarm is current. 
+ Red indicates that the alarm is current.</p>
+<p class="Topic-Text-Sub-Heading"><a name="Alarm_History1" id="Alarm_History1"></a>Alarm 
+ History <font style="font-weight: normal;">tab</font></p>
+<p class="Topic-Text">The <font style="font-weight: bold;">Alarm History</font> 
+ stores all the alarms after they have been processed. This list stores 
+ the all the alarms in the database that have been processed whether or 
+ not they have been actioned by the user. The alarms can be viewed in chronological 
+ order or a summary view.</p>
+<p class="Topic-Text-List"><font style="font-weight: bold;">Summary View</font> 
+ - This gives a count for each alarm type for each point.</p>
+<p class="Topic-Text-List-End"><font style="font-weight: bold;">Chronological 
+ View</font> - a systematic alarm history sorted by time order.</p>
+<p class="Topic-Text-Sub-Heading"><a name="Incoming_Alarms1" id="Incoming_Alarms1"></a>Incoming 
+ Alarms <font style="font-weight: normal;">tab</font></p>
+<p class="Topic-Text">The <font style="font-weight: bold;">Incoming Alarms</font> 
+ contains the last 100 alarms to be received as they arrive. New alarms 
+ appear at the top of the list when they are first received.</p>
+<p class="Topic-Text-See-Also"><span>
+<a href="javascript:void(0);" onclick="var e; if (parseInt(navigator.appVersion)>=4){e=event;}  if (parseInt(navigator.appVersion) &gt;=2 &amp;&amp; typeof(PickupDialog_Invoke) == 'function') PickupDialog_Invoke(e,'','963 Server Default Page','..\\963_Server_Default_Page.htm','963 Server Start up Page','..\\963_Server_Start_up_Page.htm','Configuration Mode Display','..\\Configuration_Mode_Display.htm','Device Viewer','..\\Device_Viewer.htm','Diary Display','..\\Diary_Display.htm','Schematic Page Client Display','..\\Schematic_Page_Client_Display.htm','Server Status Page','..\\Server_Status_Page.htm');return false;" title=" See Also"><span style="font-family:Verdana;font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none"><nobr>  See Also </nobr></span></a>
+
+ </span></p>
+ <div style="width: 100%; position: relative;" id="footer">
+	
+  <p class="Footer">963 Web User Guide TC200685 Issue 9 11-Mar-2013</p>
+ </div>
+
+
+<script type="text/javascript" language="JavaScript1.2">//<![CDATA[
+	if( typeof( TextPopupInit ) != 'function' ) TextPopupInit = new Function();
+	TextPopupInit('a1','POPUP160324364');
+	TextPopupInit('a2','POPUP160347725');
+//]]></script>
+<script type="text/javascript" language="JavaScript">//<![CDATA[
+if (parseInt(navigator.appVersion) >= 3 && typeof (WritePopupMenuLayer) == "function")
+  WritePopupMenuLayer();
+//]]></script><script type="text/javascript" language="javascript1.2">//<![CDATA[
+<!--
+if (window.writeIntopicBar)
+	writeIntopicBar(0);
+
+
+highlightSearch();
+//-->
+//]]></script>
+</body>
+</html>

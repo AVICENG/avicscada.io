@@ -1,0 +1,17 @@
+USE <96XDBNAME>
+GO
+
+-- LOGIN_NAME
+-- LOGIN_PASSWORD
+
+-- See if the log in exists
+SELECT name FROM master..syslogins WHERE name = N'<LOGIN_NAME>'
+
+IF @@ROWCOUNT >= 1
+BEGIN
+	-- Grant access to the user to the 963 database
+	 EXEC sp_grantdbaccess N'<LOGIN_NAME>', N'<LOGIN_NAME>'
+	 PRINT N'Granted access to 963 database'
+END
+
+GO

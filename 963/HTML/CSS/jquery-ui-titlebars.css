@@ -1,0 +1,58 @@
+﻿.ui-dialog-titlebar,  .ui-widget-header, body .btn-primary, .ui-widget-content .btn-primary  {
+color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+  background-color: #f60;
+  background-image: -moz-linear-gradient(top, #f90, #f60);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#f90), to(#f60));
+  background-image: -webkit-linear-gradient(top, #f90, #f60);
+  background-image: -o-linear-gradient(top, #f90, #f60);
+  background-image: linear-gradient(to bottom, #f90, #f60);
+  background-repeat: repeat-x;
+  border-color: #f60 #f60 #e40;
+  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+  *background-color: #f60;
+}
+
+body .btn-primary:hover,
+body .btn-primary:active,
+body .btn-primary.active,
+body .btn-primary.disabled,
+body .btn-primary[disabled] {
+  color: #ffffff;
+  background-color: #f60;
+  *background-color: #f50;
+}
+body .btn-primary:active,
+body .btn-primary.active {
+  background-color: #f50 \9;
+}
+
+
+.no-cssgradients .ui-widget-header.btn-danger,
+.no-cssgradients .ui-widget-header.btn-success,
+.no-cssgradients .ui-widget-header.btn-warning,
+.no-cssgradients .ui-widget-header.btn-info,
+.no-cssgradients .ui-widget-header.btn-primary,
+.no-cssgradients .ui-dialog .ui-dialog-titlebar,
+.no-cssgradients .ui-widget-header{background-image:none;}
+
+.lt-ie9 .btn{ filter: progid:dximagetransform.microsoft.gradient(startColorstr='#e6e6e6', endColorstr='#cccccc', GradientType=0,enabled=true); }
+.lt-ie9 .btn-primary, 
+.lt-ie9 .ui-dialog .ui-dialog-titlebar, .lt-ie9 .ui-widget-header 
+{filter: progid:dximagetransform.microsoft.gradient(startColorstr='#ff9900', endColorstr='#ff6600', GradientType=0);}
+.lt-ie9.no-cssgradients .btn-warning {filter: progid:dximagetransform.microsoft.gradient(startColorstr='#fbb450', endColorstr='#f89406', GradientType=0);}
+.lt-ie9.no-cssgradients .btn-danger {filter: progid:dximagetransform.microsoft.gradient(startColorstr='#ee5f5b', endColorstr='#bd362f', GradientType=0);}
+.lt-ie9.no-cssgradients .btn-success {filter: progid:dximagetransform.microsoft.gradient(startColorstr='#62c462', endColorstr='#51a351', GradientType=0);}
+.lt-ie9.no-cssgradients .btn-info {filter: progid:dximagetransform.microsoft.gradient(startColorstr='#5bc0de', endColorstr='#2f96b4', GradientType=0);}
+.lt-ie9.no-cssgradients .btn-inverse {filter: progid:dximagetransform.microsoft.gradient(startColorstr='#555555', endColorstr='#222222', GradientType=0);}
+
+.lt-ie9 .btn{
+  border: 0px solid #cccccc;
+  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+  border-bottom-color: #b3b3b3;
+}
+
+.lt-ie9 .btn:focus, .lt-ie9 .btn:active, .lt-ie9 .btn.active {
+  outline:none;
+  border:0 solid;
+}

@@ -1,0 +1,28 @@
+:Base Sys_Tray_Applet_Manual.hlp>main
+:Title Sys Tray Applet Manual TE200563 Issue 1/B 1/4/04
+:Index SET Manual=set.hlp
+:Link set.hlp
+:Index ToolSETLite Manual=TOOLSETLite_MANUAL.hlp
+:Link TOOLSETLite_MANUAL.hlp
+1 Sys Tray Applet Manual
+2 About this Manual=About_this_Manual@Sys_Tray_Applet_Manual.hlp>main
+2 Conventions Used in this Manual=Conventions_Used_in_this_Manual@Sys_Tray_Applet_Manual.hlp>main
+2 Contacting Trend=Contacting_Trend@Sys_Tray_Applet_Manual.hlp>main
+2 About the Sys Tray Applet
+3 About the Sys Tray Applet=About_the_Tool@Sys_Tray_Applet_Manual.hlp>main
+2 Installation
+3 Installation=Installation_Installation@Sys_Tray_Applet_Manual.hlp>main
+2 Using the Sys Tray Applet
+3 Using the Sys Tray Applet=Using_the_Sys_Tray_Applet_Using_the_Sys_Tray_Applet@Sys_Tray_Applet_Manual.hlp>main
+3 Close the Sys Tray Applet=Using_the_Sys_Tray_Applet_Close_the_Sys_Tray_Applet@Sys_Tray_Applet_Manual.hlp>main
+3 Enable DigCli=Using_the_Sys_Tray_Applet_Enable_DigCli@Sys_Tray_Applet_Manual.hlp>main
+3 Enable LoLeC=Using_the_Sys_Tray_Applet_Enable_LoLeC@Sys_Tray_Applet_Manual.hlp>main
+3 Locate Log Files=Using_the_Sys_Tray_Applet_Locate_Log_Files@Sys_Tray_Applet_Manual.hlp>main
+3 Run DigCli=Using_the_Sys_Tray_Applet_Run_DigCli@Sys_Tray_Applet_Manual.hlp>main
+3 Run LoLeC=Using_the_Sys_Tray_Applet_Run_LoLeC@Sys_Tray_Applet_Manual.hlp>main
+3 Specify How the Menu is Displayed=Using_the_Sys_Tray_Applet_Specify_How_the_Menu_is_Displayed@Sys_Tray_Applet_Manual.hlp>main
+3 Specify What Happens When You Double Click on the Systray Icon=Using_the_Sys_Tray_Applet_Specify_What_Happens_When_You_Double_Click_on_the_Systray_Icon@Sys_Tray_Applet_Manual.hlp>main
+3 Specify Whether the Sys Tray Applet is Run a Startup=Using_the_Sys_Tray_Applet_Specify_Whether_the_Sys_Tray_Applet_is_Run_a_Startup@Sys_Tray_Applet_Manual.hlp>main
+3 Specify Whether the Systray Icon Flashes when a Connection Changes=Using_the_Sys_Tray_Applet_Specify_Whether_the_Systray_Icon_Flashes_when_a_Connection_Changes@Sys_Tray_Applet_Manual.hlp>main
+3 View File Versions=Using_the_Sys_Tray_Applet_View_File_Versions@Sys_Tray_Applet_Manual.hlp>main
+3 View Licence Information=Using_the_Sys_Tray_Applet_View_Licience_Information@Sys_Tray_Applet_Manual.hlp>main

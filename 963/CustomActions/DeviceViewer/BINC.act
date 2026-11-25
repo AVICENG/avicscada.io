@@ -1,0 +1,9 @@
+; Dynamic Menus for BINC device
+; 17 Feb 2011
+; Trend Control Systems Ltd
+
+[MENUITEM]
+Title=<TRANSLATION 59672>
+Action=BROWSER_POPUP http://<DEVICE_PARAM HostIPAddress>/^.htm,64,64,800,800,<TRANSLATION 59672>
+
+

@@ -1,0 +1,6 @@
+CA adjustments
+<XXXX>(M),The Status,XXXXXXXX,99
+<XXXX>(T),The Text,XXXXXXXX,99
+<XXXX>(D),The destination node,0'1'4-119,99
+<XXXX>(N),The destination LAN,0'1'4-119,99
+<XXXX>(K),The acKed state,XX,100

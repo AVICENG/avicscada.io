@@ -1,0 +1,46 @@
+Install the BACnet Network Driver.\nIf SET is to communicate over BACnet the BACnet network driver must be installed unless it was installed with SET 6.2. If the BACnet Gateway is installed it must be shut down and the old BACnet network driver uninstalled before installing the one supplied with SET. Both SET and the BACnet Gateway will use the new driver.\nFor details of how to install the new driver, and remove the old one click ‘Tell Me More’.	***Important Installation Information***		Install_the_BACnet_Network_Driver.htm
+SET 6.3 supports IQ3 v2.1 firmware including:\n\n    Triggered Plot Modules\n    Ability to link plot modules to modules other than sensors (controller dependant)	Support for IQ3 v2.1 firmware	***NEW Feature***
+In SET 6.3 Plot modules renamed Synchronised Plots.	Plot Modules Renamed	***Change***
+In SET 6.3 the Window Title now includes the project name	Additional Information in window title	***Enhancement***
+SET 6.3 Driver Active Priority Level now available as a connectable output.	Driver Active Priority Level Available	***Enhancement***
+SET 6.3 allows lists of the Sensor, Digital Input, Knob, Switch, Driver, Directory, and Display modules in a strategy to be exported to an Excel file, comma separated file, or tab separated file.	Export of module lists	***NEW Feature***
+SET 6.3 allows the project overview of all the controllers in the project to be exported to an Excel file.	Export of Project Overview	***NEW Feature***	
+SET 6.3 has undefined connectives for sensor, digital input, knob, and switch modules.	Additional Undefined Connectives	***NEW Feature***	Add_an_Undefined_Connective_to_a_Module.htm
+SET 6.3 allows the BACnet device to which a BACnet alarm destination module sends its alarms to be specified by dragging an NTD from the Device View on to the module.	Drag and Drop on to Alarm Destination Modules	***NEW Feature***
+SET 6.3 allows the remote node parameter of an IC Comms module to be specified by dragging the parameter from the System View on to the module.	Drag and Drop on to IC Comms Modules	***NEW Feature***
+A list of standard BACnet units is available for external sensor, Internal Sensor, and knob modules.	Support for BACnet Engineering Units
+When in a Live Values or Live Edit session SET can annunciate a selected value on the page. This can help reduce the engineering time on site; the commissioning engineer can now hear the value selected, rather than walking between the equipment and laptop to view the screen.	Speech Annunciation for Live Values		commisioning_with_live_values.htm
+You can override module outputs for IQ3's using Live Edit and Live values.
+You can edit the display and directory by selecting 'Tools -> Display and Directory Setup'. The results can then be used in NDP, IQView and Web Pages.			Setup_Display_and_Directory_Modules.htm
+You can find out which module is using an analogue or digital node by just entering the node number in the module find toolbar and then press the CTRL key. E.g. enter 101 or 21,1.
+If you have a wheel mouse, you can zoom in and out of a strategy by holding down the CTRL key while rotating the wheel.			Zoom_In_OUT.htm
+SET provides a number of keyboard short cuts that can be used to speed up use of SET.			keyboard_short_cuts.htm
+Toolbars provide quick access to SET's features.			Toolbars.htm
+Help is available in SET's dialogue boxes by clicking the Question mark.
+SET is supplied with three quick tours that you can use to teach yourself the basics of using SET.			iq3_quick_tours.htm
+You can create your own strategy blocks for commonly used pieces of strategy saving time on recreating strategy.			Set_up_Strategy_Blocks.htm
+Solutions can be used to enable the entire strategy for a particular controller to be stored and easily reused.			Add_Controllers_Using_Solutions.htm
+You can create you on solutions for controller configuration that are regularly used.			Set_up_Solutions.htm
+Text can be added to strategy pages to help explain the strategy.			add_text_to_strategy_pages.htm
+SET is supplied with a number of standard strategy blocks for alarm handling, mathematical calculations, psychrometrics, unit conversions, and strategy for Trend products.			Use_Strategy_Blocks.htm
+NTD's can be added by dragging and dropping BACnet devices from the System View.			Add_NTDs_from_the_System_View.htm
+SET can configure exceptions for IQ3 controllers.			Set_up_Exceptions.htm
+SET enables you to configure BACnet compatible alarm handling strategy.			Configure_BACnet_Compatible_Alarm_Handling_Strategy.htm
+Graphics can be added to strategy pages to help explain the strategy.			add_graphics_to_a_strategy_page.htm
+SET can compare strategy from a controller with the strategy held by SET.			comparing_strategies.htm
+You can enter a live values or live edit session on more than one controller at a time enabling you to see the effects of IC Comms between the controllers.			commisioning_with_live_values.htm
+SET is supplied with a library of sensor definitions that can be used to set up the sensor type modules in the IQ controllers. Each definition in the library stores all the information required to correctly set up the sensor type modules to scale the input of a particular sensor into engineering units.\n\nThe sensor library contains the definitions for all of the standard Trend sensors to enable sensor type modules to be correctly set up. If you regularly use other sensors, the definitions for these can be added to the library. Once a definition has been added to the library it will be available in all projects.			Set_up_the_Sensor_Library.htm
+A single page of strategy can be downloaded to the controller. enabling minor changes to be made to a strategy, and reducing the download time.			download_a_single_page_of_strategy.htm
+The configuration parameters displayed on the strategy page for each different type of module can be specified.			Specify_the_Default_Display_Options.htm
+You can specify the logo, and address printed on the front sheet for each controller to be changed, to suit your requirements (e.g. your company’s logo).			Specify_Company_Information.htm
+SET can be configured to automatically display the relevant properties dialogue box when the module is first placed on a strategy page.			Specify_Auto_Edit.htm
+The labels of sensors, digital inputs, knobs, switches and drivers in strategy blocks can be translated.\n\nWhen the strategy block is used SET's default language is used to determine the language of the labels used. If the block has been translated into SET's default language the translated labels are used otherwise the original labels are used.			Translate_Strategy_Blocks.htm
+Links to various pieces of system information such as time, timing pulses, day of year, month of year etc can be made using connectives that are automatically created when the controller is added.			Add_a_Connective_to_System_Information.htm
+To connectives can be used to provide a visual indication on the strategy page that a module is providing an input to modules on other pages. They indicate all the modules on other pages linked to the module to which they are connected.			Add_a_TO_Connective.htm
+SET can create the files required for downloading for more than one controller in a single step.			Create_Multiple_Data_Files.htm
+The screen can be redrawn at any time by right-clicking the strategy page and clicking Redraw.
+You can undo the last action by pressing CTRL+Z.
+When the Digital Node Array dialogue box is displayed, it is possible to find the location of fixed system nodes, and nodes that have been placed in the strategy from either array, entering the code for the required node in the Find box.			find_fixed_system_nodes.htm
+SET allows you to find out where a particular node is used in the strategy.			find_where_a_node_is_used.htm
+SET allows the module located at a particular sequence step to be found.			find_where_a_sequence_step_is_used.htm
+SET allows labels to be replaced by specified text.			find_and_replace_labels.htm

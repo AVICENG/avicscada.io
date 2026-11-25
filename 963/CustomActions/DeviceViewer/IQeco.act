@@ -1,0 +1,7 @@
+; Dynamic Menus for IQeco Device
+; 22 March 2010
+; Trend Control Systems Ltd
+
+[MENUITEM]
+Title=<TRANSLATION 30861>
+Action=SEND <DEVICE_TELE>L<DEVICE_LAN>O<DEVICE_OS>R(q=1)

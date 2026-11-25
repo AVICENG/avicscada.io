@@ -1,0 +1,27 @@
+:Base TcTua.hlp>main
+:Title Trend Universal Address Editor Manual TE200445 Issue 2/D 1/9/04
+:Index SET Manual=set.hlp
+:Link set.hlp
+:Index ToolSETLite Manual=TOOLSETLite_MANUAL.hlp
+:Link TOOLSETLite_MANUAL.hlp
+1 Universal Address Editor Manual
+2 About this Manual=Trend_Universal_Address_Editor_Manual_About_this_Manual@TcTua.hlp>main
+2 Conventions Used in this Manual=Trend_Universal_Address_Editor_Manual_Conventions_Used_in_this_Manual@TcTua.hlp>main
+2 Contacting Trend=Trend_Universal_Address_Editor_Manual_Contacting_Trend@TcTua.hlp>main
+2 About the TUA Editor
+3 About the TUA Editor=Trend_Universal_Address_Editor_Manual_About_the_TUA_Editor@TcTua.hlp>main
+3 The TUA Editor Window=Trend_Universal_Address_Editor_Manual_The_TUA_Editor_Window@TcTua.hlp>main
+2 Installation
+3 Installation=Installation_Installation@TcTua.hlp>main
+2 Using the TUA Editor
+3 Using the TUA Editor=Using_the_Tool_Using_the_TUA_Editor@TcTua.hlp>main
+3 Main Functions
+4 Create a TUA=Using_the_Tool_Create_a_TUA@TcTua.hlp>main
+3 Minor Functions
+4 Copying and Pasting the TUA String=Using_the_Tool_Copying_and_Pasting_the_TUA_String@TcTua.hlp>main
+4 Displaying the Advanced Settings=Using_the_Tool_Displaying_the_Advanced_Settings@TcTua.hlp>main
+4 Set up the Auto dialing Tab=Using_the_Tool_Set_up_the_Auto_dialing_Tab@TcTua.hlp>main
+4 Set up the CNC Tab=Using_the_Tool_Set_up_the_CNC_Tab@TcTua.hlp>main
+4 Set up the Item Tab=Using_the_Tool_Set_up_the_Item_Tab@TcTua.hlp>main
+4 Set up the Messaging Tab=Using_the_Tool_Set_up_the_Messaging_Tab@TcTua.hlp>main
+4 Set up the Outstation Tab=Using_the_Tool_Set_up_the_Outstation_Tab@TcTua.hlp>main

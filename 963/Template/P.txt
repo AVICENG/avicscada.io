@@ -1,0 +1,5 @@
+Generic Plot Module
+<XXXX>($),Label, Plot Label
+<XXXX>(Y),Type,1=synch; 2=triggered; 3=period; 4=COV
+<XXXX>(S),Source,Plot source module
+<XXXX>(P),Period,0=1 Hr; 1=15min; 2=24hr; 3=1min; 4=5min; 5=10min; 6=20min; 7=30min; 8=6hr; 9=1s

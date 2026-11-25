@@ -1,0 +1,37 @@
+; Dynamic Menus for Novar Logic 1®
+; 1 October 2008
+; Trend Control Systems Ltd
+; Revisions:
+;	23 Oct 2008: Additional Menu items for Loads, Modules, Alarms and Logs
+
+; Executive Only Menus
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> LESS_THAN 0
+Title=<TRANSLATION 30857>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>,0,0,0,0,Novar Logic One® Executive
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> LESS_THAN 0
+Title=<TRANSLATION 30862>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/loaddir.htm?PARM2=LOADS,0,0,0,0,Novar Logic One® Executive
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> LESS_THAN 0
+Title=<TRANSLATION 30863>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/modstat.htm?PARM2=MODULES,0,0,0,0,Novar Logic One® Executive
+
+; Load Menus
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> GREATER_THAN -1
+Title=<TRANSLATION 30858>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/loadschd.htm?PARM2=<DEVICE_PARAM LoadNumber>,0,0,0,0,Schedules for Load <DEVICE_PARAM LoadNumber>
+
+; Generic Menus (for loads and executives)
+[MENUITEM]
+Title=<TRANSLATION 30476>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/alarms.htm?PARM2=ALARMS,0,0,0,0,Alarms
+
+[MENUITEM]
+Title=<TRANSLATION 30864>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/logs.htm?PARM2=LOGS,0,0,0,0,Alarms

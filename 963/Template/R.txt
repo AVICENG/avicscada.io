@@ -1,0 +1,16 @@
+IQ address details (not all details are available in all IQs)
+<XXXX>(D),The iDentifier,15-char,100
+<XXXX>(C),Device Type Info.,read-only,999
+<XXXX>(L),Own Trend Address,read-only,999
+<XXXX>(N),Own Trend LAN Address,0'1'4-119,999
+<XXXX>(A),Alarm Device Address,0'1'4-119,99
+<XXXX>(R),Alarm LAN Address,0'1'4-119,99
+<XXXX>(e),Checksum status (strategy OK),read-only,999
+<XXXX>(c),Loader type (reqd. for technical support),0'1'4-119,99
+<XXXX>(F),Extended Attribute 'F',15-char,99
+<XXXX>(G),Extended Attribute 'G',15-char,99
+<XXXX>(H),Extended Attribute 'H',15-char,99
+<XXXX>(I),Extended Attribute 'I',15-char,99
+<XXXX>(J),Extended Attribute 'J',15-char,99
+<XXXX>(K),Extended Attribute 'K',15-char,99
+<XXXX>(i),IQ3 IP address,15-char,99

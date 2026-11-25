@@ -1,0 +1,7 @@
+IQeco Digital Driver Parameters
+<XXXX>(Y),The subtype for this module,Integer,101
+<XXXX>($),The label,String (edit direct from device viewer),101
+<XXXX>(L),In Phase Hardware Channel,Integer,90
+<XXXX>(S),The Source analogue node,Boolean,90
+<XXXX>(V),The process value of this module,Boolean,101
+<XXXX>(I),Invert or In Phase Out,Boolean,101

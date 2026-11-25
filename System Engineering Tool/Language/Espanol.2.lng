@@ -1,0 +1,888 @@
+﻿#IQ3xcite Translation File
+#File Format: 2
+#Firmware version: 2.10
+#File version: 6
+#Language: Espanol
+#Notes:
+#Data:
+1,.
+2,ltr
+11,Off||On
+12,codificado||texto||atributo||realzado
+13,PV||OP||alojar||inmovilizar||Sin Acción
+14,0: Analógico||1: Interno Analógico||2: Digital||3: Interno Digital
+15,Tipos disponibles:||1:  Filtro D= E*D+(1-E)*G||2:  Rescalar G desde 0-100 a E-F||3:  Rescalar G a 0-100 desde E-F||4:  Límite En : F if G<F o E if G>E||5:  Límite A : 0 if G<F or 100 if G>E||6:  Log D=E*log(G)||7:  Raíz Cuadrada D=E*sqrt(G)||8:  Sumar Escalar D=(E*G)+(F*H)||9:  Multiplicar D=G*E*F||10: Dividir D=(G/E)*F||11: Mínimo||12: Máximo||13: Promedio||14: Puerta D=E si 0 o =F si 1||15: Comparador D=1 si F>E||16: Entalpía E=rh F=degC D=kJ/kg||17: Histéresis Nivel E banda F||18: A a D||19: Prestar Atención||20: Sumador D=E+F+G+H||21: Histéresis bajo E alto F||22: Proximidad nivel E error F||23: Potencia : D=E^F||24: Absoluto : D=ABS G||25: Truncar : D=TRUNC G||26: Trigonométrico
+16,Tipos disponibles:||1: Digital||2: Analógico||3: Tiempo Proporcional||4: Incrementar Reducir||5: Histéresis Binaria||6: Anular Tiempo Proporcional||7: Incrementar Reducir
+17,Tipos disponibles:||1: Combinación||2: Temporizador||3: Releer||4: Contador||5: Retraso||6: Horas en Funcionamiento||7: Fan Fuera||8: D a A
+18,Off||Retraso On||MinOn||Retraso Off||On
+19,No ocupación||Ocupación
+20,Automático||Manual
+21,Off||Parado||Reducir||Incrementar
+22,No Anular||Anular
+23,No Invertido||Invertido
+24,Seno||Coseno||Tangente
+25,Grados||Radianes
+26,Deshabilitado||Habilitado
+27,Habilitado||Deshabilitado
+28,No reconocido||Reconocido
+29,0:Lineal||1:Logarítmico||2:Thermistor Voltios||3:Voltios||4:Thermistor Ohmios||5:Characterizar
+30,0:Voltios||1:Thermistor Voltios||2:Corriente||3:Thermistor Ohmios||4:Analógico
+31,||Lun||Mar||Mier||Jue||Vie||Sab||Dom
+32,||Ene||Feb||Mar||Abr||May||Jun||Jul||Ago||Sep||Oct||Nov||Dic
+33,OK||Fallido
+34,||Sincronizado||Disparado||Periodico||Cambio de Valor
+35,1 Hora||15 Minutos||24 Horas||1 Minuto||5 Minutos||10 Minutos||20 Minutos||30 Minutos||6 Horas||1 Segundo
+36,Cerrar Sesión||Iniciar Sesión
+37,Alto||Bajo||Leer||Fuera de límites
+38,0: Externo||1: Interno
+39,Setpt Faillo||PV Faillo||En Defecto
+40,Setpt Faillo||PV Faillo
+41,Releer||Maintenimiento
+42,Digital
+43,||1:A||2:Global A||3:Min||4:Max||5:Sum||6:Media||7:From Analógico||8:From Byte||9:From Bit
+44,0:Analógico||1:Byte Digital||2:Bit Digital 
+45,0:Comms Deshabilitado||1:Identificador||2:Attributo 2||3:Attributo 3||4:Attributo 4||5:Attributo 5||6:Attributo6||7:Attributo 7
+46,Siguiente||Cada||Libre
+47,No Alarma||Digin||Alto||Bajo||Fuera de Límites||Leer||SP Desviación||PV Faillo||Maintenimiento||Releer
+48,Pasivo||Calentando||Enfriando
+49,No presente||Testeando||En Espera||Operacional||Mayor recuperación de fallo||Mayor fallo no recuperable
+50,Serif||Sans-Serif||Cursiva||Fantasia||Monospacio
+51,Izquierda||Centro||Derecha
+52,||Texto estático||Texto dinámico||Sin Usar||Sin Usar||Aplicación
+53,||Dia de Excepción||Semana de Excepción
+54,No||Si
+55,Controlador en Línea||Estratégia Corrupta||Fallo Interface Adaptador Periférico||Fallo RTC||Fallo RAM||Fallo Software||Fallo Comunicación Serie||Fallo PROM
+56,Tabla de Secuencia Superada||Memoria Baja||Fallo en Bus IO||Flash Bajo||Fallo de Archivo||Hora Corrupta||Archivo Erroneo
+57,Entrada Digital
+58,Driver
+59,Grupo de Alarma 
+60,Ruta de alarma
+61,Destino de alarma
+62,Función
+63,Lazo
+64,Sensor
+65,Knob
+66,Módulo Texto
+67,Tabla de secuencia
+68,Tipo de Sensor
+69,Logico
+70,Switch
+71,Dirección
+72,Directorio
+73,Display
+74,Hora
+75,Plot
+76,Usuario
+77,Zona Horaria
+78,Perfil Diario
+79,Prefil Excepción
+80,Período Módulo Zona Horaria
+81,IC Comms
+82,Modulo Entrada Alarma
+83,Optimo Arranque Parada
+84,Modulo Calentamiento OSS
+85,Modulo Enfriamiento OSS
+86,Byte Digital
+87,Nodo Analogico
+88,Módulos IO 
+89,CNC Virtual
+90,Módulo Página
+91,Etiqueta
+92,Tipo de Entrada
+93,Tipo
+94,Tipo Ángulo
+95,Paso de secuencia
+96,Canal Hardware
+97,Módulo Hardware
+98,Página
+99,Coordenada X
+100,Coordenada Y
+101,Estado
+102,Fuente
+103,Estado Requerido
+104,Reconocimieto de Alarma
+105,Habilitar Alarma
+106,Alarma Enviada
+107,Retraso de Alarma(segs)
+108,Tiempo en Alarma(segs)
+109,Invertir
+110,Salida en Fase
+111,Salida en Anti-Fase
+112,Canal Hardware en Fase
+113,Canal Hardware en Anti-Fase
+114,Escala Completa del Driver
+115,Posición del Driver
+116,Retroalimentación
+117,Rango
+118,Offset
+119,Houras de funcionamiento
+120,Numero de arranques
+121,Periodo
+122,Nivel ON
+123,Nivel OFF
+124,Tiempo de Ciclo
+125,Anular
+126,Último paso de secuencia
+127,Maxima Cola
+128,Fallido
+129,Formato del Mensaje
+130,Dirección
+131,LAN
+132,Intervalo
+133,Limieza Inhibida
+134,Nuva Alarma
+135,Mantener Prioridad
+136,Habilitado
+137,Salida
+138,Grupo
+139,Destino
+140,Habilitar
+141,Valor
+142,Fuente B
+143,Fuente E
+144,Fuente F
+145,Fuente G
+146,Fuente H
+147,Fuente I
+148,Fuente J
+149,Fuente K
+150,Fuente L
+151,Estado de Alarma
+152,Proceso Variable
+153,Consigna Ocupación
+154,Consigna No Ocupación
+155,Selecionar Consigna
+156,Nivel Manual
+157,Selecionar Manual
+158,Fallo del Sensor
+159,Tiempo de Recálculo
+160,Ganancia
+161,Tiempo Inegral(mins)
+162,Tiempo Derivativo(mins)
+163,Desviación Consigna
+164,Integral
+165,Derivativo
+166,Salida
+167,Habilitar Alarma
+168,Alarma Enviada
+169,Valor por Defecto
+170,Unidades
+171,Valor
+172,Salida
+173,Nivel de Usuario
+174,Valor Máximo
+175,Valor Mínimo
+176,Unidades
+177,Límite Alarma Alto(mins)
+178,Límite Alarma Bajo(mins)
+179,Retraso Alarma Alto(mins)
+180,Retraso Alarma Bajo(mins)
+181,Tipo de Escalado
+182,Tipo de Entrada
+183,Exponente
+184,Numero de puntos
+185,Entradas
+186,Salida
+187,Límite Superior
+188,Limite Inferior
+189,Combinación J
+190,Combinación K
+191,Combinación L
+192,Combinación M
+193,Retraso On
+194,Mínimo On
+195,Retraso Off
+196,Número de Tiempo
+197,Tiempo de Gracia
+198,Salida  J
+199,Salida  K
+200,Salida  L
+201,Salida  M
+202,Salida  N
+203,Salida  O
+204,Ratio
+205,Salida Acumulativa
+206,Factor de Escala
+207,Reset
+208,Salida Horas Funcionamiento
+209,Límite Intervalo Alarma
+210,Estado
+211,Versión
+212,Identificador
+213,Atributo2
+214,Atributo3
+215,Atributo4
+216,Atributo5
+217,Atributo6
+218,Atributo7
+219,Dirección Local
+220,LAN Local 
+221,Puerto Supervisor
+222,Dirección IP
+223,Mascara de Subred
+224,Puerto UDP
+225,Ethernet MAC
+226,Router 1
+227,Checksum OK
+228,Reset Alimentación
+229,Padre
+230,PIN
+231,Item
+232,Horas
+233,Minutos
+234,Segundos
+235,Día
+236,Mes
+237,Año
+238,Semana
+239,Día Cambio Hora
+240,Inicio Día
+241,Inicio Día Mes
+242,Fin Día
+243,Fín Día Mes
+244,Tiempo Actual
+245,Minutos Pasado la Medianoche
+246,Pulso Segundo
+247,Pulso Minuto
+248,Pulso 5 Minutos
+249,Pulso 10 Minutos
+250,Pulso 15 Minutos
+251,Pulso 20 Minutos
+252,Pulso 30 Minutos
+253,Pulso 60 Minutos
+254,Pulso 6 Horas
+255,Pulso 24 Horas
+256,Bit 5 Dia
+257,Bit 6 Dia
+258,Bit 7 Dia
+259,Pulso Semanal
+260,Pulso Mensal
+261,Pulso Anual
+262,Numero de Grabaciones
+263,Entrada Trigger
+264,Nombre Usuario
+265,Contraseña
+266,Nivel
+267,Página de Inicio
+268,Fuera de tiempo
+269,Inicio Sesión
+270,Hora
+271,Perfil Semanal
+272,Grupo Mantenimiento
+273,Grupo Readback
+274,Grupo Alto
+275,Grupo Bajo
+276,Grupo Lectura
+277,Grupo Fuera de Límies
+278,Grupo PV Fallo
+279,Setpoint Desviación Grupo
+280,Prioridad
+281,Excepciones
+282,Comienzo Día
+283,Comienzo Mes
+284,Final Día
+285,Final Mes
+286,Perfil Diario
+287,Reintentar intervalo
+288,Grupo General Alarmas
+289,Estado General Alarmas
+290,Tiempo Valor Par
+291,Dirección Comunicaciones
+292,Dirección Controlador Remoto
+293,atributo
+294,Lan Remoto
+295,Intervalo de Retransmisión
+296,Tiempo Dentro del Intervalo
+297,Tipo de Variable
+298,Cambio Significativo
+299,Último Envío
+300,Alarma Lectura
+301,Alarma fuera de Límites
+302,Alarma Baja
+303,Alarma Alta
+304,Alarma Nivel Alto
+305,Alarma Nivel Bajo
+306,Alarma Mantenimiento
+307,Alarma Readback
+308,Alarma Fallo PV
+309,Alarma Desviación Setpoint
+310,Alarma por Defecto
+311,Uso
+312,Temp Exterior
+313,Temp Ambiente
+314,Limite Calentamiento
+315,Limite Enfriamiento
+316,Perdida Tiempo Constante
+317,Selección Media
+318,Adaptación Inhibida
+319,Estado OTP
+320,Estado OSS
+321,Estado No Ocupación
+322,Estado Calentamiento
+323,Estado Ocupación
+324,Estado Enfriamiento
+325,Modo
+326,En Tiempo Óptimo
+327,Fuera de Tiempo Óptimo
+328,Consigna OSS
+329,Temp Media
+330,Comenzar Elevación
+331,Parar Elevación
+332,Tiempo Ganancia Constante
+333,Promedio de Temp
+334,Media de Calentamiento
+335,Media de Enfriamiento
+336,En Alarma
+337,Bit 0
+338,Bit 1
+339,Bit 2
+340,Bit 3
+341,Bit 4
+342,Bit 5
+343,Bit 6
+344,Bit 7
+345,Estado de Alarma
+346,Tipo Configurado
+347,Tipo Actual
+348,Tipos I/O
+349,Fabricante
+350,Numero de Serie
+351,Versión Firmware
+352,Retraso al On (segs)
+353,Sub Tipo
+354,Tipo de Escalado
+355,Entrada Mantenimiento
+356,Entrada Readback
+357,Construir
+358,Límite I/O Externas 
+359,Contador I/O Externo
+360,Remoto Módulo
+361,Módulo Local
+362,Número de Puerto
+363,Socket Fuera de Tiempo
+364,Fondo
+365,Color de Fondo
+366,Frecuencia Refresco
+367,Ancho
+368,Alto
+369,Color delantero
+370,Nombre de la Fuente
+371,Tamaño de la Fuente
+372,Alinear
+373,URL
+374,Color en Alarma
+375,Pulsable
+376,Posición Izquierda
+377,Posición Alta
+378,Deshabilitado
+379,Deshabilitar Módulo
+380,Mostrar Subtipo
+381,Time Master
+382,brIQ Capacidad
+383,brIQs Utilizado
+384,Salida En-Fase(mV)
+385,Salida Anti-Fase(mV)
+386,Fuente(mV)
+387,Conexión
+388,Enumeración
+389,CORRIENTE
+390,ELIMINADO
+391,OCURRIDO
+392,ELIMINADO  
+393,ENT.DIG.OFF
+394,ENT.DIG.ON
+395,NINGUNO  
+396,VALOR ALTO
+397,VALOR BAJO
+398,Fallo del Sensor
+399,ERROR ENTR
+400,DESVIACIÓN
+401,FALLO PV  
+402,READBACK   
+403,SERVICIO
+404,REINICIAR
+405,ERROR DATOS
+406,FALLO PIA
+407,ERROR RELOJ
+408,FALLO RAM
+409,FALLO SOFT
+410,FALLO PREC
+411,FALLO EPROM
+412,SUPERAR SEC
+413,MEMO. BAJA
+414,FALLO BUS IO
+415,FLASH BAJO  
+416,FALLO ARCHIV
+417,RTC CORRUPT
+418,Desconocido
+419,Visión de Conjunto
+420,Crear Nuevo
+421,Cambiar
+422,Borrar
+423,Modulo
+424,Obtener de
+425,Enviar
+426,Parámetro
+427,DiagnósticoIQs
+428,Unidades
+429,Gráfico
+430,EXITO en Escritura Valor 
+431,FALLO de Escritura Valor
+432,No Hay Valores Cambiados
+433,Anterior
+434,Siguiente
+435,Lo siento no hay datos para este módulo
+436,Ir detrás del módulo
+437,Ir delante del módulo
+438,Invitado
+439,Invitado en Sistema
+440,No inicializado
+441,Usuario Actual
+442,Sesión Caducada
+443,Cerrada la Sesión Usuario
+444,Inicio Sesión IQ3xcite
+445,Defecto Sistema
+446,para más opciones por favor inicia sesión
+447,Defecto Aprobado
+448,Gracias por usar IQ3xcite
+449,esta sesión se ha terminado, por favor cierra el navegador y comienza una nueva sesión
+450,Error al iniciar la sesión
+451,el nombre del usuario no existe
+452,la contraseña es incorrecta
+453,debe continuar como el usuario anterior, o intentar iniciar sesión como un usuario diferente
+454,por favor completa el cierre de sesión en este navegador
+455,para más opciones, por favor inicia sesión
+456,Defecto
+457,Bienvenido
+458,Confirmación
+459,Si
+460,NO
+461,Ref Módulo
+462,Etiqueta Módulo
+463,Transición
+464,Estado Actual
+465,No hay Alarmas en el registro
+466,On
+467,Off
+468,Alto
+469,Bajo
+470,Leer
+471,Fuera de Límites
+472,PV Fallo
+473,SP Desviación
+474,Releer
+475,Maintenimiento
+476,Reiniciar
+477,Error Datos
+478,Fallo PIA
+479,ERROR RELOJ
+480,Fallo RAM
+481,Fallo Software
+482,Fallo Precipitado
+483,Fallo Flash
+484,Secuencia Tabla Superada
+485,Peligro Memoria Baja
+486,Fallo CAN
+487,Peligro Fallo FLASH
+488,Fallo de Archivo
+489,Hora Corrupta
+490,Alarma Desconocida
+491,Sin usar
+492,Enviado
+493,Esperando
+494,Añadiendo
+495,Ocurrido
+496,ELIMINADO
+497,Página de Alarmas
+498,Error: fallo en lectura datos
+499,Error: referencia punto no válida
+500,No hay datos actualmente disponibles para la sesión solicitada
+501,en un intervalo de
+502,Dibujando el gráfico
+503,IQ3xcite
+504,Controlador
+505,Error: no se puede leer información local
+506,Fichero plantilla desaparecido
+507,en la Lan 
+508,Inicio Sesión
+509,Cerrar Sesión
+510,Módulo de Dirección
+511,Destinos de Alarma
+512,Grupos Alarmas
+513,Recorridos Alarmas
+514,Nodos Analógicos
+515,Bytes Digitales
+516,Entradas Digitales
+517,Salidas
+518,Funciones
+519,IC Comms
+520,Módulos ES
+521,Knobs
+522,Logicos
+523,Lazos
+524,OSS
+525,Sensores
+526,Tipos de Sensores
+527,Tabla de secuencia
+528,Switches
+529,Zonas Horarias
+530,Usuarios
+531,CNCs Virtuales
+532,Acceso Denegado
+533,Desautorizado
+534,Prohibido
+535,Aceptado
+536,Peición Errónea
+537,No Encontrado
+538,Servicio no Disponible
+539,OK
+540,No Modificado
+541,Desconocido
+542,Petición Desconocida
+543,Error, no se puede recuperar la información solicitada del controlador:
+544,El módulo pedido no es válido
+545,Error, no se puede crear la página web solicitada: 
+546,Error al leer los datos grabados
+547,No válido
+548,modulo anterior
+549,modulo siguiente
+550,Error escribiendo valores
+551,ajuste
+552,Gráfico
+553,Alara
+554,Lunes
+555,Martes
+556,Miércoles
+557,Jueves
+558,Viernes
+559,Sábado
+560,Domingo
+561,duplicar
+562,Borrar
+563,ver horarios
+564,Comenzar
+565,Parar
+566,Usar
+567,ajuste
+568,Enviar
+569,Horarios
+570,(defecto)
+571,Cancelar
+572,Introduce el tipo
+573,Por favor vuelva a introducir las etiquetas en rojo
+574,salta la conexión
+575,Nombre de usuario o contraseña incorrecto
+576,Por favor pruebe otra vez
+577,cadena no encontrada
+578,esta sesión está fuera de tiempo por favor inicie sesión otra vez
+579,para comenzar otra sesión inicie sesión de nuevo
+580,Semana Normal
+581,Bienvenido a IQ3xcite, por favor inicie la sesión...
+582,Seleccione el Idioma
+583,Alarmas
+584,Zonas Horarias
+585,Modulos
+586,Gráficos IQs
+587,Bienvenido a
+588,Destino
+589,Puerto de Destino
+590,Mapa de Sistema
+591,Configurar Gráfico
+592,Configurar Gráfico
+593,Gráfico Estandar
+594,Gráfico en Vivo
+595,Caargando la Traza
+596,Por Favor Espere...
+597,Construyendo el gráfico
+598,-> No hay datos registrados disponibles
+599,No hay datos a mostrar
+600,Lista
+601,CARGANDO GRÁFICOS ESTANDAR IQ3xcite
+602,CARGANDO PUNTOS GRÁFICOS IQ3xcite
+603,CARGANDO DATOS GRABADOS IQ3xcite
+604,ESPERE
+605,No hay datos grabados para cargar!
+606,Selecciona opción:
+607,El servidor no está respondiendo!
+608,El usuario ha cerrado la sesión!
+609,Registrar y restaurar el gráfico en vivo
+610,Recibidos los siguientes mensajes de error:
+611,Recupera puntos gráficos
+612,Programa
+613,||OSS||OTP
+614,||Ocupación||Calentar||Enfriar||No ocupación
+615,Zona
+616,Comienzo Desviación
+617,Paro Desviación
+618,Valor ocupado
+619,Valor calentamiento
+620,Valor Enfriamiento
+621,Valor no ocupado
+622,Nivel usuario demasiado bajo para esta vista
+623,Copyright
+624,Conexión OSS
+625,Conexión Zona Horaria
+626,Sin ES||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||xcite/IO/4AO||xcite/IO/16DI||xcite/IO/8DI||xcite/IO/MBus||xcite/IO/DALI||xcite/IO/8DO/HOA||xcite/IO/4DO/HOA||xcite/IO/8AO/HOA||xcite/IO/4AO/HOA||xcite/IO/8DI/8TI||Desconocido
+627,Programa
+628,Modulos
+629,Volver
+630,Alarmas
+631,Acción por defecto
+632,Nombre 
+633,Por favor contacte con el instalador,pida la llave 
+634,Pagina de instalador
+635,¿Olvidó su contraseña?
+636,Haga clic Aquí
+637,Contraseña por defecto
+638,De la dirección e-mail
+639,A la dirección de e-mail
+640,Texto extra
+641,Módulo Alarm Log 
+642,Typo de Alarma
+643,Número del Módulo
+644,Valor del Módulo
+645,Sin usar||Completado||Activado
+646,Minutos
+647,||IQ Lan||IP||Email||BACnet
+648,Dirección del Servidor de Email 
+649,Un controlador IQ3 ha generado esta alarma
+650,Lugar
+651,Hora/Fecha
+652,Controlador en alarma
+653,Omitir Salida
+654,Omitir Valor
+655,Omitir Estado
+656,Lugar GUID
+657,Omitir hora(mins)
+658,Tamaño de memoria
+659,Memoria utilizada
+660,Lista de Archivos
+661,Modulo IO Externo  Activado
+662,IO En Placa
+663,Tipo de Nombre
+664,Estado M0A
+665,Auto||Manual||Off
+666,||Parado||Cargando||Ejecutando||Punto de interrupción||Depurando||Error||Sin Archivo||Archivo no encontrado||Archivo dañado||brIQs excedidos 
+667,Ninguno||Cargar Programa||Parar||Ejecutar||Step Into||Step Out||Step Over||Carga Sincronizada
+668,Script Modulo Reloj
+669,Script Módulo de Entrada
+670,Script Módulo Salida
+671,Script Modulo
+672,Interfaces XNC
+673,Autor del Programa
+674,Versión del Programa
+675,ID del Programa
+676,Estado del Programa
+677,Programar la Orden
+678,Depuración Activa
+679,Nombre del Archivo
+680,Línea corriente
+681,Linea Breakpoint
+682,Alarma de LAN
+683,Alarma de OS
+684,Etiquetas de Alarmas
+685,Último Error
+686,Numero de Entradas
+687,Número de Salidas
+688,Número de módulos de Almacenamiento
+689,Módulo variable de Script guardados
+690,Valor no Volátil
+691,||Interface XNC
+692,Habilitado XNC
+693,Red
+694,||IQ LAN||IQ Iwrk||Lon Talk||Ethernet IP||BACnet||IP RAS Server
+695,Numero de buenas MAC Frames
+696,Numero de malas MAC Frames
+697,Estado de Red
+698,Número de fallos de Red
+699,Hostname
+700,Hostname por Defecto
+701,Nombre del Dominio Local
+702,Modo Direccionamiento IP
+703,Estado DHCP
+704,Servidor WINS
+705,Servidor DNS
+706,Servidor Time
+707,Tiempo restante de Arrendamiento
+708,Tiempo desde el último cambio de estado del DHCP
+709,Renovar DHCP
+710,Equipo Anterior
+711,Equipo Siguiente
+712,Master de Red
+713,Equipo Remoto
+714,Equipo Remoto de Subred
+715,||Obtener Automático||Introducir Manualmente
+716,Deshabilitado||Adquiriendo dirección DHCP||Tiene Dirección DHCP ||Adquiriendo Dirección Local||Tiene Dirección Local
+717,No es el Master de Red||Es el Master de Lan||Es el Master de Red
+718,Programa
+719,Último Nombre del Archivo
+720,Desactivar el Guradado de la Hora (mins)
+721,Sin Estrategia||Cargando||Ejecutando||Fallo al cargar||Preparado para la Orden||Parado||Sin Archivo||Archivo no encontrado||Archivo dañado||Versión del Archivo||brIQs excedidos ||Numero de E/S excedidos||E/S en placa excedidos||Error Representativo
+722,Ninguno||Preparado para la Orden||Cargar estrategia||Descargar estrategia||Parar||Ejecutar||Archivar
+723,||Programa
+724,USUARIO TCL 1 
+725,USUARIO TCL 2 
+726,USUARIO TCL 3 
+727,USUARIO TCL 4 
+728,USUARIO TCL 5 
+729,USUARIO TCL 6 
+730,SCRIPT TCL 
+731,Nunca Guardado||Archivo Preparado||Archivo Activo||Último Guardado con exito||Último Guardado fallído
+732,Estado de Guardado
+733,Numero de líneas
+734,Frecuencia del Lazo
+735,Tamaño del Módulo
+736,Servidor XML
+737,Velocidad en Baudios
+738,Versión cargada
+739,Estado de la Alarma General 2
+740,Ver Alarmas
+741,Ver Zonas Horarias
+742,Ver Modulos
+743,Ver GraphIQs
+744,Ver Navegador
+745,Teclas de Aplicación
+746,Parametros del Módulo
+747,Código
+748,Archivar
+749,Valores de los Parametros
+750,Nombre del Parámetro
+751,Valor del Parámetro
+752,Opción
+753,||Tarjeta||Característica||Display
+754,Título
+755,Descripción
+756,Tarjeta ID
+757,Tarjeta Opcional para la Pila
+758,Tarjeta de Lan
+759,RS232-485 no aislado
+760,RS485 Aislado
+761,Opción de Tarjeta Desconocida
+762,Procentaje de Progreso
+763,Incrementa la protección de la Hora del Reloj (en caso de fallo de alimentación) durante algunos años
+764,La tarjeta de LAN permite al IQ3 convertirse en un equipo del anillo de corriente LAN de Trend
+765,Placa serie auxiliar para la comunicación utilizando RS232 o RS485
+766,Placa serie auxiliar, con entrada aislada, para la comunicación RS485
+767,Esta opción de placa es desconocida y no la soporta esta versión de IQ3
+768,Directorios
+769,Displays
+770,Redes
+771,Opciones
+772,Plots
+773,Programas
+774,Último No de Arranques
+775,Interface XNC
+776,Interface con terceros implementado con el "Trend Custom Language"
+777,Versión de Placa Base
+778,Estado del Módulo
+779,Normal||Forzado||Deshabilitado||Manual||Off||BACnet Forzado
+780,ARCHIVO ERRONEO
+781,Archivo Erroneo
+782,Equipo
+783,Equipo en Manual 
+784,Automático||Manual
+785,Puerto UDP
+786,BBMD
+787,Edición fuera de tiempo
+788,Tiempo de Reset del módulo Horas en Funcionamiento
+789,Tiempo desde el último cambio del valor
+790,Tiempo del reset de el numero de Arranques
+791,Equipo No-Trend 
+792,||BACnet
+793,Numero de Red
+794,Nombre del Vendedor
+795,Nombre del Modelo
+796,Estado del Sistema de Equipos
+797,Equipos No-Trend
+798,MAC Address
+799,Confirmado||Sin Confirmar
+800,Tipo de Servicio
+801,ID de Proceso
+802,Transiciones
+803,Protocolo
+804,Trend||BACnet
+805,Limpiar Alarma
+806,Estado Equipos No-Trend
+807,OK||Fallido||Pendiente
+808,Módulo de entrada BDT
+809,Entrada BDT
+810,Dirección IP BACnet Remota 
+811,Subred BACnet Remota 
+812,Puerto UDP BACnet Remoto 
+813,Nivel de Prioridad Activo
+814,Segundos desde que ha ocurrido la Alarma
+815,Segundos desde que se ha Limpiado la Alarma
+816,Enviar I-Am al Arrancar
+817,UTC Offset (Mins)
+818,Ahorros de la Luz del Dia Aplicados
+819,Ahorros de la Luz del Dia Offset (Mins)
+820,Prioridad de Alarma
+821,BACnet Event Time Stamps
+822,Numero del Puerto de Servidor Web
+823,Revisión de la estrategia
+824,BACnet
+825,La opción BACnet habilita la comunicación mediante protocolo BACnet
+826,Añadir nueva característica
+828,Añadir nueva característica
+829,Para desbloquear una característica por favor contacte con atención al cliente  enviando los siguientes detalles:
+830,Por favor introduzca la clave de desbloqueo aquí.
+831,Nota, si la clave de desbloqueo es correcta el controlador se desbloqueará
+832,Reiniciando Controlador
+833,La clave de desbloqueo es incorrecta
+834,Clave de desbloqueo aceptada
+835,Desbloquear ahora
+836,Intentos de desbloqueo restantes
+837,Timing Type
+838,Numero de Grabaciones
+839,ID módulo fuente
+840,Grabaciones
+841,Grabaciones Totales
+842,Hora de la última grabación
+843,Valores Compactados
+844,Buffer de grabación
+845,Umbral de Notificación
+846,Grabaciones desde la última grabación
+847,Última notificación de grabación
+848,Grabación Activa
+849,Parado cuando esté lleno
+850,SalidaTrigger
+851,Tipo de Valor
+852,Bit de estado de Grabación
+853,Número de Grabación
+854,TimeStamp
+855,Time Offset
+856,Estado de Grabación[0]||Valor Digital[1]||Valor Analógico[2]||Valor Enum[3]||Valor Sin Firma[4]||Valor Firmado[5]||Valor-Bitstring[6]||Nulo[7]||Fallo[8]||Cambio de Hora[9]||Cualquier[10]
+857,Módulo de Grabación del Buffer del Plot
+858,Buffer Preparado
+859,BUFFER PREPARADO  
+860,Evento
+861,EVENTO
+862,Incremento COV 
+863,Todo
+864,Últimas 24 Horas
+865,Última Semana
+866,Último Mes
+867,Último Año
+868,Personalizar
+869,Fecha
+870,Elegir un rango de fechas
+871,Elegir Fecha
+872,Rango de fechas seleccionado ->
+873,Presonalizar la seleción de fechas
+874,Elegir Traza
+875,Imposible mostrar un gráfico {0} debido a la siguiente razón:<br>{1}
+876,Error
+877,Zoom original
+878,Mostrar ventana con el valor de la traza
+879,Eje de Tiempo
+880,Ocultar la regilla on/off
+881,Izquierda
+882,Derecha
+883,Fin
+884,Por Favor Espere...
+885,Tiempo de la última notificación
+886,Último Error de Estrategia
+887,Ver
+888,Líneas de la Rejilla
+889,Grabación Completa
+890,BTL Compliance

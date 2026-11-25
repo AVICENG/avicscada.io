@@ -1,0 +1,628 @@
+#IQ3xcite Translation File
+#File Format: 1
+#Firmware version: 1.10
+#File version: 1
+#Language: Deutsch
+#Notes:
+#Data:
+1,,
+11,Aus||Ein
+12,Codiert||Text||Attribut||Erweitert
+13,Fester Istwert||Fester Ausgangswert auto.||Fester Ausgangswert man.||Ausgangswert halten||keine Änderung
+14,0: Analog||1: Intern Analog||2: Digital||3: Intern Digital
+15,Verfügbare Typen:||1:  Filter: D= E*D+(1-E)*G||2:  Reskalieren: G von 0-100 nach E-F||3:  Reskalieren: G von E-F nach 0-100 ||4:  Begrenzen auf F wenn G<F oder E wenn G>E||5:  Begrenzen auf 0 wenn G<F oder 100 wenn G>E||6:  Log: D=E*log(G)||7:  Quadratwurzel: D=E*Wurzel(G)||8:  Addierer: D=(E*G)+(F*H)||9:  Multiplizierer D=G*E*F||10: Dividierer D=(G/E)*F||11: Minimum||12: Maximum||13: Mittelwert||14: Weiche D=E wenn 0 od. =F wenn 1||15: Vergleicher D=1 wenn F>E||16: Enthalpie E=rel.F F=GrdC D=kJ/kg||17: Hysterese Wert E Band F||18: A nach D||19: Abfrage (Lookup)||20: Addierer D=E+F+G+H||21: Hysterese niedr. E hoch F||22: Näherung Wert E Fehler F||23: Potenz: D=E^F||24: Absolut: D=ABS G||25: Abschneiden: D=TRUNC G||26: Trigonometrie
+16,Verfügbare Typen:||1: Digital||2: Analog||3: Zeitproportional||4: 3-Punkt||5: Binäre Hysterese||6: Zeitproportional m. Umschalt.||7: 3-Punkt
+17,Verfügbare Typen:||1: Kombination||2: Zeitglied||3: Verriegelung||4: Zähler||5: Verzögerung||6: Betriebsstundenzähler||7: Vervielfacher||8: D nach  A
+18,0: Nichts||1: Einschaltverz.||2: Mindestlaufzeit||3: Ausschaltverz.
+19,Nicht belegt||Belegt
+20,Automatikbetrieb||Handbetrieb
+21,Aus||Nicht veränderbar||Zu||Auf
+22,Keine Umschaltung||Umschaltung
+23,Nicht invertiert||Invertiert
+24,sin||cos||tan
+25,Grad||Rad
+26,Gesperrt||Freigegeben
+27,Freigegeben||Gesperrt
+28,Nicht quittiert||Quittiert
+29,0:Linear||1:Log||2:Thermistor Volt||3:Volt||4:Thermistor Ohm||5:Charakteristik
+30,0:Volt||1:Thermistor Volt||2:Strom||3:Thermistor Ohm||4:Analog
+31,||Mo||Di||Mi||Do||Fr||Sa||So
+32,||Jan||Feb||Mär||Apr||Mai||Jun||Jul||Aug||Sep||Okt||Nov||Dez
+33,OK||Fehlgeschlagen
+34,Synchronisiert||Ausgelöst||Periodisch||Wert ändern
+35,1 Stunde||15 Minuten||24 Stunden||1 Minute||5 Minuten||10 Minuten||20 Minuten||30 Minuten||6 Stunden||1 Sekunde
+36,Abgemeldet||Angemeldet
+37,hoch||niedrig||lesen||Bereichsüberschr.
+38,0: Extern||1: Intern
+39,Sollwertfehler||Istwertfehler||Standard
+40,Sollwertfehler||Istwertfehler
+41,Rückmeldung||Wartung
+42,Digital
+43,0:Hole von||1:Sende an||2:Global senden||3:Min||4:Max||5:Summe||6:Mittelwert
+44,0:Analog||1:||2:Bit
+45,0:Komm. gesperrt||1:Bezeichnung||2:Attribut 2||3:Attribut 3||4:Attribut 4||5:Attribut 5||6:Attribut 6||7:Attribut 7
+46,Nächsten||Jeden||Frei
+47,Kein Alarm||Dig. Eing.||Hochalarm||Niedrigalarm||Bereichsüberschreitung||Lesefehler||Sollwertabweichung||Istwertfehler||Wartung||Rückmeldung
+48,Passiv||Heizen||Kühlen
+49,Nicht verfügbar||Selbsttest||Standby||Betriebsbereit||Behebbare Fehler||Nicht behebbare Fehler
+50,Serif||Sans-Serif||Kursiv||Fantasy||Leerzeichen
+51,Links||Mitte||Rechts
+52,||Statischer Text||DynamischerText
+53,||Ausnahmetag||Ausnahmewoche
+54,Nein||Ja
+55,DDC am Netz||Fehlerhafte Strategie||Fehler im Ein-/Ausgabebaustein||Fehler in Echzeituhr||Fehler im RAM||Fehler im Programm||Fehler serielle Schnittstelle||Fehler im PROM
+56,Sequenztabellenüberlauf ||Wenig Speicher||E/A-Busfehler||Wenig Flashspeicher||Archivfehler||Fehlerhafte Zeit
+57,Digitaler Eingang
+58,Treiber
+59,Alarmgruppe
+60,Alarmroute
+61,Alarmziel
+62,Funktionsmodul
+63,Regler
+64,Sensor
+65,Knopf
+66,Textmodul
+67,Sequenztabelle
+68,Sensortyp
+69,Logikmodul
+70,Schalter
+71,Adressen
+72,Directorymodule
+73,Displaymodule
+74,Zeitmodul
+75,Plots
+76,Bediener
+77,Zeitzone
+78,Tagprofil
+79,Ausnahmeprofil
+80,Zeitzonen-Periodenmodul
+81,Intercontroller
+82,Alarm-Eingangsmodul
+83,Optimum Start Stop-Modul
+84,OSS-Heizmodul
+85,OSS-Kühlmodul
+86,Digitales Byte
+87,Analoges Modul
+88,Hardware E/A-Modul
+89,Virtuelles CNC-Modul
+90,Seitenmodul
+91,Bezeichnung
+92,Eingangstyp
+93,Typ
+94,Winkeltyp
+95,Sequenzschritt
+96,Hardwarekanal
+97,Hardwaremodul
+98,Seite
+99,X-Koordinate
+100,Y-Koordinate
+101,Status
+102,Quelle
+103,Sollzustand
+104,Alarm quittiert
+105,Alarm freigegeben
+106,Alarm gesendet
+107,Alarmverzögerung (Sek.)
+108,Alarmdauer (Sek.)
+109,Invertiert
+110,Gleichphasiger Ausgang
+111,Gegenphasiger Ausgang
+112,Gleichphasiger Hardwareausgang
+113,Gegenphasiger Hardwareausgang
+114,Laufzeit
+115,Stellungsrückmeldung
+116,Rückmeldung
+117,Bereich
+118,Offset
+119,Betriebsstunden
+120,Anz. Einschaltungen
+121,Periode
+122,Einschaltpunkt
+123,Ausschaltpunkt
+124,Timer
+125,Schaltpunkt
+126,Letzter Sequenzschritt
+127,Max. Warteschlange
+128,Fehler
+129,Nachrichtenformat
+130,Adresse
+131,LAN
+132,Intervall
+133,Löschen gesperrt
+134,Neuer Alarm
+135,Priorität
+136,Alarmfreigabe
+137,Ausgang
+138,Gruppe
+139,Ziel
+140,Freigabe
+141,Wert
+142,Quelle B
+143,Quelle E
+144,Quelle F
+145,Quelle G
+146,Quelle H
+147,Quelle I
+148,Quelle J
+149,Quelle K
+150,Quelle L
+151,Alarmstatus
+152,Prozessvariable
+153,Belegungsollwert
+154,Nichtbelegungsollwert
+155,Sollwertauswahl
+156,Handwert
+157,Betriebsart
+158,Fehlerreaktion
+159,Abarbeitungsintervall
+160,Verstärkungsfaktor
+161,Integralzeitkonst. (Min.)
+162,Differentialzeitkonst. (Min.)
+163,Sollwertabweichung
+164,Integralzeit
+165,Differentialzeit
+166,Ausgang
+167,Alarmfreigabe
+168,Alarm gesendet
+169,Festwert
+170,Einheit
+171,Wert
+172,Ausgang
+173,Bedienerebene
+174,Obere Grenze
+175,Untere Grenze
+176,Einheit
+177,Hochalarmgrenze
+178,Niedrigalarmgrenze
+179,Hochalarmverzög. (Min.)
+180,Niedrigalarmverzög. (Min.)
+181,Skalierungstyp
+182,Eingangstyp
+183,Exponent
+184,Anzahl der Werte
+185,Eingang
+186,Ausgang
+187,Obere Grenze Arbeitsbereich
+188,Untere Grenze Arbeitsbereich
+189,Kombination J
+190,Kombination K
+191,Kombination L
+192,Kombination M
+193,Einschaltverzögerung
+194,Mindesteinschaltzeit
+195,Ausschaltverzögerung
+196,Timernummer
+197,Verzögerungszeit
+198,Ausgang J
+199,Ausgang K
+200,Ausgang L
+201,Ausgang M
+202,Ausgang N
+203,Ausgang O
+204,Zählrate
+205,Kumulativer Ausgang
+206,Faktor
+207,Rücksetzeingang
+208,Betriebsstundenadresse
+209,Wartungsintervall
+210,Status
+211,Version
+212,Bezeichnung
+213,Attribut 2
+214,Attribut 3
+215,Attribut 4
+216,Attribut 5
+217,Attribut 6
+218,Attribut 7
+219,DDC-Adresse
+220,Lokales LAN
+221,Supervisor-Port
+222,IP-Adresse
+223,Subnet-Maske
+224,UDP-Port
+225,MAC-Adresse
+226,Router 1
+227,Checksumme OK
+228,Netzspannungs-Reset
+229,Parent
+230,PIN
+231,Modul
+232,Stunden
+233,Minuten
+234,Sekunden
+235,Tag
+236,Monat
+237,Jahr
+238,Wochentag
+239,Zeitverschiebung
+240,Starttag Sommerzeit
+241,Startmonat Sommerzeit
+242,Endtag Sommerzeit
+243,Endmonat Sommerzeit
+244,Aktuelle Zeit
+245,Minuten nach Mitternacht
+246,Sekundenimpuls
+247,Minutenimpuls
+248,5 Minutenimpuls
+249,10 Minutenimpuls
+250,15 Minutenimpuls
+251,20 Minutenimpuls
+252,30 Minutenimpuls
+253,60 Minutenimpuls
+254,6 Stundenimpuls
+255,24 Stundenimpuls
+256,Tag-Bit 5
+257,Tag-Bit 6
+258,Tag-Bit 7
+259,Wochenimpuls
+260,Monatsimpuls
+261,Jahresimpuls
+262,Anz. d. Aufzeichnungen
+263,Auslöseeingang
+264,Bedienername
+265,Passwort
+266,Ebene
+267,Homepage
+268,Timeout
+269,Angemeldet
+270,Zeit
+271,Wochenprofil
+272,Wartungsgruppe
+273,Rückmeldegruppe
+274,Hochgruppe
+275,Niedriggruppe
+276,Lesegruppe
+277,Bereichsüberschreitungsgruppe
+278,Istwertfehlergruppe
+279,Sollwertabweichungsgruppe
+280,Priorität
+281,Ausnahmen
+282,Starttag
+283,Startmonat
+284,Endtag
+285,Endmonat
+286,Tagprofil
+287,Wiederholungsintervall
+288,Generalalarmgruppe
+289,Generalalarmstatus
+290,Zeit/Wert-Paar
+291,Kommunikationsrichtung
+292,Entfernte DDC-Adresse
+293,Attribut
+294,Entferntes LAN
+295,Weiterleitungsintervall
+296,Zeit im Intervall
+297,Variablentyp
+298,Wertänderung
+299,Zuletzt übertragener Wert
+300,Lesealarm
+301,Bereichsüberschreitung
+302,Niedrigalarm
+303,Hochalarm
+304,Hochalarmwert
+305,Niedrigalarmwert
+306,Wartungsalarm
+307,Rückmeldealarm
+308,Istwertfehler
+309,Sollwertabweichungalarm
+310,Alarm Standard
+311,Verwendung
+312,Aussentemperatur
+313,Raumtemperatur
+314,Max. Aufwärmzeit
+315,Max. Abkühlzeit
+316,Verlustzeitkonstante
+317,Adresse Mediumfühler
+318,Adaption ungültig
+319,OTP-Status
+320,OSS-Status
+321,Nichtnutzung
+322,Aufheizphase
+323,Nutzung
+324,Abkühlphase
+325,Modus
+326,Optimale Einschaltzeit
+327,Optimale Ausschaltzeit
+328,OSS-Sollwert
+329,Mediumtemperatur
+330,Sollwertverschiebung beim Einschalten
+331,Sollwertverschiebung beim Ausschalten
+332,Verstärkungszeitkonstante
+333,Durschn. Mediumtemperatur
+334,Heizmedium
+335,Kühlmedium
+336,In Alarm
+337,Bit 0
+338,Bit 1
+339,Bit 2
+340,Bit 3
+341,Bit 4
+342,Bit 5
+343,Bit 6
+344,Bit 7
+345,Alarmstatus
+346,Konfigurierter Typ
+347,Tatsächlicher Typ
+348,E/A-Typen
+349,Hersteller
+350,Seriennummer
+351,Firmware-Version
+352,Einschaltverzögerung (Sek.)
+353,Untergeordneter Typ
+354,Skalierungstyp
+355,Wartungseingang
+356,Rückmeldeeingang
+357,Ausgabe
+358,Begrenzung externe E/As
+359,Verwendete E/As
+360,Entferntes Modul
+361,Lokales Modul
+362,Portnummer
+363,Socket-Timeout
+364,Hintergrund
+365,Hintergrundfarbe
+366,Aktualisierungsrate
+367,Breite
+368,Höhe
+369,Vordergrundfarbe
+370,Schrifttyp
+371,Schriftgröße
+372,Ausrichten
+373,URL
+374,Alarmfarbe
+375,Anklickbar
+376,Linke Position
+377,Obere Position
+378,Sperren
+379,Modul sperren
+380,Anzeige untergeordneter Typ 
+381,Timemaster
+382,brIQ-Kapazität
+383,Verwendete brIQs
+384,Gleichphasiger Ausgang (mV)
+385,Gegenphasiger Ausgang (mV)
+386,Quelle (mV)
+387,Verbindung
+388,Aufzählung
+389,aktuell
+390,aufgeh.
+391, aufgetr.
+392, aufgeh.
+393,DigEin AUS
+394,DigEin EIN
+395,nichts
+396,Hochalarm
+397,Niedrigal.
+398,Sensorfehl.
+399,Eing.-Fehl.
+400,Abweichung
+401,Istw.-Fehl.    
+402,Rueckmeld.
+403,Wartung
+404,Neustart
+405,Datenfehler
+406,PIA-Fehler  
+407,Uhr falsch
+408,RAM-Fehler
+409,S'warefehl.
+410,DART-Fehler 
+411,EPROM-Fehl.
+412,SEQ-Ueberl.
+413,Wen. Spei.
+414,E/A-Busf.
+415,Wen. Flash
+416,Archivfehl.
+417,RTC-Fehler
+418,Unbekannt
+419,Übersicht
+420,Neu erstellen:
+421,Ändern
+422,Löschen
+423,Module
+424,Aufwärts
+425,Senden
+426,Parameter
+427,DDC-Diagnose
+428,Einheit
+429,Trendkurve
+430,Schreiben ERFOLGREICH
+431,Schreiben FEHLERHAFT
+432,Keine Werte geändert
+433,Zurück
+434,Vorwärts
+435,Keine Daten für dieses Modul verfügbar
+436,Zurück zu diesem Modul
+437,Vorwärts zu diesem Modul
+438,Gast
+439,Systemgast
+440,Nicht initialisiert
+441,Aktueller Bediener
+442,Sitzung abgelaufen
+443,Bediener abgemeldet
+444,IQ3xcite-Anmeldung
+445,Standardsystem
+446,Für mehr Optionen bitte anmelden 
+447,Standard genehmigt
+448,Danke für das Verwenden von IQ3xcite.
+449,Diese Sitzung wurde beendet, bitte schliessen Sie den Browser und starten Sie eine neue Sitzung.
+450,Anmeldefehler
+451,Bedienername existiert nicht
+452,Passwort ungültig
+453,Sie können als vorheriger Bediener fortfahren oder sich als neuer Bediener anmelden
+454,Zur vollständigen Abmeldung bitte Browser schliessen
+455,Für mehr Optionen bitte anmelden
+456,Standard
+457,Willkommen
+458,Bestätigung
+459,JA
+460,NEIN
+461,Modulreferenz
+462,Modulbezeichnung
+463,Aufgetreten Aufgehoben
+464,Aktueller Status
+465,Keine Alarme im Speicher
+466,Ein
+467,Aus
+468,Hochalarm
+469,Niedrigalarm
+470,Lesefehler
+471,Bereichsüberschreitung
+472,Istwertfehler
+473,Sollwertabweichung
+474,Rückmeldung
+475,Wartung
+476,Neustart
+477,Datenfehler
+478,PIA-Fehler
+479,Uhr falsch
+480,RAM-Fehler
+481,Software-Fehler
+482,Dart-Fehler
+483,Flash-Fehler
+484,Sequenztabellenüberlauf
+485,Warnung: Wenig Speicher
+486,CAN-Bus-Fehler
+487,Warnung: Wenig FLASH-Speicher
+488,Archivfehler
+489,Fehlerhafte Zeit
+490,Unbekannter Alarm
+491,Unbenutzt
+492,Gesendet
+493,Warten
+494,Hinzufügen
+495,Aufgetreten
+496,Aufgehoben
+497,Alarmseite
+498,Fehler: Lesen der Daten fehlgeschlagen
+499,Fehler: Ungültige Datenpunktreferenz 
+500,Für die angeforderte Aufzeichnung sind keine Daten verfügbar
+501,in einem Intervall von
+502,Darstellung von
+503,IQ3xcite
+504,DDC-Station
+505,Fehler: Kann lokale Information nicht lesen
+506,Vorlagedatei nicht vorhanden
+507,im LAN
+508,Anmelden
+509,Abmelden
+510,Adressmodul
+511,Alarmziele
+512,Alarmgruppen
+513,Alarmrouten
+514,Analoge Knoten/Module
+515,Digitale Bytes
+516,Digitale Eingänge
+517,Treiber
+518,Funktionsmodule
+519,Intercontroller
+520,E/A-Module
+521,Knöpfe
+522,Logikmodule
+523,Regler
+524,OSS
+525,Sensoren
+526,Sensortypen
+527,Sequenztabellen
+528,Schalter
+529,Zeitzonen
+530,Bediener
+531,Virtuelle CNC
+532,Zugriff abgelehnt
+533,Nicht autorisiert
+534,Verboten
+535,Akzeptiert
+536,Schlechte Abfrage
+537,Nicht gefunden
+538,Kein Service verfügbar
+539,OK
+540,Nicht modifiziert
+541,Unbekannt
+542,Unbekannte Abfrage
+543,Fehler, kann angeforderte Trendinformationen nicht abrufen: 
+544,Ungültige Modulabfrage
+545,Fehler, kann gewünschte Trendvorlage nicht erstellen: 
+546,Fehler beim Lesen der aufgezeichneten Moduldaten
+547,Ungültig
+548,Vorheriges Modul
+549,Nächstes Modul
+550,Fehler beim Schreiben der Werte
+551,einstellen
+552,Trendkurve
+553,Alarm
+554,Montag
+555,Dienstag
+556,Mittwoch
+557,Donnerstag
+558,Freitag
+559,Samstag
+560,Sonntag
+561,kopieren
+562,löschen
+563,Zeiten anzeigen
+564,Start
+565,Stop
+566,Verwenden
+567,Einstellen
+568,senden
+569,Zeiten
+570,(Standard)
+571,Abbrechen
+572,Erneut eingeben
+573,Bitte geben Sie die roten Einträge erneut ein
+574,Auf Link springen
+575,Passwort oder Bedienername ungültig
+576,Bitte versuchen Sie es erneut.
+577,Zeichenfolge nicht gefunden
+578,Diese Sitzung ist abgelaufen, bitte erneut anmelden.
+579,Bitte nochmals anmelden, um eine neue Sitzung zu beginnen.
+580,Standardwoche
+581,Willkommen bei IQ3xcite, bitte melden Sie sich an um Ihre Sitzung zu beginnen...
+582,Sprachauswahl
+583,Alarme
+584,Zeitzonen
+585,Module
+586,Anlagenbilder
+587,Willkommen zu
+588,Ziel-IP-Adresse
+589,Ziel-Port
+590,Systemabbildung
+591,Konfiguriere Trendkurve
+592,Lade aufgezeichnete Daten
+593,Standard-Trendkurve
+594,Starte Dynamik
+595,Lade Kurve
+596,Bitte warten...
+597,Erstelle Trendkurve
+598,-> Keine aufgezeichneten Daten verfügbar
+599,Keine Daten zum Anzeigen
+600,Liste
+601,Lade IQ3xcite-Standardtrendkurve
+602,Lade IQ3xcite-Werteliste
+603,Lade aufgezeichnete IQ3xcite-Daten
+604,Warten
+605,Es gibt keine aufgezeichnete Daten zu laden!
+606,Option wählen:
+607,Der Server antwortet nicht!
+608,Der Bediener wurde abgemeldet!
+609,Anmelden und Dynamik neu starten
+610,Folgende Fehlermeldung wurde empfangen:
+611,Versuche Dynamik erneut zu laden
+612,Zeitsteuerungsmodul
+613,||OSS||OTP
+614,||Belegung||Aufheizen||Abkühlen||Nicht belegt
+615,Zone
+616,Startabweichung
+617,Endabweichung
+618,Belegungssollwert
+619,Aufheizsollwert
+620,Abkühlsollwert
+621,Nichtbelegungssollwert
+622,Bedienerrechte nicht ausreichend für diese Anzeige
+623,Copyright
+624,OSS-Verbindung
+625,Zeitzonenverbindung
+626,Keine E/As||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||Unbekannt
+627,Zeitsteuerungen
+628,Module
+629,Zurück
+630,Alarme

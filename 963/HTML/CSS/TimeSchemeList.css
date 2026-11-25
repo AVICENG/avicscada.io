@@ -1,0 +1,117 @@
+/* Trend control systems, 
+   Date: 3rd July, 2012
+	
+Documentation: This css file is used to apply the styling to the Time Scheme List View. 
+*/
+
+.TimeSchemeListTable
+{
+    border: 1px solid #ddd;
+    min-width: 300px;
+    height: 107px;
+    overflow: auto;
+    margin-top: 10px;
+    margin-bottom: 0px;
+}
+
+.text
+{
+    margin: 5px 0;
+}
+
+.iconpart
+{
+    background: white url(images/timezone.png) no-repeat left center;
+    border: 1px solid white;
+    border-top: 0 solid;
+}
+
+body[dir=rtl] .iconpart{
+    background-position: right center;
+}
+
+.iconpart:first-child
+{
+    border-top: 1px solid white;
+}
+
+.label-part
+{
+    overflow: hidden;
+    border: 1px solid white;
+    padding-left: 10px;
+    margin-right: 100px;
+    background: white;
+    color: black;
+    min-height: 32px;
+    line-height: 32px;
+    text-overflow:ellipsis;
+}
+
+body[dir="rtl"] .label-part{
+    padding-left:0;
+    padding-right:10px;
+    margin-right:0;
+    margin-left:100px;
+}
+
+body .FolderTimeSchemeListTable .label-part{margin:0;}
+
+
+.selected .label-part
+{
+    background-color: #beebff;
+    
+    border-color:#99DEFD #fff #99DEFD #99DEFD 
+}
+body[dir=rtl] .selected .label-part{
+    border-color:#99DEFD #99DEFD #99DEFD #fff
+}
+
+body .FolderTimeSchemeListTable .selected .label-part{border-color:#99DEFD; }
+
+.scheme-name-cell
+{
+    width: 70%;
+    overflow: hidden;
+}
+
+.colour-cell
+{
+    margin-left: 32px;
+}
+body[dir="rtl"] .colour-cell{
+    margin-left:0;
+    margin-right:32px;
+}
+
+.TimeSchemeListTable.disabled
+{
+     border-color: #ddd;
+}
+
+
+.timeSchemeLabel.loading:after
+{
+    content: '';
+    display: inline-block;
+    height: 16px;
+    width: 16px;
+    vertical-align: middle;
+    background: url(images/wait-16.gif) 50% 50% no-repeat;
+}
+
+#importWeeksetView .TimeSchemeListTable{
+    height:380px;
+    background:#fff;
+}
+#importWeeksetView .TimeSchemeListTable.disabled{
+    
+    background:none;
+}
+#importWeeksetView .label-part
+{
+    margin-right:15px;
+}
+
+body[dir="rtl"] #importWeeksetView .label-part{margin-right:0;margin-left:15px;}

@@ -1,0 +1,23 @@
+IQeco Address Module Parameters
+<XXXX>(D),Identifier,String,90
+<XXXX>(F),Second Controller Attribute,String,90
+<XXXX>(G),Third Controller Attribute,String,90
+<XXXX>(H),Strategy Name,String,101
+<XXXX>(L),Local Address,Integer (Valid range 1, 4 to 119 excluding address 10),90
+<XXXX>(N),Own Local LAN,Integer (Valid range 1, 4 to 119 excluding address 10 - 0 means not set up),101
+<XXXX>(C),Version,String (Contains outstation type and firmware version),101
+<XXXX>(B),Build,String,101
+<XXXX>(M),Serial Number,String,101
+<XXXX>(!),Service Pin,Integer,90
+<XXXX>(~),Generator Number,Integer,90
+<XXXX>(@),Strategy Unlock Code,Integer,90
+<XXXX>(d),Strategy Revision,Integer,101
+<XXXX>(V),Device Discovered,Boolean (Set to 1 when when discovered),90
+<XXXX>(>),Number of Modules,Integer,101
+<XXXX>(#),Operation Status,Integer (0 = Water Balance, 1 = Normal, 2 = Water Balance and I/O Override, 3 = I/O Override),90
+<XXXX>(A),Own LAN Alarm Address,Integer,90
+<XXXX>(R),Own LAN Alarm Lan,Integer,90
+<XXXX>(z),Reset Controller,Integer (Set to 0 to save to flash, set to 1 to save to flash and reset),90
+<XXXX>(v),Plot memory size,Integer,101
+<XXXX>(w),Plot memory used,Integer,101
+<XXXX>(U),Supervisor port address,String, 90

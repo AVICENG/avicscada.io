@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='windows-1252' ?>
+<ftstdata>
+<topic name="963 Server oletussivu" url="963_Server_Default_Page.htm" />
+<topic name="963 Server aloitussivu" url="963_Server_Start_up_Page.htm" />
+<topic name="Tietoja 963-ohjelmasta" url="About_963.htm" />
+<topic name="Tästä käyttöohjeesta" url="About_This_Manual.htm" />
+<topic name="Hälytysten käsittely" url="Action_Alarms.htm" />
+<topic name="Hälytysten käsittely hälytyspaneelista" url="Action_Alarms_from_an_Alarm_Panel.htm" />
+<topic name="Erikoispäivämallin lisääminen" url="Add_a_Special_Day_Template.htm" />
+<topic name="Viikkomallin lisääminen" url="Add_a_Week_Set_Template.htm" />
+<topic name="Poikkeusajan lisääminen" url="Add_an_Exception.htm" />
+<topic name="Asetusarvon (analogisen arvon) muuttaminen BACnet-laitteessa" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+<topic name="Asetusarvon muuttaminen Trend-laitteessa" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+<topic name="Kytkimen tilan muuttaminen (Digital Value) BACnet-laitteessa" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+<topic name="Kytkimen tilan muuttaminen Trend-laitteessa" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+<topic name="Aikaohjelmapisteen muuttaminen" url="Adjust_a_Timezone.htm" />
+<topic name="Aikaohjelmien muuttaminen" url="Adjust_Occupation_Times.htm" />
+<topic name="Hälytysnäyttö" url="Alarm_Viewer.htm" />
+<topic name="Peruskäyttö" url="Basic_Use.htm" />
+<topic name="Normaaliajan muuttaminen" url="Change_Normal_Occupation_Times.htm" />
+<topic name="Ohjelmointinäyttö" url="Configuration_Mode_Display.htm" />
+<topic name="Yhteyden muodostaminen 963 Serveriin" url="Connect_to_963_Server.htm" />
+<topic name="Trendin yhteystiedot" url="Contacting_Trend.htm" />
+<topic name="Tässä ohjeessa käytetyt ilmaisut" url="Conventions_Used_in_this_Manual.htm" />
+<topic name="Mallin poistaminen" url="Delete_a_Template.htm" />
+<topic name="Poikkeusajan poistaminen" url="Delete_an_Exception.htm" />
+<topic name="Laitenäyttö" url="Device_Viewer.htm" />
+<topic name="Aikataulut" url="Diary_Display.htm" />
+<topic name="Kaavion näyttäminen" url="Display_a_Chart.htm" />
+<topic name="Yhteenvetokäyrän näyttö" url="Display_a_Compact_Graph.htm" />
+<topic name="Ruudukon näyttö trendikäyrässä" url="Display_a_Grid_on_a_Graph.htm" />
+<topic name="Pisteen koordinaattien näyttö" url="Display_a_Points_Co-ordinates.htm" />
+<topic name="Tarkkuuskäyrän näyttö" url="Display_a_Precision_Graph.htm" />
+<topic name="Kaaviosivun näyttö" url="Display_a_Schematic_Page.htm" />
+<topic name="Trendikäyrän tietojen näyttäminen" url="Display_Graph_Data.htm" />
+<topic name="IQ3 web-sivujen näyttö" url="display_iq3_web_pages.htm" />
+<topic name="Lokitietojen näyttö (historia)" url="Display_Logged_Data.htm" />
+<topic name="Näytä 963:n aloitussivu" url="Display_the_963_s_Startup_Page.htm" />
+<topic name="IQ-järjestelmän näyttö" url="Display_the_IQ_System.htm" />
+<topic name="Mallin muokkaaminen" url="Edit_a_Template.htm" />
+<topic name="Poikkeusajan muokkaaminen" url="Edit_an_Exception.htm" />
+<topic name="Siirtyminen pre IQ3 -säätimien (IQ1, IQ2) ohjelmointitilaan" url="Enter_Configuration_Mode_on_Pre_IQ3_Controllers.htm" />
+<topic name="Virheilmoitukset" url="Error_Messages.htm" />
+<topic name="Hälytyspaneelien piilottaminen" url="Hide_Alarm_Panels.htm" />
+<topic name="Käyrän määrittelyn lataaminen" url="Load_a_Graph_Definition.htm" />
+<topic name="Sisäänkirjautuminen" url="Log_In.htm" />
+<topic name="Uloskirjautuminen" url="Log_Off.htm" />
+<topic name="Työasemakäyttäjän (Client) uloskirjaaminen" url="Log_Off_a_Client_User.htm" />
+<topic name="Hälytyspaneelin vaimentaminen" url="Mute_an_Alarm_Panel.htm" />
+<topic name="Tallennetun trendikäyrän toisto" url="Playback_a_Recorded_Graph.htm" />
+<topic name="BACnet-arvon muutoksen palauttaminen" url="Relinquish_Control_of_a_BACnet_Value.htm" />
+<topic name="Hälytystoimenpiteen käynnistys käsin" url="Run_a_Manual_Alarm_Action.htm" />
+<topic name="Hälytystoimenpiteiden käynnistys käsin" url="Run_Alarm_Actions_Manually.htm" />
+<topic name="Kaaviosivujen näyttö" url="Schematic_Page_Client_Display.htm" />
+<topic name="Palvelimen tilasivu" url="Server_Status_Page.htm" />
+<topic name="Poikkeusmallien määrittäminen" url="Setup_Exception_Templates.htm" />
+<topic name="Näytettävien sarakkeiden valinta" url="Specify_What_Columns_are_Displayed.htm" />
+<topic name="Hälytystoimenpiteiden kytkeminen PÄÄLLE/POIS" url="Turn_Alarm_Actions_ON_OFF.htm" />
+<topic name="963:n käyttö työasemakoneelta (Client)" url="Using_963_From_a_Client.htm" />
+<topic name="Hälytyshistorian katselu" url="View_Alarm_History.htm" />
+<topic name="Hälytysten näyttö" url="View_Alarms.htm" />
+<topic name="Poikkeusaikojen näyttö" url="View_Exceptions.htm" />
+<topic name="Tulevien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+<topic name="Aikaohjelmien normaaliaikojen näyttö" url="View_Normal_Occupation_Times.htm" />
+<topic name="Palvelimen tilan näyttö" url="View_Server_Status.htm" />
+<topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+
+</ftstdata>  

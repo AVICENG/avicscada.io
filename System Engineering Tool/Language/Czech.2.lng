@@ -1,0 +1,778 @@
+﻿#IQ3xcite Translation File
+#File Format: 2
+#Firmware version: 1.30
+#File version: 1
+#Language: Czech
+#Notes:
+#Data:
+1,.
+2,ltr
+11,Vyp||Zap
+12,kódováno||text||atribut||Rozšířený
+13,Standartní PV||Standartní OP||Ponechej Standartní OP||Trvalý OP||Žádná akce
+14,0: Analog||1: Interní Analog||2: Digitální||3: Interní Digitální
+15,Dostupné typy:||1:  Filtr D= E*D+(1-E)*G||2:  Přepočet  G z 0-100 na E-F||3:  Přepočet G z E-F na 0-100 ||4:  Limit k : F když G<F nebo E když G>E||5:  Limit k : 0 když G<F nebo 100 když G>E||6:  Logaritmus D=E*log(G)||7:  Druhá odmocnina D=E*sqrt(G)||8:  Sečítání D=(E*G)+(F*H)||9: Násobit D=G*E*F||10: Dělit D=(G/E)*F||11: Minimum||12: Maximum||13: Průměr||14: Brána D=E když 0 nebo =F když 1||15: Porovnávač D=1 když F>E||16: Enthalpie E=rh F=degC D=kJ/kg||17: Hysteresní ůroveň E band F||18: A do D||19: Lookup||20: Sečtení D=E+F+G+H||21: Hysterese spodní E high F||22: Blízká ůroveň E error F||23: Power : D=E^F||24: Absolutní hodnota : D=ABS G||25: Zkrátit : D=TRUNC G||26: Trigonometrický
+16,Dostupné typy:||1: Digitální||2: Analogový||3: Časově Proporcionální||4: Nahoru Dolu||5: Binarní Hysterese||6: Časově Proporcionalní||7: Nahoru Dolu
+17,Dostupné typy:||1: Kombinace||2: Časovač||3: Zpětné čtení||4: Čítač||5: Zpoždění||6: Běh hodin||7: Výstup Ventilátoru||8: D do A
+18,Vyp||Zap Zpoždění||Zap Min||Vyp Zpoždění||Zap
+19,Neobsazeno||Obsazeno
+20,Automaticky||Manualně
+21,Vyp||Stacionární||Spodní||Zvedat
+22,Bez Přemostění||Zrušení
+23,Neinvertovaný||Invertovaný
+24,Sinus||Cosinus||Tangent
+25,Stupně||Radiány
+26,Vypnuto||Zapnuto
+27,Zapnuto||Vypnuto
+28,Nepotvrzeno||Potvrzeno
+29,0:Linearní||1:Logaritmický||2:Thermistorový Napěťový||3:Napěťový||4:Thermistorový Odporový||5:Charakterizovat
+30,0:Napěťový||1:Thermistorový Napěťový||2:Proudový||3:Thermistorový Odporový||4:Analogový
+31,||Pondělí||Úterý||Středa||Čtvrtek||Pátek||Sobota||Neděle
+32,||Leden||Únor||Březen||Duben||Květen||Červen||Červenec||Srpen||Září||Říjen||Listopad||Prosinec
+33,OK||Selhalo
+34,Synchronizováno||Spuštěný||Periodický||Změň Hodnotu
+35,1 Hodina||15 Minut||24 Hodin||1 Minuta||5 Minut||10 Minut||20 Minut||30 Minut||6 Hodin||1 Sekunda
+36,Odhlášen||Přihlášen
+37,horní||dolní||číst||Krajní Rozsah
+38,0: Externí||1: Interní
+39,Nastavení Bodu Selhalo||Chyba Vstupu||Standart
+40,Nastavení Bodu Selhalo||Chyba Vstupu
+41,Zpětné čtení||Údržba
+42,Digitální
+43,0:Od||1:Do||2:Globálně do||3:Minimum||4:Maximum||5:Suma||6:Průměr
+44,0:Analogový||1:Digitální Bajt||2:Digital Bit
+45,0:Porty COM vypnuty||1:Identifikátor||2:Attribut 2||3:Attribut 3||4:Attribut 4||5:Attribut 5||6:Attribut 6||7:Attribut 7
+46,Příští||Všechny||Volný
+47,Bez Alarmu||Digin||Horní||Spodní||Mimo Rozsah||Číst||SP Odchylka||Chyba Vstupu||Údržba||Zpětné čtení
+48,Pasivní||Ohřívám||Chladím
+49,Nepřítomno||Autotest||Pohotovostní režim||Operativní||Hlavní obnovitelný selhal||Hlavní neobnovitelný selhal
+50,Serif||Sans-Serif||Kursiva||Fantazie||Monoprostor
+51,Levá||Střed||Pravý
+52,||Statický Text||Dynamický Text||Nepoužito||Nepoužito||Applet
+53,||Dení Vyjímka||Týdení Vyjímka
+54,Ne||Ano
+55,Stanice Zapnuta||Strategie Narušení||Chyba Periférního Rozhraní||Chyba RTC||Chyba RAM||Chyba Software||Chypa Seriových Portů||Chyba PROM
+56,Tabulka Sekvencí Přemostění||Malá Paměť||Chyba IO Bus ||Málo Paměti Flash||Chyba Archivu ||Čas narušení
+57,Digitální Vstup
+58,Výstup
+59,Skupina Alarmů
+60,Směr Alarmu
+61,Umístění Alarmu
+62,Funkce
+63,Smyčka
+64,Senzor
+65,Knoflík
+66,Textový Modul
+67,Tabulka Sekvencí
+68,Typ Senzoru
+69,Logika
+70,Přepínač
+71,Adresy
+72,Adresáře
+73,Zobraz
+74,Čas
+75,Záznam
+76,Uživatele
+77,Časová zóna
+78,Dení Profil
+79,Profil Vyjímky
+80,Periodický Modul Časové Zóny
+81,IC Comms
+82,Alarmový Vstupní Modul
+83,Optimální Start Stop
+84,OSS Topící Modul
+85,OSS Chladící Modul
+86,Digitalní Bod
+87,Analogový Bod
+88,IO Modul
+89,Virtuální CNC
+90,Stránka Modulů
+91,Název
+92,Typ Vstupu
+93,Typ
+94,Stránka Typů
+95,Sekvenční Krok
+96,Hardwarový Kanál
+97,Hardwarový Modul
+98,Stránka
+99,X Pozice
+100,Y Pozice
+101,Stav
+102,Zdroj
+103,Požadovaný Stav
+104,Alarm potvrzen
+105,Alarm Povolený
+106,Alarm Poslat
+107,Alarm Prodleva(secs)
+108,Čas Alarmu(secs)
+109,Převrátit
+110,První Výstup
+111,Druhý Výstup
+112,První Hardwarový Kanál
+113,Druhý Hardwarový Kanál
+114,Plné Řízení
+115,Řídící Pozice
+116,Zpětná vazba
+117,Doba chodu (sec)
+118,Kompenzace
+119,Hodiny
+120,Počet Startů
+121,Perioda
+122,Zap Úroveň
+123,Vyp Úroveň
+124,Čas cyklu
+125,Zrušení
+126,Poslední Krok Sekvence
+127,Maximální Fronta
+128,Selhalo
+129,Formát Zprávy
+130,Adresa
+131,LAN
+132,Interval
+133,Vymazat blokování
+134,Nový Alarm
+135,Drž Prioritu
+136,Zapnuto
+137,Výstup
+138,Skupina
+139,Cíl
+140,Zapnout
+141,Hodnota
+142,Zdroj B
+143,Zdroj E
+144,Zdroj F
+145,Zdroj G
+146,Zdroj H
+147,Zdroj I
+148,Zdroj J
+149,Zdroj K
+150,Zdroj L
+151,Stav Alarmu
+152,Vstup P
+153,Vstup O
+154,Vstup U
+155,Výběr Vstupů U,O
+156,Vstup L
+157,Výběr Vstupu L
+158,Chyba senzoru
+159,Znovu Naplánuj Čas
+160,Zesílení
+161,Integrační Čas(mins)
+162,Derivační Čas(mins)
+163,Nastav Odchylku
+164,Integral
+165,Derivace
+166,Výstup
+167,Alarm Povolit
+168,Alarm Poslat
+169,Standartní Hodnota
+170,Jednotky
+171,Hodnota
+172,Výstup
+173,Uživatelská úroveň
+174,Horní Rozsah
+175,Spodní Rozsah
+176,Jednotky
+177,Vysoký Limit Alarmu
+178,Nízký Limit Alarmu
+179,Vysoká Prodleva  Alarmu(mins)
+180,Nízká Prodleva Alarmu(mins)
+181,Typ Rozsahu
+182,Typ Vstupu
+183,Exponent
+184,Počet Bodů
+185,Vstup
+186,Výstup
+187,Horní Limit
+188,Dolní limit
+189,Combinace J
+190,Combinace K
+191,Combinace L
+192,Combinace M
+193,Zap Zpoždění
+194,Zap Minimum
+195,Vyp Zpoždění
+196,Číslo Časovače
+197,Grace Čas
+198,Výstup J
+199,Výstup K
+200,Výstup L
+201,Výstup M
+202,Výstup N
+203,Výstup O
+204,Rychlost
+205,Kumulovaný Výstup
+206,Měřítko
+207,Reset
+208,Hodiny Výstup
+209,Limit Intervalu Alarmu
+210,Stav
+211,Verze
+212,Identifikátor
+213,Attribut2
+214,Attribut3
+215,Attribut4
+216,Attribut5
+217,Attribut6
+218,Attribut7
+219,Lokální Adresa
+220,Místní LAN
+221,Servisní Port
+222,IP Adresa
+223,Subnet Mask
+224,UDP Port
+225,Ethernet MAC
+226,Router 1
+227,Kontrolní Součet OK
+228,Power Reset
+229,Položka Adresáře
+230,PIN
+231,Položka
+232,Hodiny
+233,Minuty
+234,Sekundy
+235,Dny
+236,Měsíce
+237,Rok
+238,Všední den
+239,Změnit Počáteční Hodinu
+240,Změnit Počáteční Den
+241,Změnit Počáteční Měsíc 
+242,Změnit Koncový Den
+243,Změnit Koncový Měsíc
+244,Čas
+245,Půlnoční Puls
+246,Sekundový puls
+247,Minutový  puls
+248,5 Minutový puls
+249,10 Minutový puls
+250,15 Minutový puls
+251,20 Minutový puls
+252,30 Minutový puls
+253,60 Minutový puls
+254,6 Hodinový puls
+255,24 Hodinový puls
+256,Dení Bit 5
+257,Dení Bit 6
+258,Dení Bit 7
+259,Týdení Puls
+260,Měsíční Puls
+261,Roční Puls
+262,Počet Záznamů
+263,Vstup Spuštění
+264,Uživatelské jméno
+265,Heslo
+266,Úroveň
+267,Domácí Stránka
+268,Prodleva
+269,Stav
+270,Čas
+271,Profil Týdne
+272,Skupina Údržba
+273,Skupina Zpětného čtení
+274,Skupina Horní
+275,Skupina Dolní
+276,Skupina Čtení
+277,Skupina Mimo rozsah
+278,Skupina PV Chyba
+279,Skupina Nastavení bodu odchylky
+280,Priorita
+281,Vyjímky
+282,Počáteční Den
+283,Počáteční měsíc
+284,Koncový Den
+285,Koncový Měsíc
+286,Profil Dne
+287,Opakuj Interval
+288,Skupina Hlavních Alarmů
+289,Stav Hlavních Alarmů
+290,Dvojice Časových Hodnot
+291,Směrování Hodnoty
+292,Adresa dálkového ovládání
+293,Attribut
+294,Vzdálená LAN
+295,Interval Vysílání
+296,Čas Intervalu
+297,Typ Hodnoty
+298,Změna Hodnoty 
+299,Poslední Hodnota
+300,Čtení alarmu
+301,Alarm Mimo rozsah 
+302,Nízký Alarm
+303,Vysoký Alarm
+304,Vysoká Úroveň Alarmu
+305,Nízká Úroveň Alarmu
+306,Alarm Údržba
+307,AlarmZpětného čtení
+308,AlarmPV Chyba 
+309,Alarm Nastavení bodu Odchylky
+310,Standartní Alarm
+311,Využití
+312,Venkovní Teplota
+313,Vnitřní Teplota
+314,Limit Topení
+315,Limit chlazení
+316,Snížení Časové Konstanty
+317,Výběr Media
+318,Blokování
+319,OTP Stav
+320,OSS Stav
+321,Stav NOC
+322,Stav Nahřívání
+323,Stav OSS
+324,Chlazení Stav
+325,Mód
+326,Zap Optimální Čas
+327,Vyp Optimální Čas
+328,OSS Nastavení bodu
+329,Teplota Media
+330,Start Elevace
+331,Stop Elevace
+332,Časová konstanta Zisk
+333,Průměrná Teplota Media
+334,Topící Médium
+335,Chladící Médium
+336,Alarm
+337,Bit 0
+338,Bit 1
+339,Bit 2
+340,Bit 3
+341,Bit 4
+342,Bit 5
+343,Bit 6
+344,Bit 7
+345,Stav Alarmu
+346,Nastavené Typy
+347,Aktuální tipy
+348,Typy I/O 
+349,Výrobce
+350,Sériové číslo
+351,Verze Firmware
+352,Prodleva Zapnutí(secs)
+353,Sub Type
+354,Typ Měřítka
+355,Vstup Údržba
+356,Vstup Zpětného Čtení
+357,Typ verze
+358,Externí I/O Limity
+359,Externí I/O Count
+360,Vzdálené moduly
+361,Lokální  Moduly
+362,Číslo Portu
+363,Socket timeout
+364,Backdrop
+365,Barva Pozadí
+366,Doba Obnovení
+367,Šířka
+368,Výška
+369,Barva popředí
+370,Jméno Fontu
+371,Velikost Fontu
+372,Zarovnat
+373,URL
+374,In Alarm Barva
+375,Kliknutelné
+376,Levá Pozice
+377,Horní Pozice
+378,Vypnut
+379,Modul Vypnutý
+380,Zobraz Subtype
+381,Správce Času
+382,Kapacita brIQ 
+383,Využití brIQs 
+384,Výstup In-Phase(mV)
+385,Druhý Výstup(mV)
+386,Zdroj(mV)
+387,Připojení
+388,Enumerace
+389,CURRENT
+390,CLEARED
+391, OCCURRED 
+392, CLEARED  
+393,DIGIN OFF  
+394,DIGIN ON   
+395,NONE       
+396,HIGH VALUE 
+397, LOW VALUE 
+398,SENSOR FAIL
+399,INPUT ERROR
+400,DEVIATION  
+401,PV FAIL    
+402,READBACK   
+403,SERVICE    
+404,RESTART    
+405,DATA ERROR 
+406,PIA FAULT  
+407,CLOCK WRONG
+408,RAM FAULT  
+409,S'WARE FAIL
+410,DART FAULT 
+411,EPROM FAULT
+412,SEQ OVERRUN
+413,LOW MEMORY 
+414,IO BUS FAIL
+415,LOW FLASH  
+416,ARCHVE FAIL
+417,CORRUPT RTC
+418,Unknown
+419,Přehled
+420,Vytvořit
+421,Změna
+422,Smazat
+423,Modul
+424,Vezmi Z
+425,Poslat
+426,Parametr
+427,DiagnostikaIQs
+428,Jednotky
+429,Graf
+430,Hodnota Zapsána OK
+431,Hodnota Nezapsána
+432,Hodnoty Nezměněny
+433,Předešlý
+434,Příští
+435,Žádná data pro tento modul
+436,Skoč zpět na tento modul
+437,Skoč vpřed na tento modul
+438,Host
+439,Systemový Host
+440,unInitialised
+441,Současný uživatel
+442,Sekce vypršela
+443,Odhlášení Uživatele
+444,IQ3 Přihlásit
+445,Standartní Systém
+446,Pro více možností prosím přihlaste se
+447,Default Approved
+448,Děkujeme za použití IQ3
+449,Tato sekce byla ukončena, prosím zavřete prohlížeč a spusťtenovou sekci.
+450,Chyba Přihlášení
+451,uživatelské jméno neexistuje
+452,heslo je špatné
+453,můžete pokračovat jako předchozí uživatel , nebo se přihlásit jako jiný uživatel
+454,Prosím dokončete odhlášení uzavřením prohlížeče.
+455,Pro více možností se prosím přihlaste
+456,Předvolený
+457,Dobrý den
+458,Potvrzení
+459,Ano
+460,Ne
+461,Modul
+462,Název Modulu
+463,Vymazáno
+464,Aktuální stav
+465,Žádný alarm 
+466,Zap
+467,Vyp
+468,Horní
+469,Dolní
+470,Čtení
+471,Mimo Rozsah
+472,Chyba PV 
+473,Odchylka SP 
+474,Zpětné čtení
+475,Údržba
+476,Restart
+477,Chyba Dat
+478,Chyba PIA 
+479,Chyba Hodin
+480,Chyba RAM 
+481,Chyba Softwaru
+482,Chyba Dart 
+483,Chyba Flash 
+484,Tabulka Sekvencí Přemostění
+485,Varování Málo Paměti
+486,Selhání CAN 
+487,Varování Málo Flash
+488,Chyba Archivu
+489,Chyba Času
+490,Neznámý Alarm
+491,Nevyužito
+492,Odesláno
+493,Čekám
+494,Přidávám
+495,Oběvuje se
+496,Vyčištěno
+497,Strana Alarmů
+498,Chyba: data nelze číst
+499,Chyba špatný referenční bod
+500,Nejsou dostupná data pro požadovaný log
+501,V intervalu
+502,Grafika
+503,IQ3
+504,Regulátor
+505,Chyba: nemohu načíst lokální informace
+506,Template soubor nenalezen
+507,na Lan
+508,Přihlášení
+509,Odhlášení
+510,Základní stránka
+511,Lokace Alarmů
+512,Skupiny Alarmů
+513,Směry Alarmů
+514,Analogové Body
+515,Digitalní Body
+516,Digitální Vstupy
+517,Výstupy
+518,Funkce
+519,IC Comms
+520,IO Moduly
+521,Knoflíky
+522,Logiky
+523,Regulátor
+524,OSS
+525,Senzory
+526,Typy Senzorů
+527,Tabulka Sekvencí
+528,Spínač
+529,Časové zóny
+530,Uživatelé
+531,Virtuální CNCs
+532,Přístup Zamítnut
+533,Neautorizováno
+534,Zakázané
+535,Povolené
+536,Špatný Požadavek
+537,Nenalezeno
+538,Servis Neumožněn
+539,OK
+540,Nezměněno
+541,Neznámý
+542,Neznámý Požadabek
+543,Chyba, nemohu přijmout informace z controleru pro požadavek :
+544,Chybný požadavek z modulu
+545,Chyba, nemohu vytvořit Web Template pro požadavek :
+546,Chyba nemohu načíst data z modulu
+547,Chybný
+548,předchozí modul
+549,následující modul
+550,Chyba zapsání hodnot
+551,Nastavit
+552,graf
+553,Alarmy
+554,Pondělí
+555,Úterý
+556,Středa
+557,Čtvrtek
+558,Pátek
+559,Sobota
+560,Neděle
+561,kopírovat
+562,Vymazat
+563,zobrazení časů
+564,Start
+565,Stop
+566,Použij
+567,Nastavení
+568,odešli
+569,Časy
+570,(default)
+571,Zruš
+572,Přepsat
+573,Prosím přepište znaky označené červeně
+574,běž na link
+575,Špatné heslo nebo jméno
+576,Zkuste znovu
+577,řeťezec nenalezen
+578,konec této sekce, prosím přihlaste se 
+579,Pro pokračování se prosím přihlaste znovu
+580,Normální Týden
+581,Dobrý den, vítejte na IQ3, zadejte Vaše uživatelské jméno a heslo....
+582,Nastavení Jazyka
+583,Alarmy
+584,Časové zóny
+585,Moduly
+586,GraphIQs
+587,Vítejte v
+588,Cíl
+589,Cílový Port
+590,Mapa Systému
+591,Nastavení Grafu
+592,Nahraj Zaznamenaná Data
+593,Standartní Grafika
+594,Tabulka Bodů
+595,Nahrávám Trasu
+596,Prosím Čekejte ...
+597,Konstrukční Grafika
+598,-> Žádná data nejsou dostupná
+599,Žádná data pro zobrazení
+600,Seznam
+601,NAHRÁVÁM IQ3 STANDARTNÍ GRAFIKU
+602,NAHRÁVÁM IQ3 TABULKU BODÚ
+603,NAHRÁVÁM IQ3 ULOŽENÁ DATA
+604,ČEKEJ
+605,Žádná zaznamenaná data pro uložení!
+606,Vyber Nastavení:
+607,Servr neodpovídá!
+608,Uživatel byl odhlášen!
+609,Přihlaste se a restartujte tabulku bodů
+610,Přijata následující chybová zpáva:
+611,Obnov diagram bodů
+612,Plánovač
+613,||OSS||OTP
+614,||Obsazení||Nahřívání||Chlazení||Nevyužito
+615,Zóna
+616,Start Odchylky
+617,Stop Odchylky
+618,Obsazená hodnota
+619,Nahřívací Hodnota
+620,Chladící Hodnota
+621,Neobsazena Hodnota
+622,Uživatelská úroveň je nízká
+623,Copyright
+624,OSS Připojení
+625,Připojení Časových Zón
+626,No IO||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||xcite/IO/4AO||xcite/IO/16DI||xcite/IO/8DI||xcite/IO/MBus||xcite/IO/DALI||xcite/IO/8DO/HOA||xcite/IO/4DO/HOA||xcite/IO/8AO/HOA||xcite/IO/4AO/HOA||Neznámý
+627,Plánovač
+628,Moduly
+629,Zpět
+630,Alarmy
+631,Standartní Akce
+632,Jméno Místa
+633,Prosím kontaktujte svého dodavatele s tímto klíčem
+634,Strana Dodavatele
+635,Zapoměli jste heslo ?
+636,Klikni Zde
+637,Standartní Heslo
+638,Z Emailové Adresy
+639,Do Emailové Adresy
+640,Extra Text
+641,Alarmový modul
+642,Typ Alarmu
+643,Číslo Modulu
+644,Hodnata modulu
+645,Nevyužito||Kompletní||Aktivní
+646,Minuty
+647,||IQ Lan||IP||Email
+648,Adresa email serveru
+649,Trend IQ3 BMS Controller vytvořil tento alarm
+650,Umístění
+651,Čas/Datum
+652,Stanice v alarmu
+653,Zrušit Výstup
+654,Zrušit Hodnotu
+655,Zrušit Stav
+656,Strana GUID
+657,Zrušit Timer(mins)
+658,Velikost Paměti
+659,Obsazená Paměť
+660,Souborový list
+661,Externí IO Povoleno
+662,IO na desce
+663,Typ Stanice
+664,HOA Stanice
+665,Auto||Ručně||Vyp
+666,||Zastaveno||Nahrávám||Běží..||Bod Přerušení||Odladit||Chyba||Není Soubor||Soubor nenalezen||Špatný Soubor||brIQs překročeno
+667,Žádný||Nahrát Program||Stop||Běží||Krok Na||Krok Ven||Krok Přes
+668,Zápis Hlídací Modul
+669,Script Vstupní Modul
+670,Script Výstupní Modul
+671,Script Store Module
+672,XNC Interfaces
+673,Autor Programu
+674,Verze Programu
+675,ID Programu
+676,Stav Programu
+677,Programové Příkazy
+678,Odladění Aktivní
+679,Jméno Souboru
+680,Tato Trasa
+681,Trasa Bodů Přerušení
+682,Alarmové Hlašení na LAN
+683,Alarmové Hlášení na OS
+684,Názvy Alarmů
+685,Poslední Chyba
+686,Počet Vstupů
+687,Počet Výstupů
+688,Počet Modulů
+689,Zápis Není - Nestálý Modul
+690,Nestála Hodnota
+691,||XNC Interface
+692,Zap XNC 
+693,Síť
+694,||IQ LAN||IQ Iwrk||Lon Talk||Ethernet IP||BACnet||IP RAS Server
+695,Počet Správných MAC Snímků
+696,Počet Špatných MAC Snímků
+697,Stav Sítě
+698,Počet Chyb Sítě
+699,Jméno Hosta
+700,Standartní Host
+701,Lokální Jméno Domény
+702,IP Adresový mód
+703,DHCP Status
+704,WINS Server
+705,DNS Server
+706,Časový server
+707,Zbývající čas
+708,Čas poslední DHCP změny stavu
+709,DHCP Renew
+710,Upstream Neighbour
+711,Downstream Neighbour
+712,Správce Sítě
+713,Vzdálené zařízení
+714,Vzdálené Zařízení Subnet
+715,||Obdržet Automaticky||Vložit Ručně
+716,Vypnut||Přijímám DHCP Adresu||Mám DHCP Adresu||Příjímám Lokální Adresu||Mám Lokální Adresu
+717,Není to Správce Sítě||Správce LAN||Správce Sítě
+718,Program
+719,Název Posledního Souboru
+720,Vypnout Archiv Čas (mins)
+721,Žádná Strategie||Nahrávám||Běží..||Chyba nahrávání||Připravený k příkazu||Zastaveno||Není Soubor||Soubor nenalezen||Špatný Soubor||Verze Souboru||brIQs překročeno||Externí I/O Count překročeno||Na desce I/O Count překročeno
+722,Žádný||Začátek příkazu||Nahrávám strategii||Odstraňuji Strategii||Zastaveno||Běží||Archiv
+723,||Program
+724,TCL UŽIVATEL 1 
+725,TCL UŽIVATEL 2 
+726,TCL UŽIVATEL 3 
+727,TCL UŽIVATEL 4 
+728,TCL UŽIVATEL 5 
+729,TCL UŽIVATEL 6 
+730,TCL SCRIPT 
+731,Bez Archivace||Archiv Připravený||Archiv Aktivní||Poslední Úspěšný Archiv||Poslední Chyba Archivu
+732,Stav Archivu
+733,Počet Řad
+734,Loop Počet
+735,Velikost Modulu
+736,XML Server
+737,Přenosová Rychlost
+738,Bootloader Verze
+739,Hlavní Alarm 2 Stav
+740,Zobraz Alarmy
+741,Ukaž Časové Zóny
+742,Ukaž Moduly
+743,Ukaž  GraphlQs
+744,Ukaž Navigátor
+745,Aplikační klíč
+746,Parametry Modulu
+747,Kód
+748,Archiv
+749,Parametry Hodnoty
+750,Jméno Parametru
+751,Hodnota Parametru
+752,Možnosti
+753,||Karta||Feature||Zobraz
+754,Nadpis
+755,Popis
+756,ID karty
+757,Karta Baterií
+758,Karta IQ system LAN
+759,RS232-485 Neoddělený
+760,RS485 Oddělený
+761,Neznáma Karta
+762,Procentuální Růst
+763,Zvyšte čas ochrany ( v případě poruchy ) za pár let
+764,Lan karta umožní IQ3 připojit se na  stávající lan
+765,Sériová karta pro komunikaci pomocí RS232 or RS485
+766,Sériová karta s odděleným vstupem pro komunikaci pomocí RS232 or RS485
+767,Tato karta je neznámá a není podporována touto verzí IQ3
+768,Adresáře
+769,Displej
+770,Sítě
+771,Možnosti
+772,Tisky
+773,Rozvrhy
+774,Poslední Číslo Startu
+775,XNC Interface
+776,Third party interface implemented with the Trend Custom Language
+777,Verze Základní Desky
+778,Stav Modulů
+779,Normal||Zrušení||Vypnuto||Ručně||Vyp

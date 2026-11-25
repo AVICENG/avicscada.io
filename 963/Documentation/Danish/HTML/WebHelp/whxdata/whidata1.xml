@@ -1,0 +1,248 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="Justering af" >
+  <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  <key name="Analoge Værdier" >
+    <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Digitale Værdier" >
+    <topic name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+  <key name="Driftstider" >
+    <topic name="Justering af Driftstider" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+    <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+  <key name="Tidszoner" >
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Værdier" >
+    <topic name="Justering af Værdier" url="Using_963_From_a_Web_Browser_Adjust_Values.htm" />
+  </key>
+</key>
+<key name="Kalenderdisplay" >
+  <topic name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+  <key name="Justering af en Tidszone" >
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Redigering af Undtagelser" >
+    <topic name="Redigering af en Undtagelse" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+  </key>
+  <key name="Se Tider" >
+    <topic name="Se Normale Driftstider" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+    <topic name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Se Undtagelser" >
+    <topic name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Slet Undtagelser" >
+    <topic name="Slet en Undtagelse" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  </key>
+  <key name="Ændring af Driftstider" >
+    <topic name="Ændring af Normale Driftstider" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+  </key>
+</key>
+<key name="Klientadgang til 963" >
+  <topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+  <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  <key name="Fejlmeddelelser" >
+    <topic name="Fejlmeddelelser" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+  </key>
+</key>
+<key name="Klientdisplay" >
+  <topic name="963s Klientdisplay" url="About_963_The_963_Client_Displays.htm" />
+  <topic name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+  <topic name="Skematisk Side Klientdisplay" url="About_963_Schematic_Page_Client_Display.htm" />
+  <key name="963 Standard" >
+    <topic name="963-Serverens Standard Side" url="About_963_963_Server_Default_Page.htm" />
+  </key>
+  <key name="963 Startside" >
+    <topic name="963-Serverens Startside" url="About_963_963_Server_Start_up_Page.htm" />
+  </key>
+  <key name="963s Alarmoversigt" >
+    <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+  </key>
+  <key name="963s Kalenderdisplay" >
+    <topic name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+  </key>
+  <key name="963s Konfigurationsdisplay" >
+    <topic name="Konfigurationsfunktion Klientdisplay" url="About_963_Configuration_Mode_Client_Display.htm" />
+  </key>
+  <key name="963s Skematisk Sidedisplay" >
+    <topic name="Skematisk Side Klientdisplay" url="About_963_Schematic_Page_Client_Display.htm" />
+  </key>
+</key>
+<key name="Konfiguration af" >
+  <topic name="Konfiguration af Undercentraler" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  <key name="Undercentraler" >
+    <topic name="Konfiguration af Undercentraler" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  </key>
+</key>
+<key name="Konfigurationsfunktion" >
+  <topic name="Konfigurationsfunktion Klientdisplay" url="About_963_Configuration_Mode_Client_Display.htm" />
+  <key name="963s Konfigurationsdisplay" >
+    <topic name="Konfigurationsfunktion Klientdisplay" url="About_963_Configuration_Mode_Client_Display.htm" />
+  </key>
+</key>
+<key name="Kontaktoplysninger for Trend" >
+  <topic name="Kontaktoplysninger for Trend" url="963_Manual_Contacting_Trend.htm" />
+</key>
+<key name="Kør" >
+  <topic name="Kør en Manuel Alarmhandling" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+  <key name="963-Handling" >
+    <topic name="Kør en Manuel Alarmhandling" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+  </key>
+  <key name="Alarmhandlinger Manuelt" >
+    <topic name="Kør Alarmhandlinger Manuelt" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+  </key>
+  <key name="Manuel Alarmhandling" >
+    <topic name="Kør en Manuel Alarmhandling" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+  </key>
+</key>
+<key name="Log På" >
+  <topic name="Log På" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  <topic name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+</key>
+<key name="Log Ud" >
+  <topic name="Log Af" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+</key>
+<key name="Næste/Forrige Side" >
+  <topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+</key>
+<key name="Om" >
+  <topic name="Hvad er 963?" url="About_963_About_963.htm" />
+  <key name="963" >
+    <topic name="Hvad er 963?" url="About_963_About_963.htm" />
+  </key>
+</key>
+<key name="Om Denne Vejledning" >
+  <topic name="Om Denne Vejledning" url="963_Manual_About_This_Manual.htm" />
+</key>
+<key name="Præcisionsgrafer" >
+  <topic name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+</key>
+<key name="Redigering af" >
+  <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  <key name="Analoge Værdier" >
+    <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Digitale Værdier" >
+    <topic name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+  <key name="Driftstider" >
+    <topic name="Justering af Driftstider" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+    <topic name="Ændring af Normale Driftstider" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Tidszoner" >
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Undtagelser" >
+    <topic name="Redigering af en Undtagelse" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+    <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+</key>
+<key name="Ryd Indkommende Alarmer" >
+  <topic name="Ryd Indkommende Alarmer" url="Using_963_From_a_Web_Browser_Clear_the_Incoming_Alarms.htm" />
+</key>
+<key name="Se" >
+  <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+  <key name="Alarmer" >
+    <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+    <topic name="Se Alarmer" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+    <topic name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+    <topic name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Alarmhistorik" >
+    <topic name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+  <key name="Driftstider" >
+    <topic name="Se Driftstider" url="Using_963_From_a_Web_Browser_View_Occupation_Times.htm" />
+    <topic name="Se Normale Driftstider" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Grafdata" >
+    <topic name="Vis Grafdata" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+  </key>
+  <key name="Indkommende Alarmer" >
+    <topic name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Logget Data" >
+    <topic name="Vis Logget Data" url="Using_963_From_a_Web_Browser_Display_Logged_Data.htm" />
+  </key>
+  <key name="Serverstatus" >
+    <topic name="Se Serverstatus" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+  </key>
+  <key name="Undtagelser" >
+    <topic name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+</key>
+<key name="Se Serverstatus" >
+  <topic name="Se Serverstatus" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+  <key name="Se" >
+    <topic name="Se Serverstatus" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+  </key>
+</key>
+<key name="Side" >
+  <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  <key name="Gå til" >
+    <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+    <topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+  <key name="Se Forrige" >
+    <topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+  </key>
+  <key name="Se Næste" >
+    <topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+  </key>
+  <key name="Vis" >
+    <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+    <topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+</key>
+<key name="Skematisk Sidedisplay" >
+  <topic name="Skematisk Side Klientdisplay" url="About_963_Schematic_Page_Client_Display.htm" />
+</key>
+<key name="Slet" >
+  <topic name="Slet en Undtagelse" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  <key name="Undtagelser" >
+    <topic name="Slet en Undtagelse" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  </key>
+</key>
+<key name="Teknisk Støtte" >
+  <topic name="Kontaktoplysninger for Trend" url="963_Manual_Contacting_Trend.htm" />
+</key>
+<key name="Tidszone" >
+  <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  <key name="Justering af" >
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Tilføj" >
+  <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  <key name="Undtagelser" >
+    <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+</key>
+<key name="Tilslutning" >
+  <topic name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  <key name="Til 963-Serveren" >
+    <topic name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="Tænd og Sluk" >
+  <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Alarmhandlinger" >
+    <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Undercentral" >
+  <topic name="Konfiguration af Undercentraler" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  <key name="Konfiguration af" >
+    <topic name="Konfiguration af Undercentraler" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+  </key>
+  <key name="Konfigurationsfunktion" >
+    <topic name="Konfigurationsfunktion Klientdisplay" url="About_963_Configuration_Mode_Client_Display.htm" />
+  </key>
+</key>
+
+</indexdata>

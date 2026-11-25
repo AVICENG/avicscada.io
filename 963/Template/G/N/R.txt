@@ -1,0 +1,7 @@
+Novar Logic One Device Information
+n1(I),Executive IP Address,read-only,100
+n1(E),Executive Web Server Port,read-only,999
+n1(M),Module Address,read-only,999
+n1(L),Load Number,(-1 for Executive),999
+R(D),Identifier,read-only,999
+R(C),Version,read-only,999

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrendAlamSpec>
+	<AlarmCodes>
+		<AlarmCode AlarmCode="DRAC" Description="Door accessed" AlarmCodeID="1" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="DRFC" Description="Door Forced Clear" AlarmCodeID="2" IsOccurred="FALSE" PartnerID="3"/>
+		<AlarmCode AlarmCode="DRFS" Description="Door forced" AlarmCodeID="3" IsOccurred="TRUE" PartnerID="2"/>
+		<AlarmCode AlarmCode="DRHC" Description="Door Held Clear" AlarmCodeID="4" IsOccurred="FALSE" PartnerID="5"/>
+		<AlarmCode AlarmCode="DRHS" Description="Door Held" AlarmCodeID="5" IsOccurred="TRUE" PartnerID="4"/>
+		<AlarmCode AlarmCode="DROC" Description="Door Open Clear" AlarmCodeID="6" IsOccurred="FALSE" PartnerID="7"/>
+		<AlarmCode AlarmCode="DROS" Description="Door Open" AlarmCodeID="7" IsOccurred="TRUE" PartnerID="6"/>
+		<AlarmCode AlarmCode="DRSC" Description="Door Frame Clear" AlarmCodeID="8" IsOccurred="FALSE" PartnerID="9"/>
+		<AlarmCode AlarmCode="DRSF" Description="Door Frame" AlarmCodeID="9" IsOccurred="TRUE" PartnerID="8"/>
+		<AlarmCode AlarmCode="DRVS" Description="Door Override" AlarmCodeID="10" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="IPHI" Description="Input High" AlarmCodeID="11" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="IPLO" Description="Input Low" AlarmCodeID="12" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="IPTP" Description="Input Tamper" AlarmCodeID="13" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="OPOF" Description="Output Off" AlarmCodeID="14" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="OPON" Description="Output On" AlarmCodeID="15" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="CONL" Description="Controller OnLine" AlarmCodeID="16" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FDRT" Description="Dart chip failed self test" AlarmCodeID="17" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FPIA" Description="Programmable Interface Adapter Chip failed self test" AlarmCodeID="18" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FPRM" Description="PROM chip failed self test" AlarmCodeID="19" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FRAM" Description="RAM failed self test" AlarmCodeID="20" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FRTC" Description="Real Time Clock IC fault" AlarmCodeID="21" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FSWR" Description="IQ strategy corrupt" AlarmCodeID="22" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FTKA" Description="Failed Time keeper Advise alarm" AlarmCodeID="23" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FTKP" Description="Failed Time keeper alarm" AlarmCodeID="24" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="HELP" Description="IQ in Help" AlarmCodeID="25" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="CCRI" Description="Clear Critical" AlarmCodeID="26" IsOccurred="FALSE" PartnerID="27"/>
+		<AlarmCode AlarmCode="SCRI" Description="Occured critical" AlarmCodeID="27" IsOccurred="TRUE" PartnerID="26"/>
+		<AlarmCode AlarmCode="AANR" Description="Dialler Not Responding" AlarmCodeID="28" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="AONL" Description="Dialler On Line" AlarmCodeID="29" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="BTNR" Description="BT Not Responding" AlarmCodeID="30" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="LINR" Description="Tele. Line Not responding" AlarmCodeID="31" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="MONR" Description="Modem not responding" AlarmCodeID="32" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="PGNR" Description="Pager Not Responding" AlarmCodeID="33" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="CDGT" Description="Readback alarm cleared (Driver)" AlarmCodeID="34" IsOccurred="FALSE" PartnerID="53"/>
+		<AlarmCode AlarmCode="CDI0" Description="Digital Input Value OK" AlarmCodeID="35" IsOccurred="FALSE" PartnerID="43"/>
+		<AlarmCode AlarmCode="CDI1" Description="Digital Input Value OK" AlarmCodeID="36" IsOccurred="FALSE" PartnerID="44"/>
+		<AlarmCode AlarmCode="CHIH" Description="Clear Sensor High Alarm" AlarmCodeID="37" IsOccurred="FALSE" PartnerID="45"/>
+		<AlarmCode AlarmCode="CLOW" Description="Sensor LOW cleared" AlarmCodeID="38" IsOccurred="FALSE" PartnerID="46"/>
+		<AlarmCode AlarmCode="CMNT" Description="Driver Maintainence Cleared" AlarmCodeID="39" IsOccurred="FALSE" PartnerID="47"/>
+		<AlarmCode AlarmCode="COUT" Description="Outside limits cleared" AlarmCodeID="40" IsOccurred="FALSE" PartnerID="49"/>
+		<AlarmCode AlarmCode="CPVF" Description="Process Variable Fail Cleared" AlarmCodeID="41" IsOccurred="FALSE" PartnerID="50"/>
+		<AlarmCode AlarmCode="CSDV" Description="Clear Set Point Deviation" AlarmCodeID="42" IsOccurred="FALSE" PartnerID="52"/>
+		<AlarmCode AlarmCode="DI=0" Description="Digital Input OFF - should be ON" AlarmCodeID="43" IsOccurred="TRUE" PartnerID="35"/>
+		<AlarmCode AlarmCode="DI=1" Description="Digital Input ON - should be OFF" AlarmCodeID="44" IsOccurred="TRUE" PartnerID="36"/>
+		<AlarmCode AlarmCode="HIGH" Description="Sensor above specified value" AlarmCodeID="45" IsOccurred="TRUE" PartnerID="37"/>
+		<AlarmCode AlarmCode=" LOW" Description="Sensor below specified value" AlarmCodeID="46" IsOccurred="TRUE" PartnerID="38"/>
+		<AlarmCode AlarmCode="MINT" Description="Driver Maintainence interval alarm" AlarmCodeID="47" IsOccurred="TRUE" PartnerID="39"/>
+		<AlarmCode AlarmCode=" O/K" Description="Sensor reading OK" AlarmCodeID="48" IsOccurred="FALSE" PartnerID="51"/>
+		<AlarmCode AlarmCode="OUTL" Description="Outside limits (Sensor)" AlarmCodeID="49" IsOccurred="TRUE" PartnerID="40"/>
+		<AlarmCode AlarmCode="PVFL" Description="Value input has fault (Loop)" AlarmCodeID="50" IsOccurred="TRUE" PartnerID="41"/>
+		<AlarmCode AlarmCode="READ" Description="No reading from sensor" AlarmCodeID="51" IsOccurred="TRUE" PartnerID="48"/>
+		<AlarmCode AlarmCode="SDEV" Description="Value outside stpoint band (Loop)" AlarmCodeID="52" IsOccurred="TRUE" PartnerID="42"/>
+		<AlarmCode AlarmCode="SDGT" Description="Readback Alarm (Driver)" AlarmCodeID="53" IsOccurred="TRUE" PartnerID="34"/>
+		<!-- Network Alarms -->
+		<AlarmCode AlarmCode="DVDD" Description="Device Dead" AlarmCodeID="54" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="DVOK" Description="Device OK" AlarmCodeID="55" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKBK" Description="Network Broken" AlarmCodeID="56" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKCH" Description="Network Changed" AlarmCodeID="57" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKDA" Description="Duplicate Device/Lan" AlarmCodeID="58" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKOK" Description="Network OK" AlarmCodeID="59" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKSV" Description="Service Pin" AlarmCodeID="60" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="UNKN" Description="Deaf Node/Battery Low/Unreachable" AlarmCodeID="61" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKHD" Description="Deaf Node" AlarmCodeID="62" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKUR" Description="Unreachable Node" AlarmCodeID="63" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKBL" Description="Battery Low" AlarmCodeID="64" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKFL" Description="Network Failed" AlarmCodeID="65" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKAA" Description="Network DHCP to AUTO" AlarmCodeID="66" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="NKAL" Description="Network DHCP to Local" AlarmCodeID="67" IsOccurred="TRUE" PartnerID="0"/>
+		<!-- End Network Alarms -->
+		<AlarmCode AlarmCode="FLER" Description="File Error" AlarmCodeID="68" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="BBUF" Description="Buffer ready" AlarmCodeID="69" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="STOR" Description="Sequence Table Overrun" AlarmCodeID="70" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="LMWG" Description="Low Memory" AlarmCodeID="71" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FCAN" Description="CAN Failure" AlarmCodeID="72" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="LFWG" Description="Low Flash" AlarmCodeID="73" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FARC" Description="Archive Failure" AlarmCodeID="74" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="FTIM" Description="Corrupt RTC" AlarmCodeID="75" IsOccurred="TRUE" PartnerID="0"/>
+		<!-- XNC/TCL Alarms -->
+		<AlarmCode AlarmCode="TCLR" Description="TCL Runtime Alarm" AlarmCodeID="76" IsOccurred="TRUE" PartnerID="0"/>
+		<AlarmCode AlarmCode="XI1A" Description="TCL User Alarm 1 Occurred" AlarmCodeID="77" IsOccurred="TRUE" PartnerID="78"/>
+		<AlarmCode AlarmCode="CXI1" Description="TCL User Alarm 1 Cleared" AlarmCodeID="78" IsOccurred="FALSE" PartnerID="77"/>
+		<AlarmCode AlarmCode="XI2A" Description="TCL User Alarm 2 Occurred" AlarmCodeID="79" IsOccurred="TRUE" PartnerID="80"/>
+		<AlarmCode AlarmCode="CXI2" Description="TCL User Alarm 2 Cleared" AlarmCodeID="80" IsOccurred="FALSE" PartnerID="79"/>
+		<AlarmCode AlarmCode="XI3A" Description="TCL User Alarm 3 Occurred" AlarmCodeID="81" IsOccurred="TRUE" PartnerID="82"/>
+		<AlarmCode AlarmCode="CXI3" Description="TCL User Alarm 3 Cleared" AlarmCodeID="82" IsOccurred="FALSE" PartnerID="81"/>
+		<AlarmCode AlarmCode="XI4A" Description="TCL User Alarm 4 Occurred" AlarmCodeID="83" IsOccurred="TRUE" PartnerID="84"/>
+		<AlarmCode AlarmCode="CXI4" Description="TCL User Alarm 4 Cleared" AlarmCodeID="84" IsOccurred="FALSE" PartnerID="83"/>
+		<AlarmCode AlarmCode="XI5A" Description="TCL User Alarm 5 Occurred" AlarmCodeID="85" IsOccurred="TRUE" PartnerID="86"/>
+		<AlarmCode AlarmCode="CXI5" Description="TCL User Alarm 5 Cleared" AlarmCodeID="86" IsOccurred="FALSE" PartnerID="85"/>
+		<AlarmCode AlarmCode="XI6A" Description="TCL User Alarm 6 Occurred" AlarmCodeID="87" IsOccurred="TRUE" PartnerID="88"/>
+		<AlarmCode AlarmCode="CXI6" Description="TCL User Alarm 6 Cleared" AlarmCodeID="88" IsOccurred="FALSE" PartnerID="87"/>
+		<!-- End XNC/TCL Alarms -->
+	</AlarmCodes>
+	<Devices>
+		<Device DeviceLetter="1" DeviceID="1" Description="IQ150 version 2"/>
+		<Device DeviceLetter="2" DeviceID="1" Description="IQ150 version 3"/>
+		<Device DeviceLetter="3" DeviceID="1" Description="IQ151 / IQ250 Controller"/>
+		<Device DeviceLetter="4" DeviceID="1" Description="IQ131 Controller"/>
+		<Device DeviceLetter="5" DeviceID="1" Description="IQ111 Controller"/>
+		<Device DeviceLetter="6" DeviceID="1" Description="IQ10x Controller"/>
+		<Device DeviceLetter="7" DeviceID="1" Description="IQ9x Controller"/>
+		<Device DeviceLetter="8" DeviceID="1" Description="IQ7x Controller"/>
+		<Device DeviceLetter=":" DeviceID="1" Description="IQ2xx version 1.1 onwards"/>
+		<Device DeviceLetter="q" DeviceID="2" Description="IQ3xcite"/>
+	</Devices>
+	<Modules>
+		<Module ModuleID="1" DeviceID="1" ItemString="D"/>
+		<Module ModuleID="2" DeviceID="1" ItemString="G"/>
+		<Module ModuleID="3" DeviceID="1" ItemString="I"/>
+		<Module ModuleID="4" DeviceID="1" ItemString="L"/>
+		<Module ModuleID="5" DeviceID="1" ItemString="S"/>
+		<Module ModuleID="6" DeviceID="2" ItemString="D"/>
+		<Module ModuleID="7" DeviceID="2" ItemString="G"/>
+		<Module ModuleID="8" DeviceID="2" ItemString="I"/>
+		<Module ModuleID="9" DeviceID="2" ItemString="L"/>
+		<Module ModuleID="10" DeviceID="2" ItemString="S"/>
+	</Modules>
+	<Parameters>
+		<Parameter ModuleID="1" AlarmCodeID="34" ParameterString="M0"/>
+		<Parameter ModuleID="3" AlarmCodeID="35" ParameterString="!"/>
+		<Parameter ModuleID="3" AlarmCodeID="36" ParameterString="!"/>
+		<Parameter ModuleID="5" AlarmCodeID="37" ParameterString="M0"/>
+		<Parameter ModuleID="5" AlarmCodeID="38" ParameterString="M1"/>
+		<Parameter ModuleID="1" AlarmCodeID="39" ParameterString="M1"/>
+		<Parameter ModuleID="5" AlarmCodeID="40" ParameterString="M2"/>
+		<Parameter ModuleID="4" AlarmCodeID="41" ParameterString="M1"/>
+		<Parameter ModuleID="4" AlarmCodeID="42" ParameterString="M0"/>
+		<Parameter ModuleID="3" AlarmCodeID="43" ParameterString="!"/>
+		<Parameter ModuleID="3" AlarmCodeID="44" ParameterString="!"/>
+		<Parameter ModuleID="5" AlarmCodeID="45" ParameterString="M0"/>
+		<Parameter ModuleID="5" AlarmCodeID="46" ParameterString="M1"/>
+		<Parameter ModuleID="1" AlarmCodeID="47" ParameterString="M1"/>
+		<Parameter ModuleID="5" AlarmCodeID="48" ParameterString="M3"/>
+		<Parameter ModuleID="5" AlarmCodeID="49" ParameterString="M2"/>
+		<Parameter ModuleID="4" AlarmCodeID="50" ParameterString="M1"/>
+		<Parameter ModuleID="5" AlarmCodeID="51" ParameterString="M3"/>
+		<Parameter ModuleID="4" AlarmCodeID="52" ParameterString="M0"/>
+		<Parameter ModuleID="1" AlarmCodeID="53" ParameterString="M0"/>
+		<Parameter ModuleID="6" AlarmCodeID="34" ParameterString="r1(S)"/>
+		<Parameter ModuleID="8" AlarmCodeID="35" ParameterString="d1(S)"/>
+		<Parameter ModuleID="8" AlarmCodeID="36" ParameterString="d1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="37" ParameterString="h1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="38" ParameterString="l1(S)"/>
+		<Parameter ModuleID="6" AlarmCodeID="39" ParameterString="m1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="40" ParameterString="o1(S)"/>
+		<Parameter ModuleID="9" AlarmCodeID="41" ParameterString="f1(S)"/>
+		<Parameter ModuleID="9" AlarmCodeID="42" ParameterString="s1(S)"/>
+		<Parameter ModuleID="8" AlarmCodeID="43" ParameterString="d1(S)"/>
+		<Parameter ModuleID="8" AlarmCodeID="44" ParameterString="d1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="45" ParameterString="h1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="46" ParameterString="l1(S)"/>
+		<Parameter ModuleID="6" AlarmCodeID="47" ParameterString="m1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="48" ParameterString="r1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="49" ParameterString="o1(S)"/>
+		<Parameter ModuleID="9" AlarmCodeID="50" ParameterString="f1(S)"/>
+		<Parameter ModuleID="10" AlarmCodeID="51" ParameterString="r1(S)"/>
+		<Parameter ModuleID="9" AlarmCodeID="52" ParameterString="s1(S)"/>
+		<Parameter ModuleID="6" AlarmCodeID="53" ParameterString="r1(S)"/>
+	</Parameters>
+	<AttributeAlarmDecodes>
+		<AttributeAlarmDecode ItemTypeCode="0" ItemTypeChar="D" OccurredAlarmID="53"/>
+		<AttributeAlarmDecode ItemTypeCode="1" ItemTypeChar="D" OccurredAlarmID="47"/>
+		<AttributeAlarmDecode ItemTypeCode="0" ItemTypeChar="G" OccurredAlarmID="16"/>
+		<AttributeAlarmDecode ItemTypeCode="1" ItemTypeChar="G" OccurredAlarmID="25"/>
+		<AttributeAlarmDecode ItemTypeCode="2" ItemTypeChar="G" OccurredAlarmID="18"/>
+		<AttributeAlarmDecode ItemTypeCode="3" ItemTypeChar="G" OccurredAlarmID="21"/>
+		<AttributeAlarmDecode ItemTypeCode="4" ItemTypeChar="G" OccurredAlarmID="20"/>
+		<AttributeAlarmDecode ItemTypeCode="5" ItemTypeChar="G" OccurredAlarmID="22"/>
+		<AttributeAlarmDecode ItemTypeCode="6" ItemTypeChar="G" OccurredAlarmID="17"/>
+		<AttributeAlarmDecode ItemTypeCode="7" ItemTypeChar="G" OccurredAlarmID="19"/>
+		<AttributeAlarmDecode ItemTypeCode="0" ItemTypeChar="I" OccurredAlarmID="43"/>
+		<AttributeAlarmDecode ItemTypeCode="1" ItemTypeChar="I" OccurredAlarmID="44"/>
+		<AttributeAlarmDecode ItemTypeCode="0" ItemTypeChar="L" OccurredAlarmID="50"/>
+		<AttributeAlarmDecode ItemTypeCode="1" ItemTypeChar="L" OccurredAlarmID="52"/>
+		<AttributeAlarmDecode ItemTypeCode="0" ItemTypeChar="S" OccurredAlarmID="45"/>
+		<AttributeAlarmDecode ItemTypeCode="1" ItemTypeChar="S" OccurredAlarmID="46"/>
+		<AttributeAlarmDecode ItemTypeCode="2" ItemTypeChar="S" OccurredAlarmID="49"/>
+		<AttributeAlarmDecode ItemTypeCode="3" ItemTypeChar="S" OccurredAlarmID="51"/>
+	</AttributeAlarmDecodes>
+	<NetworkAlarms>
+		<NetworkAlarm AlarmID="54"/>
+		<NetworkAlarm AlarmID="55"/>
+		<NetworkAlarm AlarmID="56"/>
+		<NetworkAlarm AlarmID="57"/>
+		<NetworkAlarm AlarmID="58"/>
+		<NetworkAlarm AlarmID="59"/>
+		<NetworkAlarm AlarmID="60"/>
+		<NetworkAlarm AlarmID="61"/>
+		<NetworkAlarm AlarmID="62"/>
+		<NetworkAlarm AlarmID="63"/>
+		<NetworkAlarm AlarmID="64"/>
+		<NetworkAlarm AlarmID="65"/>
+		<NetworkAlarm AlarmID="66"/>
+		<NetworkAlarm AlarmID="67"/>
+	</NetworkAlarms>
+</TrendAlamSpec>

@@ -1,0 +1,10 @@
+Sensor adjustments for IQ3
+<XXXX>(%),The units,Please edit direct from device view,101
+<XXXX>($),The label,Please edit direct from device view,101
+<XXXX>(V),The current value,Units,100
+<XXXX>(!),IQ3 Current alarm status (2=high;3=low;4=outl;5=read),xxxx,99
+<XXXX>(h1(E)),IQ3 HIGH ALARM ENABLED,xxxx,99
+<XXXX>(O),The offset ('real' sensors only),Units,80
+<XXXX>(l1(E)),IQ3 Low Alarm Enabled - Send I or O,xxxx,99
+<XXXX>(H),IQ3 High Alarm Limit,xxxx,99
+<XXXX>(L),IQ3 Low Alarm Limit,xxxx,99

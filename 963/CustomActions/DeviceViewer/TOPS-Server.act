@@ -1,0 +1,8 @@
+; Dynamic Menus for TOPS Server
+; 21 October 2008
+; Trend Control Systems Ltd
+
+[MENUITEM]
+Title=<TRANSLATION 210>
+Action=BROWSER_POPUP http://<DEVICE_PARAM IPAddress>:81,64,64,800,800,<TRANSLATION 210>
+

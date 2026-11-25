@@ -1,0 +1,406 @@
+BODY
+{
+    FONT-SIZE: 80%;
+    FONT-FAMILY: Verdana
+}
+TABLE
+{
+    FONT-SIZE: 1em
+}
+#mainLayer
+{
+    MARGIN-RIGHT: 20px
+}
+.welcomeImage
+{
+    FONT-SIZE: 42px;
+    BACKGROUND: url(images/welcome.gif) no-repeat left top;
+    MARGIN: 35px 0px;
+    WIDTH: 426px;
+    COLOR: #000066;
+    PADDING-TOP: 35px;
+    POSITION: relative;
+    HEIGHT: 140px;
+    TEXT-ALIGN: left
+}
+.mainlink
+{
+    FONT-WEIGHT: bold;
+    VERTICAL-ALIGN: middle;
+    COLOR: white;
+    TEXT-ALIGN: center;
+    TEXT-DECORATION: none
+}
+.pageTitle
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: 1.3em;
+    COLOR: #ff6600;
+    TEXT-ALIGN: center
+}
+.moduleLink
+{
+    FONT-WEIGHT: bold;
+    VERTICAL-ALIGN: middle;
+    COLOR: black;
+    TEXT-ALIGN: center
+}
+A.mainlink:hover
+{
+    VERTICAL-ALIGN: middle;
+    COLOR: #98c1ca;
+    TEXT-ALIGN: center
+}
+A:hover
+{
+    COLOR: black
+}
+TD.heading
+{
+    PADDING-RIGHT: 3px;
+    PADDING-LEFT: 3px;
+    FONT-WEIGHT: bold;
+    PADDING-BOTTOM: 1px;
+    COLOR: black;
+    PADDING-TOP: 1px;
+    BACKGROUND-COLOR: #98c1ca
+}
+.modHeading
+{
+    FONT-WEIGHT: normal;
+    FONT-SIZE: 1.4em;
+    COLOR: white;
+    BACKGROUND-COLOR: #ff6600;
+    TEXT-ALIGN: center
+}
+TR.data TD A
+{
+    COLOR: black
+}
+.data
+{
+    FONT-SIZE: 1em;
+    COLOR: black;
+    BACKGROUND-COLOR: #e9f1f3
+}
+TR.data
+{
+    HEIGHT: 2em
+}
+TR.data TD
+{
+    PADDING-RIGHT: 3px;
+    PADDING-LEFT: 3px;
+    PADDING-BOTTOM: 0px;
+    PADDING-TOP: 0px
+}
+TR.data INPUT.data
+{
+    HEIGHT: 1.7em
+}
+TR.data SELECT.data
+{
+    HEIGHT: 1.7em
+}
+.dataEntryError
+{
+    COLOR: red;
+    BACKGROUND-COLOR: #e9f1f3
+}
+.pNameEntryError
+{
+    FONT-WEIGHT: bold;
+    COLOR: red;
+    BACKGROUND-COLOR: #e9f1f3
+}
+.inAlarmDisabledHand
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    BACKGROUND-COLOR: #999
+}
+TR.inAlarmDisabledHand TD A
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    BACKGROUND-COLOR: #999
+}
+.inAlarmDisabledOff
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    BACKGROUND-COLOR: #999
+}
+TR.inAlarmDisabledOff TD A
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    BACKGROUND-COLOR: #999
+}
+.inAlarmDisabled
+{
+    FONT-WEIGHT: bold;
+    COLOR: #eee;
+    BACKGROUND-COLOR: #555
+}
+TR.inAlarmDisabled TD A
+{
+    FONT-WEIGHT: bold;
+    COLOR: #eee;
+    BACKGROUND-COLOR: #555
+}
+.disabledHand
+{
+    FONT-WEIGHT: bold;
+    COLOR: #333;
+    BACKGROUND-COLOR: #aaa
+}
+.disabledOff
+{
+    FONT-WEIGHT: bold;
+    COLOR: #333;
+    BACKGROUND-COLOR: #aaa
+}
+.inAlarmHand
+{
+    FONT-WEIGHT: bold;
+    COLOR: blue;
+    BACKGROUND-COLOR: red
+}
+.inAlarmOff
+{
+    FONT-WEIGHT: bold;
+    COLOR: white;
+    BACKGROUND-COLOR: orange
+}
+.Off
+{
+    FONT-WEIGHT: bold;
+    COLOR: red
+}
+TR.Off TD A
+{
+    FONT-WEIGHT: bold;
+    COLOR: red
+}
+.Hand
+{
+    FONT-WEIGHT: bold;
+    COLOR: blue
+}
+TR.Hand TD A
+{
+    FONT-WEIGHT: bold;
+    COLOR: blue
+}
+.Disabled
+{
+    COLOR: #666;
+    BACKGROUND-COLOR: #cccccc
+}
+TR.Disabled TD A
+{
+    COLOR: #666;
+    BACKGROUND-COLOR: #cccccc
+}
+TR.Disabled TD A
+{
+    FONT-WEIGHT: bold
+}
+.inAlarm
+{
+    FONT-WEIGHT: bold;
+    COLOR: white;
+    BACKGROUND-COLOR: red
+}
+TR.inAlarm TD A
+{
+    FONT-WEIGHT: bold;
+    COLOR: white;
+    BACKGROUND-COLOR: red
+}
+.pName
+{
+    PADDING-RIGHT: 3px;
+    PADDING-LEFT: 3px;
+    PADDING-BOTTOM: 0px;
+    COLOR: black;
+    PADDING-TOP: 0px;
+    POSITION: relative;
+    BACKGROUND-COLOR: #e9f1f3
+}
+.pValue
+{
+    PADDING-RIGHT: 3px;
+    PADDING-LEFT: 3px;
+    PADDING-BOTTOM: 0px;
+    COLOR: black;
+    PADDING-TOP: 0px;
+    POSITION: relative;
+    BACKGROUND-COLOR: #e9f1f3
+}
+.pName
+{
+    FONT-WEIGHT: bold
+}
+A.mainData
+{
+    COLOR: black;
+    BACKGROUND-COLOR: white
+}
+A.mainData:hover
+{
+    COLOR: white;
+    BACKGROUND-COLOR: #ff6600
+}
+.mainData
+{
+    COLOR: black;
+    BACKGROUND-COLOR: white
+}
+.orangetext
+{
+    COLOR: #ff6600
+}
+.submenu
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: 1em;
+    COLOR: black;
+    TEXT-DECORATION: none
+}
+A.submenu
+{
+    COLOR: black;
+    TEXT-DECORATION: none
+}
+A.submenu:hover
+{
+    COLOR: black;
+    BACKGROUND-COLOR: #98c1ca;
+    TEXT-DECORATION: none
+}
+A.selected
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    TEXT-DECORATION: none
+}
+A.selected:hover
+{
+    COLOR: black;
+    TEXT-DECORATION: none
+}
+.selected
+{
+    COLOR: white;
+    BACKGROUND-COLOR: #98c1ca;
+    TEXT-DECORATION: none
+}
+A.here
+{
+    COLOR: #ff6600;
+    TEXT-DECORATION: none
+}
+A.here:hover
+{
+    COLOR: #ff6600;
+    TEXT-DECORATION: none
+}
+A.submit
+{
+    COLOR: #ff6600;
+    TEXT-DECORATION: none
+}
+A.submit:hover
+{
+    COLOR: #ff6600;
+    TEXT-DECORATION: none
+}
+.controllerName
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    MARGIN-RIGHT: 1em;
+    TEXT-ALIGN: right
+}
+.addressInfo
+{
+    FONT-WEIGHT: bold;
+    COLOR: black;
+    MARGIN-RIGHT: 1em;
+    TEXT-ALIGN: right
+}
+.orangeBG
+{
+    BACKGROUND-COLOR: #ff6600
+}
+.blueSideBar
+{
+    BACKGROUND-COLOR: #98c1ca
+}
+.blueBG
+{
+    BACKGROUND-COLOR: #98c1ca
+}
+INPUT
+{
+    BACKGROUND: #cccccc;
+    COLOR: black;
+    FONT-FAMILY: Verdana;
+    FONT-SIZE: 10;
+}
+INPUT.data
+{
+    BACKGROUND: white;
+    COLOR: black
+}
+SELECT
+{
+    BACKGROUND: white;
+    COLOR: black
+}
+SELECT.data
+{
+    BACKGROUND: white;
+    COLOR: black
+}
+.dataOdd
+{
+    COLOR: #383838;
+    BACKGROUND-COLOR: #cde0e4
+}
+.LoginID
+{
+    FONT-WEIGHT: normal;
+    FONT-SIZE: 0.8em;
+    COLOR: white
+}
+.buildInfo
+{
+    FONT-SIZE: 0.8em;
+    COLOR: white;
+    TEXT-ALIGN: left
+}
+
+H1
+{
+	font-weight: bold;
+	font-style: normal;
+	font-family: Verdana;
+	FONT-SIZE: larger;
+}
+P
+{
+	font-weight: bold;
+	font-style: normal;
+	font-family: Verdana;
+	FONT-SIZE: medium;
+}
+.footnote
+{
+	font-weight: bold;
+	font-style: normal;
+	font-family: Verdana;
+	FONT-SIZE: x-small;
+}

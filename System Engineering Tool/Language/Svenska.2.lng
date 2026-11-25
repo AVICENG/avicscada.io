@@ -1,0 +1,888 @@
+﻿#IQ3xcite Translation File
+#File Format: 2
+#Firmware version: 2.10
+#File version: 5
+#Language: Svenska
+#Notes:
+#Data:
+1,.
+2,ltr
+11,Fran||Till
+12,kodat||text||attribut||utökad
+13,Fast ärvärde||Fast utsignal||Fast utsignal tills återställning||Frys utsignalen||Ingen åtgärd
+14,0: Analog||1: Intern Analog||2: Digital||3: Intern Digital
+15,Tillgängliga typer:||1:  Filter D= E*D+(1-E)*G||2:  Rescale G from 0-100 to E-F||3:  Rescale G to 0-100 from E-F||4:  Limit At : F if G<F or E if G>E||5:  Limit To : 0 if G<F or 100 if G>E||6:  Log D=E*log(G)||7:  Square Root D=E*sqrt(G)||8:  Adder Scaler D=(E*G)+(F*H)||9:  Multiply D=G*E*F||10: Divide D=(G/E)*F||11: Minimum||12: Maximum||13: Average||14: Gate D=E if 0 or =F if 1||15: Comparator D=1 if F>E||16: Enthalpy E=rh F=degC D=kJ/kg||17: Hysteresis level E band F||18: A to D||19: Lookup||20: Adder D=E+F+G+H||21: Hysteresis low E high F||22: Proximity level E error F||23: Power : D=E^F||24: Absolute : D=ABS G||25: Truncate : D=TRUNC G||26: Trignometric
+16,Tillgängliga typer:||1: Digital||2: Analog||3: Tidspropotionell||4: Öka-Minska||5: Binary Hysteresis||6: Time Proportional Override||7: Öka-Minska
+17,Tillgängliga typer:||1: Combination||2: Timer||3: Driftfel||4: Pulsräknare||5: Delay||6: Drifttimmar||7: Fan Out||8: D to A
+18,FRAN||OnDelay||MinOn||OffDelay||TILL
+19,Natt||Dag
+20,Automatisk||Manuell
+21,FRAN||Stationär||Minska||Öka
+22,Ej handkörning||Handkörning
+23,Ej inverterad||Inverterad
+24,Sin||Cos||Tan
+25,Grader||Radianer
+26,Blockerad||Aktiverad
+27,Aktiverad||Blockerad
+28,Ej kvitterat||Kvitterat
+29,0:Linear||1:Log||2:Thermistor Volt||3:Volt||4:Termistor Ohm||5:Characterise
+30,0:Volts||1:Thermistor Volts||2:Ström||3:Termistor Ohm||4:Analog
+31,||Mån||Tis||Ons||Tors||Fre||Lör||Sön
+32,||Jan||Feb||Mar||Apr||Maj||Jun||Jul||Aug||Sep||Okt||Nov||Dec
+33,OK||Fel
+34,||Synkroniserad||Triggad||Periodisk||Värdeändring
+35,1 timma||15 minuter||24 timmar||1 minut||5 minuter||10 minuter||20 minuter||30 minuter||6 timmar||1 sekund
+36,Utloggad||Inloggad
+37,högt värde||lågt värde||läsfel||givarfel
+38,0: Extern||1: Intern
+39,Börvärdesfel||Ärvärdesfel||Felåtgärd vidtagen
+40,Börvärdesfel||Ärvärdesfel
+41,Återföringsfel||Service
+42,Digital
+43,||1:To||2:Global To||3:Min||4:Max||5:Sum||6:Medelvärde||7:From Analogue||8:From Byte||9:From Bit
+44,0:Analog||1:Digital Byte||2:Digital Bit
+45,0:Komm blockerad||1:DUC-namn||2:Attribut 2||3:Attribut 3||4:Attribut 4||5:Attribut 5||6:Attribut 6||7:Attribut 7
+46,Nästa||Alla||Fri
+47,Inget larm||Digin||högt värde||lågt värde||Givarfel||läsfel||Reglerfel||Ärvärdesfel||Service||Återföringsfel
+48,Passiv||Värme||Kyla
+49,Finns ej||Självtest||Väntläge||OK||Major recoverable fault||Major unrecoverable fault
+50,Serif||Sans-Serif||Kursiv||Fantasi||Monospace
+51,Vänster||Centrerad||Höger
+52,||Statisk text||Dynamisk text||Ej använd||Ej använd||Applet
+53,||Undantagsdag||Undantagsvecka
+54,Nej||Ja
+55,DUC online||Fel i strategi||PIA-fel||Klocka fel||RAM-fel||Programfel||Seriellt kommunikationsfel||PROM-fel
+56,Sekvenstabell överskriden||Låg minnesnivå||I/O Bus fel||Låg flashnivå||Arkiveringsfel||Klocka fel||Fel i Fil
+57,Digital ingång
+58,Utgångar
+59,Larmgrupp
+60,Larmrouter
+61,Larmdestination
+62,Funktionmodul
+63,PID-Regulatorer
+64,Givare
+65,Börvärden
+66,Textmodul
+67,Sekvenstabell
+68,Givartypning
+69,Logikmoduler
+70,Omkopplare
+71,Adresser
+72,Katalogmoduler
+73,Displaymoduler
+74,Tid
+75,Loggningsmoduler
+76,Användare
+77,Tidkanaler
+78,Start/stopp normal
+79,Undantag
+80,periodmodul
+81,Kommunikationsmoduler
+82,Larmingångsmodul
+83,Optimum Start Stop
+84,OSS värmemodul
+85,OSS kylmodul
+86,Digital byte
+87,Analog nod
+88,Expansionsmoduler
+89,Virtuell CNC
+90,Sidmodul
+91,Etikett
+92,Ingångtyp
+93,Typ
+94,Vinkeltyp
+95,Sekvenssteg
+96,Hårdvarukanal
+97,Hårdvarumodul
+98,Sida
+99,X koordinat
+100,Y koordinat
+101,Status
+102,Insignal
+103,Normal status
+104,Larm kvitterat
+105,Larm aktiverat
+106,Larm skickat
+107,Larmfördröjning (s)
+108,Tid i larmläge (s)
+109,Invertera
+110,Utsignal
+111,Inverterad utsignal
+112,Utgång
+113,Inverterad utgång
+114,Gångtid 0-100%
+115,Aktuell position
+116,Lägesåterföring
+117,Område
+118,Offset
+119,Drifttimmar
+120,Antal tillslag
+121,Period
+122,Nivå tillslag
+123,Nivå frånslag
+124,Cykeltid
+125,Handkörning
+126,Sista sekvenssteg
+127,Maximal kö
+128,Fel
+129,Meddelandeformat
+130,Adress
+131,Nät
+132,Intervall
+133,Blockera Normal
+134,Nytt larm
+135,Håll prioritet
+136,Aktiverad
+137,Utgång
+138,Grupp
+139,Destination
+140,Aktivera
+141,Värde
+142,Ingång B
+143,Ingång E
+144,Ingång F
+145,Ingång G
+146,Ingång H
+147,Ingång I
+148,Ingång J
+149,Ingång K
+150,Ingång L
+151,Larmstatus
+152,Ärvärde
+153,Börvärde dag
+154,Börvärde natt
+155,Börvärde natt/dag
+156,Manuell nivå
+157,Manuell styrning
+158,Givarfel
+159,Uppdateringstid (s)
+160,Förstärkning
+161,Integreringstid (min)
+162,Deriveringtid (min)
+163,Regleravvikelse
+164,Integrering
+165,Derivering
+166,Utgång
+167,Larm aktiverat
+168,Larm skickat
+169,Fast ärvärde vid fel
+170,Enhet
+171,Värde
+172,Utgång
+173,Lösennivå
+174,Övre gräns
+175,Undre gräns
+176,Enhet
+177,Höglarm
+178,Låglarm
+179,Höglarmsfördröjning (min)
+180,Låglarmsfördröjning (min)
+181,Skalningstyp
+182,Ingångtyp
+183,Exponent
+184,Antal punkter
+185,In
+186,Utgång
+187,Övre gräns
+188,Undre gräns
+189,Villkor J
+190,Villkor K
+191,Villkor L
+192,Villkor M
+193,Tillslagsfördröjning (s)
+194,Minimum till (s)
+195,Frånslagsfördröjning (s)
+196,Timer status
+197,Återföringstid
+198,Utgång J
+199,Utgång K
+200,Utgång L
+201,Utgång M
+202,Utgång N
+203,Utgång O
+204,Momentanvärde
+205,Ackumulerat värde
+206,Skalningsfaktor
+207,Nollställning
+208,Drifttimmar
+209,Larmgränsintervall
+210,Status
+211,Version
+212,DUC-namn
+213,Attribut 2
+214,Attribut 3
+215,Attribut 4
+216,Attribut 5
+217,Attribut 6
+218,Attribut 7
+219,Lokal adress
+220,Lokalt nät
+221,Supervisorport
+222,IP adress
+223,Nätmask
+224,UDP Port
+225,Ethernet MAC
+226,Router 1
+227,Checksumma OK
+228,Omstart
+229,Moderkatalog
+230,PIN
+231,Modul
+232,Timme
+233,Minut
+234,Sekund
+235,Dag
+236,Månad
+237,År
+238,Veckodag
+239,Sommartidsförskjutning
+240,Sommartid start dag
+241,Sommartid start månad
+242,Sommartid stopp dag
+243,Sommartid stopp månad
+244,Klocka
+245,Minuter sedan midnatt
+246,Sekundpuls
+247,Minutpuls
+248,5 minuters puls
+249,10 minuters puls
+250,15 minuters puls
+251,20 minuters puls
+252,30 minuters puls
+253,60 minuters puls
+254,6 timmars puls
+255,24 timmars puls
+256,Dag bit 5
+257,Dag bit 6
+258,Dag bit 7
+259,Veckopuls
+260,Månadspuls
+261,Årspuls
+262,Antal loggpunkter
+263,Loggintervall ingång
+264,Användarnamn
+265,Lösenord
+266,Lösennivå
+267,Startsida
+268,Timeout
+269,Status
+270,Tid
+271,Veckomall
+272,Larmgrupp Service
+273,Larmgrupp Återföringsfel
+274,Larmgrupp Höglarm
+275,Larmgrupp Låglarm
+276,Larmgrupp AD-fel
+277,Larmgrupp Givarfel
+278,Larmgrupp Ärvärdesfel
+279,Larmgrupp Regleravvikelse
+280,Prioritet
+281,Undantag
+282,Start dag
+283,Start månad
+284,Stopp dag
+285,Stopp månad
+286,Start/stopp normal
+287,Omförsöksintervall
+288,Standardlarmgrupp
+289,Systemlarm status
+290,Tidsvärden
+291,Kommunikationsriktning
+292,Fjärradress
+293,attribut
+294,Fjärrnät
+295,Omsändningsintervall
+296,Upplupen intervalltid
+297,Variabeltyp
+298,Signifikant ändring
+299,Senast skickat
+300,Larm AD-fel
+301,Larm givarfel
+302,Låglarm
+303,Höglarm
+304,Höglarmsgräns
+305,Låglarmsgräns
+306,Servicelarm
+307,Larm Återföringsfel
+308,Larm Ärvärdesfel
+309,Larm Regleravvikelse
+310,Larm felåtgärd vidtagen
+311,Resursanvändning
+312,Utegivare
+313,Rumsgivare
+314,Uppvärmningsgräns
+315,Avkylningsgräns
+316,Byggnadens tidskonstant
+317,Medietempval
+318,Adaption blockerad
+319,OTP status
+320,OSS status
+321,Nattsänkning
+322,Uppvärmning
+323,Dagdrift
+324,Avkylning
+325,Meny
+326,Optimal tid värme
+327,Optimal tid kyla
+328,OSS börvärde
+329,Mediatemp
+330,Start avvikelse
+331,Stop avvikelse
+332,Tidskonstant förstärkning
+333,Medelvärde mediatemp
+334,Värmemedium
+335,Kylmedium
+336,I larmläge
+337,Bit 0
+338,Bit 1
+339,Bit 2
+340,Bit 3
+341,Bit 4
+342,Bit 5
+343,Bit 6
+344,Bit 7
+345,Larmstatus
+346,Programmerad typ
+347,Verklig typ
+348,I/O typer
+349,Tillverkare
+350,Serienummer
+351,Programversion
+352,Uppstartsfördröjning(s)
+353,Undertyp
+354,Skalningstyp
+355,Service ingång
+356,Återföring ingång
+357,Build
+358,Extern I/O gräns
+359,Extern I/O räknare
+360,Fjärrmodul
+361,Lokal modul
+362,Portnummer
+363,Socket Timeout
+364,Bakgrund
+365,Bakgrundsfärg
+366,Uppdateringstid
+367,Bredd
+368,Höjd
+369,Förgrundsfärg
+370,Teckensnitt namn
+371,Teckensnitt storlek
+372,Justering
+373,URL
+374,Larmfärg
+375,Klickbar
+376,X-position
+377,Y-position
+378,Blockera
+379,Blockera modul
+380,Modultyp
+381,Time Master
+382,brIQ kapacitet
+383,brIQs använt
+384,Utsignal (mV)
+385,Inverterad utsignal (mV)
+386,Ingång (mV)
+387,Anslutning
+388,Heltal
+389,AKTIVT
+390,NORMALT
+391, LARM 
+392, NORMAL  
+393,DIGIN=0
+394,DIGIN=1
+395,INGEN
+396,HOGT VARDE
+397, LAGT VARDE
+398,GIVARFEL
+399,AD-FEL
+400,REGLERAVVIK
+401,PV-FEL    
+402,DRIFTFEL
+403,SERVICE    
+404,OMSTART
+405,DATAFEL
+406,PIA-FEL
+407,KLOCKA FEL
+408,RAM-FEL
+409,PROGRAMFEL
+410,DART-FEL 
+411,EPROM-FEL
+412,SEKVENSFEL
+413,MINNESFEL
+414,I/O BUS-FEL
+415,FLASHFEL
+416,ARKIVERFEL
+417,KLOCKA FEL
+418,Ej ident
+419,Översikt
+420,Lägg till
+421,Ändra
+422,Radera
+423,Modul
+424,Hämta från
+425,Skicka
+426,Parameter
+427,IQdiagnos
+428,Enhet
+429,Graf
+430,Spara värde LYCKATS
+431,Spara värde MISSLYCKATS
+432,Inga värden ändrade
+433,Föregående
+434,Nästa
+435,Det finns ingen data för vald modul
+436,Gå tillbaks till vald modul
+437,Gå till vald modul
+438,Gäst
+439,Systemgäst
+440,ej initierad
+441,Inloggad användare
+442,Session avslutad
+443,Användare utloggad
+444,IQ3 inloggning
+445,Default System
+446,Logga in för ytterligare val
+447,Standard godkänd
+448,Tack för att du använder IQ3
+449,Denna session är avslutad, stäng detta fönster och starta ny session
+450,Fel vid inloggning
+451,Användarnamn finns ej
+452,Fel lösenord
+453,du kan fortsätta som nuvarande användare, eller logga in som annan användare
+454,Avsluta utloggning genom att  stänga detta fönster
+455,Logga in för ytterligare val
+456,Återställ
+457,Välkommen
+458,Bekräftelse
+459,Ja
+460,Nej
+461,Modulreferens
+462,Moduletikett
+463,Övergång
+464,Aktuell status
+465,Larmlogg tom
+466,Till
+467,Fran
+468,högt värde
+469,lågt värde
+470,läsfel
+471,Givarfel
+472,Ärvärdesfel
+473,Reglerfel
+474,Återföringsfel
+475,Service
+476,Omstart
+477,Datafel
+478,PIA-fel
+479,KLOCKA FEL
+480,RAM-fel
+481,Programfel
+482,DART-fel
+483,Flashfel
+484,Sekvenstabellfel
+485,Minne låg nivå
+486,CAN-fel
+487,FLASH låg nivå
+488,Arkiveringsfel
+489,Klocka fel
+490,Okänt larm
+491,Ej använd
+492,Skickat
+493,Väntar
+494,Lägger till
+495,Larm
+496,NORMALT
+497,Larmlista
+498,Fel: kan ej läsa data
+499,Fel: otillåten punktreferens
+500,Det finns ingen data tillgänglig för vald logg
+501,i ett intervall av
+502,Historik
+503,IQ3
+504,Duc
+505,Fel: kan inte läsa lokal information
+506,Mallfil saknas
+507,på nät
+508,Logga in
+509,Logga ut
+510,Adressmodul
+511,Larmdestinationer
+512,Larmgrupper
+513,Larmrouters
+514,Analoga noder
+515,Digitalmoduler
+516,Digitala ingångar
+517,Utgångar
+518,Funktionsmoduler
+519,Kommunikationsmoduler
+520,IO moduler
+521,Börvärden
+522,Logikmoduler
+523,PID-Regulatorer
+524,Optimeringsmoduler
+525,Givare
+526,Givartypningar
+527,Sekvenstabell
+528,Omkopplare
+529,Tidkanaler
+530,Användare
+531,Virtuella CNCer
+532,Behörighet nekad
+533,Ej behörig
+534,Förbjuden
+535,Accepterad
+536,Otillåten fråga
+537,Ej funnen
+538,Ej tillgänglig
+539,OK
+540,Ej modifierad
+541,Ej ident
+542,Okänd fråga
+543,Fel, kan inte hämta DUC information enligt förfrågan: 
+544,Otillåten modulfråga
+545,Fel, kan inte skapa webbmall enligt förfrågan:
+546,Fel vid inläsning av loggad data från modul
+547,Otillåten
+548,föregående modul
+549,nästa modul
+550,Fel vid spara värden
+551,ändra
+552,Graf
+553,Larm
+554,Måndag
+555,Tisdag
+556,Onsdag
+557,Torsdag
+558,Fredag
+559,Lördag
+560,Söndag
+561,dublett
+562,Radera
+563,visa tider
+564,Start
+565,Stopp
+566,Använd
+567,ändra
+568,Skicka
+569,Tider
+570,(standard)
+571,Avbryt
+572,Skriv om
+573,Skriv om  fält markerat med rött
+574,gå till länk
+575,Felaktigt användarnamn eller lösenord
+576,Försök igen
+577,sträng ej funnen
+578,denna session har avslutats, logga in igen
+579,för att starta en ny session logga in
+580,Standardvecka
+581,Välkommen till IQ3, börja sessionen med att logga in...
+582,Språkval
+583,Larm
+584,Tidkanaler
+585,Moduler
+586,Systemsidor
+587,Välkommen till
+588,Destination
+589,Destinationens port
+590,Systemöversikt
+591,Konfigurera graf
+592,Hämta sparad data
+593,Standardgraf
+594,Realtidsvärden
+595,Laddar data
+596,Vänta...
+597,Skapar graf
+598,-> Ingen data i logg tillgänglig
+599,Ingen data att visa
+600,Lista
+601,LADDAR IQ3 STANDARDGRAF
+602,LADDAR IQ3 REALTIDSVÄRDEN
+603,LOADING IQ3 INSPELADE VÄRDEN
+604,VÄNTA
+605,Det finns ingen inspelad data att visa!
+606,Välj:
+607,Server svarar ej!
+608,Användaren har loggats ut!
+609,Logga in och välj visa realtidsvärden igen
+610,Följande felmeddelande har inkommit:
+611,Uppdatera loggningspunkter
+612,Driftlägesmoduler
+613,||Optimeringsmoduler||OTP
+614,||Dagdrift||Uppvärmning||Avkylning||Natt
+615,Tidkanal
+616,Startavvikelse
+617,Stoppavvikelse
+618,Dagdriftsvärde
+619,Uppvärmningsvärde
+620,Avkylningsvärde
+621,Nattsänkningsvärde
+622,Lösennivå för låg för åtkomst
+623,Copyright
+624,OSS länk
+625,Tidkanalslänk
+626,Ingen I/O||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||xcite/IO/4AO||xcite/IO/16DI||xcite/IO/8DI||xcite/IO/MBus||xcite/IO/DALI||xcite/IO/8DO/HOA||xcite/IO/4DO/HOA||xcite/IO/8AO/HOA||xcite/IO/4AO/HOA||xcite/IO/8DI/8TI||Ej ident
+627,Driftlägesmoduler
+628,Moduler
+629,Bakåt
+630,Larm
+631,Standardhändelse
+632,Anläggningsnamn
+633,Kontakta din leverantör, ange denna kod
+634,Leverantörssida
+635,Glömt ditt lösenord?
+636,Klicka här
+637,Standardlösen
+638,Från e-post adress
+639,Till e-post adress
+640,Extra text
+641,Larmloggmodul
+642,Larmtyp
+643,Modulnummer
+644,Modulvärde
+645,Ej använd||Färdig||Aktiv
+646,Minut
+647,||IQ Lan||IP||E-post||BACnet
+648,Serveradress e-post
+649,Larm från IQ3xcite
+650,Anläggning
+651,Tid/Datum
+652,DUC i larmläge
+653,Handkörning
+654,Handställt värde
+655,Handställd status
+656,Anläggning GUID
+657,Handkörn. fördröjning (min)
+658,Minnesstorlek för loggar
+659,Använt minne för loggar
+660,Fillista
+661,Aktiva expansionmoduler
+662,I/O på moderkort
+663,Typ av DUC
+664,HOA Status
+665,Auto||Hand||Fran
+666,||Stoppad||Laddar||Kör||Vid brytpunkt||Felsökning||Fel||Ingen fil||Fil ej funnen||Korrupt fil||brIQs överskriden
+667,Ingen||Ladda program||Stopp||Kör||Stega in||Stega ut||Stega över||Synkroniserad laddning
+668,Skript visamodul
+669,Skript ingångsmodul
+670,Skript utgångsmodul
+671,Skript sparamodul
+672,XNC Interface
+673,Programmerare
+674,Program version
+675,Program ID
+676,Program status
+677,Program kommando
+678,Felsökning aktiv
+679,Filnamn
+680,Current Line
+681,Brytpunktslinje
+682,Larmande LAN
+683,Larmande DUC
+684,Larmetiketter
+685,Senaste fel
+686,Antal ingångar
+687,Antal utgångar
+688,Antal sparamoduler
+689,Skript sparad variabelmodul
+690,Ej flyktigt värde
+691,||XNC Interface
+692,XNC aktiverad
+693,Nätverk
+694,||IQ Lan||IQ Iwrk||Lon Talk||Ethernet IP||BACnet||IP RAS Server
+695,Antal bra MAC-frames
+696,Antal felaktiga MAC-frames
+697,Nätverkstatus
+698,Antal nätverksfel
+699,Värdnamn
+700,Automatisk valt värdnamn
+701,Lokalt domännamn
+702,IP adressingsläge
+703,DHCP Status
+704,WINS Server
+705,DNS Server
+706,Tidsserver
+707,Återstående tid
+708,Tid för senaste DHCP status ändrat
+709,DHCP förnya
+710,Enhet uppströms
+711,Enhet nedströms
+712,Nätverks-master
+713,Fjärrenhet
+714,Fjärrenhet subnät
+715,||Erhåll automatiskt||Ange manuellt
+716,Blockera||Inhämtar DHCP adress||Erhållit DHCP adress||Inhämtar Lokal adress||Erhållit lokal adress
+717,Är inte nätverks-master||Är Lan-master||Är nätverks-master
+718,Program
+719,Senaste filnamn
+720,Neka arkiverad tid (min)
+721,Ingen strategi||Laddar||Kör||Misslyckades ladda||Primed for command||Stoppad||Ingen fil||Fil ej funnen||Korrupt fil||Filversion||brIQs överskriden||Externa I/O överskridet||Antal I/O överskriden||Funktionsfel
+722,Ingen||Prime for command||Ladda strategi||Ångra ladda strategi||Stopp||Kör||Arkivera
+723,||Program
+724,TCL ANVÄNDARE 1 
+725,TCL ANVÄNDARE 2 
+726,TCL ANVÄNDARE 3 
+727,TCL ANVÄNDARE 4 
+728,TCL ANVÄNDARE 5 
+729,TCL ANVÄNDARE 6 
+730,TCL SKRIPT 
+731,Aldrig arkiverad||Arkiv primär||Arkiv aktiv||Senaste arkivering lyckades||Senaste arkivering misslyckades
+732,Arkivstatus
+733,Antal rader
+734,Loop Rate
+735,Modulstorlek
+736,XML Server
+737,Baud Rate
+738,Bootloader Version
+739,General Alarm 2 status
+740,Visa larm
+741,Visa tidkanaler
+742,Visa moduler
+743,Visa system
+744,Visa guiden
+745,Applikationsnyckel
+746,Parametermodul
+747,Kod
+748,Arkivera
+749,Parametervärden
+750,Parameternamn
+751,Parametervärde
+752,Val
+753,||Kort||Funktion||Displaymoduler
+754,Titel
+755,Beskrivning
+756,Kort ID
+757,Batterikort
+758,IQ LAN-kort
+759,RS232-485 NonIsolated
+760,RS485 Isolated
+761,Okänt kommunikationskort
+762,Kör procent
+763,Förlänger backup av klocka (vid spänningsbortfall) upp till flera år
+764,IQ systemets Lan-kort ger IQ3 möjlighet att bli en enhet på IQ strömslinga
+765,Seriellt kommunikationskort för RS232 eller RS485
+766,Seriellt kommunikationskort, med isolerad ingång, för kommunikations via RS485
+767,Kommunikationskort är okänt och stöds ej av denna version av IQ3
+768,Kataloger
+769,Displaymoduler
+770,Nätverk
+771,Val
+772,Loggar
+773,Driftlägesmoduler
+774,Senaste antal starter
+775,XNC Interface
+776,Tredje parts interface implementerat med Trend Custom Language
+777,Moderkortsversion
+778,Modulstatus
+779,Normal||Handkörd||Blockerad||Hand||Fran||BACnet Override
+780,FEL I FIL
+781,Fel i Fil
+782,Enhetsbegäran
+783,Manuell enhetsbegäran
+784,Automatisk||Manuell
+785,UDP Port
+786,BBMD
+787,Timeout redigera
+788,Tid för reset av drifttimmar
+789,Tid för senaste värde ändrat
+790,Tid för reset av antal starter
+791,Ej Trend-enhet
+792,||BACnet
+793,Nätverksnummer
+794,Namn tillverkare
+795,Modellnamn
+796,Enhetsstatus
+797,Ej Trend-enheter
+798,MAC-adress
+799,Bekräftad||Obekräftad
+800,Service typ
+801,Process ID
+802,Övergångar
+803,Protokoll
+804,Trend||BACnet
+805,Kvittera larm
+806,Ej Trend-enhet status
+807,OK||Fel||Avvaktande
+808,BDT Entry Module
+809,BDT Entry
+810,BACnet fjärr IP-adress
+811,BACnet fjärr-subnät 
+812,BACnet fjärr UDP-port 
+813,Aktiv Prioritetsnivå
+814,Sekunder sedan larm inträffade
+815,Sekunder sedan larm återgick
+816,Skicka I-Am vid uppstart
+817,UTC Offset (min)
+818,Sommartid vald
+819,Sommartid förskjutning (min)
+820,Prioritesordning
+821,BACnet Event Time Stamps
+822,Web Server Port Number
+823,Strategi revidering
+824,BACnet
+825,BACnet valet gör det möjligt att kommunicera genom att använda BACnet protokoll
+826,Lägg till ny funktion
+828,Lägg till ny funktion
+829,För att erhålla en funktionsnyckel kontakta kundcenter och ange följande information:
+830,Ange din nyckel här.
+831,Observera, om funktionnyckel godkänns kommer detta att orsaka en omstart av DUC
+832,Omstart DUC
+833,Funktionsnyckel är felaktig
+834,Funktionsnyckel godkänd
+835,Lås upp nu
+836,antal upplåsningsförsök kvar
+837,Timingtyp
+838,Antal loggpunkter
+839,Källmodul, ID
+840,Sekvensnummer för post
+841,Totalt antal poster
+842,Tid för senaste post
+843,Komprimera värden
+844,Logga buffer
+845,Notifikationströskel
+846,Poster sedan senaste notifieringen
+847,Senaste notifieringspost
+848,Aktivera logg
+849,Stoppa vid full
+850,UtlöstUtdata
+851,Värdetyp
+852,Statusbitar för post
+853,Nummer för post
+854,Tidsstämpel
+855,Tidskompensation
+856,Loggstatus[0]||Digitalt värde[1]||Analogvärde[2]||Alternativvärde[3]||Osignerat värde[4]||Signerat värde[5]||Bitstring-värde[6]||Null[7]||Fel[8]||Tidsändring[9]||Valfri[10]
+857,Plot Buffer Record Module
+858,Buffer tillgänglig
+859,BUFFER READY
+860,Händelse
+861, EVENT 
+862,COV-ökning
+863,Alla
+864,Senaste 24 timmarna
+865,Senaste veckan
+866,Senaste månaden
+867,Senaste året
+868,Anpassat
+869,Datum
+870,Välj ett datumintervall
+871,Välj ett datum
+872,Valt datumintervall ->
+873,Anpassat datumval
+874,Valt spår
+875,Kan ej visa graf för {0} på grund av:<br>{1}
+876,Fel
+877,Zooma till original
+878,Visa spårvärdesfönster
+879,Tidsaxel
+880,Tabellinjer av/på
+881,Vänster
+882,Höger
+883,Slut
+884,Vänta...
+885,Tid för senaste nofitikationen
+886,Senaste strategifelet
+887,Visa
+888,Tabellinjer
+889,Logg full
+890,BTL Compliance

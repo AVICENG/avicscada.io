@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<backup>
+	<simple>
+		<folder name="STRATEGY" />
+		<folder name="XNC" />
+		<folder name="LANGUAGE" />
+		<folder name="WEBPAGES">
+			<folder name="DNDDATA">
+				<folder name="FILES" />
+				<folder name="IMAGES" />
+			</folder>
+		</folder>
+	</simple>
+	<full>
+		<folder name="STRATEGY" />
+		<folder name="XNC" />
+		<folder name="FIRMWARE" />
+		<folder name="LOGS" />
+		<folder name="LANGUAGE" />
+		<folder name="WEBPAGES">
+			<folder name="DNDDATA">
+				<folder name="FILES" />
+				<folder name="IMAGES" />
+			</folder>
+			<folder name="IMAGES" />
+			<folder name="JARFILES" />
+		</folder>
+	</full>
+</backup>

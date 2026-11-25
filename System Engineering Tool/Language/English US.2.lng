@@ -1,0 +1,888 @@
+﻿#IQ3xcite Translation File
+#File Format: 2
+#Firmware version: 2.10
+#File version: 1
+#Language: English US
+#Notes:
+#Data:
+1,.
+2,ltr
+11,Off||On
+12,coded||text||attribute||enhanced
+13,Default PV||Default OP||Stay at Default OP||Freeze OP||No action
+14,0: Analog||1: Internal Analog||2: Digital||3: Internal Digital
+15,Available types:||1:  Filter D= E*D+(1-E)*G||2:  Rescale G from 0-100 to E-F||3:  Rescale G to 0-100 from E-F||4:  Limit At : F if G<F or E if G>E||5:  Limit To : 0 if G<F or 100 if G>E||6:  Log D=E*log(G)||7:  Square Root D=E*sqrt(G)||8:  Adder Scaler D=(E*G)+(F*H)||9:  Multiply D=G*E*F||10: Divide D=(G/E)*F||11: Minimum||12: Maximum||13: Average||14: Gate D=E if 0 or =F if 1||15: Comparator D=1 if F>E||16: Enthalpy E=rh F=degC D=kJ/kg||17: Hysteresis level E band F||18: A to D||19: Lookup||20: Adder D=E+F+G+H||21: Hysteresis low E high F||22: Proximity level E error F||23: Power : D=E^F||24: Absolute : D=ABS G||25: Truncate : D=TRUNC G||26: Trignometric
+16,Available types:||1: Digital||2: Analogue||3: Time Proportional||4: Raise Lower||5: Binary Hysteresis||6: Time Proportional Override||7: Raise Lower
+17,Available types:||1: Combination||2: Timer||3: Readback||4: Counter||5: Delay||6: Hours Run||7: Fan Out||8: D to A
+18,Off||OnDelay||MinOn||OffDelay||On
+19,Non occupied||Occupied
+20,Automatic||Manual
+21,Off||Stationary||Lower||Raise
+22,No Override||Override
+23,Not Inverted||Inverted
+24,Sin||Cos||Tan
+25,Degrees||Radians
+26,Disabled||Enabled
+27,Enabled||Disabled
+28,Not Acknowledged||Acknowledged
+29,0:Linear||1:Log||2:Thermistor Volts||3:Volts||4:Thermistor Ohms||5:Characterise
+30,0:Volts||1:Thermistor Volts||2:Current||3:Thermistor Ohms||4:Analogue
+31,||Mon||Tue||Wed||Thur||Fri||Sat||Sun
+32,||Jan||Feb||Mar||Apr||May||Jun||Jul||Aug||Sep||Oct||Nov||Dec
+33,OK||Failed
+34,||Synchronised||Triggered||Periodic||Change of Value
+35,1 Hour||15 Minutes||24 Hours||1 Minute||5 Minutes||10 Minutes||20 Minutes||30 Minutes||6 Hours||1 Second
+36,Logged Off||Logged In
+37,high||low||read||outside limits
+38,0: External||1: Internal
+39,Setpt Fail||PV Fail||In Default
+40,Setpt Fail||PV Fail
+41,Readback||Maintenance
+42,Digital
+43,||1:To||2:Global To||3:Min||4:Max||5:Sum||6:Average||7:From Analogue||8:From Byte||9:From Bit
+44,0:Analogue||1:Digital Byte||2:Digital Bit
+45,0:Comms Disabled||1:Identifier||2:Attribute 2||3:Attribute 3||4:Attribute 4||5:Attribute 5||6:Attribute 6||7:Attribute 7
+46,Next||Every||Free
+47,No Alarm||Digin||High||Low||Out of Limits||Read||SP Deviation||PV Fail||Maintenance||Readback
+48,Passive||Heating||Cooling
+49,Not present||Self testing||Standby||Operational||Major recoverable fault||Major unrecoverable fault
+50,Serif||Sans-Serif||Cursive||Fantasy||Monospace
+51,Left||Center||Right
+52,||Static Text||Dynamic Text||Not Used||Not Used||Applet
+53,||Day Exception||Week Exception
+54,No||Yes
+55,Controller Online||Corrupt Strategy||Failed Peripheral Interface Adapter||Failed RTC||Failed RAM||Failed Software||Serial Comms Failure||Failed PROM
+56,Sequence Table Overrun||Low Memory||IO Bus Failure||Low Flash||Archive Failure||Corrupt Time||File Error
+57,Digital Input
+58,Driver
+59,Alarm Group
+60,Alarm Route
+61,Alarm Destination
+62,Function
+63,Loop
+64,Sensor
+65,Knob
+66,Text Module
+67,Sequence Table
+68,Sensor Type
+69,Logic
+70,Switch
+71,Addresses
+72,Directory
+73,Display
+74,Time
+75,Plot
+76,User
+77,Time Zone
+78,Day Profile
+79,Exception Profile
+80,Time Zone Period Module
+81,IC Comms
+82,Alarm Input Module
+83,Optimum Start Stop
+84,OSS Heating Module
+85,OSS Cooling Module
+86,Digital Byte
+87,Analogue Node
+88,IO Module
+89,Virtual CNC
+90,Page Module
+91,Label
+92,Input Type
+93,Type
+94,Angle Type
+95,Sequence Step
+96,Hardware Channel
+97,Hardware Module
+98,Page
+99,X Co-ordinate
+100,Y Co-ordinate
+101,State
+102,Source
+103,Required State
+104,Alarm Acknowledged
+105,Alarm Enabled
+106,Alarm Sent
+107,Alarm Delay(secs)
+108,Time in Alarm(secs)
+109,Invert
+110,In-Phase Output
+111,Anti-Phase Output
+112,In-Phase_Hardware Channel
+113,Anti-Phase Hardware Channel
+114,Full Scale Drive
+115,Drive Position
+116,Feedback
+117,Range
+118,Offset
+119,Hours Run
+120,Number of Starts
+121,Period
+122,ON Level
+123,OFF Level
+124,Cycle Time
+125,Override
+126,Last Sequence Step
+127,Maximum Queue
+128,Failed
+129,Message Format
+130,Address
+131,LAN
+132,Interval
+133,Inhibit Clear
+134,New Alarm
+135,Hold Priority
+136,Enabled
+137,Output
+138,Group
+139,Destination
+140,Enable
+141,Value
+142,Source B
+143,Source E
+144,Source F
+145,Source G
+146,Source H
+147,Source I
+148,Source J
+149,Source K
+150,Source L
+151,Alarm State
+152,Process Variable
+153,Occupied Setpoint
+154,Unoccupied Setpoint
+155,Setpoint Select
+156,Manual Level
+157,Manual Select
+158,Sensor Fail
+159,Reschedule Time
+160,Gain
+161,Integral Time(mins)
+162,Derivative Time(mins)
+163,Setpoint Deviation
+164,Integral
+165,Derivative
+166,Output
+167,Alarm Enable
+168,Alarm Sent
+169,Default Value
+170,Units
+171,Value
+172,Output
+173,User Level
+174,Top Range
+175,Bottom Range
+176,Units
+177,High Alarm Limit
+178,Low Alarm Limit
+179,High Alarm Delay(mins)
+180,Low Alarm Delay(mins)
+181,Scaling Type
+182,Input Type
+183,Exponent
+184,Number of Points
+185,Input
+186,Output
+187,Upper Limit
+188,Lower Limit
+189,Combination J
+190,Combination K
+191,Combination L
+192,Combination M
+193,On Delay
+194,Minimum On
+195,Off Delay
+196,Timer Number
+197,Grace Time
+198,Output J
+199,Output K
+200,Output L
+201,Output M
+202,Output N
+203,Output O
+204,Rate
+205,Cumulative Output
+206,Scale Factor
+207,Reset
+208,Hours Run Output
+209,Interval Limit Alarm
+210,Status
+211,Version
+212,Identifier
+213,Attribute2
+214,Attribute3
+215,Attribute4
+216,Attribute5
+217,Attribute6
+218,Attribute7
+219,Local Address
+220,Local LAN
+221,Supervisor Port
+222,IP Address
+223,Subnet Mask
+224,UDP Port
+225,Ethernet MAC
+226,Router 1
+227,Checksum OK
+228,Power Reset
+229,Parent
+230,PIN
+231,Item
+232,Hours
+233,Minutes
+234,Seconds
+235,Day
+236,Month
+237,Year
+238,Weekday
+239,Daylight Hours Change
+240,Daylight Start Day
+241,Daylight Start Month
+242,Daylight End Day
+243,Daylight End Month
+244,Current Time
+245,Minutes Past Midnight
+246,Second pulse
+247,Minute pulse
+248,5 Minute pulse
+249,10 Minute pulse
+250,15 Minute pulse
+251,20 Minute pulse
+252,30 Minute pulse
+253,60 Minute pulse
+254,6 Hour pulse
+255,24 Hour pulse
+256,Day Bit 5
+257,Day Bit 6
+258,Day Bit 7
+259,Weekly Pulse
+260,Monthly Pulse
+261,Yearly Pulse
+262,Number of Records
+263,Trigger Input
+264,User Name
+265,Password
+266,Level
+267,Home Page
+268,Timeout
+269,Logged On
+270,Time
+271,Weekly Profile
+272,Maintenance Group
+273,Readback Group
+274,High Group
+275,Low Group
+276,Read Group
+277,Out of Limits Group
+278,PV Fail Group
+279,Setpoint Deviation Group
+280,Priority
+281,Exceptions
+282,Start Day
+283,Start Month
+284,End Day
+285,End Month
+286,Day Profile
+287,Retry Interval
+288,General Alarm Group
+289,General Alarm Status
+290,Time Value Pair
+291,Comms Direction
+292,Remote Controller Address
+293,Attribute
+294,Remote Lan
+295,Retransmission Interval
+296,Time Into the Interval
+297,Variable Type
+298,Significant Change
+299,Last Sent
+300,Read Alarm
+301,Out of Limits Alarm
+302,Low Alarm
+303,High Alarm
+304,High Alarm Level
+305,Low Alarm Level
+306,Maintenance Alarm
+307,ReadBack Alarm
+308,PV Fail Alarm
+309,Setpoint Deviation Alarm
+310,In Default Alarm
+311,Usage
+312,Outside Temp
+313,Inside Temp
+314,Warmup Limit
+315,Cooldown Limit
+316,Loss Time Constant
+317,Medium Selection
+318,Adaption Inhibit
+319,OTP State
+320,OSS State
+321,Non Occupied State
+322,Warmup State
+323,Occupied State
+324,Cooldown State
+325,Mode
+326,Optimum On Time
+327,Optimum Off Time
+328,OSS Setpoint
+329,Medium Temp
+330,Start Elevation
+331,Stop Elevation
+332,Gain Time Constant
+333,Average Medium Temp
+334,Heating Medium
+335,Cooling Medium
+336,In Alarm
+337,Bit 0
+338,Bit 1
+339,Bit 2
+340,Bit 3
+341,Bit 4
+342,Bit 5
+343,Bit 6
+344,Bit 7
+345,Alarm Status
+346,Configured Type
+347,Actual Type
+348,I/O Types
+349,Manufacturer
+350,Serial Number
+351,Firmware Version
+352,Power On Delay(secs)
+353,Sub Type
+354,Scaling Type
+355,Maintenance Input
+356,Readback Input
+357,Build
+358,External I/O Limit
+359,External I/O Count
+360,Remote Module
+361,Local Module
+362,Port Number
+363,Socket Timeout
+364,Backdrop
+365,Back Color
+366,Refresh Rate
+367,Width
+368,Height
+369,Fore Color
+370,Font Name
+371,Font Size
+372,Align
+373,URL
+374,In Alarm Color
+375,Clickable
+376,Left Position
+377,Top Position
+378,Disable
+379,Disable Module
+380,Display Subtype
+381,Time Master
+382,brIQ Capacity
+383,brIQs Used
+384,In-Phase Output(mV)
+385,Anti-Phase Output(mV)
+386,Source(mV)
+387,Connection
+388,Enumeration
+389,CURRENT
+390,CLEARED
+391, OCCURRED 
+392, CLEARED  
+393,DIGIN OFF  
+394,DIGIN ON   
+395,NONE       
+396,HIGH VALUE 
+397, LOW VALUE 
+398,SENSOR FAIL
+399,INPUT ERROR
+400,DEVIATION  
+401,PV FAIL    
+402,READBACK   
+403,SERVICE    
+404,RESTART    
+405,DATA ERROR 
+406,PIA FAULT  
+407,CLOCK WRONG
+408,RAM FAULT  
+409,S'WARE FAIL
+410,DART FAULT 
+411,EPROM FAULT
+412,SEQ OVERRUN
+413,LOW MEMORY 
+414,IO BUS FAIL
+415,LOW FLASH  
+416,ARCHVE FAIL
+417,CORRUPT RTC
+418,Unknown
+419,Overview
+420,Create New
+421,Change
+422,Delete
+423,Module
+424,Get From
+425,Send
+426,Parameter
+427,DiagnostIQs
+428,Units
+429,Graph
+430,Value Write SUCCESS
+431,Value Write FAILURE
+432,No Values Changed
+433,Prev
+434,Next
+435,Sorry there is no data for that module
+436,Jump back to this module
+437,Jump forward to this module
+438,Guest
+439,System Guest
+440,unInitialised
+441,Current User
+442,Session Expired
+443,Logged Out User
+444,IQ3 Login
+445,Default System
+446,for more options please login
+447,Default Approved
+448,Thankyou for using IQ3
+449,this session has been terminated, please close down this browser and start a new session
+450,Login Error
+451,user name does not exist
+452,password is incorrect
+453,you may continue as the previous user, or attempt to login as a different user
+454,please complete the logout by closing down this browser
+455,for more options, please login
+456,Default
+457,Welcome
+458,Confirmation
+459,YES
+460,NO
+461,Module Ref
+462,Module Label
+463,Transition
+464,Current State
+465,No Alarms in Log
+466,On
+467,Off
+468,High
+469,Low
+470,Read
+471,Out of Limits
+472,PV Fail
+473,SP Deviation
+474,Readback
+475,Maintenance
+476,Restart
+477,Data Error
+478,PIA Fault
+479,Clock Wrong
+480,RAM Fault
+481,Software Fault
+482,Dart Fault
+483,Flash Fault
+484,Seq Table Overrun
+485,Low Memory Warning
+486,CAN Failure
+487,Low FLASH Warning
+488,Archive Failure
+489,Corrupt Time
+490,Unknown Alarm
+491,Unused
+492,Sent
+493,Waiting
+494,Adding
+495,Occurred
+496,Cleared
+497,Alarms Page
+498,Error: failed to read data
+499,Error: invalid point reference
+500,There is no data currently available for the requested log
+501,at an interval of
+502,Graphing
+503,IQ3
+504,Controller
+505,Error: can not read local information
+506,Template file missing
+507,on Lan
+508,Login
+509,Logout
+510,Address Page
+511,Alarm Destinations
+512,Alarm Groups
+513,Alarm Routes
+514,Analogue Nodes
+515,Digital Bytes
+516,Digital Inputs
+517,Drivers
+518,Functions
+519,IC Comms
+520,IO Modules
+521,Knobs
+522,Logics
+523,Loops
+524,OSS
+525,Sensors
+526,Sensor Types
+527,Sequence Table
+528,Switches
+529,Time Zones
+530,Users
+531,Virtual CNCs
+532,Access Denied
+533,Unauthorized
+534,Forbidden
+535,Accepted
+536,Bad Request
+537,Not Found
+538,Service Unavailable
+539,OK
+540,Not Modified
+541,UNKNOWN
+542,Unknown Request
+543,Error, can not retrieve Controller information for request: 
+544,Invaid module request
+545,Error, can not create Web Template for request: 
+546,Error reading logged module data
+547,Invalid
+548,previous module
+549,next module
+550,Error writing values
+551,adjust
+552,graph
+553,Alarm
+554,Monday
+555,Tuesday
+556,Wednesday
+557,Thursday
+558,Friday
+559,Saturday
+560,Sunday
+561,duplicate
+562,delete
+563,view times
+564,Start
+565,Stop
+566,Use
+567,Adjust
+568,send
+569,Times
+570,(default)
+571,Cancel
+572,Re-type
+573,Please re-enter the entries labeled in red
+574,jump to link
+575,Incorrect user name or password
+576,Please try again
+577,string not found
+578,this session has timed out please login again
+579,to begin another session login again
+580,Normal Week
+581,Welcome to IQ3, to begin your session please log in...
+582,Language Selection
+583,Alarms
+584,Time Zones
+585,Modules
+586,GraphIQs
+587,Welcome to
+588,Destination
+589,Destination Port
+590,System Map
+591,Configure Graph
+592,Load Recorded Data
+593,Standard Graph
+594,Chart Points
+595,Loading Trace
+596,Please Wait...
+597,Constructing Graph
+598,-> No log data available
+599,No data to display
+600,List
+601,LOADING IQ3 STANDARD GRAPH
+602,LOADING IQ3 POINT CHART
+603,LOADING IQ3 RECORDED DATA
+604,WAIT
+605,There is no recorded data to load!
+606,Select option:
+607,The server is not responding!
+608,The user has been logged off!
+609,Log in and restart charting points
+610,Received the following error message:
+611,Retry charting points
+612,Schedule
+613,||OSS||OTP
+614,||Occupancy||Warmup||Cooldown||Non Occupied
+615,Zone
+616,Start Deviation
+617,Stop Deviation
+618,Occupied Value
+619,Warmup Value
+620,Cooldown Value
+621,Non Occupied Value
+622,User level too low to access this view
+623,Copyright
+624,OSS Connection
+625,TimeZone Connection
+626,No IO||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||xcite/IO/4AO||xcite/IO/16DI||xcite/IO/8DI||xcite/IO/MBus||xcite/IO/DALI||xcite/IO/8DO/HOA||xcite/IO/4DO/HOA||xcite/IO/8AO/HOA||xcite/IO/4AO/HOA||xcite/IO/8DI/8TI||Unknown
+627,Schedule
+628,Modules
+629,Back
+630,Alarms
+631,Default Action
+632,Site Name
+633,Please contact your installer, quoting this key
+634,Installer Page
+635,Forgotten your password?
+636,Click Here
+637,Default Password
+638,From Email Address
+639,To Email Address
+640,Extra Text
+641,Alarm Log Module
+642,Alarm Type
+643,Module Number
+644,Module Value
+645,Unused||Completed||Active
+646,Minutes
+647,||IQ Lan||IP||Email||BACnet
+648,Email Server Address
+649,A Trend IQ3 BMS Controller has generated this alarm
+650,Site
+651,Time/Date
+652,Controller in alarm
+653,Override Output
+654,Override Value
+655,Override Status
+656,Site GUID
+657,Override Timer(mins)
+658,Plot Memory Size
+659,Plot Memory Used
+660,File List
+661,External IO Enabled
+662,Onboard IO
+663,Type Name
+664,HOA State
+665,Auto||Hand||Off
+666,||Stopped||Loading||Running||At Breakpoint||Debug||Error||No File||File not found||Bad File||brIQs exceeded
+667,None||Load Program||Stop||Run||Step Into||Step Out||Step Over||Synchronised Load
+668,Script Watch Module
+669,Script Input Module
+670,Script Output Module
+671,Script Store Module
+672,XNC Interfaces
+673,Program Author
+674,Program Version
+675,Program ID
+676,Program State
+677,Program Command
+678,Debug Active
+679,Filename
+680,Current Line
+681,Line Breakpoint
+682,Alarm Reporting LAN
+683,Alarm Reporting OS
+684,Alarm Labels
+685,Last Error
+686,Number of Inputs
+687,Number of Outputs
+688,Number of Store Modules
+689,Script Saved Variable Module
+690,Non Volatile Value
+691,||XNC Interface
+692,XNC Enabled
+693,Network
+694,||IQ LAN||IQ Iwrk||Lon Talk||Ethernet IP||BACnet||IP RAS Server
+695,Number of Good MAC Frames
+696,Number of Bad MAC Frames
+697,Network State
+698,Number of Network Fails
+699,Hostname
+700,Default Hostname
+701,Local Domain Name
+702,IP Addressing Mode
+703,DHCP Status
+704,WINS Server
+705,DNS Server
+706,Time Server
+707,Remaining Lease Time
+708,Time of Last DHCP State Change
+709,DHCP Renew
+710,Upstream Neighbour
+711,Downstream Neighbour
+712,Network Master
+713,Remote Device
+714,Remote Device Subnet
+715,||Obtain Automatically||Enter Manually
+716,Disable||Acquiring DHCP Address||Have DHCP Address||Acquiring Local Address||Have Local Address
+717,Is not Network Master||Is Lan Master||Is Network Master
+718,Program
+719,Last FileName
+720,Disable Archive Time (mins)
+721,No Strategy||Loading||Running||Failed to load||Primed for command||Stopped||No File||File not found||Bad File||File Version||brIQs exceeded||ExternaI I/O Count Exceeded||Onboard I/O Count Exceeded||Feature Error
+722,None||Prime for command||Load strategy||Unload strategy||Stop||Run||Archive
+723,||Program
+724,TCL USER 1 
+725,TCL USER 2 
+726,TCL USER 3 
+727,TCL USER 4 
+728,TCL USER 5 
+729,TCL USER 6 
+730,TCL SCRIPT 
+731,Never Archived||Archive Primed||Archive Active||Last Archive Succeeded||Last Archive Failed
+732,Archive State
+733,Number of Lines
+734,Loop Rate
+735,Size of Module
+736,XML Server
+737,Baud Rate
+738,Bootloader Version
+739,General Alarm 2 Status
+740,View Alarms
+741,View Time Zones
+742,View Modules
+743,View GraphIQs
+744,View Navigator
+745,Application Key
+746,Parameter Module
+747,Code
+748,Archive
+749,Parameter Values
+750,Parameter Name
+751,Parameter Value
+752,Option
+753,||Card||Feature||Display
+754,Title
+755,Description
+756,Card ID
+757,Battery Option Card
+758,IQ system Lan Card
+759,RS232-485 NonIsolated
+760,RS485 Isolated
+761,Unknown Option Card
+762,Progress Percent
+763,Increases protection time of clock (in case of mains failure) to several years
+764,The IQ system Lan card enables the IQ3 to become a device on the IQ system current loop lan
+765,Serial auxiliary board for communicating using RS232 or RS485
+766,Serial auxiliary board, with isolated input, for communicating using RS485
+767,This option board is unknown and not supported by this version of IQ3
+768,Directories
+769,Displays
+770,Networks
+771,Options
+772,Plots
+773,Schedules
+774,Last No Of Starts
+775,XNC Interface
+776,Third party interface implemented with the Trend Custom Language
+777,Baseboard Version
+778,Module Status
+779,Normal||Overridden||Disabled||Hand||Off||BACnet Override
+780,FILE ERROR 
+781,File Error
+782,Device instance
+783,Manual device instance
+784,Automatic||Manual
+785,UDP Port
+786,BBMD
+787,Edit Timeout
+788,Time of Hours Run Reset
+789,Time of Last Value Change
+790,Time of Number of Starts Reset
+791,Non-Trend Device
+792,||BACnet
+793,Network Number
+794,Vendor Name
+795,Model Name
+796,Device System Status
+797,Non-Trend Devices
+798,MAC Address
+799,Confirmed||Unconfirmed
+800,Service Type
+801,Process ID
+802,Transitions
+803,Protocol
+804,Trend||BACnet
+805,Clear Alarm
+806,Non-Trend Device Status
+807,OK||Failed||Pending
+808,BDT Entry Module
+809,BDT Entry
+810,Remote BACnet IP Address
+811,Remote BACnet Subnet
+812,Remote BACnet UDP Port
+813,Active Priority Level
+814,Seconds Since Alarm Occurred
+815,Seconds Since Alarm Cleared
+816,Send I-Am at Startup
+817,UTC Offset (Mins)
+818,Daylight Savings Applied
+819,Daylight Savings Offset (Mins)
+820,Priority Array
+821,BACnet Event Time Stamps
+822,Web Server Port Number
+823,Strategy Revision
+824,BACnet
+825,The BACnet option enables communication using BACnet protocol
+826,Add New Feature
+828,Add New Feature
+829,For a feature unlock key please contact customer services quoting the following details:
+830,Please enter your unlock key here.
+831,Note, if the feature unlock is successful it will cause the controller to restart
+832,Controller restarting
+833,The feature unlock key is incorrect
+834,Feature unlock key accepted
+835,Unlock Now
+836,unlock attempts remaining
+837,Timing Type
+838,Number Of Records
+839,Source Module ID
+840,Record Count
+841,Total Record Count
+842,Time of Last Record
+843,Compact Values
+844,Log Buffer
+845,Notification Threshold
+846,Records Since Last Notification
+847,Last Notify Record
+848,Log Enable
+849,Stop When Full
+850,TriggerOutput
+851,Value Type
+852,Record Status Bits
+853,Record Number
+854,TimeStamp
+855,Time Offset
+856,Log Status[0]||Digital Value[1]||Analogue Value[2]||Enum Value[3]||Unsigned Value[4]||Signed Value[5]||Bitstring-value[6]||Null[7]||Failure[8]||Time Change[9]||Any[10]
+857,Plot Buffer Record Module
+858,Buffer Ready
+859,BUFFER READY  
+860,Event
+861, EVENT 
+862,COV Increment
+863,All
+864,Last 24 Hours
+865,Last Week
+866,Last Month
+867,Last Year
+868,Custom
+869,Date
+870,Choose a date range
+871,Choose a date
+872,Selected date range ->
+873,Custom Date Selection
+874,Selected trace
+875,Unable to display a graph for {0} due to the following reason:<br>{1}
+876,Error
+877,Zoom to original
+878,Show trace value window
+879,Time axis
+880,Toggle gridlines on or off
+881,Left
+882,Right
+883,End
+884,Please Wait...
+885,Time Of Last Notification
+886,Last Strategy Error
+887,View
+888,Grid Lines
+889,Log Full
+890,BTL Compliance

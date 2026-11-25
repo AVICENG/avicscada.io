@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<ftstdata>
+<topic name="Les écrans d'affichage du poste client du 963" url="963_client_displays.htm" />
+<topic name="Page par défaut du 963 Server" url="963_server_default_page.htm" />
+<topic name="Page de démarrage par défaut du 963 Server" url="963_server_start_up_page.htm" />
+<topic name="Qu'est-ce que le 963 ?" url="about_963.htm" />
+<topic name="A propos de ce manuel" url="about_this_manual.htm" />
+<topic name="Action des alarmes" url="action_alarms.htm" />
+<topic name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+<topic name="Ajout d'un modèle de jour spécial" url="add_a_special_day_template.htm" />
+<topic name="Ajout d'un modèle de configuration des semaines" url="add_a_week_set_template.htm" />
+<topic name="Ajout d'une exception" url="add_an_exception.htm" />
+<topic name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+<topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+<topic name="Réglage d'une valeur analogique" url="adjust_an_analogue.htm" />
+<topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+<topic name="Alarmes" url="alarm_viewer.htm" />
+<topic name="Utilisation de base" url="basic_use.htm" />
+<topic name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+<topic name="Configuration" url="configuration_mode_display.htm" />
+<topic name="Configuration des contrôleurs" url="configure_controllers.htm" />
+<topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+<topic name="Pour contacter Trend" url="contacting_trend.htm" />
+<topic name="Conventions applicables à ce manuel" url="conventions_used_in_this_manual.htm" />
+<topic name="Suppression d'un modèle" url="delete_a_template.htm" />
+<topic name="Suppression d'une exception" url="delete_an_exception.htm" />
+<topic name="Appareils" url="device_viewer.htm" />
+<topic name="Calendrier" url="diary_diary_display.htm" />
+<topic name="Affichage d'un diagramme" url="display_a_chart.htm" />
+<topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+<topic name="Affichage d'une grille sur un graphique" url="display_a_grid_on_a_graph.htm" />
+<topic name="Affichage des coordonnées dun point" url="display_a_points_co-ordinates.htm" />
+<topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+<topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+<topic name="Affichage des données du graphique" url="display_graph_data.htm" />
+<topic name="Affichage des données enregistrées" url="display_logged_data.htm" />
+<topic name="Affichage de la page de démarrage du 963" url="display_the_963_s_startup_page.htm" />
+<topic name="Affichage du système Trend" url="display_the_iq_system.htm" />
+<topic name="Edition d'un modèle" url="edit_a_template.htm" />
+<topic name="Edition d'une exception" url="edit_an_exception.htm" />
+<topic name="Messages derreur" url="error_messages.htm" />
+<topic name="Masquage des panneaux d'alarmes" url="hide_alarm_panels.htm" />
+<topic name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+<topic name="Panneau d'alarmes muet" url="mute_an_alarm_panel.htm" />
+<topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+<topic name="Lancement d'une action d'alarme manuelle" url="run_a_manual_alarm_action.htm" />
+<topic name="Lancement manuel dactions dalarmes" url="run_alarm_actions_manually.htm" />
+<topic name="Pages graphiques du poste client" url="schematic_page_client_display.htm" />
+<topic name="Création de modèles d'horaires exceptionnels" url="setup_exception_templates.htm" />
+<topic name="Définition laffichage des colonnes" url="specify_what_columns_are_displayed.htm" />
+<topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+<topic name="Utilisation du 963 à partir dun poste client" url="using_963_from_a_client.htm" />
+<topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+<topic name="Visualisation des alarmes" url="view_alarms.htm" />
+<topic name="Visualisation des exceptions" url="view_exceptions.htm" />
+<topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+<topic name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+<topic name="Visualisation de létat du serveur" url="view_server_status.htm" />
+<topic name="Ouverture de session" url="web_browser_log_in.htm" />
+<topic name="Fermeture de session" url="web_browser_log_off.htm" />
+<topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+
+</ftstdata>  

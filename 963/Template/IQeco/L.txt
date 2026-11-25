@@ -1,0 +1,13 @@
+IQeco Loop Parameters
+<XXXX>(P),Process Variable,Float,90
+<XXXX>(D),Output Value,Float,101
+<XXXX>(O),Occupied Setpoint,Float,90
+<XXXX>(U),Unoccupied Setpoint,Float,90
+<XXXX>(R),Reschedule Time,Integer,90
+<XXXX>(S),Setpoint Select,Boolean,90
+<XXXX>(A),Manual Select,Boolean,90
+<XXXX>(L),Manual Level,Float,90
+<XXXX>(G),Proportional Gain,Float (Gain 0 = Integral Only),90
+<XXXX>(I),Integral Time,Minutes,90
+<XXXX>(i),Integral Value,Float,101
+<XXXX>(B),Deadband,Float,90

@@ -1,0 +1,62 @@
+﻿<?xml version='1.0' encoding='utf-8' ?>
+<browsesequencelist version="1.0">
+	
+	<browsesequence name="MAIN" >
+		<item name="About This Manua" link="About_This_Manual.htm" />
+		<item name="Conventions Used in this Manua" link="Conventions_Used_in_this_Manual.htm" />
+		<item name="Contacting Tren" link="Contacting_Trend.htm" />
+		<item name="What is 963" link="About_963.htm" />
+		<item name="963 Server Default Pag" link="963_Server_Default_Page.htm" />
+		<item name="963 Server Start up Pag" link="963_Server_Start_up_Page.htm" />
+		<item name="Alarm Viewe" link="Alarm_Viewer.htm" />
+		<item name="Configuration Mode Displa" link="Configuration_Mode_Display.htm" />
+		<item name="Device Viewe" link="Device_Viewer.htm" />
+		<item name="Diary Displa" link="Diary_Display.htm" />
+		<item name="Schematic Page Client Displa" link="Schematic_Page_Client_Display.htm" />
+		<item name="Using 963 From a Clien" link="Using_963_From_a_Client.htm" />
+		<item name="Basic Us" link="Basic_Use.htm" />
+		<item name="Connect to 963 Serve" link="Connect_to_963_Server.htm" />
+		<item name="Log I" link="Log_In.htm" />
+		<item name="Log Of" link="Log_Off.htm" />
+		<item name="Display a Schematic Pag" link="Display_a_Schematic_Page.htm" />
+		<item name="Adjust an Analogue Valu" link="Adjust_a_Knob_in_a_Trend_Device.htm" />
+		<item name="Adjust a Digital Valu" link="Adjust_a_Switch_in_a_Trend_Device.htm" />
+		<item name="View Alarm" link="View_Alarms.htm" />
+		<item name="View Incoming Alarm" link="View_Incoming_Alarms.htm" />
+		<item name="View Alarm Histor" link="View_Alarm_History.htm" />
+		<item name="Specify What Columns are Displaye" link="Specify_What_Columns_are_Displayed.htm" />
+		<item name="Hide Alarm Panel" link="Hide_Alarm_Panels.htm" />
+		<item name="Action Alarm" link="Action_Alarms.htm" />
+		<item name="Action Alarms from an Alarm Pane" link="Action_Alarms_from_an_Alarm_Panel.htm" />
+		<item name="Mute an Alarm Pane" link="Mute_an_Alarm_Panel.htm" />
+		<item name="Run a Manual Alarm Actio" link="Run_a_Manual_Alarm_Action.htm" />
+		<item name="Run Alarm Actions Manuall" link="Run_Alarm_Actions_Manually.htm" />
+		<item name="Turn Alarm Actions ON/OF" link="Turn_Alarm_Actions_ON_OFF.htm" />
+		<item name="Display a Char" link="Display_a_Chart.htm" />
+		<item name="Load a Graph Definitio" link="Load_a_Graph_Definition.htm" />
+		<item name="Display the Graph Dat" link="Display_Graph_Data.htm" />
+		<item name="Zoom in and Out of a Grap" link="Zoom_in_and_Out_of_a_Graph.htm" />
+		<item name="Display a Grid on a Grap" link="Display_a_Grid_on_a_Graph.htm" />
+		<item name="Display a Point's Co-ordinate" link="Display_a_Points_Co-ordinates.htm" />
+		<item name="Display Logged Dat" link="Display_Logged_Data.htm" />
+		<item name="View Normal Occupation Time" link="View_Normal_Occupation_Times.htm" />
+		<item name="View Exception" link="View_Exceptions.htm" />
+		<item name="Adjust Occupation Time" link="Adjust_Occupation_Times.htm" />
+		<item name="Add an Exceptio" link="Add_an_Exception.htm" />
+		<item name="Edit an Exceptio" link="Edit_an_Exception.htm" />
+		<item name="Delete an Exceptio" link="Delete_an_Exception.htm" />
+		<item name="Change Normal Occupation Time" link="Change_Normal_Occupation_Times.htm" />
+		<item name="Adjust a Timezon" link="Adjust_a_Timezone.htm" />
+		<item name="Playback a Recorded Grap" link="Playback_Recorded_Data.htm" />
+		<item name="Display the IQ Syste" link="Display_the_IQ_System.htm" />
+		<item name="Display the 963's Startup Pag" link="Display_the_963_s_Startup_Page.htm" />
+		<item name="Setup Exception Template" link="Setup_Exception_Templates.htm" />
+		<item name="Add a Week Set Templat" link="Add_a_Week_Set_Template.htm" />
+		<item name="Add a Special Day Templat" link="Add_a_Special_Day_Template.htm" />
+		<item name="Delete a Templat" link="Delete_a_Template.htm" />
+		<item name="Edit a Templat" link="Edit_a_Template.htm" />
+		<item name="View Server Statu" link="View_Server_Status.htm" />
+		<item name="Error Message" link="Error_Messages.htm" />
+	</browsesequence>
+</browsesequencelist>
+

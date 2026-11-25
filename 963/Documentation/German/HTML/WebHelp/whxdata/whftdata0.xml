@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<ftstdata>
+<topic name="Informationen zu dieser Bedienungsanleitung" url="963_Manual_About_This_Manual.htm" />
+<topic name="Kontaktadresse von Trend" url="963_Manual_Contacting_Trend.htm" />
+<topic name="Konventionen in dieser Bedienungsanleitung" url="963_Manual_Conventions_Used_in_this_Manual.htm" />
+<topic name="963 Server-Standardseite" url="About_963_963_Server_Default_Page.htm" />
+<topic name="963 Server-Startseite" url="About_963_963_Server_Start_up_Page.htm" />
+<topic name="Was ist die Leitstation 963?" url="About_963_About_963.htm" />
+<topic name="Alarmanzeige" url="About_963_Alarm_Viewer.htm" />
+<topic name="Konfigurationsanzeige" url="About_963_Configuration_Mode_Display.htm" />
+<topic name="Geräteansicht" url="About_963_Device_Viewer.htm" />
+<topic name="Zeitplaner" url="About_963_Diary_Diary_Display.htm" />
+<topic name="Client-Seitenanzeige (Anlagenbilder)" url="About_963_Schematic_Page_Client_Display.htm" />
+<topic name="Die 963 Client-Anzeigen" url="About_963_The_963_Client_Displays.htm" />
+<topic name="Ein Raster auf einer Trendkurve anzeigen" url="Using_963_Display_a_Grid_on_a_Graph.htm" />
+<topic name="Alarme quittieren" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+<topic name="Alarmquittierung über ein Alarmfeld" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+<topic name="Eine Sondertagvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Special_Day_Template.htm" />
+<topic name="Eine Wochenprogrammvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Week_Set_Template.htm" />
+<topic name="Eine Ausnahme hinzufügen" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+<topic name="Einen digitalen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+<topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+<topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+<topic name="Belegungszeiten einstellen" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+<topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+<topic name="Eine Standardwoche ändern" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+<topic name="DDC-Stationen konfigurieren" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+<topic name="Verbindung zum 963 Server herstellen" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+<topic name="Eine Vorlage löschen" url="Using_963_From_a_Web_Browser_Delete_a_Template.htm" />
+<topic name="Eine Ausnahme löschen" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+<topic name="Eine dynamische Trendkurve anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+<topic name="Eine Trendkurve mit kompaktem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+<topic name="Koordinaten eines Werts anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Points_Co-ordinates.htm" />
+<topic name="Eine Trendkurve mit präzisem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+<topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+<topic name="Trendkurvendaten anzeigen" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+<topic name="Aufgezeichnete Daten anzeigen" url="Using_963_From_a_Web_Browser_Display_Logged_Data.htm" />
+<topic name="Startseite der 963 anzeigen" url="Using_963_From_a_Web_Browser_Display_the_963_s_Startup_Page.htm" />
+<topic name="Das Trend-System anzeigen" url="Using_963_From_a_Web_Browser_Display_the_IQ_System.htm" />
+<topic name="Eine Vorlage bearbeiten" url="Using_963_From_a_Web_Browser_Edit_a_Template.htm" />
+<topic name="Eine Ausnahme bearbeiten" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+<topic name="Fehlermeldungen" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+<topic name="Alarmfelder ausblenden" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+<topic name="Eine Trendkurvendefinition laden" url="Using_963_From_a_Web_Browser_Load_a_Graph_Definition.htm" />
+<topic name="Anmelden" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+<topic name="Abmelden" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+<topic name="Ein Alarmfeld stummschalten" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+<topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+<topic name="Eine Alarmaktion manuell auslösen" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+<topic name="Alarmaktionen manuell auslösen" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+<topic name="Ausnahmevorlagen einrichten" url="Using_963_From_a_Web_Browser_Setup_Exception_Templates.htm" />
+<topic name="Anzuzeigende Spalten festlegen" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+<topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+<topic name="Die 963 über einen Client bedienen" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client_.htm" />
+<topic name="Alarmhistorie anzeigen" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+<topic name="Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+<topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+<topic name="Eingehende Alarme anzeigen" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+<topic name="Standardwoche anzeigen" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+<topic name="Serverstatus anzeigen" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+<topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+
+</ftstdata>  

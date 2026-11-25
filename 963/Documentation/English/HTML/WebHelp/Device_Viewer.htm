@@ -1,0 +1,834 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="copyright" value="©Trend Control Systems Ltd 2003" content="" />
+<meta http-equiv="Content-Language" content="en-UK" />
+ <meta name="generator" content="Adobe RoboHelp 8" />
+<title>Device Viewer</title>
+<link rel="StyleSheet" href="Trend-RH7.css" type="text/css" />
+<script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+-->
+</style>
+<script type="text/javascript" language="javascript1.2" src="whmsg.js"></script>
+<script type="text/javascript" language="javascript" src="whver.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whproxy.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whutils.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whlang.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whtopic.js"></script>
+
+</head>
+
+<body><script type="text/javascript" language="javascript1.2">//<![CDATA[
+<!--
+if (window.gbWhTopic)
+{
+	var strUrl = document.location.href;
+	var bc = 0;
+	var n = strUrl.toLowerCase().indexOf("bc-");
+	if(n != -1)
+	{
+		document.location.href = strUrl.substring(0, n);
+		bc = strUrl.substring(n+3);
+	}
+
+	if (window.addTocInfo)
+	{
+	addTocInfo("963 Web User Guide\nThe 963 Client Displays\nDevice Viewer");
+addAvenueInfo("MAIN","Configuration_Mode_Display.htm","Diary_Display.htm");
+addButton("show",BTN_TEXT,"Show","","","","",0,0,"","","");
+
+	}
+	if (window.writeBtnStyle)
+		writeBtnStyle();
+
+	if (window.writeIntopicBar)
+		writeIntopicBar(1);
+
+	
+	document.write("<p style=\"text-align:right\"> ");
+AddMasterBreadcrumbs("963_manu.htm", "", ">", "Home", "About_This_Manual.htm");
+document.write("<a href=\"About_This_Manual.htm\">963 Web User Guide<\/a> > <a href=\"963_Server_Default_Page.htm\">The 963 Client Displays<\/a> > Device Viewer<\/p>");
+
+
+	if (window.setRelStartPage)
+	{
+	setRelStartPage("963_manu.htm");
+
+		autoSync(1);
+		sendSyncInfo();
+		sendAveInfoOut();
+	}
+}
+else
+	if (window.gbIE4)
+		document.location.reload();
+
+//-->
+//]]></script>
+<script type="text/javascript" language="javascript">//<![CDATA[
+document.write("<p  style=\"text-align:left;\" class=\"breadcrumbs\">");
+AddMasterBreadcrumbs("963_manu.htm", "breadcrumbs", "&gt;", "", "About_This_Manual.htm");
+document.write("<a class=\"breadcrumbs\" href=\"About_This_Manual.htm\">963 Web User Guide<\/a> &gt; <a class=\"breadcrumbs\" href=\"963_Server_Default_Page.htm\">The 963 Client Displays<\/a> &gt; Device Viewer<\/p>");
+//]]></script>
+<table class="HeadingTable" style="border-top: Solid 3px #f48c1c; 
+											 border-bottom: Solid 3px #f48c1c;" 
+											 cellspacing="0" width="100%">
+	<col style="width: 100%;" />
+	<tr>
+		<td>
+  <h1>Device Viewer</h1></td>
+	</tr>
+ </table>
+
+<script src="./ehlpdhtm.js" type="text/javascript" language="JavaScript1.2"></script>
+
+<p class="Topic-Text">The <a class="dropspot" href="javascript:TextPopup(this)" 
+							 id="a1"><span class="Bold">Device Viewer</span></a> 
+ is only available when accessed from a web browser that supports the 963’s 
+ graphic mode. It enables inputs, outputs, adjustments, time zones, and 
+ critical alarms from the selected part of the system to be displayed, 
+ and for values to be adjusted, or graphed. E.g. if the internetwork is 
+ selected, all values from the internetwork are displayed. If a particular 
+ Lan is selected only values from that Lan are displayed.</p>
+<div class="droptext" id="POPUP426607499" style="display: none;">
+	<p class="Topic-Text-Graphic-Style"><img src="image/device_viewer.bmp" alt="device_viewer.bmp" style="border: none;" width="924" height="824" border="0" /></p>
+</div>
+<p class="Topic-Text">The <span class="Bold">Device Viewer</span> is divided 
+ into two different areas:</p>
+<p class="Topic-Text-Indent" style="font-weight: bold;"><a href="#Data_Display"><span 
+	 style="font-weight: bold;"><b>Data Display</b></span></a></p>
+<p class="Topic-Text-Indent-End"><a href="#Navigator" style="font-weight: bold;">Navigator</a></p>
+<p class="Topic-Text-Sub-Heading"><a name="Data_Display" id="Data_Display"></a>Data 
+ Display</p>
+<p class="Topic-Text">The <font style="font-weight: bold;">Data Display</font> 
+ contains the requested modules, it is colour coded to indicate whether 
+ the alarm is current. Red indicates that the alarm is current. Once the 
+ values have been displayed it is possible to adjust values, display a 
+ graph, or enter the configuration mode of IQ System devices that support 
+ configuration mode. The display contains a number of <a class="dropspot" 
+														 href="javascript:TextPopup(this)" 
+														 id="a2">columns</a> 
+ that display the values of the inputs, outputs, adjustments, time zones, 
+ and critical alarms from the part of the system selected in the <font 
+	 style="font-weight: bold;">Navigator</font>.</p>
+<div class="droptext" id="POPUP426812762" style="display: none;">
+	<table class="TrendTable" cellspacing="0px" width="100%">
+		<col />
+		<col />
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table-Heading">Column</p></td>
+			<td><p class="Topic-Text-Table-Heading">Description</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p>Icon</p></td>
+			<td><p class="Topic-Text-Table" style="margin-bottom: 4.5pt;">Contains 
+			 an icon that indicates the module type.</p>
+			<table class="TablewithclearBorders" cellspacing="0px" width="100%">
+				<col style="width: 6.745%;" />
+				<col style="width: 93.255%;" />
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/sensor.gif" 
+														 alt="image\sensor.gif" 
+														 width="31" height="23" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Sensor Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/digin.gif" 
+														 alt="image\digin.gif" 
+														 width="30" height="17" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Digital Input Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/internal.gif" 
+														 alt="image\internal.gif" 
+														 width="23" height="24" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Virtual Sensor Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/critalm.gif" 
+														 alt="image\critalm.gif" 
+														 width="32" height="28" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Critical Alarm Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/kno.gif" 
+														 alt="image\kno.gif" 
+														 width="22" height="22" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Knob Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/switches.gif" 
+														 alt="image\switches.gif" 
+														 width="20" height="26" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Switch Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/zones.gif" 
+														 alt="image\zones.gif" 
+														 width="32" height="32" 
+														 border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Time zone Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/andvr.bmp" alt="andvr.bmp" style="border: none;" width="28" height="11" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Analogue Driver Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/didvr.bmp" alt="didvr.bmp" style="border: none;" width="26" height="11" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Digital Driver Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/plot.bmp" alt="plot.bmp" style="border: none;" width="20" height="20" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Plot Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/sensor_with_graph_icon.gif" alt="sensor_with_graph_icon.gif" style="border: none;" width="36" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Sensor with plots</p></td>
+				</tr>
+			</table>
+			<p class="Topic-Text-Table" style="margin-bottom: 4.5pt;">The 
+			 red recording icon overlay indicates a plot is assigned and 
+			 is being recorded.</p>
+			<table class="TablewithclearBorders" cellspacing="0px" width="100%">
+				<col style="width: 6.745%;" />
+				<col style="width: 93.255%;" />
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_driver_analogue.gif" alt="recorded_plotting_driver_analogue.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Analogue driver associated 
+					 with a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_driver_digital.gif" alt="recorded_plotting_driver_digital.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Digital driver associated 
+					 with a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_knob.gif" alt="recorded_plotting_knob.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Knob associated with 
+					 a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plots.gif" alt="recorded_plots.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">A plot is being recorded.</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_sensor.gif" alt="recorded_plotting_sensor.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Sensor associated with 
+					 a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_switch.gif" alt="recorded_plotting_switch.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Switch associated with 
+					 a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_timezone.gif" alt="recorded_plotting_timezone.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Time Zone associated 
+					 with a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_digsen.gif" alt="recorded_plotting_digsen.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Digital sensor associated 
+					 with a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_driver.gif" alt="recorded_plotting_driver.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">A Driver associated 
+					 with a plot is being recorded.</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/icons/recorded_plotting_internal_sensor.gif" alt="recorded_plotting_internal_sensor.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">An Internal sensor 
+					 associated with a plot is being recorded.</p></td>
+				</tr>
+			</table>
+			<p class="Topic-Text-Table" style="margin-bottom: 4.5pt;">These 
+			 icons may also overlayed with icons indicating the modules 
+			 alarm state, and whether it can be adjusted.</p>
+			<table class="TablewithclearBorders" cellspacing="0px" width="100%">
+				<col style="width: 6.745%;" />
+				<col style="width: 93.255%;" />
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/acknalar.bmp" alt="acknalar.bmp" style="border: none;" width="24" height="23" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Module in alarm but 
+					 alarm has been acknowledged</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/ICO00009.BMP" alt="ICO00009.BMP" style="border: none;" width="24" height="22" border="0" /></p></td>
+					<td><p>Module in alarm</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/ICO00025.BMP" alt="ICO00025.BMP" style="border: none;" width="21" height="25" border="0" /></p></td>
+					<td><p>Module value can be adjusted.</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table"><img src="image/ADJUSTAB.BMP" alt="ADJUSTAB.BMP" style="border: none;" width="21" height="24" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">Module value cannot 
+					 be adjusted.</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table"><img src="image/smallgraphicon.bmp" alt="smallgraphicon.bmp" style="border: none;" width="14" height="14" border="0" /></p></td>
+					<td><p class="Topic-Text-Table">There is a graph available 
+					 for the module.</p></td>
+				</tr>
+			</table></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table">Label</p></td>
+			<td><p class="Topic-Text-Table">The module label. For plot 
+			 modules from pre IQ3 controllers will display the label of 
+			 the module whose value the plot module is recording.</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table">Value</p></td>
+			<td><p class="Topic-Text-Table">The current value of the module.</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table">Units</p></td>
+			<td><p class="Topic-Text-Table">The value’s engineering units.</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p>Error Description</p></td>
+			<td><p class="Topic-Text-Table" style="margin-bottom: 4.5pt;">A 
+			 description of any error that exists for the value.</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p>Alarm Code</p></td>
+			<td><p class="Topic-Text-Table" style="margin-bottom: 4.5pt;">The 
+			 alarm code for the alarm if the module is in an alarm condition.</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p>Item</p></td>
+			<td><p class="Topic-Text-Table" style="margin-bottom: 4.5pt;">A 
+			 code indicating the module type and number (e.g. S1 specifies 
+			 Sensor module number 1)</p>
+			<table class="TablewithclearBorders" cellspacing="0px" width="100%">
+				<col style="width: 6.745%;" />
+				<col style="width: 93.255%;" />
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table">S</p></td>
+					<td><p class="Topic-Text-Table">Sensor Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table">I</p></td>
+					<td><p class="Topic-Text-Table">Digital Input Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table">W</p></td>
+					<td><p class="Topic-Text-Table">Switch Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table">Z</p></td>
+					<td><p class="Topic-Text-Table">Time zone Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table">K</p></td>
+					<td><p class="Topic-Text-Table">Knob Modules</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table">D</p></td>
+					<td><p class="Topic-Text-Table">All Driver modules 
+					 for IQ system sites, Analogue Driver Modules for BACnet 
+					 sites</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table">J</p></td>
+					<td><p class="Topic-Text-Table">Digital Driver Modules 
+					 for BACnet sites</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table">X</p></td>
+					<td><p class="Topic-Text-Table">Virtual Sensor Modules</p></td>
+				</tr>
+				<tr class="t1Row">
+					<td><p class="Topic-Text-Table">P</p></td>
+					<td><p class="Topic-Text-Table">Plot Module</p></td>
+				</tr>
+				<tr class="t2Row">
+					<td><p class="Topic-Text-Table">M</p></td>
+					<td><p class="Topic-Text-Table">Critical Alarm Modules</p></td>
+				</tr>
+			</table></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table">LAN</p></td>
+			<td><p class="Topic-Text-Table">The Lan number of the controller 
+			 containing the module</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table">OS</p></td>
+			<td><p class="Topic-Text-Table">The network address of the 
+			 controller containing the module</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table">Tele</p></td>
+			<td><p class="Topic-Text-Table">The phone number or IP address 
+			 used to address the site containing the module.</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table">Pin Level</p></td>
+			<td><p class="Topic-Text-Table">The PIN level required to adjust 
+			 the value.</p></td>
+		</tr>
+	</table>
+</div>
+<p class="Topic-Text" style="margin-top: 4.5pt;">The display also contains 
+ a number of <a class="dropspot" href="javascript:TextPopup(this)" id="a3">buttons</a> 
+ that enable the types of modules displayed to be selected.</p>
+<div class="droptext" id="POPUP426630443" style="display: none;">
+	<table class="TrendTable" cellspacing="0px" width="100%">
+		<col style="width: 5.195%;" />
+		<col style="width: 94.805%;" />
+		<tr class="t1Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table-Heading">Icon</p></td>
+			<td><p class="Topic-Text-Table-Heading">What is Displayed</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 28px;">
+			<td><p class="Topic-Text-Table"><img src="image/Sensor.bmp" alt="Sensor.bmp" style="border: none;" width="25" height="21" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Sensors</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 24px;">
+			<td><p class="Topic-Text-Table"><img src="image/Digin.bmp" alt="Digin.bmp" style="border: none;" width="26" height="17" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Digital Inputs</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 31px;">
+			<td><p class="Topic-Text-Table"><img src="image/Internal.bmp" alt="Internal.bmp" style="border: none;" width="24" height="24" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Virtual sensors (calculated 
+			 MKT values)</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 32px;">
+			<td><p class="Topic-Text-Table"><img src="image/critalm.bmp" alt="critalm.bmp" style="border: none;" width="26" height="25" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Critical Alarms</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 29px;">
+			<td><p class="Topic-Text-Table"><img src="image/Knob.bmp" alt="Knob.bmp" style="border: none;" width="22" height="22" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Knobs</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 33px;">
+			<td><p class="Topic-Text-Table"><img src="image/Switches.bmp" alt="Switches.bmp" style="border: none;" width="20" height="26" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Switches</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 22px;">
+			<td><p class="Topic-Text-Table"><img src="image/zones.bmp" alt="zones.bmp" style="border: none;" width="15" height="15" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Time Zones</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table"><img src="image/analogdriver.bmp" alt="analogdriver.bmp" style="border: none;" width="28" height="11" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Analogue Driver</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table"><img src="image/digitaldriver.bmp" alt="digitaldriver.bmp" style="border: none;" width="27" height="12" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Digital Driver</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 5px;">
+			<td><p class="Topic-Text-Table"><img src="image/plot1.bmp" alt="plot1.bmp" style="border: none;" width="20" height="20" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Plots</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 5px;">
+			<td><p class="Topic-Text-Table"><img src="image/sensor_with_graph_icon.gif" alt="sensor_with_graph_icon.gif" style="border: none;" width="36" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Sensor with plots</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 56px;">
+			<td><p class="Topic-Text-Table"><img src="image/refresh.bmp" alt="refresh.bmp" style="border: none;" width="48" height="49" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Refreshes the values.</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 55px;">
+			<td><p class="Topic-Text-Table"><img src="image/find.bmp" alt="find.bmp" style="border: none;" width="48" height="48" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">This causes 963 to only display 
+			 items of the selected item types whose label matches the search 
+			 string.</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table" style="font-weight: bold;">Inputs</p></td>
+			<td><p class="Topic-Text-Table">Select/deselects all inputs</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table" style="font-weight: bold;">Adjustments</p></td>
+			<td><p class="Topic-Text-Table">Select/deselects all adjustments</p></td>
+		</tr>
+		<tr class="t1Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table" style="font-weight: bold;">Drivers</p></td>
+			<td><p class="Topic-Text-Table">Select/deselects all drivers</p></td>
+		</tr>
+		<tr class="t2Row" style="height: 20px;">
+			<td><p class="Topic-Text-Table" style="font-weight: bold;">Plots</p></td>
+			<td><p class="Topic-Text-Table">Select/deselects plots</p></td>
+		</tr>
+	</table>
+</div>
+<p class="Topic-Text-Sub-Heading"><a name="Navigator" id="Navigator"></a>Navigator</p>
+<p class="Topic-Text">The <font style="font-weight: bold;">Navigator</font> 
+ displays a tree view of the system to which 963 is connected, enabling 
+ the level at which the system is displayed in the <font style="font-weight: bold;">Data 
+ Display</font> to be selected. For example, clicking a Lan will display 
+ all the points with labels on that Lan. Access to this display can be 
+ restricted to certain users. <a class="dropspot" href="javascript:TextPopup(this)" 
+								 id="a4">Icons</a> indicate the type of 
+ object. </p>
+<div class="droptext" id="POPUP426616433" style="display: none;">
+	<table class="TrendTable" cellspacing="0px" width="100%">
+		<col style="width: 9.257%;" />
+		<col style="width: 90.743%;" />
+		<tr class="t1Row">
+			<th><p class="Topic-Text-Table-Heading">Icon</p></th>
+			<td rowspan="2"><p class="Topic-Text-Table-Heading">Description</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table-Heading">Supervisors</p></td>
+			
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/921.gif" alt="image\921.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">921 Supervisor</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/940.gif" alt="image\940.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">940 Supervisor</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/942.gif" alt="image\942.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">942 Supervisor</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/943.gif" alt="image\943.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">943 Supervisor</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/945.gif" alt="image\945.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">945 Supervisor</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/950.gif" alt="image\950.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">950 Supervisor</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/96X.gif" alt="image\96X.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">963 Supervisor, 962 Supervisor, 
+			 S2 Supervisor, or ViewPoint</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/NDP.gif" alt="image\NDP.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">NDP</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQView.gif" 
+												 alt="image\IQView.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQView</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td colspan="2"><p class="Topic-Text-Table-Heading">Devices</p></td>
+			
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/ANC.gif" alt="image\ANC.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">ANC</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/BACnetDevice.bmp" alt="BACnetDevice.bmp" style="border: none;" width="29" height="26" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">BACnet Device</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/DeviceBINC.bmp" alt="DeviceBINC.bmp" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">BINC</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/CNC.gif" alt="image\CNC.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">CNC</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/FNC.gif" alt="image\FNC.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">FNC</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/generic_device.bmp" alt="generic_device.bmp" style="border: none;" width="29" height="26" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Generic Device</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/access_controller.gif" 
+												 alt="image\access_controller.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">ID200</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/INC.gif" alt="image\INC.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">INC</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQ100.gif" 
+												 alt="image\IQ100.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ100 Controller</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQ111.gif" 
+												 alt="image\IQ111.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ111 Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/iq131.gif" 
+												 alt="image\iq131.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ131 Controller</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/iq151.gif" 
+												 alt="image\iq151.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ151 Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQ2.gif" alt="image\IQ2.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ2 Controller</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQ3E.gif" alt="image\IQ3E.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ3 Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/icon_IQ4.gif" alt="icon_IQ4.gif" style="border: none;" width="35" height="27" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ4 Controller</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQ70.gif" alt="image\IQ70.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ70 Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQ90.gif" alt="image\IQ90.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ90 Controller</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQECO.bmp" alt="IQECO.bmp" style="border: none;" width="29" height="21" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQeco Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQEyeCollector.bmp" alt="IQEyeCollector.bmp" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQ EYE Collector</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/IQL.gif" alt="image\IQL.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">IQL Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/LONDevice.bmp" alt="LONDevice.bmp" style="border: none;" width="28" height="24" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">L<span style="font-size: 7.5pt;"><font size="1" style="font-size:7pt;">ON</font></span>W<span 
+			 style="font-size: 7.5pt;"><font size="1" style="font-size:7pt;">ORKS</font></span> Device</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/DeviceModbus.bmp" alt="DeviceModbus.bmp" style="border: none;" width="28" height="24" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Modbus Device</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/Niagara_device.bmp" alt="Niagara_device.bmp" style="border: none;" width="29" height="23" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Niagara Device</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/ControllerNovarLogic1.gif" alt="ControllerNovarLogic1.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Novar Logic 1 Controller</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/nonTrend_OEMZ.gif" 
+												 alt="image\nonTrend_OEMZ.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Non IQ system device</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/OPCDevice.bmp" alt="OPCDevice.bmp" style="border: none;" width="28" height="24" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">OPC Device</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/PNC.gif" alt="PNC.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">PNC</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/tonicHost.gif" 
+												 alt="image\tonicHost.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">TONIC</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/TOPS2.gif" alt="TOPS2.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">TOPS</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/XNC.gif" alt="image\XNC.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">XNC</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td colspan="2"><p class="Topic-Text-Table-Heading">Site Structure</p></td>
+			
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/BACnet_Lan.gif" alt="BACnet_Lan.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">BACnet Lan</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/Generic_Lan.bmp" alt="Generic_Lan.bmp" style="border: none;" width="27" height="30" border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Generic Lan</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/LocalHost.gif" 
+												 alt="image\LocalHost.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Local site</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/lonworkslan.bmp" alt="lonworkslan.bmp" style="border: none;" width="27" height="30" border="0" /></p></td>
+			<td><p>L<span style="font-size: 7.5pt;"><font size="1" style="font-size:7pt;">ON</font></span>W<span style="font-size: 7.5pt;"><font size="1" style="font-size:7pt;">ORKS</font></span> 
+			 Lan</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/modbusLan.bmp" alt="modbusLan.bmp" style="border: none;" width="27" height="30" border="0" /></p></td>
+			<td><p>Modbus Lan</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/Niagara_Lan.bmp" alt="Niagara_Lan.bmp" style="border: none;" width="27" height="30" border="0" /></p></td>
+			<td><p>Niagara Lan</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/LanNovar.gif" alt="LanNovar.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p>Novar Logic 1 Lan</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/OPC_Lan.bmp" alt="OPC_Lan.bmp" style="border: none;" width="28" height="30" border="0" /></p></td>
+			<td><p>OPC Lan</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/RemoteHost.gif" 
+												 alt="image\RemoteHost.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p>Remote Site</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/permanent_site_icon.bmp" alt="permanent_site_icon.bmp" style="border: none;" width="33" height="32" border="0" /></p></td>
+			<td><p>Permanent site.</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td><p class="Topic-Text-Table"><img src="image/lan2.gif" alt="image\lan2.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Trend Lan</p></td>
+		</tr>
+		<tr class="t1Row">
+			<td><p style="margin-bottom: 0pt;"><img src="image/TOPSUndefinedLan.gif" alt="TOPSUndefinedLan.gif" style="border: none;" width="32" height="32" border="0" /></p></td>
+			<td><p style="margin-bottom: 0pt;">Unknown Lan</p></td>
+		</tr>
+		<tr class="t2Row">
+			<td colspan="2"><p class="Topic-Text-Table-Heading">General</p></td>
+			
+		</tr>
+		<tr class="t1Row">
+			<td><p class="Topic-Text-Table"><img src="image/unknown.gif" 
+												 alt="image\unknown.gif" 
+												 width="32" height="32" 
+												 border="0" /></p></td>
+			<td><p class="Topic-Text-Table">Unknown Device</p></td>
+		</tr>
+	</table>
+</div>
+<p class="Topic-Text-See-Also"><span>
+<a href="javascript:void(0);" onclick="var e; if (parseInt(navigator.appVersion)>=4){e=event;}  if (parseInt(navigator.appVersion) &gt;=2 &amp;&amp; typeof(PickupDialog_Invoke) == 'function') PickupDialog_Invoke(e,'','963 Server Default Page','..\\963_Server_Default_Page.htm','963 Server Start up Page','..\\963_Server_Start_up_Page.htm','Alarm Viewer','..\\Alarm_Viewer.htm','Configuration Mode Display','..\\Configuration_Mode_Display.htm','Diary Display','..\\Diary_Display.htm','Schematic Page Client Display','..\\Schematic_Page_Client_Display.htm','Server Status Page','..\\Server_Status_Page.htm');return false;" title=" See Also"><span style="font-family:Verdana;font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none"><nobr>  See Also </nobr></span></a>
+
+ </span></p>
+ <div style="width: 100%; position: relative;" id="footer">
+	
+  <p class="Footer">963 Web User Guide TC200685 Issue 9 11-Mar-2013</p>
+ </div>
+
+
+<script type="text/javascript" language="JavaScript1.2">//<![CDATA[
+	if( typeof( TextPopupInit ) != 'function' ) TextPopupInit = new Function();
+	TextPopupInit('a1','POPUP426607499');
+	TextPopupInit('a2','POPUP426812762');
+	TextPopupInit('a3','POPUP426630443');
+	TextPopupInit('a4','POPUP426616433');
+//]]></script>
+<script type="text/javascript" language="JavaScript">//<![CDATA[
+if (parseInt(navigator.appVersion) >= 3 && typeof (WritePopupMenuLayer) == "function")
+  WritePopupMenuLayer();
+//]]></script><script type="text/javascript" language="javascript1.2">//<![CDATA[
+<!--
+if (window.writeIntopicBar)
+	writeIntopicBar(0);
+
+
+highlightSearch();
+//-->
+//]]></script>
+</body>
+</html>

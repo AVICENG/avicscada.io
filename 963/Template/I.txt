@@ -1,0 +1,8 @@
+Digital inputs adjustments
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(S),Current state,O or I,99
+<XXXX>(H),Hours run,Hrs,99
+<XXXX>(N),Number of starts,Starts,99
+<XXXX>(R),Required state,O or I,99
+<XXXX>(E),Alarms Enabled,O or I,99
+<XXXX>(D),Alarm delay,Minutes,99

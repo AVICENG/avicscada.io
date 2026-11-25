@@ -1,0 +1,7 @@
+IQeco Plot Parameters
+<XXXX>(S),Source (Sensor),Float, 90
+<XXXX>(P),Period (Interval),Integer (0=1hr; 1=15min; 2=24hr; 3=1min; 4=5min; 5=10min; 6=20min; 7=30min; 8=6hr; 9=1s), 90
+<XXXX>(Y),Timing type, Integer, 90
+<XXXX>(N),Number of records, Integer, 90
+<XXXX>(C),Number of records plotted - Unique record ID, Integer, 101
+<XXXX>(R),Number of record in buffer, Integer, 101

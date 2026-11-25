@@ -1,0 +1,4 @@
+Switch adjustments
+<XXXX>(S),The Status,on/off,100
+<XXXX>(P),The PIN level,0-99,0
+<XXXX>($),The label,text,0

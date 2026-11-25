@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<tocdata>
+<book name="963 Web User Guide" >
+  <book name="Over deze handleiding
+ " >
+    <item name="Over deze handleiding
+ " url="About_This_Manual.htm" />
+    <item name="Afspraken gebruikt in deze handleiding " url="Conventions_Used_in_this_Manual.htm" />
+    <item name="Contact met Trend" url="Contacting_Trend.htm" />
+  </book>
+  <item name="Over963" url="About_963.htm" />
+  <book name="De 963 Client Weergaven (Displays) 
+" >
+    <item name="963 Server Default Page" url="963_Server_Default_Page.htm" />
+    <item name="963 Server Start up Page" url="963_Server_Start_up_Page.htm" />
+    <item name="Alarm Viewer " url="Alarm_Viewer.htm" />
+    <item name="Configuratie Mode Display " url="Configuration_Mode_Display.htm" />
+    <item name="Device Viewer " url="Device_Viewer.htm" />
+    <item name="Diary Display " url="Diary_Display.htm" />
+    <item name="De Schematic Page Client Display " url="Schematic_Page_Client_Display.htm" />
+    <item name="Server Status Page" url="Server_Status_Page.htm" />
+  </book>
+  <book name="Bediening 963 vanaf een Client 
+" >
+    <item name="Bediening 963 vanaf een Client 
+" url="Using_963_From_a_Client.htm" />
+    <book name="Basis Gebruik" >
+      <item name="Basis Gebruik" url="Basic_Use.htm" />
+      <item name="Connect to 963 Server " url="Connect_to_963_Server.htm" />
+      <item name="Log In " url="Log_In.htm" />
+      <item name="Uitloggen " url="Log_Off.htm" />
+    </book>
+    <item name="Tonen van een schematische pagina" url="Display_a_Schematic_Page.htm" />
+    <book name="Aanpassen van waardes" >
+      <book name="Aanpassen van knob waardes" >
+        <item name="Verstellen van een Knob in een Trend Controller" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+        <item name="Verstellen van een Knob (Analoge waarde) in een BACnet Controller" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+      </book>
+      <book name="Adjust Switches" >
+        <item name="Verstellen van een switch in een Trend Controller" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+        <item name="Verstellen van een Switch (Digitale Waarde) in een BACnet Controller" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+      </book>
+      <item name="Relinquish Control van een BACnet waarde " url="Relinquish_Control_of_a_BACnet_Value.htm" />
+    </book>
+    <book name="Alarms" >
+      <book name="Tonen van Alarmen" >
+        <item name="Tonen van Alarmen" url="View_Alarms.htm" />
+        <item name="Tonen van inkomende Alarmen " url="View_Incoming_Alarms.htm" />
+        <item name="Tonen van de alarm historie " url="View_Alarm_History.htm" />
+        <item name="Specify What Columns are Displayed" url="Specify_What_Columns_are_Displayed.htm" />
+        <item name="Verbergen van Alarm panelen " url="Hide_Alarm_Panels.htm" />
+      </book>
+      <book name="Behandeling van Alarmen" >
+        <item name="Behandeling van Alarmen" url="Action_Alarms.htm" />
+        <item name="Behandeling van Alarmen vanaf een Alarm Panel" url="Action_Alarms_from_an_Alarm_Panel.htm" />
+      </book>
+      <item name="Dempen van een Alarm Paneel " url="Mute_an_Alarm_Panel.htm" />
+      <item name="Starten van een handmatige Alarm Actie " url="Run_a_Manual_Alarm_Action.htm" />
+      <item name="Run Alarm Actions Manually" url="Run_Alarm_Actions_Manually.htm" />
+      <item name="Turn Alarm Actions ON/OFF" url="Turn_Alarm_Actions_ON_OFF.htm" />
+    </book>
+    <book name="Tonen van grafieken " >
+      <item name="Tonen van een Compact Grafiek" url="Display_a_Compact_Graph.htm" />
+      <item name="Tonen van een precisie grafiek " url="Display_a_Precision_Graph.htm" />
+      <item name="Tonen van een grafiek " url="Display_a_Chart.htm" />
+      <item name="Laden van een grafiek definitie " url="Load_a_Graph_Definition.htm" />
+      <item name="Tonen van grafiek data " url="Display_Graph_Data.htm" />
+      <item name="In- en uitzoomen van een grafiek " url="Zoom_in_and_Out_of_a_Graph.htm" />
+      <book name="Formatting Graphs" >
+        <item name="Tonen van een Grid in een grafiek " url="Display_a_Grid_on_a_Graph.htm" />
+        <item name="Display a Point's Co-ordinates" url="Display_a_Points_Co-ordinates.htm" />
+      </book>
+      <item name="Display Logged Data" url="Display_Logged_Data.htm" />
+    </book>
+    <book name="Tonen van bezettingstijden" >
+      <book name="Tonen van bezettingstijden" >
+        <item name="Tonen van bezettingstijden" url="View_Normal_Occupation_Times.htm" />
+        <item name="View Exceptions" url="View_Exceptions.htm" />
+      </book>
+      <book name="Verstellen van bezettingstijden" >
+        <item name="Verstellen van bezettingstijden" url="Adjust_Occupation_Times.htm" />
+        <book name="Toevoegen van een uitzondering " >
+          <item name="Toevoegen van een uitzondering " url="Add_an_Exception.htm" />
+          <item name="Een uitzondering wijzigen " url="Edit_an_Exception.htm" />
+          <item name="Een uitzondering verwijderen " url="Delete_an_Exception.htm" />
+        </book>
+        <item name="Wijzigen van normale bezettingstijden " url="Change_Normal_Occupation_Times.htm" />
+        <item name="Verstellen van een tijdzone" url="Adjust_a_Timezone.htm" />
+      </book>
+    </book>
+    <item name="Tonen van een opgeslagen grafiek" url="Playback_a_Recorded_Graph.htm" />
+    <item name="Tonen van het IQ systeem " url="Display_the_IQ_System.htm" />
+    <item name="Tonen van IQ3 Web Pagina's " url="display_iq3_web_pages.htm" />
+    <item name="Display the 963's Startup Page" url="Display_the_963_s_Startup_Page.htm" />
+    <item name="Configuratie mode openen in IQ1 en IQ2 controllers " url="Enter_Configuration_Mode_on_Pre_IQ3_Controllers.htm" />
+    <item name="Log Off a Client User" url="Log_Off_a_Client_User.htm" />
+    <book name="Opzetten van uitzonderings templates " >
+      <item name="Opzetten van uitzonderings templates " url="Setup_Exception_Templates.htm" />
+      <item name="Toevoegen van een Week Template" url="Add_a_Week_Set_Template.htm" />
+      <item name="Een speciale dag Template toevoegen" url="Add_a_Special_Day_Template.htm" />
+      <item name="Verwijderen van een Template " url="Delete_a_Template.htm" />
+      <item name="Aanpassen van een template " url="Edit_a_Template.htm" />
+    </book>
+    <item name="Bekijk server status" url="View_Server_Status.htm" />
+  </book>
+  <item name="Fout meldingen" url="Error_Messages.htm" />
+</book>
+
+</tocdata>

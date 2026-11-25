@@ -1,0 +1,13 @@
+﻿Выполняется установка сборки 'C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.dll'.
+Затронуты следующие параметры:
+   assemblypath = C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.dll
+    = 
+   logfile = C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.InstallLog
+См. файл журнала выполнения операция для сборки C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.dll.
+Данный файл находится в C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.InstallLog.
+Выполняется фиксация сборки 'C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.dll'.
+Затронуты следующие параметры:
+   logtoconsole = 
+   assemblypath = C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.dll
+    = 
+   logfile = C:\Program Files (x86)\Trend Control Systems\Applets\LanMapApplet.InstallLog

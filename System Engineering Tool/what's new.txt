@@ -1,0 +1,137 @@
+SET Version 6.3
+
+New Features.
+      .  Support for IQ3 v2.1 firmware
+
+
+SET Version 6.2
+
+New Features
+      .  Support for IQ3 v2.0 firmware
+
+      .  Ability to browse BACnet devices.
+
+      .  Override State displayed in Live Values.
+
+      .  Imporved IC Comms configuration.
+
+      .  Clear Alarm enable/disable.
+
+      .  Support for BACnet engineering units.
+
+      .  Speech annunciation for Live Values
+
+      .  Command Line editing available in Live Edit.
+
+      .  Support for ACE file Import removed.
+
+
+SET Version 6.1
+
+New Features
+      .  Support for IQ3 v1.4 firmware
+         SET supports the IQ3/XCITE/128 controller, and the XCITE/IO/8DI/8TI I/O module.
+
+      .  Site Topology Applet.
+         New applet that integrates with SET to provide the facility to map an IQ system. It also enables an electrical map to be produced showing the devices in the order they receive an electrical signal as it progresses around the network. 
+
+      .  Time Module can be added to a strategy page
+         For IQ3 controllers with v1.4 firmware of greater the Time module can be added to a strategy page. 
+         This enables links to be made from the strategy to the modules time pulses, and to the daylight saving parameters Solutions.
+
+      .  Solutions
+         SET 6.1 introduces the concept of Solutions which enhances the strategy block concept to enable the entire configuration of a controller to be reused.
+
+      .  Import/Export of Strategy Blocks
+         Strategy blocks and solutions can be exported from once PC and imported onto another.
+
+      .  Printing of Strategy Blocks
+         Strategy blocks can be printed out to provide a paper record of the blocks strategy.
+
+      .  Translation of Labels in Strategy Blocks
+         The labels of sensors, digital inputs, knobs, switches and drivers used in strategy blocks can be translated. When the strategy block is used SET default language is used to determine the language of the labels used.
+
+      .  Translation of Printout Labels
+         The text that appears on the front page, title blocks, and tables that are printed out is now available in the following languages: English, XXXXXXXXXXXXXXXXXXXXXXXX
+
+      .  Printing in Live Values and Live Edit
+         It is now possible to print the current page including the live values in live values and lives edit.
+
+Enhancements
+
+      .  Larger Strategy Library
+         The strategy library supplied with SET has been expanded to include: alarm handling, mathematical calculations, psychometric calculations, unit conversions, and specific strategies required for Trend products
+
+      .  Alarm indication in Live Values and Live Edit
+         Modules in an alarm conditions are shown in yellow in Alarm Live Values and Live Edit.
+
+      .  Quick Edit
+         The Command Line Toolbar now has en extra button  , which enables the Parameters dialogue box to be displayed for any module without having to locate it on a strategy page.
+
+      .  Improvements to Live Edit
+         It is now possible to copy and paste modules, and delete multiple modules during live edit. SET now checks for user rights to make changes when entering live edit, and warns if changes cannot be made.
+
+      .  Index of Strategy Pages
+         An index of the strategy pages can now be included in the project documentation
+
+      .  Associated connectives can be set as undefined connective destination
+
+      .  Improved method of adding and editing exceptions
+         A calendar display has been added to the Timezone dialogue box that enables easy selection of exceptions.
+
+      .  Controller Time Check 
+	 When downloading from the strategy design project view the controller time and date is checked against the PC, errors outside a specified tolerance are flagged to the engineer who then has the option to synchronise.
+
+
+SET Version 6.01
+
+    Import improved for IQ1/2's.
+	The module reference are now displayed when importing a strategy that has no X,Y,Page references.
+	The modules are also autolinked when the unplaced modules dialogue is closed.
+
+    Support for XNC220 v3 controller added.
+    Now supports windows Vista.
+
+
+SET Version 6.0
+
+Before Installing.
+Windows 2000 and XP Users make sure you have administrative rights 
+before installing SET.
+
+
+New Features
+
+    Support for IQ3v1.3
+      •	DHCP
+      •	Network Module
+      •	IQ Lan
+      •	HOA Module
+      •	New User module parameters
+      •	IQ3/XNC support
+
+    IQ3 Time Zone exception editing.
+    Multiple data file creation.
+    Open multiple strategies from the same project.
+    Tip of the day.
+    Device Overview printout.
+    X,Y Co-ordinate display.
+
+Enhancements
+
+    Strategy Block creation, editing and using.
+    Strategy Library keyword filtering.
+    Module search using keyboard.
+    Improved group file transfer.
+    Improved user interface.
+    Full screen toggle.
+    User interface theme option.
+    Import / Export of D&D structure.
+    Identifier and outstation check.
+    Multi label support.
+    Sensor Plot connections in IQ2.
+    Drawing and Table printing defaults.
+    Project menu.
+    Copy and Paste multiple module Labels.
+    Copy Controller strategy to another project.
+    Sensor, Digital Input, Knob and Switch limits extended.

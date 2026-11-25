@@ -1,0 +1,13 @@
+Space Setpoint
+Flow Setpoint
+Occ Setpoint
+Nocc Setpoint
+SP Adjustment
+Frost Protection SP
+Supply Temp SP
+Duct Hi Limit
+Duct Low Limit
+Humidity Setpoint
+Minimum Fresh Air
+Hours Change Over
+Filter Dirty SP

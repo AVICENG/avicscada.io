@@ -1,0 +1,184 @@
+﻿/* Trend control systems, 
+   Date: 11th August, 2011
+	
+Documentation: This css file is used to apply the styling to the timezone editor control. 
+Special property z-index is used position the HTML element. Consider a situation where two Div elements are placed on the same position on the screen at that time which element should be in front and which element should be at behind can be set by z-index properpty.
+
+Here, in the below style popup menu has given maximum z-index value because it must be appear on the top of every element (Even though till now we haven't used it in the code.)
+
+
+.ui-widget-header style is applied for the dialog header - where we want to make its look similar as 963 Server timeperiod editor's dialog. It overrides the default style avaialble at jquery-ui.css file. */
+
+
+
+.timebar-hour-label
+{
+	font-size: 10px;
+	text-align: center;			
+    width:48px;
+    display:block;
+    float:left;
+}
+
+body[dir="rtl"] .timebar-hour-label {float:right;}
+
+.timebar{padding-left:24px;overflow:hidden;zoom:1;clear:left;}
+body[dir="rtl"] .timebar{clear:right;padding-left:0;padding-right:24px}
+
+.timeslot
+{
+    padding: 0;
+    border: solid #999;
+    border-width:1px 1px 1px 0;
+    float:left;
+    width:23px;
+    height:34px;
+       background:lightgray;
+    background-image: -ms-linear-gradient(top, #ffffff, #ccc);
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#ccc));
+    background-image: -webkit-linear-gradient(top, #ffffff, #ccc);
+    background-image: -o-linear-gradient(top, #ffffff, #ccc);
+    background-image: linear-gradient(top, #ffffff, #ccc);
+    background-image: -moz-linear-gradient(top, #ffffff, #ccc);
+}
+body[dir="rtl"] .timeslot{float:right; border-width:1px 0 1px 1px;}
+
+
+.no-cssgradients .timeslot{
+filter: progid:dximagetransform.microsoft.gradient(endColorstr='#cccccc', startColorstr='#ffffff', GradientType=0,enabled=true);
+}
+
+.timeslot-header
+{
+    padding:0;
+    background:url(images/day-period.png);
+    color:#ffffff;
+    width: 48px;
+    height:36px;
+    float:left;
+    text-align:center;
+}
+body[dir="rtl"] .timeslot-header{float:right;}
+
+.newtimeperiod
+{
+    z-index: 20;
+    padding:0;
+    background-image:url(images/left_arrow_normal.jpg);
+    background-repeat:no-repeat;
+    position:absolute;
+    left: 0;
+     top:0px;
+     height:12px;
+     width:12px;
+}
+
+body[dir="rtl"] .newtimeperiod{
+    background-image:url(images/right_arrow_normal.jpg);
+    left:12px;
+}
+
+.newtimeperiod.disabled
+{
+    display: none;
+}
+
+
+
+.newtimeperiodcontainer
+{
+    border:solid #999;
+    border-width:1px 1px 1px 0;
+    width:23px;
+    height:34px;
+    padding:0;
+    background:#fff;
+    float:left;
+    position:relative; 
+    min-width:0;
+    zoom:1;
+}
+body[dir="rtl"] .newtimeperiodcontainer{
+	border-width:1px 0 1px 1px; 
+	position:static
+;}
+
+.timePeriodStyle 
+{    
+    /* z-index:1;  /* (breaks context menu) */  
+    opacity:0.5;
+    filter:alpha(opacity=50);
+    padding:0px, 0px, 0px, 0px;    
+}
+
+.timePeriodResize
+{
+    z-index:20;    
+    cursor:e-resize;
+    position:absolute;  
+    width:12px;
+    height:12px;
+    display:none;
+}
+
+.timePeriodResize-left-normal 
+{
+    background-image:url(images/left_arrow_normal.jpg);
+    left:0;
+    top:0;
+}
+
+.timePeriodResize-right-normal 
+{
+    background-image:url(images/right_arrow_normal.jpg);
+    right:0;
+    bottom:0;
+}
+
+.timePeriodResize-left-hover 
+{ 
+    background-image:url(images/left_arrow_hover.jpg);
+    left:0;
+    top:0;
+}
+
+.timePeriodResize-right-hover 
+{ 
+    background-image:url(images/right_arrow_hover.jpg);
+    right:0;
+    bottom:0;
+}
+
+.timePeriodStyle{
+	height:100%;
+	position:absolute;
+	top:0;
+	background-color: #6464ff;
+}
+
+.timePeriodStyle:focus .timePeriodResize, .focus .timePeriodResize{
+    display:block;
+}
+
+
+
+.dayContainer{
+    position:relative;
+    min-width:648px;
+    width:648px; 
+    height:36px;
+    margin-top: 10px;
+    line-height:36px;
+    clear:left;
+}
+
+body[dir="rtl"] .dayContainer{
+	clear:right;
+}
+
+#dayContainer_0{margin-top:0;}
+.wizard .timeslot{height:20px;}
+.wizard .timeslot-header{height:22px;}
+.wizard .dayContainer{height: 22px;line-height: 22px; }
+.activationTimePlannerContainer{float:left;}
+body[dir="rtl"] .activationTimePlannerContainer{float:right;}

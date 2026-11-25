@@ -1,0 +1,18 @@
+The timeswitch is ON, Click here to change times.
+The timeswitch is OFF, Click here to change times.
+Staff Lift
+Engineers Lift
+Dirty
+Clean
+FIRE !
+ON
+OFF
+on
+off
+Running
+Stopped
+Supply
+Return
+Occupied
+Not occupied
+

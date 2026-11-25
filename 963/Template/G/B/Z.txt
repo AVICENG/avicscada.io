@@ -1,0 +1,4 @@
+BACnet Zone adjustments
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(V),The value,on/off,100
+<XXXX>(Y),The data type,xxxx,0

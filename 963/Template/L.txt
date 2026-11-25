@@ -1,0 +1,4 @@
+Loop adjustments
+<XXXX>(G),Loop gain,+ve = htg,99
+<XXXX>(I),Integral time,xxx,99
+<XXXX>(T),Derivative time,xxx,99

@@ -1,0 +1,9 @@
+Supply Air Flow
+Boiler Lockout
+Pump Flow
+Extract Air Flow
+Fire Condition
+Normal Condition
+Filter Dirty
+Electric Meter
+Gas Meter

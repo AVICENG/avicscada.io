@@ -1,0 +1,225 @@
+﻿body .ui-datepicker
+{
+    width: auto !important;
+}
+
+.ui-datepicker
+{
+    font-size: 0.8em;
+    margin-bottom: 0.5em;
+    line-height: 1em;
+}
+
+.wizard .ui-datepicker
+{
+    font-size: 1em;
+    margin: 0 auto;
+}
+
+.ui-datepicker .ui-state-default
+{
+    cursor: default;
+}
+.ui-datepicker-unselectable .ui-state-default
+{
+    cursor: default;
+}
+
+.datepicker-selectable .ui-state-default
+{
+    cursor: pointer;
+}
+.datepicker-readonly .ui-state-default
+{
+    cursor: default;
+}
+.datepicker-active .ui-state-default
+{
+    cursor: pointer;
+}
+
+/*todo: rtl */
+.ui-datepicker .datepicker-prev-month
+{
+    left: 1.8em;
+}
+.ui-datepicker .datepicker-next-month
+{
+    right: 1.8em;
+}
+
+.ui-datepicker-rtl .datepicker-prev-month
+{
+    left: auto;
+    right: 1.8em;
+}
+.ui-datepicker-rtl .datepicker-next-month
+{
+    right: auto;
+    left: 1.8em;
+}
+.ui-datepicker-rtl .datepicker-prev-month:hover
+{
+    left: auto;
+    right: 1.8em;
+}
+.ui-datepicker-rtl .datepicker-next-month:hover
+{
+    right: auto;
+    left: 1.8em;
+}
+
+.lt-ie8 .ui-datepicker-rtl .ui-datepicker-next span, .lt-ie8 .ui-datepicker-rtl .ui-datepicker-prev span
+{
+    position: static;
+    margin: 0;
+}
+
+
+
+.datepicker-overlap span
+{
+    position: relative;
+}
+.no-generatedcontent .datepicker-overlap span
+{
+    background-image: url(images/overlap.gif);
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+.datepicker-overlap .ui-state-default
+{
+    border-color: #f90;
+}
+.datepicker-overlap span:after
+{
+    content: '';
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 10px;
+    background: #F90;
+    top: -1px;
+    right: -1px;
+    position: absolute;
+    z-index: 1;
+}
+.ui-datepicker-row-break
+{
+    line-height: 0;
+}
+
+
+.wizard .ui-state-active
+{
+    /* hide active state from wizard view */
+    background: #F6F6F6 url(images/ui-bg_glass_100_f6f6f6_1x400.png) 50% 50% repeat-x;
+    color: #1C94C4;
+    border-color: #ccc;
+}
+/* except for showing today's date active state from wizard view */
+.ui-state-highlight, .ui-widget-content .ui-state-highlight, .ui-widget-header .ui-state-highlight
+{
+    border: 1px solid #fed22f;
+    background: #ffe45c url(images/ui-bg_highlight-soft_75_ffe45c_1x100.png) 50% top repeat-x;
+    color: #363636;
+}
+
+.datepicker-active .ui-state-default
+{
+    border-radius: 0;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    -o-border-radius: 0;
+    border-color: red;
+    background: #ffffff url(images/ui-bg_glass_65_ffffff_1x400.png) 50% 50% repeat-x;
+    font-weight: bold;
+    color: red;
+}
+.datepicker-readonly .ui-state-default
+{
+    background-image: none;
+}
+
+.ui-datepicker td span, .ui-datepicker td a
+{
+    padding: 3px;
+}
+.ui-datepicker td span
+{
+    position: relative;
+    min-width: 0;
+}
+.ui-datepicker .datepicker-indicator
+{
+    width: 0;
+    height: 0;
+    padding: 0 !important;
+    font-size: 0;
+    line-height: 0;
+    border: solid;
+    border-width: 9px 0 9px 9px;
+    border-color: transparent transparent transparent white;
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    margin-top: -9px;
+    z-index: 1;
+    zoom: 1;
+}
+
+.ui-datepicker .datepicker-indicator span
+{
+    width: 0;
+    height: 0;
+    display: block;
+    border-width: 9px 0 9px 8px;
+    border-color: transparent transparent transparent red;
+    border-style: solid;
+    position: absolute;
+    top: -9px;
+    left: -10px;
+    padding: 0 !important;
+}
+/*
+
+body[dir="rtl"] .ui-datepicker .datepicker-indicator{
+    border-color:transparent white transparent transparent;
+    border-width: 9px 9px 9px 0;
+}
+body[dir="rtl"] .ui-datepicker .datepicker-indicator span{
+border-width:8px 8px 8px 0;
+    border-color: transparent red transparent transparent;
+}
+*/
+
+@media screen and (min-width: 1200px)
+{
+    .ui-datepicker
+    {
+        font-size: 1em;
+    }
+
+    .ui-datepicker .datepicker-indicator
+    {
+        border-width: 12px 0 12px 10px;
+        margin-top: -12px;
+    }
+
+    .datepicker-indicator span
+    {
+        border-width: 11px 0 11px 9px;
+        top: -11px;
+        left: -11px;
+    }
+    /*
+    body[dir="rtl"] .ui-datepicker .datepicker-indicator{
+        border-color:transparent white transparent transparent;
+        border-width: 12px 10px 12px 0;
+    }
+    body[dir="rtl"] .ui-datepicker .datepicker-indicator span{
+    border-width:11px 9px 11px 0;
+        border-color: transparent red transparent transparent;
+    }
+    */
+}

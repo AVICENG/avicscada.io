@@ -1,0 +1,24 @@
+[MENUITEM]
+Condition=<DEVICE_PARAM ExecutiveIP> EQUAL_TO 160.221.9.113
+Title=<TRANSLATION 30856>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>,0,0,0,0,Novar Logic Executive
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> LESS_THAN 0
+Title=<TRANSLATION 30857>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>,0,0,0,0,Novar Logic Executive
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> GREATER_THAN -1
+Title=<TRANSLATION 30858>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/loadschd.htm?PARM2=<DEVICE_PARAM LoadNumber>,0,0,0,0,Schedules for Load <DEVICE_PARAM LoadNumber>
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> GREATER_THAN -1
+Title=<TRANSLATION 30859>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/novar.cgi?TYPE=DGN&PARM1=COM_STAT,0,0,300,200,Diagnostics
+
+[MENUITEM]
+Condition=<DEVICE_PARAM LoadNumber> GREATER_THAN -1
+Title=<TRANSLATION 30860>
+Action=BROWSER_POPUP http://<DEVICE_PARAM ExecutiveIP>/novar.cgi?TYPE=DGN&PARM1=COM_STAT,0,0,300,200,Diagnostics

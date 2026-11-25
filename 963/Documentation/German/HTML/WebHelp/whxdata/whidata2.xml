@@ -1,0 +1,190 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="Laden" >
+  <topic name="Eine Trendkurvendefinition laden" url="Using_963_From_a_Web_Browser_Load_a_Graph_Definition.htm" />
+  <key name="Trendkurvendefinition" >
+    <topic name="Eine Trendkurvendefinition laden" url="Using_963_From_a_Web_Browser_Load_a_Graph_Definition.htm" />
+  </key>
+</key>
+<key name="Leitstation 963" >
+  <topic name="Was ist die Leitstation 963?" url="About_963_About_963.htm" />
+</key>
+<key name="Löschen" >
+  <topic name="Eine Ausnahme löschen" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  <key name="Ausnahmen" >
+    <topic name="Eine Ausnahme löschen" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  </key>
+  <key name="Vorlagen" >
+    <topic name="Eine Vorlage löschen" url="Using_963_From_a_Web_Browser_Delete_a_Template.htm" />
+  </key>
+</key>
+<key name="Raster" >
+  <topic name="Ein Raster auf einer Trendkurve anzeigen" url="Using_963_Display_a_Grid_on_a_Graph.htm" />
+  <key name="Auf einer Trendkurve" >
+    <topic name="Ein Raster auf einer Trendkurve anzeigen" url="Using_963_Display_a_Grid_on_a_Graph.htm" />
+  </key>
+</key>
+<key name="Seite" >
+  <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  <key name="Anzeigen" >
+    <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+    <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  </key>
+  <key name="Wechseln auf" >
+    <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  </key>
+  <key name="Wechseln zu" >
+    <topic name="Ein Anlagenbild anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+</key>
+<key name="Seitenanzeige (Anlagenbilder)" >
+  <topic name="Client-Seitenanzeige (Anlagenbilder)" url="About_963_Schematic_Page_Client_Display.htm" />
+</key>
+<key name="Serverstatus anzeigen" >
+  <topic name="Serverstatus anzeigen" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+  <key name="Anzeigen" >
+    <topic name="Serverstatus anzeigen" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+  </key>
+</key>
+<key name="Sondertagvorlage" >
+  <topic name="Eine Sondertagvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Special_Day_Template.htm" />
+  <key name="Hinzufügen" >
+    <topic name="Eine Sondertagvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Special_Day_Template.htm" />
+  </key>
+</key>
+<key name="Sperren" >
+  <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Alarmaktionen" >
+    <topic name="Alarmaktionen ein-/ausschalten" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Technischer Kundendienst" >
+  <topic name="Kontaktadresse von Trend" url="963_Manual_Contacting_Trend.htm" />
+</key>
+<key name="Trendkurve" >
+  <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  <key name="Anzeigen" >
+    <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+    <topic name="Eine Trendkurve mit kompaktem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+    <topic name="Eine Trendkurve mit präzisem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Definition" >
+    <topic name="Eine Trendkurvendefinition laden" url="Using_963_From_a_Web_Browser_Load_a_Graph_Definition.htm" />
+  </key>
+  <key name="Dynamisch darstellen" >
+    <topic name="Eine dynamische Trendkurve anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  </key>
+  <key name="Ein Raster anzeigen" >
+    <topic name="Ein Raster auf einer Trendkurve anzeigen" url="Using_963_Display_a_Grid_on_a_Graph.htm" />
+  </key>
+  <key name="Kompaktes Datenformat" >
+    <topic name="Eine Trendkurve mit kompaktem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+  </key>
+  <key name="Koordinaten anzeigen" >
+    <topic name="Koordinaten eines Werts anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Points_Co-ordinates.htm" />
+  </key>
+  <key name="Laden einer Trendkurvendefinition" >
+    <topic name="Eine Trendkurvendefinition laden" url="Using_963_From_a_Web_Browser_Load_a_Graph_Definition.htm" />
+  </key>
+  <key name="Präzises Datenformat" >
+    <topic name="Eine Trendkurve mit präzisem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Vergrößern" >
+    <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Verkleinern" >
+    <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Wiedergeben" >
+    <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+</key>
+<key name="Trendkurven mit präzisem Datenformat" >
+  <topic name="Eine Trendkurve mit präzisem Datenformat anzeigen" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+</key>
+<key name="Verbindung herstellen" >
+  <topic name="Verbindung zum 963 Server herstellen" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  <key name="Zu 963 Server" >
+    <topic name="Verbindung zum 963 Server herstellen" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="Wiedergeben" >
+  <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  <key name="Trendkurve" >
+    <topic name="Eine aufgezeichnete Trendkurve wiedergeben" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+</key>
+<key name="Wochenprogrammvorlage" >
+  <topic name="Eine Wochenprogrammvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Week_Set_Template.htm" />
+  <key name="Hinzufügen" >
+    <topic name="Eine Wochenprogrammvorlage hinzufügen" url="Using_963_From_a_Web_Browser_Add_a_Week_Set_Template.htm" />
+  </key>
+</key>
+<key name="Zeitplaner" >
+  <topic name="Zeitplaner" url="About_963_Diary_Diary_Display.htm" />
+  <key name="Ausnahmen anzeigen" >
+    <topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Ausnahmen bearbeiten" >
+    <topic name="Eine Ausnahme bearbeiten" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+  </key>
+  <key name="Ausnahmen löschen" >
+    <topic name="Eine Ausnahme löschen" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  </key>
+  <key name="Belegungszeiten ändern" >
+    <topic name="Eine Standardwoche ändern" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Zeiten anzeigen" >
+    <topic name="Ausnahmen anzeigen" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+    <topic name="Standardwoche anzeigen" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Zeitzone einstellen" >
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Zeitzone" >
+  <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  <key name="Einstellen" >
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Zoom" >
+  <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  <key name="Größer" >
+    <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Kleiner" >
+    <topic name="Eine Trendkurve vergrößern/verkleinern" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+<key name="Zugriff" >
+  <topic name="Anmelden" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  <key name="963 Server" >
+    <topic name="Anmelden" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+    <topic name="Die 963 über einen Client bedienen" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client_.htm" />
+    <topic name="Grundfunktionen" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+    <topic name="Verbindung zum 963 Server herstellen" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="Ändern" >
+  <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  <key name="Analoge Werte" >
+    <topic name="Einen analogen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Belegungszeiten" >
+    <topic name="Belegungszeiten einstellen" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Eine Standardwoche ändern" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Digitale Werte" >
+    <topic name="Einen digitalen Wert einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+  <key name="Vorlage" >
+    <topic name="Eine Vorlage bearbeiten" url="Using_963_From_a_Web_Browser_Edit_a_Template.htm" />
+  </key>
+  <key name="Zeitzonen" >
+    <topic name="Eine Zeitzone einstellen" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+</key>
+
+</indexdata>

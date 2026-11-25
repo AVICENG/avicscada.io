@@ -1,0 +1,3 @@
+[LICENCEDIALOG]
+DialogOpened=1
+Licence963Clicked=1

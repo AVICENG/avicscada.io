@@ -1,0 +1,70 @@
+Software Licence Agreement
+
+This Software Licence Agreement is a legal agreement between you (hereinafter referred to as "You" or the "Licensee") and Trend Control Systems Limited of P.O. Box 34, Horsham West Sussex, RH12 2YF and its subsidiaries, agents, successors and assigns ("Trend") for use of 963 and associated software components installed with 963 (hereinafter the "Software").  If Licensee does not agree with these terms: 
+(a)	Do not install, download, copy, access, or otherwise use the Software; and 
+(b)	Return the complete unused Software and all accompanying items within thirty (30) days after purchase for a full refund of any amounts paid for the returned Software.  Installing, downloading, copying, accessing, or otherwise using the Software indicates that Licensee has read and understands this Software License Agreement, and that Licensee agrees to be bound by all these terms and conditions.  License represents that it is authorized to enter into this agreement.  
+
+This Licence is non-exclusive, non-transferable and entitles the Licensee to:
+(a)	Use one copy of the Software;
+(b)	Use the Software on one central processing unit (CPU) of the system. A separate Licence fee is required for each CPU upon which the Licensee wishes to use the Software;
+(c)	Use the Software strictly in accordance with the provisions of Clause 2 of this Licence;
+(d)	Receive the benefit of the warranty specified herein;
+
+1. 	Acceptance of this Licence
+The terms and conditions of this Licence are deemed to be accepted by the parties as follows:
+(a)	By Trend upon despatch/delivery by Trend of this package to the Licensee; and
+(b)	By the Licensee installing, downloading, copying, accessing, or otherwise using the Software.
+
+2.	Use of the Software.
+For the purposes of this Licence "Use" shall mean and include:
+(a)	Utilising the whole or any part of the Software by loading, running or transmitting the same into or within the system for the processing of the system instructions or statements contained in such Software;
+(b)	copying the whole of the Software which is in machine readable form into a machine readable copy for Use by the Licensee solely on the system for back-up provided that no more than two (2) copies will be in existence under any Licence at any one time without the prior written consent of Trend;
+(c)	Storing the whole or any part of the Software on the system or other storage unit or disk;
+(d)	Utilising (but not copying) the instructional and/or operational manuals relating to the Software.
+
+3. 	Licence Fee
+The licence fee is payable within the number of days specified or referred to in the invoice supplied to the Licensee by Trend.
+
+4. 	Software Enhancement, Support and Other Services
+Software support is not covered by this Licence and Trend shall charge for support given to the Licensee (other than warranty support) and for other software services requested by the Licensee which are not specifically covered by this Licence.
+
+5. 	Licensee’s Undertakings:
+The Licensee undertakes:
+(a)	Not to copy (other than for normal System operation), reproduce, translate, adapt, vary or modify the Software or to communicate the same to any third party without Trend’s prior written consent.
+(b)	To maintain accurate and up-to-date records of the number and location of all copies of the Software and to Trend the right, upon reasonable notice, to audit Licensee use of the Software for purposes of evaluating compliance with this Licence. 
+(c)	To supervise and control the Use of the Software in accordance with the terms of this Licence.
+(d)	To ensure that its employees, agents and other parties who will use the Software are notified of this Licence and the terms hereof prior to such employee, agent or party using the same.
+(e)	To reproduce and include the copyright notice of Trend or such other party as may be specified in or on the Software on all and any copies, whether in whole or in part, in any form, including partial copies of modifications of the Software made herein.
+(f)	not to provide or otherwise make available the Software in whole or in part in any  form to any person other than the Licensee’s employees or as specified in (d) above without the prior written consent of Trend.
+(g)	within one month of the date of termination or discontinuance of this Licence for whatever reason, to return or destroy (as Trend shall instruct) the  Software and all copies, in whole and in part, in any form including partial copies of modifications of the Software received from Trend or made in connection with this Licence, and all documentation relating thereto and to furnish Trend with a certificate, certifying the same has been done, unless the Licensee has obtained Trend’s prior written authorisation to retain one copy for archive purposes only.
+(h) 	To comply with all local and foreign laws, whether in the form of statutes, regulations, rules, standards, judicial or administrative decisions.
+
+6. 	Warranty 
+Trend makes no warranty with respect to the Software other than to guarantee the Software against faulty materials or workmanship for 90 days ("Warranty Period") from the date of this Licence, provided the Software is immediately backed up.  If during the Warranty Period, License notifies Trend of any non-compliance with the Warranty, Trend will, in its sole option and discretion: (a) use commercially reasonable efforts to correct any verifiable non-compliance of the Software; or (b) replace any non-conforming Software; or (c) terminate this Licence in whole or in part and refund the amounts paid for the non-conforming Software.
+
+7. 	Trend’s Liability
+(a)	Trend shall not be liable to the Licensee for any loss or damage whatsoever or howsoever caused arising directly or indirectly in connection with this Licence, the Software, and its use (whether or not as defined in this Licence) or otherwise, except to the extent that such liability may not be lawfully excluded.
+(b)	Not withstanding the generality of (a) above, Trend expressly excludes liability for indirect, special, incidental or consequential loss or damage which may arise in respect of the Software, its Use, (whether or not as defined in this Licence), the System or in respect of other equipment or property, or for loss of profit, business, revenue, goodwill or anticipated savings.
+(c)	In the event that any exclusion or other provision contained in this Licence shall be held to be invalid for any reason and Trend becomes Liable for loss or damage that could otherwise have been lawfully limited such liability shall be limited to the purchase price of the software.
+
+8. 	Patents, Trademarks, Copyright and Intellectual Property Rights
+The Licensee acknowledges that any and all of the trademarks, trade names, copyrights, patents and other intellectual property rights used or embodied in or in connection with the Software shall be and remain the sole property of Trend.
+
+9. 	Confidential Information
+(a)	All information, data, drawings, specifications, documentation, Software listings, source or object code which Trend may have imparted and may from time to time impart to the Licensee, relating to the Software, is proprietary and confidential. The Licensee hereby agrees that it shall use the same solely in accordance with the provisions of this Licence and that it shall not at any time during or after the expiry or termination of this Licence, disclose the same, whether directly or indirectly, to any third party without Trend’s prior written consent.
+(b)	The Licensee further agrees that it shall not itself or through any subsidiary, agent or third party modify, vary, enhance, copy, sell, lease license, sub-license or otherwise deal with the Software or any part or parts or variations, modifications, copies, releases, versions, or enhancements thereof or have any software or other program written or developed for itself based on any confidential information supplied to it by Trend.
+
+10. 	Termination 
+(a)	In addition to provisions for termination as herein provided, Trend may by notice in writing to the Licensee terminate this Licence if any of the following events shall occur, namely:
+(i)	If the Licensee is in breach of any term, condition or provision of this Licence or required by Law.
+(ii)	If the Licensee, being a body corporate, shall present a petition or have a petition presented by a creditor for its winding up, or shall convene a meeting to pass a resolution for voluntary winding up, or shall enter into any liquidation (other than for the purposes of a bona fide reconstruction or amalgamation); shall call a meeting of its creditors, or shall have receiver or administrator or administrative receiver of all or any of its undertakings or assets appointed, or shall be deemed to be unable to pay its debts.
+(iii)	If the Licensee, being a firm or partnership, shall be dissolved or in any case shall commit any act of bankruptcy or have a receiving order made against it or shall make or negotiate for many composition or arrangement with or assignment for the benefit of its creditors.
+
+11. 	Severability
+In the event that any of these terms and conditions or provisions shall be determined invalid, unlawful or unenforceable to any extent, such term, condition or provision shall be severed from the remaining terms, conditions and provisions which shall continue to be valid to the fullest extent permitted by law.
+
+12. 	Law
+The parties hereby agree that the Licence concluded between them and constituted on these terms and conditions shall be construed in accordance with the laws of England.
+
+13. 	Assignment
+Licensee may not sublicense, assign, or transfer this Licence or the Software.  Any attempt to sublicense, assign, or transfer any of the rights, duties or obligations hereunder is void.

@@ -1,0 +1,4 @@
+BACnet Digital inputs adjustments
+<XXXX>($),The label, please edit direct from device view,101
+<XXXX>(S),Current state,O or I, 99
+<XXXX>(!),BACnet Current alarm status (2=high;3=low;4=outl;5=read),xxxx,99

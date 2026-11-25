@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<tocdata>
+<book name="Guide D'Utilisateur De 963 Web" >
+  <book name="A propos de ce manuel" >
+    <item name="A propos de ce manuel" url="about_this_manual.htm" />
+    <item name="Conventions applicables à ce manuel" url="conventions_used_in_this_manual.htm" />
+    <item name="Pour contacter Trend" url="contacting_trend.htm" />
+  </book>
+  <item name="Qu'est-ce que le 963 ?" url="about_963.htm" />
+  <book name="Les écrans d'affichage du poste client du 963" >
+    <item name="Les écrans d'affichage du poste client du 963" url="963_client_displays.htm" />
+    <item name="Page par défaut du 963 Server" url="963_server_default_page.htm" />
+    <item name="Page de démarrage par défaut du 963 Server" url="963_server_start_up_page.htm" />
+    <item name="Alarmes" url="alarm_viewer.htm" />
+    <item name="Configuration" url="configuration_mode_display.htm" />
+    <item name="Appareils" url="device_viewer.htm" />
+    <item name="Calendrier" url="diary_diary_display.htm" />
+    <item name="Pages graphiques du poste client" url="schematic_page_client_display.htm" />
+  </book>
+  <book name="Utilisation du 963 à partir d'un poste client" >
+    <item name="Utilisation du 963 à partir d'un poste client" url="using_963_from_a_client.htm" />
+    <book name="Utilisation de base" >
+      <item name="Utilisation de base" url="basic_use.htm" />
+      <item name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+      <item name="Ouverture de session" url="web_browser_log_in.htm" />
+      <item name="Fermeture de session" url="web_browser_log_off.htm" />
+    </book>
+    <item name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+    <book name="Ajustez Les Valeurs" >
+      <item name="Réglage d'une valeur analogique" url="adjust_an_analogue.htm" />
+      <item name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+    </book>
+    <book name="Alarmes" >
+      <book name="Visualisation des alarmes" >
+        <item name="Visualisation des alarmes" url="view_alarms.htm" />
+        <item name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+        <item name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+        <item name="Définition l'affichage des colonnes" url="specify_what_columns_are_displayed.htm" />
+        <item name="Masquage des panneaux d'alarmes" url="hide_alarm_panels.htm" />
+      </book>
+      <book name="Action des alarmes" >
+        <item name="Action des alarmes" url="action_alarms.htm" />
+        <item name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+      </book>
+      <item name="Panneau d'alarmes muet" url="mute_an_alarm_panel.htm" />
+      <item name="Lancement d'une action d'alarme manuelle" url="run_a_manual_alarm_action.htm" />
+      <item name="Lancement manuel d'actions d'alarmes" url="run_alarm_actions_manually.htm" />
+      <item name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+    </book>
+    <book name="Graphiques D'Affichage" >
+      <item name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+      <item name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+      <item name="ffichage d'un diagramme" url="display_a_chart.htm" />
+      <item name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+      <item name="Affichage des données du graphique" url="display_graph_data.htm" />
+      <item name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+      <book name="Graphiques De Formatage" >
+        <item name="Affichage d'une grille sur un graphique" url="display_a_grid_on_a_graph.htm" />
+        <item name="Affichage des coordonnées d'un point" url="display_a_points_co-ordinates.htm" />
+      </book>
+      <item name="Affichage des données enregistrées" url="display_logged_data.htm" />
+    </book>
+    <book name="Temps De Métier" >
+      <book name="Temps De Métier De Vue" >
+        <item name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+        <item name="Visualisation des exceptions" url="view_exceptions.htm" />
+      </book>
+      <book name="Réglage des temps d'occupation" >
+        <item name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+        <book name="Ajout d'une exception" >
+          <item name="Ajout d'une exception" url="add_an_exception.htm" />
+          <item name="Edition d'une exception" url="edit_an_exception.htm" />
+          <item name="Suppression d'une exception" url="delete_an_exception.htm" />
+        </book>
+        <item name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+        <item name="Réglage d'une zone horaire" url="adjust_a_timezone.htm" />
+      </book>
+    </book>
+    <item name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+    <item name="Affichage du système Trend" url="display_the_iq_system.htm" />
+    <item name="Affichage de la page de démarrage du 963" url="display_the_963_s_startup_page.htm" />
+    <item name="Configuration des contrôleurs" url="configure_controllers.htm" />
+    <book name="Création de modèles d'horaires exceptionnels" >
+      <item name="Création de modèles d'horaires exceptionnels" url="setup_exception_templates.htm" />
+      <item name="Ajout d'un modèle de configuration des semaines" url="add_a_week_set_template.htm" />
+      <item name="Ajout d'un modèle de jour spécia" url="add_a_special_day_template.htm" />
+      <item name="Suppression d'un modèle" url="delete_a_template.htm" />
+      <item name="Edition d'un modèle" url="edit_a_template.htm" />
+    </book>
+    <item name="Visualisation de l'état du serveur" url="view_server_status.htm" />
+  </book>
+  <item name="Messages d'erreur" url="error_messages.htm" />
+</book>
+
+</tocdata>

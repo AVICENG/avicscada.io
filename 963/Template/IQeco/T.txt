@@ -1,0 +1,17 @@
+Iqeco Time Module Parameters
+<XXXX>T(H),Hours - The current hour value of an outstation time,Integer (0-23),90
+<XXXX>T(N),Minutes - The current minute value of an outstation time,Integer (0-59),90
+<XXXX>T(C),Seconds - seconds part of alarm occured,Integer,90
+<XXXX>T(D),Day of Month - The current Day of the month value of an outstation time,Integer (0-31),90
+<XXXX>T(M),Month - The current month of the year value of an outstation time,Integer (0-12),90
+<XXXX>T(Y),Year - The current year value of an outstation time,Integer (0-99),90
+<XXXX>T(m),Minutes since Midnight,Float,90
+<XXXX>T(k),1 Minute Pulse,Boolean,90
+<XXXX>T(l),5 Minute Pulse,Boolean,90
+<XXXX>T(n),10 Minute Pulse,Boolean,90
+<XXXX>T(o),15 Minute Pulse,Boolean,90
+<XXXX>T(a),20 Minute Pulse,Boolean,90
+<XXXX>T(q),30 Minute Pulse,Boolean,90
+<XXXX>T(r),1 Hour Pulse,Boolean,90
+<XXXX>T(s),6 Hour Pulse,Boolean,90
+<XXXX>T(t),24 Hour Pulse,Boolean,90

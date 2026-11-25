@@ -1,0 +1,692 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="963" >
+  <topic name="Ouverture de session" url="web_browser_log_in.htm" />
+  <topic name="Qu'est-ce que le 963 ?" url="about_963.htm" />
+  <key name="accès" >
+    <topic name="Ouverture de session" url="web_browser_log_in.htm" />
+  </key>
+  <key name="affichages" >
+    <topic name="Les écrans d'affichage du poste client du 963" url="963_client_displays.htm" />
+  </key>
+</key>
+<key name="963 Server" >
+  <topic name="Page de démarrage par défaut du 963 Server" url="963_server_start_up_page.htm" />
+  <topic name="Utilisation du 963 à partir dun poste client" url="using_963_from_a_client.htm" />
+  <key name="connecter" >
+    <topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+  </key>
+  <key name="page de démarrage" >
+    <topic name="Page de démarrage par défaut du 963 Server" url="963_server_start_up_page.htm" />
+  </key>
+  <key name="page par défaut" >
+    <topic name="Page par défaut du 963 Server" url="963_server_default_page.htm" />
+  </key>
+</key>
+<key name="963 utilisation" >
+  <topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+</key>
+<key name="A propos" >
+  <topic name="A propos de ce manuel" url="about_this_manual.htm" />
+  <key name="ce manuel" >
+    <topic name="A propos de ce manuel" url="about_this_manual.htm" />
+  </key>
+</key>
+<key name="accès" >
+  <topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+  <topic name="Ouverture de session" url="web_browser_log_in.htm" />
+  <key name="963 Server" >
+    <topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+    <topic name="Ouverture de session" url="web_browser_log_in.htm" />
+    <topic name="Utilisation de base" url="basic_use.htm" />
+    <topic name="Utilisation du 963 à partir dun poste client" url="using_963_from_a_client.htm" />
+  </key>
+</key>
+<key name="Accès au 963 dun poste client" >
+  <topic name="Messages derreur" url="error_messages.htm" />
+  <key name="messages derreur" >
+    <topic name="Messages derreur" url="error_messages.htm" />
+  </key>
+</key>
+<key name="accès client au 963" >
+  <topic name="Utilisation de base" url="basic_use.htm" />
+  <topic name="Utilisation du 963 à partir dun poste client" url="using_963_from_a_client.htm" />
+</key>
+<key name="action des alarmes" >
+  <topic name="Action des alarmes" url="action_alarms.htm" />
+  <topic name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+  <key name="à partir d'un panneau d'alarmes" >
+    <topic name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+  </key>
+</key>
+<key name="Actions dalarme" >
+  <topic name="Lancement manuel dactions dalarmes" url="run_alarm_actions_manually.htm" />
+  <key name="lancement manuel" >
+    <topic name="Lancement manuel dactions dalarmes" url="run_alarm_actions_manually.htm" />
+  </key>
+</key>
+<key name="Actions dalarmes" >
+  <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  <key name="mise en route/arrêt" >
+    <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  </key>
+</key>
+<key name="activation" >
+  <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  <key name="actions dalarmes" >
+    <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  </key>
+</key>
+<key name="affichage" >
+  <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+  <topic name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+  <key name="alarmes" >
+    <topic name="Alarmes" url="alarm_viewer.htm" />
+    <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+    <topic name="Visualisation des alarmes" url="view_alarms.htm" />
+    <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  </key>
+  <key name="appareils" >
+    <topic name="Affichage du système Trend" url="display_the_iq_system.htm" />
+  </key>
+  <key name="coordonnées dun point" >
+    <topic name="Affichage des coordonnées dun point" url="display_a_points_co-ordinates.htm" />
+  </key>
+  <key name="données du graphique" >
+    <topic name="Affichage des données du graphique" url="display_graph_data.htm" />
+  </key>
+  <key name="données enregistrées" >
+    <topic name="Affichage des données enregistrées" url="display_logged_data.htm" />
+    <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  </key>
+  <key name="exceptions" >
+    <topic name="Visualisation des exceptions" url="view_exceptions.htm" />
+  </key>
+  <key name="graphique compact" >
+    <topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+  </key>
+  <key name="graphique enregistré" >
+    <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  </key>
+  <key name="graphiques" >
+    <topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+    <topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+    <topic name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+    <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  </key>
+  <key name="grille sur un graphique" >
+    <topic name="Affichage d'une grille sur un graphique" url="display_a_grid_on_a_graph.htm" />
+  </key>
+  <key name="page de démarrage du 963" >
+    <topic name="Affichage de la page de démarrage du 963" url="display_the_963_s_startup_page.htm" />
+  </key>
+  <key name="pages graphiques" >
+    <topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+    <topic name="Utilisation de base" url="basic_use.htm" />
+  </key>
+  <key name="temps d'occupation" >
+    <topic name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+  </key>
+  <key name="temps doccupation" >
+    <topic name="Visualisation des exceptions" url="view_exceptions.htm" />
+  </key>
+  <key name="zoom arrière" >
+    <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  </key>
+  <key name="zoom avant" >
+    <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  </key>
+</key>
+<key name="affichage client" >
+  <topic name="Calendrier" url="diary_diary_display.htm" />
+  <key name="calendrier du 963" >
+    <topic name="Calendrier" url="diary_diary_display.htm" />
+  </key>
+</key>
+<key name="affichages client" >
+  <topic name="Page par défaut du 963 Server" url="963_server_default_page.htm" />
+  <topic name="Pages graphiques du poste client" url="schematic_page_client_display.htm" />
+  <key name="963 par défaut" >
+    <topic name="Page par défaut du 963 Server" url="963_server_default_page.htm" />
+  </key>
+  <key name="configuration du 963" >
+    <topic name="Configuration" url="configuration_mode_display.htm" />
+  </key>
+  <key name="page de démarrage du 963" >
+    <topic name="Page de démarrage par défaut du 963 Server" url="963_server_start_up_page.htm" />
+  </key>
+  <key name="pages graphiques du 963" >
+    <topic name="Pages graphiques du poste client" url="schematic_page_client_display.htm" />
+  </key>
+</key>
+<key name="Ajou" >
+  <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  <key name="exceptions" >
+    <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  </key>
+</key>
+<key name="ajout" >
+  <topic name="Ajout d'un modèle de jour spécial" url="add_a_special_day_template.htm" />
+  <key name="modèle de jour spécial" >
+    <topic name="Ajout d'un modèle de jour spécial" url="add_a_special_day_template.htm" />
+  </key>
+  <key name="modèles de configuration des semaines" >
+    <topic name="Ajout d'un modèle de configuration des semaines" url="add_a_week_set_template.htm" />
+  </key>
+</key>
+<key name="alarme" >
+  <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+  <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  <key name="visualisation" >
+    <topic name="Alarmes" url="alarm_viewer.htm" />
+    <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+    <topic name="Visualisation des alarmes" url="view_alarms.htm" />
+    <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  </key>
+  <key name="visualisation de l'historique" >
+    <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+  </key>
+  <key name="écran des alarmes" >
+    <topic name="Alarmes" url="alarm_viewer.htm" />
+  </key>
+</key>
+<key name="Alarmes" >
+  <topic name="Action des alarmes" url="action_alarms.htm" />
+  <key name="activation" >
+    <topic name="Action des alarmes" url="action_alarms.htm" />
+    <topic name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+  </key>
+</key>
+<key name="alarmes entrantes" >
+  <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  <key name="effacer" >
+    <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  </key>
+</key>
+<key name="assistance technique" >
+  <topic name="Pour contacter Trend" url="contacting_trend.htm" />
+</key>
+<key name="atteindre une page" >
+  <topic name="Utilisation de base" url="basic_use.htm" />
+</key>
+<key name="calendrier" >
+  <topic name="Calendrier" url="diary_diary_display.htm" />
+  <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  <key name="affichages client" >
+    <topic name="Calendrier" url="diary_diary_display.htm" />
+  </key>
+  <key name="modification des temps d'occupation" >
+    <topic name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+  </key>
+  <key name="réglage dune zone horaire" >
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+  <key name="suppression d'exceptions" >
+    <topic name="Suppression d'une exception" url="delete_an_exception.htm" />
+  </key>
+  <key name="visualisation des exceptions" >
+    <topic name="Visualisation des exceptions" url="view_exceptions.htm" />
+  </key>
+  <key name="visualisation des horaires" >
+    <topic name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+  </key>
+  <key name="visualiser les horaires" >
+    <topic name="Visualisation des exceptions" url="view_exceptions.htm" />
+  </key>
+  <key name="édition d'exceptions" >
+    <topic name="Edition d'une exception" url="edit_an_exception.htm" />
+  </key>
+</key>
+<key name="chargement" >
+  <topic name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+  <key name="définition de graphique" >
+    <topic name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+  </key>
+</key>
+<key name="configuration" >
+  <topic name="Configuration" url="configuration_mode_display.htm" />
+  <topic name="Configuration des contrôleurs" url="configure_controllers.htm" />
+  <key name="configuration du 963" >
+    <topic name="Configuration" url="configuration_mode_display.htm" />
+  </key>
+  <key name="contrôleurs" >
+    <topic name="Configuration des contrôleurs" url="configure_controllers.htm" />
+  </key>
+  <key name="modèle de jour spécial" >
+    <topic name="Ajout d'un modèle de jour spécial" url="add_a_special_day_template.htm" />
+  </key>
+  <key name="modèles d'exceptions" >
+    <topic name="Ajout d'un modèle de configuration des semaines" url="add_a_week_set_template.htm" />
+  </key>
+</key>
+<key name="connexion" >
+  <topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+  <key name="au 963 Server" >
+    <topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+  </key>
+</key>
+<key name="contrôleur" >
+  <topic name="Configuration" url="configuration_mode_display.htm" />
+  <key name="configuration" >
+    <topic name="Configuration" url="configuration_mode_display.htm" />
+    <topic name="Configuration des contrôleurs" url="configure_controllers.htm" />
+  </key>
+</key>
+<key name="Conventions applicables à ce manuel" >
+  <topic name="Conventions applicables à ce manuel" url="conventions_used_in_this_manual.htm" />
+</key>
+<key name="Création" >
+  <topic name="Création de modèles d'horaires exceptionnels" url="setup_exception_templates.htm" />
+  <key name="modèles d'horaires exceptionnels" >
+    <topic name="Création de modèles d'horaires exceptionnels" url="setup_exception_templates.htm" />
+  </key>
+</key>
+<key name="diagramme" >
+  <topic name="Affichage d'un diagramme" url="display_a_chart.htm" />
+  <key name="affichage" >
+    <topic name="Affichage d'un diagramme" url="display_a_chart.htm" />
+  </key>
+  <key name="affichage des coordonnées" >
+    <topic name="Affichage des coordonnées dun point" url="display_a_points_co-ordinates.htm" />
+  </key>
+</key>
+<key name="Dr Technicare" >
+  <topic name="Pour contacter Trend" url="contacting_trend.htm" />
+</key>
+<key name="déconnexion" >
+  <topic name="Fermeture de session" url="web_browser_log_off.htm" />
+</key>
+<key name="Définition" >
+  <topic name="Définition laffichage des colonnes" url="specify_what_columns_are_displayed.htm" />
+  <key name="affichage des colonnes" >
+    <topic name="Définition laffichage des colonnes" url="specify_what_columns_are_displayed.htm" />
+  </key>
+</key>
+<key name="désactivation" >
+  <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  <key name="actions dalarmes" >
+    <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  </key>
+</key>
+<key name="Ecrans poste client" >
+  <topic name="Les écrans d'affichage du poste client du 963" url="963_client_displays.htm" />
+</key>
+<key name="effacer les alarmes entrantes" >
+  <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+</key>
+<key name="exceptions" >
+  <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  <topic name="Suppression d'une exception" url="delete_an_exception.htm" />
+  <key name="ajout" >
+    <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  </key>
+  <key name="suppression" >
+    <topic name="Suppression d'une exception" url="delete_an_exception.htm" />
+  </key>
+  <key name="visualisation" >
+    <topic name="Visualisation des exceptions" url="view_exceptions.htm" />
+  </key>
+  <key name="édition" >
+    <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+    <topic name="Edition d'une exception" url="edit_an_exception.htm" />
+  </key>
+</key>
+<key name="graphique" >
+  <topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+  <topic name="Affichage des coordonnées dun point" url="display_a_points_co-ordinates.htm" />
+  <key name="affichage" >
+    <topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+    <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  </key>
+  <key name="affichage d'une grille" >
+    <topic name="Affichage d'une grille sur un graphique" url="display_a_grid_on_a_graph.htm" />
+  </key>
+  <key name="affichage des coordonnées" >
+    <topic name="Affichage des coordonnées dun point" url="display_a_points_co-ordinates.htm" />
+  </key>
+  <key name="chargement d'une définition de graphique" >
+    <topic name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+  </key>
+  <key name="compact" >
+    <topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+  </key>
+  <key name="de précision" >
+    <topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+  </key>
+  <key name="diagramme" >
+    <topic name="Affichage d'un diagramme" url="display_a_chart.htm" />
+  </key>
+  <key name="définition" >
+    <topic name="Chargement d'une définition de graphique" url="load_a_graph_definition.htm" />
+  </key>
+  <key name="récupération" >
+    <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  </key>
+  <key name="zoom arrière" >
+    <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  </key>
+  <key name="zoom avant" >
+    <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  </key>
+</key>
+<key name="graphiques" >
+  <topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+  <key name="affichage" >
+    <topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+  </key>
+</key>
+<key name="graphiques de précision" >
+  <topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+</key>
+<key name="grille" >
+  <topic name="Affichage d'une grille sur un graphique" url="display_a_grid_on_a_graph.htm" />
+  <key name="sur un graphique" >
+    <topic name="Affichage d'une grille sur un graphique" url="display_a_grid_on_a_graph.htm" />
+  </key>
+</key>
+<key name="lancement" >
+  <topic name="Lancement d'une action d'alarme manuelle" url="run_a_manual_alarm_action.htm" />
+  <key name="action d'alarme manuelle" >
+    <topic name="Lancement d'une action d'alarme manuelle" url="run_a_manual_alarm_action.htm" />
+  </key>
+  <key name="action du 963" >
+    <topic name="Lancement d'une action d'alarme manuelle" url="run_a_manual_alarm_action.htm" />
+  </key>
+  <key name="actions dalarmes manuelles" >
+    <topic name="Lancement manuel dactions dalarmes" url="run_alarm_actions_manually.htm" />
+  </key>
+</key>
+<key name="Masquage" >
+  <topic name="Masquage des panneaux d'alarmes" url="hide_alarm_panels.htm" />
+  <key name="panneaux d'alarmes" >
+    <topic name="Masquage des panneaux d'alarmes" url="hide_alarm_panels.htm" />
+  </key>
+</key>
+<key name="menu du 963" >
+  <topic name="Appareils" url="device_viewer.htm" />
+  <key name="appareils" >
+    <topic name="Appareils" url="device_viewer.htm" />
+  </key>
+  <key name="calendrier" >
+    <topic name="Calendrier" url="diary_diary_display.htm" />
+  </key>
+  <key name="page graphique" >
+    <topic name="Pages graphiques du poste client" url="schematic_page_client_display.htm" />
+  </key>
+</key>
+<key name="messages derreur" >
+  <topic name="Messages derreur" url="error_messages.htm" />
+</key>
+<key name="mise en route/arrêt" >
+  <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  <key name="actions dalarmes" >
+    <topic name="Mise en route et arrêt des actions d'alarmes" url="turn_alarm_actions_on_off.htm" />
+  </key>
+</key>
+<key name="modification" >
+  <topic name="Edition d'un modèle" url="edit_a_template.htm" />
+  <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  <key name="modèle" >
+    <topic name="Edition d'un modèle" url="edit_a_template.htm" />
+  </key>
+  <key name="temps d'occupation" >
+    <topic name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+    <topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+  <key name="valeurs analogiques" >
+    <topic name="Réglage d'une valeur analogique" url="adjust_an_analogue.htm" />
+  </key>
+  <key name="valeurs numériques" >
+    <topic name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+  </key>
+  <key name="zones horaires" >
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+</key>
+<key name="modèle de configuration des semaines" >
+  <topic name="Ajout d'un modèle de configuration des semaines" url="add_a_week_set_template.htm" />
+  <key name="ajout" >
+    <topic name="Ajout d'un modèle de configuration des semaines" url="add_a_week_set_template.htm" />
+  </key>
+</key>
+<key name="modèle de jour spécial" >
+  <topic name="Ajout d'un modèle de jour spécial" url="add_a_special_day_template.htm" />
+  <key name="ajouter" >
+    <topic name="Ajout d'un modèle de jour spécial" url="add_a_special_day_template.htm" />
+  </key>
+</key>
+<key name="modèles dhoraires exceptionnels" >
+  <topic name="Création de modèles d'horaires exceptionnels" url="setup_exception_templates.htm" />
+  <key name="définition" >
+    <topic name="Création de modèles d'horaires exceptionnels" url="setup_exception_templates.htm" />
+  </key>
+</key>
+<key name="Ouverture de session" >
+  <topic name="Ouverture de session" url="web_browser_log_in.htm" />
+</key>
+<key name="ouvrir une session" >
+  <topic name="Connexion au 963 Server" url="connect_to_963_server.htm" />
+</key>
+<key name="page" >
+  <topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+  <topic name="Utilisation de base" url="basic_use.htm" />
+  <key name="affichage" >
+    <topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+    <topic name="Utilisation de base" url="basic_use.htm" />
+  </key>
+  <key name="atteindre" >
+    <topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+    <topic name="Utilisation de base" url="basic_use.htm" />
+  </key>
+</key>
+<key name="Pages graphiques" >
+  <topic name="Pages graphiques du poste client" url="schematic_page_client_display.htm" />
+</key>
+<key name="panneau d'alarmes" >
+  <topic name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+  <key name="action des alarmes" >
+    <topic name="Action des alarmes à partir d'un panneau d'alarmes" url="action_alarms_from_an_alarm_panel.htm" />
+  </key>
+</key>
+<key name="panneaux d'alarmes" >
+  <topic name="Masquage des panneaux d'alarmes" url="hide_alarm_panels.htm" />
+  <key name="masquage" >
+    <topic name="Masquage des panneaux d'alarmes" url="hide_alarm_panels.htm" />
+  </key>
+  <key name="muets" >
+    <topic name="Panneau d'alarmes muet" url="mute_an_alarm_panel.htm" />
+  </key>
+</key>
+<key name="panneaux d'alarmes muets" >
+  <topic name="Panneau d'alarmes muet" url="mute_an_alarm_panel.htm" />
+</key>
+<key name="pour contacter Trend" >
+  <topic name="Pour contacter Trend" url="contacting_trend.htm" />
+</key>
+<key name="Récupération" >
+  <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  <key name="graphique" >
+    <topic name="Récupération d'un graphique enregistré" url="playback_a_recorded_graph.htm" />
+  </key>
+</key>
+<key name="réglage" >
+  <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  <topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+  <key name="temps d'occupation" >
+    <topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+  <key name="temps doccupation" >
+    <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  </key>
+  <key name="valeurs analogiques" >
+    <topic name="Réglage d'une valeur analogique" url="adjust_an_analogue.htm" />
+  </key>
+  <key name="valeurs numériques" >
+    <topic name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+  </key>
+  <key name="zones horaires" >
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+</key>
+<key name="simulation daction dalarme" >
+  <topic name="Lancement manuel dactions dalarmes" url="run_alarm_actions_manually.htm" />
+</key>
+<key name="suppression" >
+  <topic name="Suppression d'une exception" url="delete_an_exception.htm" />
+  <key name="exceptions" >
+    <topic name="Suppression d'une exception" url="delete_an_exception.htm" />
+  </key>
+  <key name="modèles" >
+    <topic name="Suppression d'un modèle" url="delete_a_template.htm" />
+  </key>
+</key>
+<key name="temps d'occupation" >
+  <topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+  <topic name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+  <key name="réglage" >
+    <topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+  <key name="visualisation" >
+    <topic name="Visualisation des horaires standard d'occupation" url="view_normal_occupation_times.htm" />
+  </key>
+</key>
+<key name="temps doccupation" >
+  <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  <topic name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+  <key name="réglage" >
+    <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+    <topic name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+  </key>
+</key>
+<key name="utilisateur" >
+  <topic name="Fermeture de session" url="web_browser_log_off.htm" />
+  <key name="fermeture de session" >
+    <topic name="Fermeture de session" url="web_browser_log_off.htm" />
+  </key>
+  <key name="ouverture de session" >
+    <topic name="Ouverture de session" url="web_browser_log_in.htm" />
+  </key>
+</key>
+<key name="utilisation de base" >
+  <topic name="Utilisation de base" url="basic_use.htm" />
+  <key name="atteindre une page" >
+    <topic name="Affichage d'une page graphique" url="display_a_schematic_page.htm" />
+  </key>
+</key>
+<key name="utilisation du 963" >
+  <topic name="Utilisation de base" url="basic_use.htm" />
+  <topic name="Utilisation du 963 à partir dun poste client" url="using_963_from_a_client.htm" />
+  <key name="à partir d'un poste client" >
+    <topic name="Utilisation de base" url="basic_use.htm" />
+    <topic name="Utilisation du 963 à partir dun poste client" url="using_963_from_a_client.htm" />
+  </key>
+</key>
+<key name="valeurs analogiques" >
+  <topic name="Affichage d'un diagramme" url="display_a_chart.htm" />
+  <key name="diagramme" >
+    <topic name="Affichage d'un diagramme" url="display_a_chart.htm" />
+  </key>
+  <key name="graphique" >
+    <topic name="Affichage d'un graphique compact" url="display_a_compact_graph.htm" />
+    <topic name="Affichage d'un graphique de précision" url="display_a_precision_graph.htm" />
+  </key>
+  <key name="réglage" >
+    <topic name="Réglage d'une valeur analogique" url="adjust_an_analogue.htm" />
+  </key>
+</key>
+<key name="valeurs numériques" >
+  <topic name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+  <key name="réglage" >
+    <topic name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+  </key>
+</key>
+<key name="visualisation" >
+  <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+  <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  <key name="alarmes" >
+    <topic name="Alarmes" url="alarm_viewer.htm" />
+    <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+    <topic name="Visualisation des alarmes" url="view_alarms.htm" />
+    <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  </key>
+  <key name="alarmes entrantes" >
+    <topic name="Visualisation des alarmes entrantes" url="view_incoming_alarms.htm" />
+  </key>
+  <key name="données du graphique" >
+    <topic name="Affichage des données du graphique" url="display_graph_data.htm" />
+  </key>
+  <key name="données enregistrées" >
+    <topic name="Affichage des données enregistrées" url="display_logged_data.htm" />
+  </key>
+  <key name="historique des alarmes" >
+    <topic name="Visualisation de l'historique des alarmes" url="view_alarm_history.htm" />
+  </key>
+  <key name="état du serveur" >
+    <topic name="Visualisation de létat du serveur" url="view_server_status.htm" />
+  </key>
+</key>
+<key name="visualisation de létat du serveur" >
+  <topic name="Visualisation de létat du serveur" url="view_server_status.htm" />
+  <key name="visualisation" >
+    <topic name="Visualisation de létat du serveur" url="view_server_status.htm" />
+  </key>
+</key>
+<key name="visualisation des alarmes entrantes" >
+  <topic name="Lancement manuel dactions dalarmes" url="run_alarm_actions_manually.htm" />
+</key>
+<key name="zone horaire" >
+  <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  <key name="réglage" >
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+</key>
+<key name="zoom" >
+  <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  <key name="arrière" >
+    <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  </key>
+  <key name="avant" >
+    <topic name="Zooms avant et arrière sur un graphique" url="zoom_in_and_out_of_a_graph.htm" />
+  </key>
+</key>
+<key name="à propos du 963" >
+  <topic name="Qu'est-ce que le 963 ?" url="about_963.htm" />
+</key>
+<key name="écrans client" >
+  <topic name="Alarmes" url="alarm_viewer.htm" />
+  <key name="visualisation alarmes du 963" >
+    <topic name="Alarmes" url="alarm_viewer.htm" />
+  </key>
+</key>
+<key name="édition" >
+  <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+  <topic name="Edition d'une exception" url="edit_an_exception.htm" />
+  <key name="exceptions" >
+    <topic name="Ajout d'une exception" url="add_an_exception.htm" />
+    <topic name="Edition d'une exception" url="edit_an_exception.htm" />
+  </key>
+  <key name="modèles" >
+    <topic name="Edition d'un modèle" url="edit_a_template.htm" />
+  </key>
+  <key name="temps d'occupation" >
+    <topic name="Modification des horaires standard d'occupation" url="change_normal_occupation_times.htm" />
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+  <key name="temps doccupation" >
+    <topic name="Réglage des temps d'occupation" url="adjust_occupation_times.htm" />
+  </key>
+  <key name="valeurs analogiques" >
+    <topic name="Réglage d'une valeur analogique" url="adjust_an_analogue.htm" />
+  </key>
+  <key name="valeurs numériques" >
+    <topic name="Réglage d'une valeur numérique" url="adjust_a_digital_value.htm" />
+  </key>
+  <key name="zones horaires" >
+    <topic name="Réglage dune zone horaire" url="adjust_a_timezone.htm" />
+  </key>
+</key>
+
+</indexdata>

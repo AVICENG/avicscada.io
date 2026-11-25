@@ -1,0 +1,252 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="963" >
+  <topic name="Hvad er 963?" url="About_963_About_963.htm" />
+  <key name="Adgang" >
+    <topic name="Log På" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  </key>
+  <key name="Brug af" >
+    <topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+  <key name="Display" >
+    <topic name="963s Klientdisplay" url="About_963_The_963_Client_Displays.htm" />
+  </key>
+</key>
+<key name="963-Server" >
+  <topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+  <key name="Tilslutning til" >
+    <topic name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="963-Serveren" >
+  <topic name="963-Serverens Standard Side" url="About_963_963_Server_Default_Page.htm" />
+  <key name="Standard Side" >
+    <topic name="963-Serverens Standard Side" url="About_963_963_Server_Default_Page.htm" />
+  </key>
+  <key name="Startside" >
+    <topic name="963-Serverens Startside" url="About_963_963_Server_Start_up_Page.htm" />
+  </key>
+</key>
+<key name="963-Vindue" >
+  <topic name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+  <key name="Kalenderdisplay" >
+    <topic name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+  </key>
+  <key name="Skematisk Sidedisplay" >
+    <topic name="Skematisk Side Klientdisplay" url="About_963_Schematic_Page_Client_Display.htm" />
+  </key>
+</key>
+<key name="963-Vinduet" >
+  <topic name="Enhedsoversigten Klientdisplay" url="About_963_Device_Viewer_Client_Display.htm" />
+  <key name="Enhedsoversigten" >
+    <topic name="Enhedsoversigten Klientdisplay" url="About_963_Device_Viewer_Client_Display.htm" />
+  </key>
+</key>
+<key name="Adgang" >
+  <topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+  <key name="963-Server" >
+    <topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+    <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+    <topic name="Log På" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+    <topic name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="Aktivering af" >
+  <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Alarmhandlinger" >
+    <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Alarm" >
+  <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+  <key name="Alarmoversigt" >
+    <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+  </key>
+  <key name="Godkendelse af" >
+    <topic name="Godkendelse af Alarmer" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+    <topic name="Godkendelse af Alarmer fra et Alarmpanel" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Se" >
+    <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+    <topic name="Se Alarmer" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+    <topic name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+    <topic name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Se Historik" >
+    <topic name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+  </key>
+</key>
+<key name="Alarmhandlinger" >
+  <topic name="Kør Alarmhandlinger Manuelt" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+  <key name="Kør Manuelt" >
+    <topic name="Kør Alarmhandlinger Manuelt" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+  </key>
+  <key name="Tænd og Sluk" >
+    <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Alarmpaneler" >
+  <topic name="Dæmpning af et Alarmpanel" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+  <key name="Dæmpning af" >
+    <topic name="Dæmpning af et Alarmpanel" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Gem" >
+    <topic name="Gem Alarmpaneler" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+  </key>
+  <key name="Godkend Alarmer" >
+    <topic name="Godkendelse af Alarmer fra et Alarmpanel" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+</key>
+<key name="Analoge Værdier" >
+  <topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  <key name="Diagram" >
+    <topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  </key>
+  <key name="Graf" >
+    <topic name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+    <topic name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Justering af" >
+    <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+</key>
+<key name="Angiv" >
+  <topic name="Angiv Hvilke Kolonner Vises" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+  <key name="Hvilke Kolonner Vises" >
+    <topic name="Angiv Hvilke Kolonner Vises" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+  </key>
+</key>
+<key name="Brug af 963" >
+  <topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+  <key name="Fra en Klient" >
+    <topic name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+    <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  </key>
+</key>
+<key name="Bruger" >
+  <topic name="Log Af" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+  <key name="Log Af" >
+    <topic name="Log Af" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+  </key>
+  <key name="Log På" >
+    <topic name="Log På" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+  </key>
+</key>
+<key name="Deaktivering af" >
+  <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  <key name="Alarmhandlinger" >
+    <topic name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Denne Vejlednings Regler" >
+  <topic name="Denne Vejlednings Regler" url="963_Manual_Conventions_Used_in_this_Manual.htm" />
+</key>
+<key name="Diagram" >
+  <topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  <key name="Vis" >
+    <topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  </key>
+</key>
+<key name="Digital Værdi" >
+  <topic name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  <key name="Justering af" >
+    <topic name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+</key>
+<key name="Display" >
+  <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+  <key name="Alarmer" >
+    <topic name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+  </key>
+</key>
+<key name="Dr Technicare" >
+  <topic name="Kontaktoplysninger for Trend" url="963_Manual_Contacting_Trend.htm" />
+</key>
+<key name="Driftstider" >
+  <topic name="Se Driftstider" url="Using_963_From_a_Web_Browser_View_Occupation_Times.htm" />
+  <key name="Display" >
+    <topic name="Se Driftstider" url="Using_963_From_a_Web_Browser_View_Occupation_Times.htm" />
+  </key>
+  <key name="Justering af" >
+    <topic name="Justering af Driftstider" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+    <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+    <topic name="Ændring af Normale Driftstider" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Se" >
+    <topic name="Se Normale Driftstider" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+  </key>
+</key>
+<key name="Dæmpning af Alarmpaneler" >
+  <topic name="Dæmpning af et Alarmpanel" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+</key>
+<key name="Emulering af Alarmhandlinger" >
+  <topic name="Kør Alarmhandlinger Manuelt" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+</key>
+<key name="Enkel Brug" >
+  <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  <topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+</key>
+<key name="Fejlmeddelelser" >
+  <topic name="Fejlmeddelelser" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+</key>
+<key name="Gem" >
+  <topic name="Gem Alarmpaneler" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+  <key name="Alarmpaneler" >
+    <topic name="Gem Alarmpaneler" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+  </key>
+</key>
+<key name="Godkend Alarmer" >
+  <topic name="Godkendelse af Alarmer" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+  <key name="Fra et Alarmpanel" >
+    <topic name="Godkendelse af Alarmer fra et Alarmpanel" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+</key>
+<key name="Graf" >
+  <topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  <key name="Diagram" >
+    <topic name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+  </key>
+  <key name="Indlæs Indstilling" >
+    <topic name="Vis en Grafindstilling" url="Using_963_From_a_Web_Browser_Display_a_Graph_Set_Up.htm" />
+  </key>
+  <key name="Indlæsning af" >
+    <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Kompakt" >
+    <topic name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+  </key>
+  <key name="Præcision" >
+    <topic name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Vis" >
+    <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+    <topic name="Vis en Graf" url="Using_963_From_a_Web_Browser-Display_a_Graph.htm" />
+    <topic name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+    <topic name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Zoom Ind" >
+    <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Zoom Ud" >
+    <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+<key name="Gå til en Side" >
+  <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+  <topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+</key>
+<key name="Indkommende Alarmer" >
+  <topic name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  <key name="Ryd" >
+    <topic name="Ryd Indkommende Alarmer" url="Using_963_From_a_Web_Browser_Clear_the_Incoming_Alarms.htm" />
+  </key>
+</key>
+<key name="Indlæsning af" >
+  <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  <key name="Graf" >
+    <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+</key>
+
+</indexdata>

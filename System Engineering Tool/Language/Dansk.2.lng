@@ -1,0 +1,888 @@
+﻿#IQ3xcite Translation File
+#File Format: 2
+#Firmware version: 2.10
+#File version: 6
+#Language: Dansk
+#Notes:
+#Data:
+1,,
+2,ltr
+11,Off||On
+12,kodet||Tekst||attribute||enhanced
+13,Default PV||Default OP||Bliv ved default OP||Frys OP||No action
+14,0: Analog||1: Intern Analog||2: Digital||3: Intern Digital
+15,Mulige typer:||1:  Filter D= E*D+(1-E)*G||2:  Rescale G from 0-100 to E-F||3:  Rescale G to 0-100 from E-F||4:  Limit At : F if G<F or E if G>E||5:  Limit To : 0 if G<F or 100 if G>E||6:  Log D=E*log(G)||7:  Square Root D=E*sqrt(G)||8:  Adder Scaler D=(E*G)+(F*H)||9:  Multiply D=G*E*F||10: Divide D=(G/E)*F||11: Minimum||12: Maximum||13: Average||14: Gate D=E if 0 or =F if 1||15: Comparator D=1 if F>E||16: Enthalpy E=rh F=degC D=kJ/kg||17: Hysteresis level E band F||18: A to D||19: Lookup||20: Adder D=E+F+G+H||21: Hysteresis low E high F||22: Proximity level E error F||23: Power : D=E^F||24: Absolute : D=ABS G||25: Truncate : D=TRUNC G||26: Trignometric
+16,Mulige typer:||1: Digital||2: Analogue||3: Time Proportional||4: Raise Lower||5: Binary Hysteresis||6: Time Proportional Override||7: Raise Lower
+17,Mulige typer:||1: Combination||2: Timer||3: Readback||4: Counter||5: Delay||6: Hours Run||7: Fan Out||8: D to A
+18,Off||OnDelay||MinOn||OffDelay||On
+19,Ej i drift||I drift
+20,Automatik||Manuel
+21,Off||Stationær||Lukker||Åbner
+22,Ingen Overstyring||Overstyring
+23,Ikke Inverteret||Inverteret
+24,Sin||Cos||Tan
+25,Grader||Radianer
+26,Deaktiveret||Aktiveret
+27,Aktiveret||Deaktiveret
+28,Ej Kvitteret||Kvitteret
+29,0:Liniær||1:Log||2:Thermistor Volt||3:Volt||4:Thermistor Ohm||5:Characterise
+30,0:Volt||1:Thermistor Volt||2:Strøm||3:Thermistor Ohm||4:Analog
+31,||Man||Tir||Ons||Tor||Fre||Lør||Søn
+32,||Jan||Feb||Mar||Apr||Maj||Jun||Jul||Aug||Sep||Okt||Nov||Dec
+33,OK||Fejl
+34,||Synkroniseret||Trigget||Periodisk||Ændring af Værdi
+35,1 time||15 minutter||24 timer||1 minut||5 minutter||10 minutter||20 minutter||30 minutter||6 timer||1 sekund
+36,Logget Ud||Logget Ind
+37,HØJ||LAV||Input||udenfor område
+38,0: Ekstern||1: Intern
+39,Setpt Fejl||PV Fejl||I Standard
+40,Setpt Fejl||PV Fejl
+41,Tilbagemelding||Vedligeholdelse
+42,Digital
+43,||1:Til||2:Global Til||3:Min||4:Max||5:Sum||6:Gennemsnit||7:Fra Analog||8:Fra Byte||9:Fra Bit
+44,0:Analog||1:Digital Byte||2:Digital Bit
+45,0:Comms Deaktiveret||1:Identifier||2:Attribute 2||3:Attribute 3||4:Attribute 4||5:Attribute 5||6:Attribute 6||7:Attribute 7
+46,Næste||Hver||Fre
+47,Ingen Alarm||Digind||HØJ||LAV||Udenfor område||Input||SP Afvigelse||PV Fejl||Vedligeholdelse||Tilbagemelding
+48,Passiv||Varme||Køl
+49,Ej Præsenteret||Selvtest||Standby||Operationsklar||Større genoprettelig fejl||Større ikke genoprettelig fejl
+50,Serif||Sans-Serif||Cursive||Fantasy||Monospace
+51,Venstre||Center||Højre
+52,||Statisk Tekst||Dynamisk Tekst||Ej Brugt||Ej Brugt||Applet
+53,||Dag undtagelse||Uge undtagelse
+54,Nej||Ja
+55,Undercentral Online||Strategifejl||Fejl Peripheral Interface Adapter||Fejl RTC||Fejl RAM||Fejl Software||Seriel Comms Fejl||Fejl PROM
+56,Overløb i Sekvenstabel||Lav Memory||IO Bus Fejl||Lav Flash||Arkiveringsfejl||Fejl Tid||Fil Fejl
+57,Digital Indgang
+58,Udgang
+59,Alarmgruppe
+60,Alarm Rute
+61,Alarm Destination
+62,Funktion
+63,Regulator
+64,Føler
+65,Justering
+66,Tekst Modul
+67,Sekvenstabel
+68,Føler Type
+69,Logik
+70,Omskifter
+71,Adresse
+72,Directory
+73,Display
+74,Tid
+75,Plot
+76,Bruger
+77,Tidszoner
+78,Dagsprofil
+79,Undtagelsesprofil
+80,Tidszone Periode Modul
+81,IC Comms
+82,Alarm Input Modul
+83,Optimal Start Stop
+84,OSS Varme Modul
+85,OSS Køle Modul
+86,Digital Byte
+87,Analog Node
+88,IO Modul
+89,Virtuel CNC
+90,Side Modul
+91,Benævnelse
+92,Indgangs Type
+93,Type
+94,Vinkel Type
+95,Sekvenstrin
+96,Hardware Kanal
+97,Hardware Modul
+98,Side
+99,X Koordinat
+100,Y Koordinat
+101,Tilstand
+102,Source
+103,Ønsket tilstand
+104,Alarm Modtaget
+105,Alarm Aktiveret
+106,Alarm Sendt
+107,Alarm Delay(sek)
+108,Tid i Alarm(sek)
+109,Inverter
+110,In-Phase Udgang
+111,Anti-Phase Udgang
+112,In-Phase_Hardware Kanal
+113,Anti-Phase Hardware Kanal
+114,Vandringstid
+115,Udgangsposition
+116,Tilbageføring
+117,område
+118,Offset
+119,Drifttimer
+120,Antal Starter
+121,Periode
+122,ON Niveau
+123,OFF Niveau
+124,Periodetid
+125,Overstyring
+126,Sidste Sekvens Trin
+127,Maksimal Kø
+128,Fejl
+129,Besked Format
+130,Adresse
+131,LAN
+132,Interval
+133,Fravælg Normal
+134,Ny Alarm
+135,Hold Prioritet
+136,Aktiveret
+137,Udgang
+138,Gruppe
+139,Destination
+140,Aktiver
+141,Værdi
+142,Source B
+143,Source E
+144,Source F
+145,Source G
+146,Source H
+147,Source I
+148,Source J
+149,Source K
+150,Source L
+151,Alarm Tilstand
+152,Process Værdi
+153,Setpunkt i drift
+154,Setpunkt ej i drift
+155,Setpunktsvalg
+156,Manuel Niveau
+157,Manuel
+158,Følerfejl
+159,Opdateringstid
+160,Forstærkning
+161,Integral Tid(min)
+162,Deriverende Tid(min)
+163,Setpunkt Afvigelse
+164,Integral
+165,Deriverende
+166,Udgang
+167,Alarm Aktiv
+168,Alarm Sendt
+169,Default Værdi
+170,Enhed
+171,Værdi
+172,Udgang
+173,Bruger Niveau
+174,Maksimum
+175,Minimum
+176,Enhed
+177,Høj Alarm Niveau
+178,Lav Alarm Niveau
+179,Høj Alarm Delay(min)
+180,Lav Alarm Delay(min)
+181,Skalerings Type
+182,Indgangs Type
+183,Eksponent
+184,Antal Punkter
+185,Input
+186,Udgang
+187,Øvre Niveau
+188,Nedre Niveau
+189,Kombination J
+190,Kombination K
+191,Kombination L
+192,Kombination M
+193,On Delay
+194,Minimum On
+195,Off Delay
+196,Timer nummer
+197,Tidsafvigelse
+198,Udgang J
+199,Udgang K
+200,Udgang L
+201,Udgang M
+202,Udgang N
+203,Udgang O
+204,Øjebliksværdi
+205,Summeret værdi
+206,Skaleringsfaktor
+207,Reset
+208,Drifttimer
+209,Alarm Interval Niveau
+210,Status
+211,Version
+212,Identifier
+213,Attribute2
+214,Attribute3
+215,Attribute4
+216,Attribute5
+217,Attribute6
+218,Attribute7
+219,Lokal Adresse
+220,Lokal LAN
+221,Supervisor Port
+222,IP Adresse
+223,Subnet Mask
+224,UDP Port
+225,Ethernet MAC
+226,Router 1
+227,Checksum OK
+228,Power Reset
+229,Placering
+230,PIN
+231,Punkt
+232,Timer
+233,Minutter
+234,Sekunder
+235,dag
+236,måned
+237,år
+238,Ugedag
+239,Skift med (time)
+240,Sommertid Start Dag
+241,Sommertid Start Måned
+242,Sommertid Slut Dag
+243,Sommertid Slut Måned
+244,Aktuel Tid
+245,Minutter Siden Midnat
+246,Sekund puls
+247,Minut puls
+248,5 Minutter puls
+249,10 Minutter puls
+250,15 Minutter puls
+251,20 Minutter puls
+252,30 Minutter puls
+253,60 Minutter puls
+254,6 Timers puls
+255,24 Timers puls
+256,Dag Bit 5
+257,Dag Bit 6
+258,Dag Bit 7
+259,Ugentlig Puls
+260,Månedlig Puls
+261,Årlig Puls
+262,Antal Værdier
+263,Trigger Indgang
+264,Bruger navn
+265,Kodeord
+266,Niveau
+267,Hjemmeside
+268,Tidsudløb
+269,Logget Til
+270,Tid
+271,Ugeprofil
+272,Vedligeholdelses gruppe
+273,Driftfejl gruppe
+274,Høj gruppe
+275,Lav Gruppe
+276,Read Gruppe
+277,Udenfor Område Gruppe
+278,PV Fejl Gruppe
+279,Setpunkt Afvigelse Gruppe
+280,Prioritet
+281,Undtagelser
+282,Start Dag
+283,Start Måned
+284,Slut Dag
+285,Slut Måned
+286,Dagsprofil
+287,Forsøgs interval
+288,Generel Alarm Gruppe
+289,Generel Alarm Status
+290,Tids værdi par
+291,Comms Retning
+292,Fjerntliggende UC Adresse
+293,attribute
+294,Fjerntliggende Lan
+295,Retransmissions Interval
+296,Tid I Intervallet
+297,Variabel Type
+298,Betydelig Ændring
+299,Sendt Sidst
+300,Read Alarm
+301,Udenfor Område Alarm
+302,Lav Alarm
+303,Høj Alarm
+304,Høj Alarm Niveau
+305,Lav Alarm Niveau
+306,Service Alarm
+307,Driftfejl Alarm
+308,PV Fejl Alarm
+309,Setpunkt Afvigelses Alarm
+310,I Standard Alarm
+311,Anvendelse
+312,Udetemperatur
+313,Indetemperatur
+314,Max opvarmningstid
+315,Max nedkølingstid
+316,Varmetabs Konstant
+317,Medium Valg
+318,Forhindre Tilpasning
+319,OTP Tilstand
+320,OSS Tilstand
+321,NOC Tilstand
+322,WU Tilstand
+323,OCC Tilstand
+324,CD Tilstand
+325,Område
+326,Optimal On Tid
+327,Optimal Off Tid
+328,OSS Setpunkt
+329,Medium Temp
+330,Start Afvigelse
+331,Stop Afvigelse
+332,Opvarmnings Konstant
+333,Gennemsnits Medium Temp
+334,Varme Medium
+335,Køle Medium
+336,I Alarm
+337,Bit 0
+338,Bit 1
+339,Bit 2
+340,Bit 3
+341,Bit 4
+342,Bit 5
+343,Bit 6
+344,Bit 7
+345,Alarm Status
+346,Konfigureret Type
+347,Aktuel Type
+348,I/O Typer
+349,Producent
+350,Serie Nummer
+351,Firmware Version
+352,Power On Delay(sek)
+353,Under Type
+354,Skalerings Type
+355,Service Indgang
+356,Driftfejl Indgang
+357,Filversion
+358,Ekstern I/O Niveau
+359,Ekstern I/O Tæller
+360,Fjerntliggende Modul
+361,Lokal Modul
+362,Port nummer
+363,Socket Timeout
+364,Baggrund
+365,Baggrunds Farve
+366,Opdater
+367,Bredde
+368,Højde
+369,Forgrunds Farve
+370,Font Navn
+371,Font Størrelse
+372,Objekt opstilling
+373,URL
+374,I Alarm Farve
+375,Klikbar
+376,Venstre Position
+377,Top Position
+378,Deaktiver
+379,Deaktiver Modul
+380,Vis Undertype
+381,Time Master
+382,brIQ Kapacitet
+383,brIQs Brugt
+384,I-Fase Udgang(mV)
+385,Anti-Fase Udgang(mV)
+386,Kilde(mV)
+387,Forbindelse
+388,Optælling
+389,AKTUEL
+390,Normal
+391,OPSTAAET 
+392,NORMAL
+393,DIGIN OFF  
+394,DIGIN ON   
+395,INGEN       
+396,HOJ VAERDI
+397,LAV VAERDI
+398,Følerfejl
+399,INPUT FEJL
+400,AFVIGELSE  
+401,PV FEJL    
+402,DRIFTFEJL   
+403,SERVICE    
+404,GENSTART  
+405,DATA FEJL 
+406,PIA FEJL  
+407,UR FORKERT
+408,RAM FEJL  
+409,S'WARE FEJL
+410,DART FEJL 
+411,EPROM FEJL
+412,SEQ OVERLØB
+413,LAV MEMORY 
+414,IO BUS FEJL
+415,LAV FLASH  
+416,ARKIV FEJL
+417,FEJL RTC
+418,Ukendt
+419,Oversigt
+420,Opret Ny
+421,Ændre
+422,Slet
+423,Modul
+424,Hent Fra
+425,Send
+426,Parameter
+427,Diagnostik
+428,Enhed
+429,Graf
+430,Værdi sendt OK
+431,Send Værdi Fejlede
+432,Ingen Værdier Ændret
+433,Forrig
+434,Næste
+435,Beklager der er ingen data for dette modul
+436,Hop tilbage til dette modul
+437,Hop frem til dette modul
+438,Gæst
+439,System Gæst
+440,Uinitilaiseret
+441,Aktuel Bruger
+442,Tid Udløbet
+443,Bruger Logget Fra
+444,IQ3 Logind
+445,Standard System
+446,Log til for at få flere funktioner
+447,Godkendt Standard
+448,Tak fordi du brugte IQ3
+449,denne session er blevet afsluttet, luk denne browser og start en ny session
+450,Fejl i Log Til
+451,brugernavn eksistere ikke
+452,kodeord er ikke korrekt
+453,du kan fortsætte som den tidligere bruger, eller forsøge at logge til som en anden bruger
+454,log venligst fra før du lukker denne browser
+455,log til for flere valgmuligheder
+456,Standard
+457,Velkommen
+458,Godkend
+459,Ja
+460,Nej
+461,Modul Ref
+462,Modul benævnelse
+463,Overførsel
+464,Aktuel Tilstand
+465,Ingen Alarmer i Log
+466,On
+467,Off
+468,HØJ
+469,LAV
+470,Input
+471,Udenfor område
+472,PV Fejl
+473,SP Afvigelse
+474,Tilbagemelding
+475,Vedligeholdelse
+476,Genstart
+477,Data Fejl
+478,PIA Fejl
+479,UR FORKERT
+480,RAM Fejl
+481,Software Fejl
+482,Dart Fejl
+483,Flash Fejl
+484,Sekvenstabel Overløb
+485,Lav Memory Advarsel
+486,CAN Fejl
+487,Lav FLASH Advarsel
+488,Arkiveringsfejl
+489,Fejl Tid
+490,Ukendt alarm
+491,Ej Brugt
+492,Sendt
+493,Venter
+494,Tilføjer
+495,Opstået
+496,Normal
+497,Alarm Side
+498,Fejl: fejl i at læse data
+499,Fejl: ugyldig punkt reference
+500,Der er ingen aktuel data for den ønskede log
+501,i et interval på
+502,Grafer
+503,IQ3
+504,Undercentral
+505,Fejl: kan ikke læse lokal information
+506,Skabelon fil mangler
+507,på Lan
+508,Log til
+509,Log fra
+510,Adresse Side
+511,Alarm Destinationer
+512,Alarm grupper
+513,Alarm Rute
+514,Analoge Noder
+515,Digitale Bytes
+516,Digital Indgang
+517,Udgange
+518,Funktionsmoduler
+519,IC Comms
+520,IO Moduler
+521,Setpunkter
+522,Logikmoduler
+523,Regulatorer
+524,OSS
+525,Følere
+526,Føler Typer
+527,Sekvenstabel
+528,Omskiftere
+529,Tids Zoner
+530,Bruger
+531,Virtuel CNCs
+532,Adgang nægtet
+533,Uautoriseret
+534,Forbudt
+535,Accepteret
+536,Forkert Forespørgsel
+537,Ikke fundet
+538,Service Ikke tilgængelig
+539,OK
+540,Ej Modifiseret
+541,Ukendt
+542,Ukendt Forespørgsel
+543,Fejl, kan ikke modtage Undercentral indormation til forespørgslen: 
+544,Ugyldig modul forespørgsel
+545,Fejl, kan ikke oprette Web Skabelon til forespørgsel:
+546,Fejl i læsning af logget modul data
+547,Ugyldig
+548,forrige modul
+549,næste modul
+550,Fejl i at sende værdier
+551,Juster
+552,Graf
+553,Alarm
+554,Mandag
+555,Tirsdag
+556,Onsdag
+557,Torsdag
+558,Fredag
+559,Lørdag
+560,Søndag
+561,duplikere
+562,Slet
+563,vis tider
+564,Start
+565,Stop
+566,Brug
+567,Juster
+568,send
+569,Tider
+570,(standard)
+571,Fortryd
+572,Genindtast
+573,Genindtast hele benævnelsen med rødt
+574,hop til link
+575,Forkert kodeord eller brugernavn 
+576,Prøv venligst igen
+577,streng ikke fundet
+578,denne session er udløbet, log til igen
+579,for at begynde en ny session log til igen
+580,Normal Uge
+581,Velkommen til IQ3, for at begynde log venligst til...
+582,Sprog Valg
+583,Alarmer
+584,Tids Zoner
+585,Moduler
+586,Grafik
+587,Velkommen til
+588,Destination
+589,Destinations Port
+590,System Map
+591,Konfigurer graf
+592,Indlæs optagede data
+593,Standard Graf
+594,Vis som diagram
+595,Hent kurve
+596,Vent venligst
+597,Konstruerer Graf
+598,-> Ingen log data tilgængelig
+599,Ingen data at vise
+600,Liste
+601,HENTER IQ3 STANDARD GRAF
+602,HENTER IQ3 PUNKT KURVE
+603,HENTER IQ3 OPTAGEDE DATA
+604,vent
+605,Der er ingen optagede data at hente!
+606,Vælg mulighed:
+607,Serveren svarer ikke!
+608,Brugeren er blevet logget ud!
+609,Log til og genstart diagram af punkter
+610,Følgende fejl meddelelse er modtaget:
+611,Forsøg diagram af punkter
+612,Schedule
+613,||OSS||OTP
+614,||I Drift||Opvarmning||Nedkøling||Ej i drift
+615,Zone
+616,Start Afvigelse
+617,Stop Afvigelse
+618,I Drift Værdi
+619,Opvarmnings Værdi
+620,Nedkølings Værdi
+621,Ej I Drift Værdi
+622,Bruger adgang for lav til denne visning
+623,Copyright
+624,OSS Forbindelse
+625,Tids Zone Forbindelse
+626,Ingen IO||xcite/IO/8UI||xcite/IO/4UI/4AO||xcite/IO/8DO||xcite/IO/4UI||xcite/IO/2UI/2AO||xcite/IO/4DO||xcite/IO/8AO||xcite/IO/4AO||xcite/IO/16DI||xcite/IO/8DI||xcite/IO/MBus||xcite/IO/DALI||xcite/IO/8DO/HOA||xcite/IO/4DO/HOA||xcite/IO/8AO/HOA||xcite/IO/4AO/HOA||xcite/IO/8DI/8TI||Ukendt
+627,Schedule
+628,Moduler
+629,Tilbage
+630,Alarmer
+631,Standard Handling
+632,Sted navn
+633,Kontakt din installatør, opgiv denne nøgle
+634,Installatør side
+635,Glemt dit kodeord?
+636,Klik Her
+637,Standard kodeord
+638,Fra Email Adresse
+639,Til Email Adresse
+640,Ekstra Tekst
+641,Alarm Log Modul
+642,Alarm type
+643,Modul Nummer
+644,Modul Værdi
+645,Ej Brugt||Udført||Aktiv
+646,Minutter
+647,||IQ Lan||IP||E-mail||BACnet
+648,Email Server Adresse
+649,En Trend IQ3 CTS undercentral har genereret denne alarm
+650,Sted
+651,Tid/Dato
+652,Undercentral i alarm
+653,Overstyr Udgang
+654,Overstyr Værdi
+655,Overstyr Status
+656,Sted GUID
+657,Overstyr Timer(min)
+658,Størrelse Memory Plot
+659,Brugt Memory Plot
+660,Fil Liste
+661,Ekstern IO Aktiveret
+662,Onboard IO
+663,Type Navn
+664,HOA Tilstand
+665,Auto||Hånd||Off
+666,||Stoppet||Indlæser||Kører||Ved Breakpoint||Fejlretning||Fejl||Ingen Fil||Fil ikke fundet||Dårlig Fil||brIQs Udløbet
+667,Ingen||Indlæs Program||Stop||Kør||Step Ind||Step Ud||Step Over||Synkroniseret Indlæs
+668,Script Overvågnings Modul
+669,Script Indgangs Modul
+670,Script Udgangs Modul
+671,Script Gemme Modul
+672,XNC Interface
+673,Program forfatter
+674,Program Version
+675,Program ID
+676,Program Tilstand
+677,Program Kommando
+678,Fejlretning Aktiv
+679,Filnavn
+680,Aktuel Linie
+681,Linie Breakpoint
+682,Alarm Rapporterings LAN
+683,Alarm Rapporterings UC
+684,Alarm Benævnelse
+685,Sidste Fejl
+686,Antal Indgange
+687,Antal Udgange
+688,Antal Hukommelses moduler
+689,Gemt Script Variabel Modul
+690,Ikke Omskiftelig Værdi
+691,||XNC Interface
+692,XNC Aktiveret
+693,Netværk
+694,||IQ LAN||IQ Ivrk||Lon Talk||Ethernet IP||BACnet||IP RAS Server
+695,Antal gode MAC Rammer
+696,Antal Dårlige MAC Rammer
+697,Netværkstilstand
+698,Antal Netværksfejl
+699,Hostnavn
+700,Standard Hostnavn
+701,Lokal Domain Navn
+702,IP Adresserings Tilstand
+703,DHCP Status
+704,WINS Server
+705,DNS Server
+706,Tids Server
+707,Leasingtid tilbage
+708,Tid for sidste DHCP Ændring
+709,DHCP Fornyelse
+710,Upstream Nabo
+711,Downstream Nabo
+712,Netværk Master
+713,Fjern Enhed
+714,Fjern Enheds Undernet
+715,||Opnåes Automatisk||Indtast Manuelt
+716,Deaktiver||Tildeles DHCP Adresse||Har DHCP Adresse||Tildeles Kokal Adresse||Har Lokal Adresse
+717,Er ikke Netværks Master||Er LAN Master||Er Netværks Master
+718,Program
+719,Sidste Filnavn
+720,Deaktiver Opnåelsestid (min)
+721,Ingen Strategi||Indlæser||Kører||Indlæsningsfejl||Forberedt for kommando||Stoppet||Ingen Fil||Fil ikke fundet||Dårlig Fil||Fil Version||brIQs Udløbet||Ekstern I/O Antal Udløbet||Onboard I/O Antal Udløbet||Funktion Fejl
+722,Ingen||Forbered kommando||Indlæs Strategi||Frigiv strategi||Stop||Kør||Arkiv
+723,||Program
+724,TCL BRUGER 1 
+725,TCL BRUGER 2 
+726,TCL BRUGER 3 
+727,TCL BRUGER 4 
+728,TCL BRUGER 5 
+729,TCL BRUGER 6 
+730,TCL SCRIPT 
+731,Aldrig Arkiveret||Arkivering Forberedt||Arkivering Aktiv||Sidste Arkivering Succesfuld||Sidste Arkivering Fejlede
+732,Arkiv Tilstand
+733,Antal Linier
+734,Regulator beregning
+735,Størrelse af modul
+736,XML Server
+737,Baud Hastighed
+738,Bootloader Version
+739,Generel Alarm 2 Status
+740,Vis Alarmer
+741,Vis Tidszoner
+742,Vis Moduler
+743,Vis Grafik
+744,Vis Navigator
+745,Applikationsnøgle
+746,Parameter Modul
+747,Kode
+748,Arkiv
+749,Parameter Værdier
+750,Parameter Navn
+751,Parameter Værdi
+752,Udvidelse
+753,||Kort||Funktion||Display
+754,Titel
+755,Beskrivelse
+756,Kort ID
+757,Batteri Kort
+758,IQ system Lan Kort
+759,RS232-485 Uisoleret
+760,RS485 Isoleret
+761,Ukendt Udvidelseskort
+762,Fremskridelses Procent
+763,Beskytter den aktuelle tid (i tilfælde af spændingssvigt) i flere år
+764,IQ system Lan kortet muligør at IQ3 kan være en enhed på et Trend current loop lan
+765,Seriel udvidelseskort for kommunikation via RS232 eller RS485
+766,Seriel udvidelseskort, med isoleret input, for kommunikation via RS485
+767,Dette udvidelseskort er ukendt og ikke supporteret af denne version af IQ3
+768,Biblioteker
+769,Visninger
+770,Netværk
+771,Udvidelse
+772,Plots
+773,Schedules
+774,Sidste Antal Starter
+775,XNC Interface
+776,Tredjeparts interface implementeret med Trend Custom Language
+777,Baseboard Version
+778,Modul Status
+779,Normal||Overstyret||Deaktiveret||Hånd||Off||BACnet Overstyring
+780,FIL FEJL
+781,Fil Fejl
+782,Enheds eksempel
+783,Manuel Enheds eksempel
+784,Automatik||Manuel
+785,UDP Port
+786,BBMD
+787,Ret Tidsudløb
+788,Tid for Timetæller Reset
+789,Tid for sidste Værdiændring
+790,Tid for Antal Starter Reset
+791,Ikke-Trend Enhed
+792,||BACnet
+793,Netværksnummer
+794,Forhandlernavn
+795,Modelnavn
+796,Enheds Systemstatus
+797,Ikke-Trend Enheder
+798,MAC Adresse
+799,Bekræftet||Ikke Bekræftet
+800,Service Type
+801,Process ID
+802,Overgange
+803,Protokol
+804,Trend||BACnet
+805,Normal Alarm
+806,Ikke-Trend Enhedsstatus
+807,OK||Fejl||Uafklaret
+808,BDT Adgangsmodul
+809,BDT Adgang
+810,Fjern BACnet IP Adresse
+811,Fjern BACnet Undernet
+812,Fjern BACnet UDP Port
+813,Aktivt Prioritetsniveau
+814,Sekunder siden Alarmen Opstod
+815,Sekunder siden Alarmen blev Normal
+816,Send er under Opstart
+817,UTC Offset (Min)
+818,Sommertid Tilføjet
+819,Sommertids Offset (Min)
+820,Prioritetsrække
+821,BACnet Handlings Tid
+822,Web Server Port Nummer
+823,Strategi Revision
+824,BACnet
+825,BACnet muligheden muliggør kommunikation ved brug af BACnet protokol
+826,Tilføj Ny Funktion
+828,Tilføj Ny Funktion
+829,For at låse funktionen op, kontakt customer services med følgende detaljer:
+830,Indtast din oplåsningskode her.
+831,Bemærk, hvis funktions oplåsningen er succesfuld vil undercentralen genstarte
+832,Undercentralen genstarter
+833,Funktions oplåsningskoden er ikke korrekt
+834,Funktionsoplåsnings koden er accepteret
+835,Oplås Nu
+836,resterende oplåsningsforsøg
+837,Timing Type
+838,Antal Værdier
+839,Source Modul ID
+840,Optage Antal
+841,Total Optage Antal
+842,Sidste Optage Tid
+843,Compact Værdier
+844,Log Buffer
+845,Underretnings Tærskel
+846,Optagninger siden sidste Underretning
+847,Sidste Uderrettet Optagning
+848,Log Aktiveret
+849,Stop Når Fuld
+850,Trigget Output
+851,Værdi Type
+852,Optage Status Bits
+853,Optage Nummer
+854,Tidsstempel
+855,Offset Tid
+856,Log Status[0]||Digital Value[1]||Analog Værdi[2]||Enum Værdi[3]||Usigneret Værdi[4]||Signeret Værdi[5]||Bitstring-værdi[6]||Nul[7]||Fejl[8]||Tids Ændring[9]||Enhver[10]
+857,Plot Buffer Optage Modul
+858,Buffer Klar
+859,BUFFER KLAR  
+860,Handling
+861, HANDLING 
+862,COV Increment
+863,Alle
+864,Sidste 24 Timer
+865,Sidste Uge
+866,Sidste Måned
+867,Sidste År
+868,Kunde
+869,Dato
+870,Vælg dato område
+871,Vælg en dato
+872,Vælge dato område ->
+873,Kunde Dato Valg
+874,Vælg kurve
+875,Kan ikke vise graf for {0} på grund af følgende:<br>{1}
+876,Fejl
+877,Zoom til original
+878,Vis kurve værdi i vindue
+879,Tids akse
+880,Skift gridlinier on eller off
+881,Venstre
+882,Højre
+883,Slut
+884,Vent venligst
+885,Tid For Sidste Underretning
+886,Sidste Strategi Fejl
+887,Vis
+888,Grid Linier
+889,Log Fuld
+890,BTL Overholdelse

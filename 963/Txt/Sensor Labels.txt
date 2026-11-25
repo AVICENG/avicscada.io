@@ -1,0 +1,11 @@
+Space Temperature
+Flow Temperature
+Return Temperature
+Supply Air Temp
+Return Air Temp
+Duct Temperature
+Outside Humidity
+Space Humidity
+Supply Duct Humidity
+Outside Light Level
+Outside Air Temp

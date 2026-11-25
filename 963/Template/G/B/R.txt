@@ -1,0 +1,14 @@
+BACnet Device Information
+n1(i),BACnet Device Instance,15-char,100
+n1(v),BACnet Vendor Name,read-only,999
+n1(m),Model Name,read-only,999
+n1(s),System Status,read-only,999
+n1(V),Vendor Identifier,read-only,999
+n1(f),Firmware Revision,read-only,999
+<XXXX>(D),The iDentifier,15-char,100
+<XXXX>(C),Device Type Info.,read-only,999
+<XXXX>(F),Extended Attribute 'F',15-char,99
+<XXXX>(G),Extended Attribute 'G',15-char,99
+<XXXX>(L),Trend Address,15-char,99
+<XXXX>(N),Trend Lan Address,15-char,99
+<XXXX>(g),Alarm Group,15-char,99

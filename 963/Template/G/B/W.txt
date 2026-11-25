@@ -1,0 +1,3 @@
+BACnet Switch Adjustments
+<XXXX>($),The label,text,0
+<XXXX>(S),The Status,on/off,100 

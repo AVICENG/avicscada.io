@@ -1,0 +1,682 @@
+<?xml version='1.0' encoding='windows-1252' ?>
+<indexdata>
+<key name="963" >
+  <topic name="Mikä on 963?" url="About_963.htm" />
+  <key name="Käyttö" >
+    <topic name="kaaviosivun näyttäminen" url="Display_a_Schematic_Page.htm" />
+  </key>
+  <key name="Kirjautuminen" >
+    <topic name="Sisäänkirjautuminen" url="Log_In.htm" />
+  </key>
+</key>
+<key name="963 Server" >
+  <topic name="963:n käyttäminen asiakaspäätteeltä" url="Using_963_From_a_Client.htm" />
+  <key name="963 Kaaviosivunäyttö" >
+    <topic name="Kaaviosivunäyttö asiakaskoneella" url="Schematic_Page_Client_Display.htm" />
+  </key>
+  <key name="963 Server Aloitussivu" >
+    <topic name="963 Server Aloitussivu" url="963_Server_Start_up_Page.htm" />
+  </key>
+  <key name="963 Server oletussivu" >
+    <topic name="963 Server oletussivu" url="963_Server_Default_Page.htm" />
+  </key>
+  <key name="963 Serverin diagnostiikkasivu" >
+    <topic name="963 Serverin diagnostiikkasivu" url="Server_Status_Page.htm" />
+  </key>
+  <key name="Aikatalut näyttö" >
+    <topic name="Aikatalut näyttö" url="Diary_Display.htm" />
+  </key>
+  <key name="Hälytysnäyttö" >
+    <topic name="Hälytysnäyttö" url="Alarm_Viewer.htm" />
+  </key>
+  <key name="Laitenäyttö" >
+    <topic name="Laitenäyttö" url="Device_Viewer.htm" />
+  </key>
+  <key name="Ohjelmointitilan näyttö" >
+    <topic name="Ohjelmointitilan näyttö" url="Configuration_Mode_Display.htm" />
+  </key>
+  <key name="Yhteyden muodostaminen" >
+    <topic name="Yhteyden muodostaminen 963 Serveriin" url="Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="963 Server Aloitussivu" >
+  <topic name="963 Server Aloitussivu" url="963_Server_Start_up_Page.htm" />
+</key>
+<key name="963 Server oletussivu" >
+  <topic name="963 Server oletussivu" url="963_Server_Default_Page.htm" />
+</key>
+<key name="963 Serverin diagnostiikkasivu" >
+  <topic name="963 Serverin diagnostiikkasivu" url="Server_Status_Page.htm" />
+</key>
+<key name="963:n käyttäminen" >
+  <key name="Asiakaspäätteeltä" >
+    <topic name="963:n käyttäminen asiakaspäätteeltä" url="Using_963_From_a_Client.htm" />
+    <topic name="Peruskäyttö" url="Basic_Use.htm" />
+  </key>
+</key>
+<key name="About" >
+  <key name="963" >
+    <topic name="Mikä on 963?" url="About_963.htm" />
+  </key>
+  <key name="Tämä ohje" >
+    <topic name="Tästä ohjeesta" url="About_This_Manual.htm" />
+  </key>
+</key>
+<key name="Aikaohjelmapisteet" >
+  <key name="Muokkaa" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+  </key>
+</key>
+<key name="Aikaohjelmat" >
+  <key name="Katselu" >
+    <topic name="Aikaohjelman normaaliajan katselu" url="View_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Muokkaa" >
+    <topic name="Lisää poikkeusaika" url="Add_an_Exception.htm" />
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+    <topic name="Muokkaa aikaohjelmia" url="Adjust_Occupation_Times.htm" />
+    <topic name="Muuta aikaohjelmien normaaliaika-asetuksia" url="Change_Normal_Occupation_Times.htm" />
+  </key>
+</key>
+<key name="Aikatalut näyttö" >
+  <topic name="Aikatalut näyttö" url="Diary_Display.htm" />
+  <key name="Aikaohjelman muokkaaminen" >
+    <topic name="Muuta aikaohjelmien normaaliaika-asetuksia" url="Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Aikaohjelmien katselu" >
+    <topic name="Aikaohjelman normaaliajan katselu" url="View_Normal_Occupation_Times.htm" />
+    <topic name="Poikkeusaikojen katselu" url="View_Exceptions.htm" />
+  </key>
+  <key name="Muokkaa aikaohjelmapistettä" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Poikkeuksen muokkaaminen" >
+    <topic name="Muokkaa poikkeusaikaa" url="Edit_an_Exception.htm" />
+  </key>
+  <key name="Poikkeusaikojen katselu" >
+    <topic name="Poikkeusaikojen katselu" url="View_Exceptions.htm" />
+  </key>
+  <key name="Poista poikkeusaika" >
+    <topic name="Poikkeusaikojen poistaminen" url="Delete_an_Exception.htm" />
+  </key>
+</key>
+<key name="Analogiset arvot" >
+  <key name="Kaavio" >
+    <topic name="Näytä kaavio" url="Display_a_Chart.htm" />
+  </key>
+  <key name="Muuta" >
+    <topic name="Muuta analogista arvoa" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+    <topic name="Muuta asetusarvoa (Analogue Value) BACnet laitteessa" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+  </key>
+  <key name="Trendit" >
+    <topic name="Näytä tarkkuustrendi" url="Display_a_Precision_Graph.htm" />
+    <topic name="Näytä yhteenvetotrendi" url="Display_a_Compact_Graph.htm" />
+  </key>
+</key>
+<key name="Aseta PÄÄLLE/POIS" >
+  <key name="Hälytys käsittely" >
+    <topic name="hälytys käsittelyjen asettaminen PÄÄLLE/POIS" url="Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Asetusarvot" >
+  <key name="Muuta" >
+    <topic name="Muuta asetusarvoa (Analogue Value) BACnet laitteessa" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+  </key>
+</key>
+<key name="Asiakaspääte (Client) käyttäjät" >
+  <key name="Kirjaudu ulos" >
+    <topic name="Asiakaspäätekäyttäjän uloskirjautuminen" url="Log_Off_a_Client_User.htm" />
+  </key>
+  <key name="uloskirjautuminen" >
+    <topic name="Serverin diagnostiikan katselu" url="View_Server_Status.htm" />
+  </key>
+</key>
+<key name="Asiakaspäätekäyttäjän uloskirjautuminen" >
+  <topic name="Asiakaspäätekäyttäjän uloskirjautuminen" url="Log_Off_a_Client_User.htm" />
+</key>
+<key name="Asiakaspäätteen näyttötilat" >
+  <key name="963 Kaaviosivunäyttö" >
+    <topic name="Kaaviosivunäyttö asiakaskoneella" url="Schematic_Page_Client_Display.htm" />
+  </key>
+  <key name="963 Server Aloitussivu" >
+    <topic name="963 Server Aloitussivu" url="963_Server_Start_up_Page.htm" />
+  </key>
+  <key name="963 Server oletussivu" >
+    <topic name="963 Server oletussivu" url="963_Server_Default_Page.htm" />
+  </key>
+  <key name="963 Serverin diagnostiikkasivu" >
+    <topic name="963 Serverin diagnostiikkasivu" url="Server_Status_Page.htm" />
+  </key>
+  <key name="Aikatalut näyttö" >
+    <topic name="Aikatalut näyttö" url="Diary_Display.htm" />
+  </key>
+  <key name="Hälytysnäyttö" >
+    <topic name="Hälytysnäyttö" url="Alarm_Viewer.htm" />
+  </key>
+  <key name="Laitenäyttö" >
+    <topic name="Laitenäyttö" url="Device_Viewer.htm" />
+  </key>
+  <key name="Ohjelmointitilan näyttö" >
+    <topic name="Ohjelmointitilan näyttö" url="Configuration_Mode_Display.htm" />
+  </key>
+</key>
+<key name="Asiakaspäätteen uloskirjautuminen" >
+  <topic name="Serverin diagnostiikan katselu" url="View_Server_Status.htm" />
+</key>
+<key name="BACnet arvo" >
+  <key name="Palauta säädölle" >
+    <topic name="BACnet laitteen palauttaminen säädölle" url="Relinquish_Control_of_a_BACnet_Value.htm" />
+  </key>
+</key>
+<key name="BACnet laitteen palauttaminen säädölle" >
+  <topic name="BACnet laitteen palauttaminen säädölle" url="Relinquish_Control_of_a_BACnet_Value.htm" />
+</key>
+<key name="Digitaalinen arvo" >
+  <key name="Muuta" >
+    <topic name="Muuta digitaalista arvoa" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+    <topic name="Muuta kytkimen arvoa (Digital Value) BACnet laitteessa" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+  </key>
+</key>
+<key name="Dr Technicare" >
+  <topic name="Trendin Yhteystiedot" url="Contacting_Trend.htm" />
+</key>
+<key name="Emuloi hälytys käsittely" >
+  <topic name="Suorita hälytys käsittelyt manuaalisesti" url="Run_Alarm_Actions_Manually.htm" />
+</key>
+<key name="Hälytykset" >
+  <key name="Historian katselu" >
+    <topic name="Hälytyshistorian katselu" url="View_Alarm_History.htm" />
+  </key>
+  <key name="Käsittelyt" >
+    <topic name="Hälytys käsittely" url="Action_Alarms.htm" />
+    <topic name="Hälytysten käsittely hälytyspaneelista" url="Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Näkymä" >
+    <topic name="Hälytyshistorian katselu" url="View_Alarm_History.htm" />
+    <topic name="Hälytysten katselu" url="View_Alarms.htm" />
+    <topic name="Saapuvien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+  </key>
+</key>
+<key name="Hälytys käsittelyt" >
+  <topic name="Hälytys käsittelyt" url="Action_Alarms.htm" />
+  <key name="Aseta Päälle/Pois" >
+    <topic name="hälytys käsittelyjen asettaminen PÄÄLLE/POIS" url="Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+  <key name="Hälytyspaneelista" >
+    <topic name="Hälytysten käsittely hälytyspaneelista" url="Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Suorita manuaalisesti" >
+    <topic name="Suorita hälytys käsittelyt manuaalisesti" url="Run_Alarm_Actions_Manually.htm" />
+  </key>
+</key>
+<key name="Hälytysnäyttö" >
+  <topic name="Hälytysnäyttö" url="Alarm_Viewer.htm" />
+</key>
+<key name="Hälytyspaneeli" >
+  <key name="Hälytys käsittelyt" >
+    <topic name="Hälytysten käsittely hälytyspaneelista" url="Action_Alarms_from_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Hiljennä" >
+    <topic name="Hiljennä hälytyspaneeli" url="Mute_an_Alarm_Panel.htm" />
+  </key>
+  <key name="Piilota" >
+    <topic name="Piilota hälytyspaneeli" url="Hide_Alarm_Panels.htm" />
+  </key>
+</key>
+<key name="Hiljennä hälytyspaneeli" >
+  <topic name="Hiljennä hälytyspaneeli" url="Mute_an_Alarm_Panel.htm" />
+</key>
+<key name="IQ3:n WEB-sivut" >
+  <key name="Näytä" >
+    <topic name="IQ3:n WEB-sivujen näyttäminen" url="display_iq3_web_pages.htm" />
+  </key>
+</key>
+<key name="Kaavio" >
+  <key name="Näytä" >
+    <topic name="Näytä kaavio" url="Display_a_Chart.htm" />
+  </key>
+  <key name="Näytä koordinaatit" >
+    <topic name="Näytä pisteen koordinaatit" url="Display_a_Points_Co-ordinates.htm" />
+  </key>
+</key>
+<key name="Kaaviosivunäyttö asiakaskoneella" >
+  <topic name="Kaaviosivunäyttö asiakaskoneella" url="Schematic_Page_Client_Display.htm" />
+</key>
+<key name="Katselu" >
+  <key name="Aikaohjelmat" >
+    <topic name="Aikaohjelman normaaliajan katselu" url="View_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Hälytykset" >
+    <topic name="Hälytyshistorian katselu" url="View_Alarm_History.htm" />
+    <topic name="Hälytysten katselu" url="View_Alarms.htm" />
+    <topic name="Saapuvien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Hälytyshistoria" >
+    <topic name="Hälytyshistorian katselu" url="View_Alarm_History.htm" />
+  </key>
+  <key name="Lokitiedot (Historia)" >
+    <topic name="Lokitietojen (Historia) näyttäminen" url="Display_Logged_Data.htm" />
+  </key>
+  <key name="Saapuvat hälytykset" >
+    <topic name="Saapuvien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Serverin diagnostiikka" >
+    <topic name="Serverin diagnostiikan katselu" url="View_Server_Status.htm" />
+  </key>
+  <key name="Trendikäyrän tiedot" >
+    <topic name="Näytä trendikäyrän tiedot" url="Display_Graph_Data.htm" />
+  </key>
+</key>
+<key name="Käyttäjä" >
+  <key name="Kirjaudu ulos" >
+    <topic name="Kirjaudu ulos" url="Log_Off.htm" />
+  </key>
+  <key name="Sisäänkirjautuminen" >
+    <topic name="Sisäänkirjautuminen" url="Log_In.htm" />
+  </key>
+</key>
+<key name="Kirjautuminen" >
+  <key name="963 Server" >
+    <topic name="963:n käyttäminen asiakaspäätteeltä" url="Using_963_From_a_Client.htm" />
+    <topic name="Peruskäyttö" url="Basic_Use.htm" />
+    <topic name="Sisäänkirjautuminen" url="Log_In.htm" />
+    <topic name="Yhteyden muodostaminen 963 Serveriin" url="Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="Konfigurointi" >
+  <key name="Säätimet" >
+    <topic name="Säätimien konfigurointi" url="Enter_Configuration_Mode_on_Pre_IQ3_Controllers.htm" />
+  </key>
+</key>
+<key name="Kytkin" >
+  <key name="Muuta" >
+    <topic name="Muuta kytkimen arvoa (Digital Value) BACnet laitteessa" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+  </key>
+</key>
+<key name="Laitenäyttö" >
+  <topic name="Laitenäyttö" url="Device_Viewer.htm" />
+</key>
+<key name="Lataa" >
+  <key name="Trendikäyrän määritykset" >
+    <topic name="Trendikäyrän määritysten lataaminen" url="Load_a_Graph_Definition.htm" />
+  </key>
+</key>
+<key name="Lisää" >
+  <key name="Poikkeusaika" >
+    <topic name="Lisää poikkeus" url="Add_an_Exception.htm" />
+  </key>
+  <key name="Poikkeuspäivämalli" >
+    <topic name="Lisää Poikkeuspäivämalli" url="Add_a_Special_Day_Template.htm" />
+  </key>
+  <key name="Viikkomalli" >
+    <topic name="Viikkomallin lisääminen" url="Add_a_Week_Set_Template.htm" />
+  </key>
+</key>
+<key name="Määritä" >
+  <key name="Poikkeusmallit" >
+    <topic name="Poikkeusmallien määrittäminen" url="Setup_Exception_Templates.htm" />
+    <topic name="Viikkomallin lisääminen" url="Add_a_Week_Set_Template.htm" />
+  </key>
+  <key name="Special Day Template" >
+    <topic name="Lisää Poikkeuspäivämalli" url="Add_a_Special_Day_Template.htm" />
+  </key>
+</key>
+<key name="Muokkaa" >
+  <key name="Aikaohjelmapiste" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Aikaohjelmat" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+    <topic name="Muokkaa aikaohjelmia" url="Adjust_Occupation_Times.htm" />
+    <topic name="Muuta aikaohjelmien normaaliaika-asetuksia" url="Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Analogiset arvot" >
+    <topic name="Muuta analogista arvoa" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+  </key>
+  <key name="Digitaaliset arvot" >
+    <topic name="Muuta digitaalista arvoa" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+  </key>
+  <key name="Mallit" >
+    <topic name="Muokkaa mallia" url="Edit_a_Template.htm" />
+  </key>
+  <key name="Poikkeusajat" >
+    <topic name="Lisää poikkeusaika" url="Add_an_Exception.htm" />
+    <topic name="Muokkaa poikkeusaikaa" url="Edit_an_Exception.htm" />
+  </key>
+</key>
+<key name="Muuta" >
+  <key name="Aikaohjelmapisteet" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Aikaohjelmat" >
+    <topic name="Lisää poikkeusaika" url="Add_an_Exception.htm" />
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+    <topic name="Muokkaa aikaohjelmia" url="Adjust_Occupation_Times.htm" />
+  </key>
+  <key name="Analogiset arvot" >
+    <topic name="Muuta analogista arvoa" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+    <topic name="Muuta asetusarvoa (Analogue Value) BACnet laitteessa" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+  </key>
+  <key name="Asetusarvot" >
+    <topic name="Muuta asetusarvoa (Analogue Value) BACnet laitteessa" url="Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm" />
+  </key>
+  <key name="Digitaaliset arvot" >
+    <topic name="Muuta digitaalista arvoa" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+    <topic name="Muuta kytkimen arvoa (Digital Value) BACnet laitteessa" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+  </key>
+  <key name="Kytkimet" >
+    <topic name="Muuta kytkimen arvoa (Digital Value) BACnet laitteessa" url="Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm" />
+  </key>
+</key>
+<key name="Näkymät" >
+  <key name="963 Kaaviosivunäyttö" >
+    <topic name="Kaaviosivunäyttö asiakaskoneella" url="Schematic_Page_Client_Display.htm" />
+  </key>
+  <key name="963 Server Aloitussivu" >
+    <topic name="963 Server Aloitussivu" url="963_Server_Start_up_Page.htm" />
+  </key>
+  <key name="963 Server oletussivu" >
+    <topic name="963 Server oletussivu" url="963_Server_Default_Page.htm" />
+  </key>
+  <key name="963 Serverin diagnostiikkasivu" >
+    <topic name="963 Serverin diagnostiikkasivu" url="Server_Status_Page.htm" />
+  </key>
+  <key name="Aikatalut näyttö" >
+    <topic name="Aikatalut näyttö" url="Diary_Display.htm" />
+  </key>
+  <key name="Hälytysnäyttö" >
+    <topic name="Hälytysnäyttö" url="Alarm_Viewer.htm" />
+  </key>
+  <key name="Laitenäyttö" >
+    <topic name="Laitenäyttö" url="Device_Viewer.htm" />
+  </key>
+  <key name="Ohjelmointitilan näyttö" >
+    <topic name="Ohjelmointitilan näyttö" url="Configuration_Mode_Display.htm" />
+  </key>
+</key>
+<key name="Näytä" >
+  <key name="963:n aloitusivu" >
+    <topic name="Näytä 963:n aloitusivu" url="Display_the_963_s_Startup_Page.htm" />
+  </key>
+  <key name="Aikaohjelmat" >
+    <topic name="Aikaohjelman normaaliajan katselu" url="View_Normal_Occupation_Times.htm" />
+    <topic name="Poikkeusaikojen katselu" url="View_Exceptions.htm" />
+  </key>
+  <key name="Hälytys" >
+    <topic name="Hälytyshistorian katselu" url="View_Alarm_History.htm" />
+    <topic name="Hälytysten katselu" url="View_Alarms.htm" />
+    <topic name="Saapuvien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+  </key>
+  <key name="IQ3:n WEB-sivut" >
+    <topic name="IQ3:n WEB-sivujen näyttäminen" url="display_iq3_web_pages.htm" />
+  </key>
+  <key name="Kaaviosivut" >
+    <topic name="kaaviosivun näyttäminen" url="Display_a_Schematic_Page.htm" />
+    <topic name="Peruskäyttö" url="Basic_Use.htm" />
+  </key>
+  <key name="Laitenäyttö" >
+    <topic name="Näytä IQ-järjestelmä" url="Display_the_IQ_System.htm" />
+  </key>
+  <key name="Lokitiedot (Historia)" >
+    <topic name="Lokitietojen (Historia) näyttäminen" url="Display_Logged_Data.htm" />
+  </key>
+  <key name="Pisteen koordinaatit" >
+    <topic name="Näytä pisteen koordinaatit" url="Display_a_Points_Co-ordinates.htm" />
+  </key>
+  <key name="Poikkeusajat" >
+    <topic name="Poikkeusaikojen katselu" url="View_Exceptions.htm" />
+  </key>
+  <key name="Tallennettu Trendikäyrä" >
+    <topic name="Tallennetun trendikäyrän toistaminen" url="Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Tallennukset" >
+    <topic name="Tallennetun trendikäyrän toistaminen" url="Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Trendikäyrän ruudukko" >
+    <topic name="Näytä trendikäyrän ruudukko" url="Display_a_Grid_on_a_Graph.htm" />
+  </key>
+  <key name="Trendikäyrän tiedot" >
+    <topic name="Näytä trendikäyrän tiedot" url="Display_Graph_Data.htm" />
+  </key>
+  <key name="Trendit" >
+    <topic name="Näytä tarkkuustrendi" url="Display_a_Precision_Graph.htm" />
+    <topic name="Näytä yhteenvetotrendi" url="Display_a_Compact_Graph.htm" />
+    <topic name="Tallennetun trendikäyrän toistaminen" url="Playback_a_Recorded_Graph.htm" />
+    <topic name="Trendikäyrän määritysten lataaminen" url="Load_a_Graph_Definition.htm" />
+  </key>
+  <key name="Yhteenvetotrendi" >
+    <topic name="Näytä yhteenvetotrendi" url="Display_a_Compact_Graph.htm" />
+  </key>
+  <key name="Zoomaa sisään" >
+    <topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Zoomaa ulos" >
+    <topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+<key name="Ohjelmointitilan näyttö" >
+  <topic name="Ohjelmointitilan näyttö" url="Configuration_Mode_Display.htm" />
+</key>
+<key name="Pääsy 963:een asiakaspäätteeltä" >
+  <topic name="963:n käyttäminen asiakaspäätteeltä" url="Using_963_From_a_Client.htm" />
+  <topic name="Peruskäyttö" url="Basic_Use.htm" />
+  <key name="Virheilmoitukset" >
+    <topic name="Virheilmoitukset" url="Error_Messages.htm" />
+  </key>
+</key>
+<key name="Peruskäyttö" >
+  <topic name="kaaviosivun näyttäminen" url="Display_a_Schematic_Page.htm" />
+  <topic name="Peruskäyttö" url="Basic_Use.htm" />
+</key>
+<key name="Piilota" >
+  <key name="Hälytyspaneeli" >
+    <topic name="Piilota hälytyspaneeli" url="Hide_Alarm_Panels.htm" />
+  </key>
+</key>
+<key name="Poikkeusajat" >
+  <key name="Katselu" >
+    <topic name="Poikkeusaikojen katselu" url="View_Exceptions.htm" />
+  </key>
+  <key name="Lisää" >
+    <topic name="Lisää poikkeusaika" url="Add_an_Exception.htm" />
+  </key>
+  <key name="Muokkaa" >
+    <topic name="Lisää poikkeusaika" url="Add_an_Exception.htm" />
+    <topic name="Muokkaa poikkeusaikaa" url="Edit_an_Exception.htm" />
+  </key>
+  <key name="Poista" >
+    <topic name="Poikkeusaikojen poistaminen" url="Delete_an_Exception.htm" />
+  </key>
+</key>
+<key name="Poikkeusmallit" >
+  <key name="Määritä" >
+    <topic name="Poikkeusmallien määrittäminen" url="Setup_Exception_Templates.htm" />
+  </key>
+</key>
+<key name="Poikkeuspäivämalli" >
+  <key name="Lisää" >
+    <topic name="Lisää Poikkeuspäivämalli" url="Add_a_Special_Day_Template.htm" />
+  </key>
+</key>
+<key name="Poista" >
+  <key name="Mallit" >
+    <topic name="Mallien poistaminen" url="Delete_a_Template.htm" />
+  </key>
+  <key name="Poikkeusajat" >
+    <topic name="Poikkeusaikojen poistaminen" url="Delete_an_Exception.htm" />
+  </key>
+</key>
+<key name="Ruudukko" >
+  <key name="Trendikäyrä" >
+    <topic name="Näytä trendikäyrän ruudukko" url="Display_a_Grid_on_a_Graph.htm" />
+  </key>
+</key>
+<key name="Säädin" >
+  <key name="Konfigurointi" >
+    <topic name="Säätimien konfigurointi" url="Enter_Configuration_Mode_on_Pre_IQ3_Controllers.htm" />
+  </key>
+</key>
+<key name="Saapuvat hälytykset" >
+  <key name="Poista" >
+    <topic name="Saapuvien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+  </key>
+</key>
+<key name="Salli" >
+  <key name="Hälytys käsittely" >
+    <topic name="hälytys käsittelyjen asettaminen PÄÄLLE/POIS" url="Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Sammuta" >
+  <key name="Hälytys käsittely" >
+    <topic name="hälytys käsittelyjen asettaminen PÄÄLLE/POIS" url="Turn_Alarm_Actions_ON_OFF.htm" />
+  </key>
+</key>
+<key name="Serverin diagnostiikan katselu" >
+  <key name="Katselu" >
+    <topic name="Serverin diagnostiikan katselu" url="View_Server_Status.htm" />
+  </key>
+</key>
+<key name="Siirry sivulle" >
+  <topic name="kaaviosivun näyttäminen" url="Display_a_Schematic_Page.htm" />
+  <topic name="Peruskäyttö" url="Basic_Use.htm" />
+</key>
+<key name="Sisäänkirjautuminen" >
+  <topic name="Sisäänkirjautuminen" url="Log_In.htm" />
+  <topic name="Yhteyden muodostaminen 963 Serveriin" url="Connect_to_963_Server.htm" />
+</key>
+<key name="Sivu" >
+  <key name="Näyttö" >
+    <topic name="kaaviosivun näyttäminen" url="Display_a_Schematic_Page.htm" />
+    <topic name="Peruskäyttö" url="Basic_Use.htm" />
+  </key>
+  <key name="Siirry" >
+    <topic name="kaaviosivun näyttäminen" url="Display_a_Schematic_Page.htm" />
+    <topic name="Peruskäyttö" url="Basic_Use.htm" />
+  </key>
+</key>
+<key name="Suorita" >
+  <topic name="Hälytyskäsittelyjen suorittaminen manuaalisesti" url="Run_a_Manual_Alarm_Action.htm" />
+  <key name="963 Käsky" >
+    <topic name="Hälytyskäsittelyjen suorittaminen manuaalisesti" url="Run_a_Manual_Alarm_Action.htm" />
+  </key>
+  <key name="Hälytys käsittelyt manuaalisesti" >
+    <topic name="Suorita hälytys käsittelyt manuaalisesti" url="Run_Alarm_Actions_Manually.htm" />
+  </key>
+  <key name="Manuaaliset hälytyskäsittelyt" >
+    <topic name="Hälytyskäsittelyjen suorittaminen manuaalisesti" url="Run_a_Manual_Alarm_Action.htm" />
+  </key>
+</key>
+<key name="Tarkkuustrendit" >
+  <topic name="Näytä tarkkuustrendi" url="Display_a_Precision_Graph.htm" />
+</key>
+<key name="Tässä ohjeessa käytetyt ilmaisut" >
+  <topic name="Tässä ohjeessa käytetyt ilmaisut" url="Conventions_Used_in_this_Manual.htm" />
+</key>
+<key name="Tekninen tuki" >
+  <topic name="Trendin Yhteystiedot" url="Contacting_Trend.htm" />
+</key>
+<key name="Toistaminen" >
+  <key name="Trendit" >
+    <topic name="Tallennetun trendikäyrän toistaminen" url="Playback_a_Recorded_Graph.htm" />
+  </key>
+</key>
+<key name="Trendin Yhteystiedot" >
+  <topic name="Trendin Yhteystiedot" url="Contacting_Trend.htm" />
+</key>
+<key name="Trendit" >
+  <key name="Kaavio" >
+    <topic name="Näytä kaavio" url="Display_a_Chart.htm" />
+  </key>
+  <key name="Määritys" >
+    <topic name="Trendikäyrän määritysten lataaminen" url="Load_a_Graph_Definition.htm" />
+  </key>
+  <key name="Näytä" >
+    <topic name="Näytä Tarkkuustrendi" url="Display_a_Precision_Graph.htm" />
+    <topic name="Näytä yhteenvetotrendi" url="Display_a_Compact_Graph.htm" />
+    <topic name="Tallennetun trendikäyrän toistaminen" url="Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Näytä koordinaatit" >
+    <topic name="Näytä pisteen koordinaatit" url="Display_a_Points_Co-ordinates.htm" />
+  </key>
+  <key name="Näytä ruudukko" >
+    <topic name="Näytä trendikäyrän ruudukko" url="Display_a_Grid_on_a_Graph.htm" />
+  </key>
+  <key name="Tarkkuus" >
+    <topic name="Näytä tarkkuustrendi" url="Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Toisto" >
+    <topic name="Tallennetun trendikäyrän toistaminen" url="Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Trendikäyrän määritysten lataaminen" >
+    <topic name="Trendikäyrän määritysten lataaminen" url="Load_a_Graph_Definition.htm" />
+  </key>
+  <key name="Yhteenveto" >
+    <topic name="Näytä yhteenvetotrendi" url="Display_a_Compact_Graph.htm" />
+  </key>
+  <key name="Zoom ulos" >
+    <topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Zoomaa sisään" >
+    <topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+<key name="Tyhjennä 'saapuneet hälytykset' -lista" >
+  <topic name="Saapuvien hälytysten katselu" url="View_Incoming_Alarms.htm" />
+</key>
+<key name="uloskirjautuminen" >
+  <topic name="Kirjaudu ulos" url="Log_Off.htm" />
+</key>
+<key name="Vaihda" >
+  <key name="Aikaohjelmapisteet" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Aikaohjelmat" >
+    <topic name="Muokkaa aikaohjelmapistettä" url="Adjust_a_Timezone.htm" />
+    <topic name="Muokkaa aikaohjelmia" url="Adjust_Occupation_Times.htm" />
+    <topic name="Muuta aikaohjelmien normaaliaika-asetuksia" url="Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Analogiset arvot" >
+    <topic name="Muuta analogista arvoa" url="Adjust_a_Knob_in_a_Trend_Device.htm" />
+  </key>
+  <key name="Digitaaliset arvot" >
+    <topic name="Muuta digitaalista arvoa" url="Adjust_a_Switch_in_a_Trend_Device.htm" />
+  </key>
+  <key name="Malli" >
+    <topic name="Muokkaa mallia" url="Edit_a_Template.htm" />
+  </key>
+</key>
+<key name="Valitse" >
+  <key name="Mitkä sarakkeet näytetään" >
+    <topic name="Valitse näytettävät sarakkeet" url="Specify_What_Columns_are_Displayed.htm" />
+  </key>
+</key>
+<key name="View incoming alarms" >
+  <topic name="Suorita hälytys käsittelyt manuaalisesti" url="Run_Alarm_Actions_Manually.htm" />
+</key>
+<key name="Viikkomalli" >
+  <key name="Lisää" >
+    <topic name="Viikkomallin lisääminen" url="Add_a_Week_Set_Template.htm" />
+  </key>
+</key>
+<key name="Virheilmoitukset" >
+  <topic name="Virheilmoitukset" url="Error_Messages.htm" />
+</key>
+<key name="Yhteyden muodostaminen" >
+  <topic name="Yhteyden muodostaminen 963 Serveriin" url="Connect_to_963_Server.htm" />
+  <key name="963 Serveriin" >
+    <topic name="Yhteyden muodostaminen 963 Serveriin" url="Connect_to_963_Server.htm" />
+  </key>
+</key>
+<key name="Yhteyden sulkeminen" >
+  <topic name="Serverin diagnostiikan katselu" url="View_Server_Status.htm" />
+</key>
+<key name="Zoomaus" >
+  <key name="Sisään" >
+    <topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Ulos" >
+    <topic name="Trendikäyrän zoomaus" url="Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+
+</indexdata>

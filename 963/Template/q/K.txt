@@ -1,0 +1,7 @@
+Knob adjustments for IQ3
+<XXXX>(V),The value,Units,100
+<XXXX>(T),Top of range,0
+<XXXX>(B),Bottom of range,Units,0
+<XXXX>(P),The PIN level,0-99,0
+<XXXX>(%),The units,please edit direct from device view,101
+<XXXX>($),The label,please edit direct from device view,101

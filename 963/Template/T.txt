@@ -1,0 +1,11 @@
+Time adjustments
+T(H),Clock Hours,0-23,99
+T(N),Clock Minutes,0-59,99
+T(D),Day of month,0-31,99
+T(M),Month of year,0-12,99
+T(Y),Year,0-99,99
+T(G),Hours change for daylight saving,0-2,99
+T(S),Start day for daylight saving,0-31,99
+T(O),Start month for daylight saving,0-12,99
+T(E),End day for daylight saving,0-31,99
+T(T),End month for daylight saving,0-12,99

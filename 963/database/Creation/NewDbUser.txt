@@ -1,0 +1,25 @@
+USE master
+GO
+
+-- LOGIN_NAME
+-- LOGIN_PASSWORD
+
+-- See if the log in exists
+SELECT name FROM master..syslogins WHERE name = N'<LOGIN_NAME>'
+
+IF @@ROWCOUNT < 1
+BEGIN
+	-- If the log in does not exist then create it
+	EXEC sp_addlogin N'<LOGIN_NAME>', N'<LOGIN_PASSWORD>', N'master'
+	PRINT N'Log in NOT found. Adding new user log in'
+
+	-- Add the fixed server role to the log in
+	EXEC sp_addsrvrolemember N'<LOGIN_NAME>', N'sysadmin'
+	PRINT N'Added fixed server role to log in'
+
+END
+ELSE
+BEGIN
+	PRINT N'Log in found'
+END
+GO

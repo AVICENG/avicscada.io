@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<indexdata>
+<key name="Undtagelser" >
+  <topic name="Redigering af en Undtagelse" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+  <key name="Redigering af" >
+    <topic name="Redigering af en Undtagelse" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+    <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+  <key name="Se" >
+    <topic name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Slet" >
+    <topic name="Slet en Undtagelse" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+  </key>
+  <key name="Tilføj" >
+    <topic name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+  </key>
+</key>
+<key name="Vis" >
+  <topic name="Vis 963s Start-Side" url="Using_963_From_a_Web_Browser_Display_the_963_s_Startup_Page.htm" />
+  <key name="963's Start-Side" >
+    <topic name="Vis 963s Start-Side" url="Using_963_From_a_Web_Browser_Display_the_963_s_Startup_Page.htm" />
+  </key>
+  <key name="Alarmer" >
+    <topic name="Se Alarmer" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+    <topic name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+    <topic name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+  </key>
+  <key name="Driftstider" >
+    <topic name="Se Driftstider" url="Using_963_From_a_Web_Browser_View_Occupation_Times.htm" />
+    <topic name="Se Normale Driftstider" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+    <topic name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+  </key>
+  <key name="Enhedsoversigten" >
+    <topic name="Vis Enhedsoversigten" url="Using_963_From_a_Web_Browser_Display_the_Device_Viewer.htm" />
+  </key>
+  <key name="Forrige Side" >
+    <topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+  </key>
+  <key name="Grafdata" >
+    <topic name="Vis Grafdata" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+  </key>
+  <key name="Grafer" >
+    <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+    <topic name="Vis en Graf" url="Using_963_From_a_Web_Browser-Display_a_Graph.htm" />
+    <topic name="Vis en Grafindstilling" url="Using_963_From_a_Web_Browser_Display_a_Graph_Set_Up.htm" />
+    <topic name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+    <topic name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+  </key>
+  <key name="Grafindstilling" >
+    <topic name="Vis en Grafindstilling" url="Using_963_From_a_Web_Browser_Display_a_Graph_Set_Up.htm" />
+  </key>
+  <key name="Kompakt Graf" >
+    <topic name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+  </key>
+  <key name="Logget Data" >
+    <topic name="Vis Logget Data" url="Using_963_From_a_Web_Browser_Display_Logged_Data.htm" />
+  </key>
+  <key name="Næste Side" >
+    <topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+  </key>
+  <key name="Registreret Data" >
+    <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Registreret Graf" >
+    <topic name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+  </key>
+  <key name="Sider" >
+    <topic name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+  </key>
+  <key name="Skematiske Sider" >
+    <topic name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+    <topic name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+  </key>
+  <key name="Zoom Ind" >
+    <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Zoom Ud" >
+    <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+<key name="Værdier" >
+  <topic name="Justering af Værdier" url="Using_963_From_a_Web_Browser_Adjust_Values.htm" />
+  <key name="Justering af" >
+    <topic name="Justering af Værdier" url="Using_963_From_a_Web_Browser_Adjust_Values.htm" />
+  </key>
+</key>
+<key name="Zoom" >
+  <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  <key name="Formindsk" >
+    <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+  <key name="Forstør" >
+    <topic name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+  </key>
+</key>
+<key name="Ændring af" >
+  <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  <key name="Analoge Værdier" >
+    <topic name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+  </key>
+  <key name="Digitale Værdier" >
+    <topic name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+  </key>
+  <key name="Driftstider" >
+    <topic name="Justering af Driftstider" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+    <topic name="Ændring af Normale Driftstider" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+  </key>
+  <key name="Tidszoner" >
+    <topic name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+  </key>
+  <key name="Værdier" >
+    <topic name="Justering af Værdier" url="Using_963_From_a_Web_Browser_Adjust_Values.htm" />
+  </key>
+</key>
+
+</indexdata>

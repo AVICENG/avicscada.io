@@ -1,0 +1,8 @@
+; Dynamic Menus for IQ EYE Data Collector
+; 2 October 2008
+; Trend Control Systems Ltd
+
+[MENUITEM]
+Title=<TRANSLATION 34808>
+Action=BROWSER_POPUP http://iqeye.trend-controls.com/,0,0,0,0,IQ EYE
+

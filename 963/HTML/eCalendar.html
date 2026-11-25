@@ -1,0 +1,123 @@
+<!doctype html public>
+<!--[if lt IE 7]>      <html class="lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+    <title>963</title>    
+    <!-- Styles -->
+    <link href="/HTML/CSS/jquery-ui.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/jquery-ui-titlebars.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/TimeZoneEditor.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/TreeViewWidget.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/colorPicker.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/jquery.contextMenu.css" rel="stylesheet" type="text/css" />
+	<link href="/HTML/CSS/Common.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/TimeSchemeList.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/EditTimeSchemeView.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/Wizard.css" rel="stylesheet" type="text/css" />
+    <link href="/HTML/CSS/DatePicker.css" rel="stylesheet" type="text/css" />
+   
+    <!-- JQuery library -->
+    <script src="/HTML/js/libs/jquery.js" type="text/javascript"></script>   
+    <script src="/HTML/js/libs/jquery-ui.js" type="text/javascript"></script>    
+    
+    <!-- Backbone library -->
+    <script src="/HTML/js/libs/underscore.js" type="text/javascript"></script>   
+    <script src="/HTML/js/libs/backbone.js" type="text/javascript"></script>    
+    <script src="/HTML/js/Libs/jquery.treeview.js" type="text/javascript"></script>
+
+    <!-- Third party tools -->
+    <script src="/HTML/js/Libs/jquery.colorPicker.js" type="text/javascript"></script>
+    <script src="/HTML/js/Libs/modernizr.custom.js" type="text/javascript"></script>
+    <script src="/HTML/js/Libs/jquery.contextMenu.js" type="text/javascript"></script>
+	<script src="/HTML/js/eCalendar.js" type="text/javascript"></script> 
+	
+    <!-- Application resources -->
+    <script src="/HTML/js/StringResource.js" type="text/javascript"></script>
+	<script src="/HTML/js/jquery.ui.datepicker-settings.js" type="text/javascript"></script>
+
+    <!-- Constants -->
+    <script src="/HTML/js/Common/Constants.js" type="text/javascript"></script>
+
+    <!-- Server communication library -->
+    <script src="/HTML/js/Common/ServerCommunication.js" type="text/javascript"></script>
+
+    <!-- Application utilities -->
+    <script src="/HTML/js/Common/Utilities.js" type="text/javascript"></script>
+    <script src="/HTML/js/Common/WeekSetModelXMLGenerator.js" type="text/javascript"></script>
+	<script src="/HTML/js/Common/backbone-Synchronization.js" type="text/javascript"></script>
+	<script src="/HTML/js/Common/backbone-Events-Dispatcher.js" type="text/javascript"></script>
+
+    <!-- Model -->
+    <script src="/HTML/js/Models/ActivationPeriodStructure.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/DayStructure.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/WeekSetModel.js" type="text/javascript"></script>    
+    <script src="/HTML/js/Models/ModelTypeSelection.js" type="text/javascript"></script>   
+    <script src="/HTML/js/Models/TimeZoneModel.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/DiaryModel.js" type="text/javascript"></script>
+	<script src="/HTML/js/Models/DiaryCollection.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/DiaryGroupUserSelection.js" type="text/javascript"></script>
+	<script src="/HTML/js/Models/WeeksetCollection.js" type="text/javascript"></script>
+	<script src="/HTML/js/Models/SpecialDayCollection.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/TimeSchemeUserSelection.js" type="text/javascript"></script>
+	<script src="/HTML/js/Models/TabCollection.js" type="text/javascript"></script>
+	<script src="/HTML/js/Models/Exception.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/ExceptionCollection.js" type="text/javascript"></script>
+    <script src="/HTML/js/Models/WeekSetTimeChangeModel.js" type="text/javascript"></script>    
+    <script src="/HTML/js/Models/ImportTimeSchemeModel.js" type="text/javascript"></script>   
+     <!-- Data provider -->
+    <script src="/HTML/js/Common/ModelGenerator.js" type="text/javascript"></script>
+
+    <!-- Widget -->
+    <script src="/HTML/js/Widgets/ActivationTimePlannerWidget.js" type="text/javascript"></script>
+    <script src="/HTML/js/Widgets/TreeViewWidget.js" type="text/javascript"></script>
+	<script src="/HTML/js/Widgets/timeinputWidget.js" type="text/javascript"></script>
+		<script src="/HTML/js/Widgets/DatePickerWidget.js" type="text/javascript"></script>
+    <!-- View -->
+	<script src="/HTML/js/Views/DisplayDiaryView.js" type="text/javascript"></script>
+	<script src="/HTML/js/Views/NavUserSelectionTimeScheme.js" type="text/javascript"></script>	
+	<script src="/HTML/js/Views/EditTimeSchemeView.js" type="text/javascript"></script>
+	<script src="/HTML/js/Views/TimeSchemeView.js" type="text/javascript"></script>
+	<script src="/HTML/js/Views/DisplayTimeSchemeView.js" type="text/javascript"></script>
+	<script src="/HTML/js/Views/DialogDisplayView.js" type="text/javascript"></script>
+	<script src="/HTML/js/Views/TabbedView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/TimeSchemeContainerView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/ExceptionView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/ExceptionLabelView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/ExceptionWizardSummaryView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/WizardView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/CalendarView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/BrowseIQZoneview.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/ToolTipView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/ApplyTimeSchemeView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/DefaultTimeSchemeView.js" type="text/javascript"></script>
+    <script src="/HTML/js/Views/ChangeDefaultTimeSchemeOnDelete.js" type="text/javascript"></script>   
+    <script src="/HTML/js/Views/ImportTimeSchemeView.js" type="text/javascript"></script>   
+    <script src="/HTML/js/Views/ExceptionListView.js" type="text/javascript"></script>   
+    <script src="/HTML/js/eCalendarApp.js" type="text/javascript"></script> 
+ 
+</head>
+<body >
+
+<div id="Container" class="row-fluid panel">
+
+    <div class="span3 scrollable panel panel-divider explorer">
+	<!-- Displays diary groups -->		
+	<div id="DisplayDiaryViewElement" class="panel">
+		<!-- Displays Tree view -->        
+		<div id="treeView" class="filetree"></div>
+	</div>
+	</div>
+    <div id="TabbedPanel" class="span9 panel scrollable">
+
+	</div>
+</div>
+
+
+<!-- Displays edit time scheme view -->
+<div style="visibility: visible" id="EditTimeSchemeViewElement"></div>
+	
+</body>
+</html>

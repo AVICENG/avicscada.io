@@ -1,0 +1,9 @@
+Override
+Duty Pump
+Pump 1 Enable
+Pump 2 Enable
+Meter Reset
+Alarm Reset
+Hour Run Reset
+Maint Override
+

@@ -1,0 +1,10 @@
+IQeco Sensor Parameters
+<XXXX>($),Label,Please edit direct from device view,101
+<XXXX>(I),Input Type,Integer (Type of sensor 0=Analogue input 1=Internal analogue 2=Digital input 3=Internal digital),90
+<XXXX>(%),Units,Please edit direct from device view,101
+<XXXX>(V),Value,Float (Output),101
+<XXXX>(Y),Scaling Type,Module Association (The subtype for this module),101
+<XXXX>(O),Offset,Float (Analogue input only. A fixed value added to the measured input for calibration purposes),90
+<XXXX>(M),Alarm Status,Bit String (Current status of alarm),101
+<XXXX>(c),Hardware Channel,Integer,90
+<XXXX>(S),Source,Float (Input),90

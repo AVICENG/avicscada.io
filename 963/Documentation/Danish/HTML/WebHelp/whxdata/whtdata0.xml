@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<tocdata>
+<book name="963 Web-Brugervejledning" >
+  <item name="Om Denne Vejledning" url="963_Manual_About_This_Manual.htm" />
+  <item name="Denne Vejlednings Regler" url="963_Manual_Conventions_Used_in_this_Manual.htm" />
+  <item name="Kontaktoplysninger for Trend" url="963_Manual_Contacting_Trend.htm" />
+  <book name="Hvad er 963?" >
+    <item name="Hvad er 963?" url="About_963_About_963.htm" />
+  </book>
+  <book name="963-Klientdisplay" >
+    <item name="963-Klientdisplay" url="About_963_The_963_Client_Displays.htm" />
+    <item name="963-Serverens Standard Side" url="About_963_963_Server_Default_Page.htm" />
+    <item name="963-Serverens Startside" url="About_963_963_Server_Start_up_Page.htm" />
+    <item name="Alarmoversigt Klientdisplay" url="About_963_Alarm_Viewer_Client_Display.htm" />
+    <item name="Konfigurationsfunktion Klientdisplay" url="About_963_Configuration_Mode_Client_Display.htm" />
+    <item name="Enhedsoversigtens Klientdisplay" url="About_963_Device_Viewer_Client_Display.htm" />
+    <item name="Kalender Klientdisplay" url="About_963_Diary_Diary_Client_Display.htm" />
+    <item name="Skematisk Side Klientdisplay" url="About_963_Schematic_Page_Client_Display.htm" />
+  </book>
+  <book name="Brug af 963 fra en Klient" >
+    <item name="Brug af 963 fra en Klient" url="Using_963_From_a_Web_Browser_Using_963_From_a_Client.htm" />
+    <item name="Enkel Brug" url="Using_963_From_a_Web_Browser_Basic_Use.htm" />
+    <book name="Godkendelse af Alarmer" >
+      <item name="Godkendelse af Alarmer" url="Using_963_From_a_Web_Browser_Action_Alarms.htm" />
+      <item name="Godkendelse af Alarmer fra et Alarmpanel" url="Using_963_From_a_Web_Browser_Action_Alarms_from_an_Alarm_Panel.htm" />
+    </book>
+    <book name="Justeringer" >
+      <book name="Justering af Driftstider" >
+        <item name="Justering af Driftstider" url="Using_963_From_a_Web_Browser_Adjust_Occupation_Times.htm" />
+        <item name="Tilføj en Undtagelse" url="Using_963_From_a_Web_Browser_Add_an_Exception.htm" />
+        <item name="Justering af en Tidszone" url="Using_963_From_a_Web_Browser_Adjust_a_Timezone.htm" />
+        <item name="Ændring af Normale Driftstider" url="Using_963_From_a_Web_Browser_Change_Normal_Occupation_Times.htm" />
+        <item name="Slet en Undtagelse" url="Using_963_From_a_Web_Browser_Delete_an_Exception.htm" />
+        <item name="Redigering af en Undtagelse" url="Using_963_From_a_Web_Browser_Edit_an_Exception.htm" />
+        <item name="Justering af Værdier" url="Using_963_From_a_Web_Browser_Adjust_Values.htm" />
+        <item name="Justering af en Analog Værdi" url="Using_963_From_a_Web_Browser_Adjust_an_Analogue.htm" />
+        <item name="Justering af en Digital Værdi" url="Using_963_From_a_Web_Browser_Adjust_a_Digital_Value.htm" />
+      </book>
+    </book>
+    <book name="Ryd Indkommende Alarmer" >
+      <item name="Ryd Indkommende Alarmer" url="Using_963_From_a_Web_Browser_Clear_the_Incoming_Alarms.htm" />
+    </book>
+    <book name="Tilslutning til 963-Serveren" >
+      <item name="Tilslutning til 963-Serveren" url="Using_963_From_a_Web_Browser_Connect_to_963_Server.htm" />
+    </book>
+    <book name="Konfiguration af Undercentraler" >
+      <item name="Konfiguration af Undercentraler" url="Using_963_From_a_Web_Browser_Configure_Controllers.htm" />
+    </book>
+    <book name="Vis en Graf" >
+      <item name="Vis en Graf" url="Using_963_From_a_Web_Browser-Display_a_Graph.htm" />
+      <item name="Vis en Kompakt Graf" url="Using_963_From_a_Web_Browser_Display_a_Compact_Graph.htm" />
+      <item name="Vis en Præcisionsgraf" url="Using_963_From_a_Web_Browser_Display_a_Precision_Graph.htm" />
+      <item name="Vis en Grafindstilling" url="Using_963_From_a_Web_Browser_Display_a_Graph_Set_Up.htm" />
+      <item name="Vis et Diagram" url="Using_963_From_a_Web_Browser_Display_a_Chart.htm" />
+      <item name="Indlæsning af en Registreret Graf" url="Using_963_From_a_Web_Browser_Playback_a_Recorded_Graph.htm" />
+      <item name="Vis Grafdata" url="Using_963_From_a_Web_Browser_Display_Graph_Data.htm" />
+      <item name="Zoom Ind og Ud på en Graf" url="Using_963_From_a_Web_Browser_Zoom_in_and_Out_of_a_Graph.htm" />
+    </book>
+    <book name="Vis en Skematisk Side" >
+      <item name="Vis en Skematisk Side" url="Using_963_From_a_Web_Browser_Display_a_Schematic_Page.htm" />
+    </book>
+    <book name="Vis Logget Data" >
+      <item name="Vis Logget Data" url="Using_963_From_a_Web_Browser_Display_Logged_Data.htm" />
+    </book>
+    <book name="Vis 963’s Start-Side" >
+      <item name="Vis 963's Start-Side" url="Using_963_From_a_Web_Browser_Display_the_963_s_Startup_Page.htm" />
+    </book>
+    <book name="Vis Enhedsoversigten" >
+      <item name="Vis Enhedsoversigten" url="Using_963_From_a_Web_Browser_Display_the_Device_Viewer.htm" />
+    </book>
+    <book name="Gem Alarmpaneler" >
+      <item name="Gem Alarmpaneler" url="Using_963_From_a_Web_Browser_Hide_Alarm_Panels.htm" />
+    </book>
+    <book name="Log På" >
+      <item name="Log På" url="Using_963_From_a_Web_Browser_Log_In.htm" />
+    </book>
+    <book name="Log Af" >
+      <item name="Log Af" url="Using_963_From_a_Web_Browser_Log_Off.htm" />
+    </book>
+    <book name="Gå fra Side til Side" >
+      <item name="Gå fra Side til Side" url="Using_963_From_a_Web_Browser_Move_from_Page_to_Page.htm" />
+    </book>
+    <book name="Dæmpning af et Alarmpanel" >
+      <item name="Dæmpning af et Alarmpanel" url="Using_963_From_a_Web_Browser_Mute_an_Alarm_Panel.htm" />
+    </book>
+    <book name="Kør en Manuel Alarmhandling" >
+      <item name="Kør en Manuel Alarmhandling" url="Using_963_From_a_Web_Browser_Run_a_Manual_Alarm_Action.htm" />
+    </book>
+    <book name="Kør Alarmhandlinger Manuelt" >
+      <item name="Kør Alarmhandlinger Manuelt" url="Using_963_From_a_Web_Browser_Run_Alarm_Actions_Manually.htm" />
+    </book>
+    <book name="Tænd og Sluk for Alarmhandlinger" >
+      <item name="Tænd og Sluk for Alarmhandlinger" url="Using_963_From_a_Web_Browser_Turn_Alarm_Actions_ON_OFF.htm" />
+    </book>
+    <book name="Se Alarmer" >
+      <item name="Se Alarmer" url="Using_963_From_a_Web_Browser_View_Alarms.htm" />
+      <item name="Se Indkommende Alarmer" url="Using_963_From_a_Web_Browser_View_Incoming_Alarms.htm" />
+      <item name="Se Alarmhistorik" url="Using_963_From_a_Web_Browser_View_Alarm_History.htm" />
+      <item name="Angiv, Hvilke Kolonner Vises" url="Using_963_From_a_Web_Browser_Specify_What_Columns_are_Displayed.htm" />
+    </book>
+    <book name="Se Driftstider" >
+      <item name="Se Driftstider" url="Using_963_From_a_Web_Browser_View_Occupation_Times.htm" />
+      <item name="Se Normale Driftstider" url="Using_963_From_a_Web_Browser_View_Normal_Occupation_Times.htm" />
+      <item name="Se Undtagelser" url="Using_963_From_a_Web_Browser_View_Exceptions.htm" />
+    </book>
+    <book name="Se Serverstatus" >
+      <item name="Se Serverstatus" url="Using_963_From_a_Web_Browser_View_Server_Status.htm" />
+    </book>
+  </book>
+  <book name="Fejlmeddelelser" >
+    <item name="Fejlmeddelelser" url="Using_963_From_a_Web_Browser_Error_Messages.htm" />
+  </book>
+</book>
+
+</tocdata>

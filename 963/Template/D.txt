@@ -1,0 +1,7 @@
+Driver adjustments
+<XXXX>($),The label,please edit direct from device view,101
+<XXXX>(H),Hours run,Hrs,99
+<XXXX>(N),Number of starts,Starts,99
+<XXXX>(E),IQ1/2 Alarm enable bits (xxServiceRdbk),text I's and O's only,90
+<XXXX>(M),IQ1/2 Current alarm status(xxServiceRdbk),xxSR,99
+<XXXX>(T),Start delay after IQ powerdown,Seconds,99

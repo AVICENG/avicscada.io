@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Content-Language" content="en-UK" />
+ <meta name="generator" content="Adobe RoboHelp 8" />
+<title>Relinquish Control of a BACnet Value</title>
+<link rel="StyleSheet" href="Trend-RH7.css" type="text/css" />
+<script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+-->
+</style>
+<script type="text/javascript" language="javascript1.2" src="whmsg.js"></script>
+<script type="text/javascript" language="javascript" src="whver.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whproxy.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whutils.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whlang.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whtopic.js"></script>
+
+</head>
+
+<body><script type="text/javascript" language="javascript1.2">//<![CDATA[
+<!--
+if (window.gbWhTopic)
+{
+	var strUrl = document.location.href;
+	var bc = 0;
+	var n = strUrl.toLowerCase().indexOf("bc-");
+	if(n != -1)
+	{
+		document.location.href = strUrl.substring(0, n);
+		bc = strUrl.substring(n+3);
+	}
+
+	if (window.addTocInfo)
+	{
+	addTocInfo("963 Web User Guide\nUsing 963 From a Client\nAdjust Values\nRelinquish Control of a BACnet Value");
+addButton("show",BTN_TEXT,"Show","","","","",0,0,"","","");
+
+	}
+	if (window.writeBtnStyle)
+		writeBtnStyle();
+
+	if (window.writeIntopicBar)
+		writeIntopicBar(1);
+
+	
+	document.write("<p style=\"text-align:right\"> ");
+AddMasterBreadcrumbs("963_manu.htm", "", ">", "Home", "About_This_Manual.htm");
+document.write("<a href=\"About_This_Manual.htm\">963 Web User Guide<\/a> > <a href=\"Using_963_From_a_Client.htm\">Using 963 From a Client<\/a> > <a href=\"Adjust_a_Knob_in_a_Trend_Device.htm\">Adjust Values<\/a> > Relinquish Control of a BACnet Value<\/p>");
+
+
+	if (window.setRelStartPage)
+	{
+	setRelStartPage("963_manu.htm");
+
+		autoSync(1);
+		sendSyncInfo();
+		sendAveInfoOut();
+	}
+}
+else
+	if (window.gbIE4)
+		document.location.reload();
+
+//-->
+//]]></script>
+<script type="text/javascript" language="javascript">//<![CDATA[
+document.write("<p  style=\"text-align:left;\" class=\"breadcrumbs\">");
+AddMasterBreadcrumbs("963_manu.htm", "breadcrumbs", "&gt;", "", "About_This_Manual.htm");
+document.write("<a class=\"breadcrumbs\" href=\"About_This_Manual.htm\">963 Web User Guide<\/a> &gt; <a class=\"breadcrumbs\" href=\"Using_963_From_a_Client.htm\">Using 963 From a Client<\/a> &gt; <a class=\"breadcrumbs\" href=\"Adjust_a_Knob_in_a_Trend_Device.htm\">Adjust Values<\/a> &gt; Relinquish Control of a BACnet Value<\/p>");
+//]]></script>
+<table class="HeadingTable" style="border-top: Solid 3px #f48c1c; 
+											 border-bottom: Solid 3px #f48c1c;" 
+											 cellspacing="0" width="100%">
+	<col style="width: 100%;" />
+	<tr>
+		<td>
+  <h1>Relinquish Control of a BACnet Value</h1></td>
+	</tr>
+ </table>
+
+<script src="./ehlpdhtm.js" type="text/javascript" language="JavaScript1.2"></script>
+
+<p class="Topic-Text">When 963 adjusts a value in a BACnet device it writes 
+ the value into the value's priority array. The value will remain in the 
+ array, and be used when it is the highest. If required the 963's adjustment 
+ can be removed from the array by relinquishing control.</p>
+<p class="Topic-Text-Procedure-Head">To relinquish control of a BACnet 
+ value:</p>
+<ol>
+	<li class="Steps"><p class="Topic-Text-Numbered-End"><a href="Display_a_Schematic_Page.htm">Display 
+	 the page</a> containing the value for which you want to relinquish 
+	 control, and click the button or picture that enables the value to 
+	 be changed.</p></li>
+</ol>
+<p class="Topic-Text-Indent-End">Or</p>
+<p class="Topic-Text-Indent-End">View the value for which you want to relinquish 
+ control in the <font style="font-weight: bold;">Device Viewer</font>, 
+ right-click the value, and click <font style="font-weight: bold;">Adjust 
+ Point</font>.</p>
+<p class="Topic-Text-Indent-End">The <a class="dropspot" href="javascript:TextPopup(this)" 
+										 id="a1"><span class="Bold">BACnet 
+ Device</span></a> dialogue box is displayed.</p>
+<div class="droptext" id="POPUP462541034" style="display: none;">
+	<p class="Topic-Text-Graphic-Style"><img src="image/relinquish_control.bmp" alt="relinquish_control.bmp" style="border: none;" width="319" height="115" border="0" /></p>
+</div>
+<ol start="3">
+	<li class="Steps"><p class="Topic-Text-Numbered-End">Click <span style="font-weight: bold;"><b>Relinquish 
+	 control</b></span>.</p></li>
+</ol>
+<p class="Topic-Text-Procedure-head">To relinquish control of a BACnet 
+ value in text mode:</p>
+<ol>
+	<li class="Steps"><p class="Topic-Text-Numbered">Display the page containing 
+	 the value for which you want to relinquish control, and click the 
+	 button or picture that enables the value to be changed,.</p></li>
+	<li class="Steps"><p class="Topic-Text-Numbered-End">Click <img src="image/relinquish_control1.bmp" alt="relinquish_control1.bmp" style="border: none;" width="16" height="16" border="0" /> 
+	 next to the value.</p></li>
+</ol>
+ <div style="width: 100%; position: relative;" id="footer">
+	
+  <p class="Footer">963 Web User Guide TC200685 Issue 9 11-Mar-2013</p>
+ </div>
+
+
+<script type="text/javascript" language="JavaScript1.2">//<![CDATA[
+	if( typeof( TextPopupInit ) != 'function' ) TextPopupInit = new Function();
+	TextPopupInit('a1','POPUP462541034');
+//]]></script>
+<script type="text/javascript" language="javascript1.2">//<![CDATA[
+<!--
+if (window.writeIntopicBar)
+	writeIntopicBar(0);
+
+
+highlightSearch();
+//-->
+//]]></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!doctype HTML public "-//W3C//DTD HTML 4.0 Frameset//EN">
+
+<html>
+
+<head>
+<title>Verstellen van een Knob (Analoge waarde) in een BACnet Controller</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="generator" content="Adobe RoboHelp - www.adobe.com">
+<link rel="stylesheet" href="Trend-RH7_ns.css"><script type="text/javascript" language="JavaScript" title="WebHelpSplitCss">
+<!--
+if (navigator.appName !="Netscape")
+{   document.write("<link rel='stylesheet' href='Trend-RH7.css'>");}
+//-->
+</script>
+<style title="hcp" type="text/css">
+<!--
+img.hcp1 { border:none; float:none; border-style:none; }
+font.hcp2 { font-weight:bold; }
+ol.hcp3 { list-style:decimal; }
+span.hcp4 { font-weight:bold; }
+-->
+</style><script type="text/javascript" language="JavaScript" title="WebHelpInlineScript">
+<!--
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//-->
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute; left:0px; top:0px; z-index:4; visibility:hidden; }
+-->
+</style><script type="text/javascript" language="javascript1.2" src="whmsg.js"></script>
+<script type="text/javascript" language="javascript" src="whver.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whproxy.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whutils.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whlang.js"></script>
+<script type="text/javascript" language="javascript1.2" src="whtopic.js"></script>
+</head>
+<body><script type="text/javascript" language="javascript1.2">
+<!--
+if (window.gbWhTopic)
+{
+	if (window.addTocInfo)
+	{
+	addTocInfo("963 Web User Guide\nBediening 963 vanaf een Client \n\nAanpassen van waardes\nAanpassen van knob waardes\nVerstellen van een Knob (Analoge waarde) in een BACnet Controller");
+addButton("show",BTN_TEXT,"Show","","","","",0,0,"","","");
+
+	}
+	if (window.writeBtnStyle)
+		writeBtnStyle();
+
+	if (window.writeIntopicBar)
+		writeIntopicBar(1);
+
+	if(1)
+	{
+	document.write("<p style=\"text-align:right\"> ");
+AddMasterBreadcrumbs("963_manu.htm", "", ">", "Home", "About_This_Manual.htm");
+document.write("<a href=\"About_This_Manual.htm\">963 Web User Guide</a> > <a href=\"Using_963_From_a_Client.htm\">Bediening 963 vanaf een Client </a> > <a href=\"Adjust_a_Knob_in_a_Trend_Device.htm\"></a> > <a href=\"Adjust_a_Knob_in_a_Trend_Device.htm\">Aanpassen van waardes</a> > <a href=\"Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm\">Aanpassen van knob waardes</a> > Verstellen van een Knob (Analoge waarde) in een BACnet Controller</p>");
+
+	}
+
+	if (window.setRelStartPage)
+	{
+	setRelStartPage("963_manu.htm");
+
+		autoSync(1);
+		sendSyncInfo();
+		sendAveInfoOut();
+	}
+}
+else
+	if (window.gbIE4)
+		document.location.reload();
+
+//-->
+</script><script type="text/javascript" language="JavaScript1.2" x-save-method="compute-relative" src="./ehlpdhtm.js" name="EHELP_DHTM"></script>
+<script type="text/javascript"
+		language=JavaScript1.2>
+<!-- 
+if( typeof( kadovFilePopupInit ) != 'function' ) kadovFilePopupInit = new Function();if( typeof( kadovTextPopupInit ) != 'function' ) kadovTextPopupInit = new Function();
+ //-->
+</script>
+
+<div class=x-popup-text id=POPUP195921464  style='display: none; position: absolute' >
+<p class=Topic-Text-Graphic-Style><img src="image/relinquish_control.bmp" x-maintain-ratio="TRUE" style="width:319px; height:115px;" width="319" height="115" border="0" class="hcp1">  </p>
+</div>
+
+<div class=x-popup-text
+id=POPUP195731146
+ style='display: none; position: absolute' >
+<p class=Topic-Text-Graphic-Style><img src="image/webadjust.bmp" x-maintain-ratio="TRUE" style="width:255px; height:139px;" width=255 height=139 border="0" class="hcp1">  </p>
+</div>
+
+<h1>Verstellen van een Knob (Analoge waarde) in een BACnet Controller</h1> 
+
+<p class=Topic-Text><font class="hcp2"></font>Analoge waarden in BACnet apparaten worden in 963 weergegeven als knobs; deze kunnen aangepast worden vanuit een schematische pagina of vanaf de  Device Viewer. </p>
+
+<p class=Topic-Text-Procedure-head>Het verstellen van een knob(analoge waarde) in een BACnet controller.: 
+</p>
+
+<ol>
+	
+	<li class=kadov-p-CTopic-Text-Numbered-End><p class=Topic-Text-Numbered-End><a href="Display_a_Schematic_Page.htm"></a>Toon de pagina   Welke de knob bevat die aangepast moet worden en klik op de drukknop of plaatje waar de knob is te verstellen. 
+</p></li>
+</ol>
+
+<p class=Topic-Text>Of </p>
+
+<p class=Topic-Text-Indent-End><a href="Display_the_IQ_System.htm">Toon de Knob die versteld moet worden in de <font class="hcp2">Device Viewer</font></a>, rechts klik op de knob en klik op <font class="hcp2">Verstel Punt.</font>.</p>
+
+<p class=Topic-Text-Indent-End>De <a class=dropspot x-use-popup=#POPUP195921464 x-popup-type=pulldown href="javascript:kadovTextPopup(this)" id=a2><span class=Bold>BACnet Device</span></a> <script 
+ type="text/javascript"
+	language=JavaScript1.2><!--
+kadovTextPopupInit('a2');
+//--></script> dialogue box wordt getoond.  </p>
+
+<ol start="2" type="1" class="hcp3">
+	
+	<li class=kadov-p-CTopic-Text-Numbered-End><p class=Topic-Text-Numbered-End>Klik op <span class="hcp4">Verstellen</span>. De <a class="dropspot" x-use-popup=#POPUP195731146 x-popup-type=pulldown href="javascript:kadovTextPopup(this)" id=a1><span class="Bold">Aanpassen van waarde</span></a> <script type="text/javascript"
+											language=JavaScript1.2><!--
+kadovTextPopupInit('a1');
+//--></script></p></li>
+	
+	<li class=kadov-p-CTopic-Text-Numbered-End><p class=Topic-Text-Numbered-End><font class="hcp2"></font>Vul de nieuwe waarde in de Nieuwe Waarde box in.</p></li>
+</ol>
+
+<p class=Topic-Text-Note-Indent>Wanneer de <font class="hcp2">Toon toetsenbord</font> check box wordt geselecteerd verschijnt er een software toetsenbord op het scherm, hiermee kan de nieuwe waarde mee worden ingevoerd. 
+.</p>
+
+<ol start="4" type="1" class="hcp3">
+	
+	<li class=kadov-p-CTopic-Text-Numbered-End><p class=Topic-Text-Numbered-End><span class="hcp4"></span>Klik op Enter. In sommige gevallen wordt een melding gegeven voor bevestiging van de wijziging, 
+<font class="hcp2"></font>Klik op Ja. </p></li>
+</ol>
+
+<p class=Topic-Text>Als je toegang tot de 963 server hebt, en je gebruikt tekst mode, dan kan de verstelling alleen worden gedaan vanaf een schematische pagina en gaat op een andere manier. 
+</p>
+
+<p class=Topic-Text-Procedure-head>Het verstellen van een knob(analoge waarde) in een BACnet controller in tekst mode: 
+</p>
+
+<ol>
+	
+	<li class=kadov-p-CTopic-Text-Numbered><p class=Topic-Text-Numbered>Toon de pagina welke de waarde bevat die aangepast moet worden. 
+</p></li>
+	
+	<li class=kadov-p-CTopic-Text-Numbered><p class=Topic-Text-Numbered>Vul de nieuwe waarde in het veld naast de waarde. 
+</p></li>
+	
+	<li class=kadov-p-CTopic-Text-Numbered-End><p class=Topic-Text-Numbered-End>Klik op <img src="image/submit.gif" alt="image\submit.gif" style="width: 16px;
+				height: 16px;
+				border-style: none;" width=16 height=16 border=0> om de data naar de controller te zenden. 
+</p></li>
+</ol>
+
+<p class=Topic-Text-See-Also
+	style="x-condition: Online;">
+
+<a href="javascript:void(0);" onClick="var e; if (parseInt(navigator.appVersion)>=4){e=event;}  if (parseInt(navigator.appVersion) >=2 && typeof(PickupDialog_Invoke) == 'function') PickupDialog_Invoke(e,'','Verstellen van een Knob in een Trend Controller','Adjust_a_Knob_in_a_Trend_Device.htm','Verstellen van een Switch (Digitale Waarde) in een BACnet Controller','Adjust_a_Switch_(Digital_Value)_in_a_BACnet_Device.htm','Verstellen van een switch in een Trend Controller','Adjust_a_Switch_in_a_Trend_Device.htm');return false;" title=" See Also"><span style="font-family:Verdana;font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none"><nobr>  See Also </nobr></span></a>
+
+
+ </p>
+
+<script type="text/javascript" language="JavaScript" title="WebHelpRelatedTopics"><!--
+if (parseInt(navigator.appVersion) >= 3 && typeof (WritePopupMenuLayer) == "function")
+  WritePopupMenuLayer();
+//--></script><script type="text/javascript" language="javascript1.2">
+<!--
+highlightSearch();
+if (window.writeIntopicBar)
+	writeIntopicBar(0);
+if(0)
+{
+document.write("<p style=\"text-align:right\"> ");
+AddMasterBreadcrumbs("963_manu.htm", "", ">", "Home", "About_This_Manual.htm");
+document.write("<a href=\"About_This_Manual.htm\">963 Web User Guide</a> > <a href=\"Using_963_From_a_Client.htm\">Bediening 963 vanaf een Client </a> > <a href=\"Adjust_a_Knob_in_a_Trend_Device.htm\"></a> > <a href=\"Adjust_a_Knob_in_a_Trend_Device.htm\">Aanpassen van waardes</a> > <a href=\"Adjust_a_Knob_(Analogue_Value)_in_a_BACnet_Device.htm\">Aanpassen van knob waardes</a> > Verstellen van een Knob (Analoge waarde) in een BACnet Controller</p>");
+
+}
+//-->
+</script>
+</body>
+</html>
