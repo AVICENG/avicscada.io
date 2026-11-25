@@ -37,12 +37,18 @@ class EventService:
         db=sqlite3.connect(self.path, timeout=15); db.row_factory=sqlite3.Row; db.execute('PRAGMA busy_timeout=15000'); return db
     @staticmethod
     def _map(r): return EventRecord(r['event_id'],r['station_id'],r['event_type'],r['severity'],r['source_id'],r['occurred_at'],r['actor_id'],r['correlation_id'],r['message'],json.loads(r['details_json']))
-    def record(self, event_type: str, message: str, *, station_id: str|None=None, severity: str='INFO', source_id: str|None=None, actor_id: str|None=None, correlation_id: str|None=None, details: dict|None=None) -> EventRecord:
+    def record(self, event_type: str, message: str, *, station_id: str|None=None, severity: str='INFO', source_id: str|None=None, actor_id: str|None=None, correlation_id: str|None=None, details: dict|None=None, event_id: str|None=None) -> EventRecord:
         if not event_type.strip() or not message.strip(): raise ValueError('event_type and message are required')
         severity=severity.upper()
         if severity not in self.SEVERITIES: raise ValueError(f'Unsupported severity: {severity}')
-        event=EventRecord(str(uuid4()),station_id,event_type,severity,source_id,datetime.now(timezone.utc).isoformat(),actor_id,correlation_id,message,details or {})
+        event=EventRecord(event_id or str(uuid4()),station_id,event_type,severity,source_id,datetime.now(timezone.utc).isoformat(),actor_id,correlation_id,message,details or {})
         with self._db() as db:
+            existing=db.execute('SELECT * FROM events WHERE event_id=?',(event.event_id,)).fetchone()
+            if existing is not None:
+                stored=self._map(existing)
+                if (stored.station_id,stored.event_type,stored.severity,stored.source_id,stored.actor_id,stored.correlation_id,stored.message,stored.details) != (event.station_id,event.event_type,event.severity,event.source_id,event.actor_id,event.correlation_id,event.message,event.details):
+                    raise ValueError('Event idempotency key was reused with different event content')
+                return stored
             db.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?,?,?)',(event.event_id,event.station_id,event.event_type,event.severity,event.source_id,event.occurred_at,event.actor_id,event.correlation_id,event.message,json.dumps(event.details,ensure_ascii=False,sort_keys=True)))
         return event
     def list(self, *, station_id: str|None=None, event_type: str|None=None, severity: str|None=None, since: str|None=None, until: str|None=None, search: str|None=None, limit: int=200) -> list[EventRecord]:
