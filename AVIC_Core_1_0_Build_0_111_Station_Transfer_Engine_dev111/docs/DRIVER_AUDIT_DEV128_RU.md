@@ -25,7 +25,7 @@
 - Нет автоматического восстановления/перезапуска активных драйверов после аварийного завершения процесса; теперь состояние честно обозначается ORPHANED, но recovery workflow ещё нужен.
 - Нет общего watchdog/health policy с persisted transitions и политикой retry/backoff.
 - MQTT адаптер пока не включён как production runtime: нет factory, SecretStore wiring и broker acceptance.
-- Нет OPC UA Client/Server, SNMP, KNXnet/IP, LonWorks, oBIX, Haystack production adapters.
+- Нет OPC UA Client/Server, SNMP, LonWorks, oBIX и Haystack production adapters. KNXnet/IP с DEV150–154 имеет частичную read-only реализацию tunnelling + passive GroupValue monitor + Driver Manager factory + Point Runtime; без ETS import, Routing, передачи GroupValueWrite и hardware acceptance.
 - Trend IP/vCNC не реализован: доступные материалы недостаточны для достоверной реализации framing, reconnect и Secure vCNC.
 - BACnet/IP требует дальнейшей проверки APDU/NPDU маршрутизации, сегментации, BBMD/foreign-device сценариев, COV и межвендорной совместимости.
 - Modbus TCP требует дополнительных проверок hostname/IPv6, persistent connection strategy, device profiles, map import, exception handling interoperability и реальных контроллеров.
@@ -104,7 +104,7 @@ Modbus TCP адаптер теперь объединяет соседние и 
 | `opcUaClient` | OPC UA Client | Не реализовано |
 | `opcUaServer` | OPC UA Server | Не реализовано |
 | `snmp` | SNMP monitoring | Не реализовано; проектировать SNMPv3 authPriv, GET/WALK и trap/inform с read-only профилем |
-| `eibnetIp`, `knxnetIp` | KNXnet/IP | Не реализовано; нужны tunnelling/routing, group addresses и datapoint type profiles |
+| `eibnetIp`, `knxnetIp` | KNXnet/IP | Частичная read-only реализация: UDP tunnelling, строгий cEMI parser, passive group monitor, Driver Manager factory и Point Runtime; DPT 1.001/5.001/9.001/14.000. Без ETS import, Routing, исходящих GroupValueWrite и hardware acceptance |
 | `lonworks`, `lonTrend-rt` | LonWorks / Trend LON profile | Не реализовано; нужен отдельный интерфейсный/транспортный слой и device profiles |
 | `obix` | oBIX HTTP(S) | Не реализовано |
 | `haystack` | Project Haystack | Не реализовано; это семантическая модель/интеграция, а не замена полевого транспорта |
@@ -139,3 +139,15 @@ DEV134 CI выявил три тестовые ошибки: два новых B
 ## DEV137 CI finding
 
 - Linux Python 3.12: 31,188 passed, 1 failed. Единственный отказ — ещё один двойной escape в тестовом BVLC prefix сегментированного ACK (`b"\\\\x81\\\\x0a"` вместо байтов `b"\\x81\\x0a"`). Исправлено в DEV138; это не отказ production parser.
+
+
+## DEV150–154 — актуализация KNXnet/IP по фактическому коду
+
+- DEV150: добавлен управляемый UDP tunnelling lifecycle: CONNECT, проверка endpoint, tunnelling ACK, последовательности, дубликаты, heartbeat и disconnect.
+- DEV151: добавлен строгий cEMI parser для L_Data и групповых сервисов; DPT не угадывается из телеграммы.
+- DEV152: passive group monitor подключён к Driver Manager через runtime factory и публикует выбранные групповые адреса в общий Point Runtime.
+- DEV153: исправлено декодирование DPT 9.001 со знаковой 11-битной мантиссой и проверкой запрещённого шаблона.
+- DEV154: каталог и capability tests согласованы с фактическим read-only статусом KNX.
+- Поддержанные DPT в текущем binding: 1.001, 5.001, 9.001, 14.000.
+- Запись в KNX не реализована. Монитор не выполняет активный GroupValueRead; он обрабатывает полученные групповые телеграммы. ETS import, KNX Routing, дополнительные DPT и аппаратная приёмка остаются открытыми.
+- Полная CI DEV158: Windows Python 3.13 — 31 261 passed, 1 skipped; Linux Python 3.11/3.12/3.13 — 31 262 passed в каждой конфигурации. Fake transport/unit tests не являются аппаратной приёмкой.
