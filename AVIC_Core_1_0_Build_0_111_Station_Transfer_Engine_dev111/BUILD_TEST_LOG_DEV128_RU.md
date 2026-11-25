@@ -52,3 +52,14 @@
 - Проверены не только пути, но и фактическое содержимое Git blob по SHA.
 - Исправлены некорректные blob-объекты DEV133 для manager.py и test_driver_manager_dev57.py; в DEV134 восстановлены полные файлы.
 - Обязательная проверка CI DEV134 остаётся открытой.
+
+## DEV135 — polling state and secret aliases
+- PollingSession.start ждёт фактического запуска worker.
+- list_instances показывает эффективный runtime state и persisted_state отдельно.
+- Дополнены aliases фильтра секретов и тесты.
+- CI DEV135 ожидается.
+
+## DEV136 — исправления CI DEV134
+- DEV134 Linux Python 3.12/3.13 выявил 3 тестовые ошибки: 2 BACnet теста имели двойное экранирование байтовых литералов; каталог-тест ожидал MQTT как read_supported после перевода MQTT в PLANNED.
+- Исправлены литералы и ожидание read-capability. Реальный MQTT runtime не рекламируется.
+- Повторная CI DEV136 обязательна; результат ещё не получен.

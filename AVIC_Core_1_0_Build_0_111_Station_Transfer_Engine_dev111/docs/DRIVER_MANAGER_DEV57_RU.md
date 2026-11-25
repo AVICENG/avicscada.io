@@ -96,3 +96,16 @@
 - DriverManager.stop_station поддерживает runtime station до создания инженерной inventory-записи.
 - Замена factory блокируется только для соответствующего активного протокола.
 - Проверка секретов нормализует имена полей и блокирует распространённые aliases.
+
+
+## DEV135 — достоверное состояние в списке
+
+- PollingSession.start возвращается после подтверждения RUNNING worker.
+- Список экземпляров показывает фактический state и отдельный persisted_state; DEGRADED/ORPHANED не маскируются сохранённым RUNNING.
+- Фильтр секретов блокирует дополнительные распространённые aliases.
+
+
+## DEV136 — корректировка тестов
+
+- Исправлены BACnet test packet byte literals для тестов wrong source port и segmented ACK.
+- Обновлено ожидание каталога: MQTT остаётся PLANNED до готовности production runtime.

@@ -82,3 +82,43 @@ Modbus TCP адаптер теперь объединяет соседние и 
 ## DEV134 — проверка целостности commit tree
 
 - Повторно проверено содержимое Git blob по SHA из текущего commit tree. Исправлены две записи, которые в DEV133 содержали текстовые SHA вместо содержимого исходников: Driver Manager и его тестовый файл. DEV134 возвращает полные исходники и тесты; проверка содержимого выполняется чтением blob по SHA, а не только наличием пути в дереве.
+
+
+## DEV135 — согласование статусов и запуск polling worker
+
+- PollingSession.start теперь ожидает подтверждения перехода worker в RUNNING, поэтому API запуска не должен возвращать промежуточный STARTING как завершённый старт.
+- Список экземпляров станции теперь использует эффективное состояние runtime; сохранённое состояние показывается отдельно как persisted_state. Состояние DEGRADED больше не скрывается в списке за устаревшим RUNNING.
+- Фильтр конфигурации дополнен токенами, secret_key, signing_key, access_key, shared_secret, session_key и JWT aliases.
+- Добавлены тесты на ожидание старта worker и согласованность list/get/diagnostics.
+
+
+## Сопоставление семейств Niagara с целевым деревом AVIC
+
+| Семейство/модуль из материалов Niagara | Цель AVIC | Текущее состояние по коду |
+|---|---|---|
+| `bacnet-rt` | BACnet/IP client | Частичная read-only реализация: Who-Is/I-Am, ReadProperty, Object_List/identity и Point Runtime; без RPM/COV/segmented APDU/BBMD полного уровня |
+| `modbusTcp-rt` | Modbus TCP client | Частичная read-only реализация FC01/02/03/04, типы 16/32/64 bit, scale/offset, grouped polling |
+| `modbusCore-rt`, `modbusAsync-rt` | Общая модель Modbus и Modbus RTU | Не реализовано; RTU требует serial bus manager, timing, CRC и arbitration |
+| `modbusSlave-rt` | Modbus TCP/RTU Server (Slave) | В AVIC отсутствует; требуется отдельный безопасный server driver с ACL на адреса/регистры и аудитом внешних записей |
+| `abstractMqttDriver` | MQTT client | Парсер/subscribe adapter есть, но нет production factory, SecretStore wiring, TLS policy и acceptance; каталог переведён в PLANNED |
+| `opcUaClient` | OPC UA Client | Не реализовано |
+| `opcUaServer` | OPC UA Server | Не реализовано |
+| `snmp` | SNMP monitoring | Не реализовано; проектировать SNMPv3 authPriv, GET/WALK и trap/inform с read-only профилем |
+| `eibnetIp`, `knxnetIp` | KNXnet/IP | Не реализовано; нужны tunnelling/routing, group addresses и datapoint type profiles |
+| `lonworks`, `lonTrend-rt` | LonWorks / Trend LON profile | Не реализовано; нужен отдельный интерфейсный/транспортный слой и device profiles |
+| `obix` | oBIX HTTP(S) | Не реализовано |
+| `haystack` | Project Haystack | Не реализовано; это семантическая модель/интеграция, а не замена полевого транспорта |
+| `TrendN4-rt` | Trend IP / vCNC | Не реализовано; известны TCP endpoint/port conventions, но wire codec и Secure vCNC handshake не подтверждены |
+| `trendMigration-*` | Migration/import tooling | Не полевой драйвер; отдельный миграционный инструмент, не включать в Driver Manager как transport |
+| `TrendEasyBindingGraphics-rt`, `themeIQVision-ux`, `docIQVision-*` | Graphics/theme/docs | Не драйверы полевого протокола; учитывать в отдельных подсистемах графики, темы и документации |
+
+**Исключения проекта:** Niagara Fox, CCN, Andover и N2 не включаются. Название JAR/модуля доказывает только наличие семейства в поставке, но не раскрывает точный wire protocol, внутренние функции или качество реализации. JAR не декомпилируются.
+
+## Коммерческая активация — отдельный незакрытый пробел
+
+В каталоге есть поле `license_feature`, однако DriverManager пока не связывает его с подписанным LicenseStatus и EditionAccessPolicy при создании/запуске экземпляра. Кроме того, текущая Capability enum не содержит driver-specific capability keys. Следовательно, наличие license_feature в каталоге пока является метаданными, а не реальным ограничением платного доступа. До продажи драйверных пакетов необходима серверная проверка подписи лицензии, Host-ID, edition, RBAC и feature key на каждой операции create/start; UI-скрытия недостаточно.
+
+
+## DEV136 — исправление тестовых сценариев BACnet и каталога
+
+DEV134 CI выявил три тестовые ошибки: два новых BACnet теста содержали литералы с двойным экранированием, поэтому тестовый пакет фактически передавал символы `\\xNN`, а не байты; третий тест продолжал ожидать MQTT в списке реально работающих read transports после обоснованного перевода MQTT в PLANNED. DEV136 исправляет байтовые литералы и ожидание каталога. Это тестовые исправления; они не расширяют протокольные возможности.
