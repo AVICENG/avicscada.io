@@ -138,7 +138,7 @@ class HostIdentity:
                 )
                 rows = list(csv.reader(line for line in who.stdout.splitlines() if line.strip()))
                 current_sid = rows[0][-1].strip() if rows and rows[0] else ""
-                if not re.fullmatch(r"S-1-5-21-(?:\\d+-){2,}\\d+", current_sid):
+                if not re.fullmatch(r"S-1-5-21-(?:\d+-){2,}\d+", current_sid):
                     raise HostIdentityError(
                         "Не удалось определить точный Windows user SID для ACL installation identity"
                     )

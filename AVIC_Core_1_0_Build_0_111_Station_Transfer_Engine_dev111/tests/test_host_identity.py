@@ -68,4 +68,4 @@ def test_installation_identity_is_uuid_and_private(tmp_path):
         # Owner Rights (OW) may exist on hosted Windows runners.
         assert {"SY", "BA", current_sid}.issubset(set(aces)), f"Required ACL principals missing: {aces}"
         assert "LA" not in aces, f"Broad Local Account access is not permitted: {aces}"
-        assert set(aces).issubset({"OW", "SY", "BA", current_sid}), f"Unexpected ACL principals: {aces}
+        assert set(aces).issubset({"OW", "SY", "BA", current_sid}), f"Unexpected ACL principals: {aces}"
