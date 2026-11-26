@@ -86,7 +86,7 @@ def test_cyclic_runtime_retains_hysteresis_state_across_ticks(tmp_path):
 def _studio_module(mid, typ, ins, outs, params=None):
     return {"id": mid, "type": typ, "name": mid, "x": 100, "y": 100,
             "params": params or {},
-            "ins": [{"id": f"{mid}-in-{name}", "name": name, "type": "bool" if name == "SEL" else "num"} for name in ins],
+            "ins": [{"id": f"{mid}-in-{name}", "name": name, "type": "bool" if typ == "BOOL_OUTPUT" or name == "SEL" else "num"} for name in ins],
             "outs": [{"id": f"{mid}-out-{name}", "name": name, "type": "bool" if typ == "HYSTERESIS" else "num"} for name in outs]}
 
 
