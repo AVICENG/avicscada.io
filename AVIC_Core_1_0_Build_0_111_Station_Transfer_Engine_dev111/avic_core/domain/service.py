@@ -114,7 +114,7 @@ class CoreObjectService:
             self.license_service.assert_can_create_point(status, existing_active, point_id)
             existing_active.add(point_id)
 
-    def set_point_usage(self, source_key: str, point_ids: Iterable[str], *, connection=None) -> None:
+    def set_point_usage(self, source_key: str, point_ids: Iterable[str], *, connection=None) -> dict[str, int]:
         """Reconcile one engineering-use reference set and enforce licensing atomically.
 
         source_key is a stable owner such as logic:<document-id> or graphics:<document-id>.
@@ -146,8 +146,12 @@ class CoreObjectService:
                 point.licensed_active = False
             changed.append((point, version))
         self.assert_point_usage_transition(records, [point for point, _ in changed])
+        versions = {}
         for point, version in changed:
-            self.repository.save(point, expected_version=version, connection=connection)
+            versions[str(point.id)] = self.repository.save(
+                point, expected_version=version, connection=connection
+            )
+        return versions
 
     def save_graph(self, entities: Iterable[Any], *, expected_versions: dict[str, int] | None = None) -> dict[str, int]:
         items = list(entities)
@@ -190,7 +194,12 @@ class CoreObjectService:
                 if isinstance(item, Alarm):
                     source_type = by_id.get(item.source_object_id, (None, {}))[0]
                     point_ids = [item.source_object_id] if source_type == "Point" else []
-                    self.set_point_usage(f"alarm:{item.id}", point_ids, connection=connection)
+                    usage_versions = self.set_point_usage(
+                        f"alarm:{item.id}", point_ids, connection=connection
+                    )
+                    for point_id, point_version in usage_versions.items():
+                        if point_id in versions:
+                            versions[point_id] = point_version
             return versions
 
     def delete_graph(self, entity_versions: dict[str, int]) -> None:
