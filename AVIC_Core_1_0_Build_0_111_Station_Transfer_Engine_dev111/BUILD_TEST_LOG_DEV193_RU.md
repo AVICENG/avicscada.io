@@ -29,3 +29,6 @@
 
 ## Готовность
 DEV193 — исправление интеграции и уточнение parity scope; не готовый parity release.
+
+- SCHEDULE переименован в палитре в Core Schedule, чтобы не путать с Trend Schedule Module H.
+- Если у импортированного SCHEDULE отсутствует schedule_value_type, порт помечается unknown до явного выбора расписания; BOOL не угадывается.
