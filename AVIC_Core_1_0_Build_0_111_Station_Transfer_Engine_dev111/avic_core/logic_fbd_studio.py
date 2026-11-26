@@ -408,7 +408,8 @@ class FBDStudioService:
         "AND": "AND", "OR": "OR", "NOT": "NOT", "COMBINATION": "COMBINATION", "ADD": "ADD",
         "SUB": "SUB", "MUL": "MUL", "DIV": "DIV", "SELECT": "SELECT",
         "COMPARE_GT": "COMPARE_GT", "COMPARE_LT": "COMPARE_LT",
-        "LIMIT": "LIMIT", "SCALE": "SCALE", "HYSTERESIS": "HYSTERESIS", "BOOL_OUTPUT": "BOOL_OUTPUT",
+        "LIMIT": "LIMIT", "SCALE": "SCALE", "HYSTERESIS": "HYSTERESIS",
+        "DELAY": "DELAY", "LATCH": "LATCH", "BOOL_OUTPUT": "BOOL_OUTPUT",
         "FLOAT_OUTPUT": "FLOAT_OUTPUT",
     }
 
@@ -498,6 +499,22 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: {typ} должен содержать конечное число")
+                if typ == "DELAY":
+                    cfg = params.get("delay") or {}
+                    try:
+                        import math
+                        on_delay, off_delay = float(cfg.get("onDelay", 5.0)), float(cfg.get("offDelay", 0.0))
+                        if not math.isfinite(on_delay) or not math.isfinite(off_delay) or on_delay < 0 or off_delay < 0:
+                            raise ValueError
+                    except (TypeError, ValueError, OverflowError):
+                        issues.append(f"Блок «{module.get('name') or typ}»: DELAY требует конечные неотрицательные onDelay/offDelay")
+                if typ == "LATCH":
+                    cfg = params.get("latch") or {}
+                    if not isinstance(cfg.get("resetPriority", True), bool):
+                        issues.append(f"Блок «{module.get('name') or typ}»: LATCH.resetPriority должен быть bool")
+                    initial = cfg.get("initial", 0)
+                    if initial not in (0, 1, False, True):
+                        issues.append(f"Блок «{module.get('name') or typ}»: LATCH.initial должен быть 0/1")
                 if typ == "COMBINATION":
                     rows = params.get("comboRows", core.BLOCKS[mapped]["defaults"]["comboRows"])
                     valid = isinstance(rows, list) and len(rows) == 4
@@ -786,6 +803,16 @@ class FBDStudioService:
                             params = {"value": bool(raw_value)}
                     elif typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
                         params = {"value": float(params.get("value", core_fbd.BLOCKS[typ]["defaults"].get("value", 0.0)))}
+                    elif typ == "DELAY":
+                        cfg = params.get("delay") or {}
+                        params = {"on_delay": float(cfg.get("onDelay", 5.0)),
+                                  "off_delay": float(cfg.get("offDelay", 0.0)),
+                                  "initial_state": bool(cfg.get("initial", False))}
+                    elif typ == "LATCH":
+                        cfg = params.get("latch") or {}
+                        initial = cfg.get("initial", 0)
+                        params = {"initial_state": initial is True or initial == 1,
+                                  "reset_priority": cfg.get("resetPriority", True)}
                     elif typ == "HYSTERESIS":
                         cfg = params.get("hysteresis") or {}
                         initial = cfg.get("initial", False)
