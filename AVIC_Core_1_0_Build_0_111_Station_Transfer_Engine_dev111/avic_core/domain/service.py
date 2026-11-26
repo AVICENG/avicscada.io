@@ -182,6 +182,15 @@ class CoreObjectService:
                 if current is not None and expected is None:
                     raise DomainIntegrityError(f"Updating {entity_id} requires expected_versions[{entity_id}]")
                 versions[entity_id] = self.repository.save(item, expected_version=expected, connection=connection)
+
+            # Alarm domain objects are persistent alarm-rule configuration, unlike
+            # transient AlarmService alarm occurrences. Only Point-backed rules
+            # activate a licensed point; the reconciliation shares this transaction.
+            for item in items:
+                if isinstance(item, Alarm):
+                    source_type = by_id.get(item.source_object_id, (None, {}))[0]
+                    point_ids = [item.source_object_id] if source_type == "Point" else []
+                    self.set_point_usage(f"alarm:{item.id}", point_ids, connection=connection)
             return versions
 
     def delete_graph(self, entity_versions: dict[str, int]) -> None:
@@ -200,5 +209,9 @@ class CoreObjectService:
                 for record in records if record["entity_id"] not in deleting
             }
             self._validate_graph(remaining)
+            records_by_id = {record["entity_id"]: record for record in records}
+            for entity_id in deleting:
+                if records_by_id[entity_id]["entity_type"] == "Alarm":
+                    self.set_point_usage(f"alarm:{entity_id}", [], connection=connection)
             for entity_id, expected_version in entity_versions.items():
                 self.repository.delete(entity_id, expected_version=expected_version, connection=connection)
