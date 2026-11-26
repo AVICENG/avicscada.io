@@ -141,6 +141,7 @@ def test_same_normalized_import_contract_accepts_bacnet_points(tmp_path):
     point = app.state.core.repository.get_record(result["points_added"][0])
     assert point["payload"]["data_type"] == "analog-input"
     assert point["payload"]["direction"] == "input"
+    assert point["payload"]["licensed_active"] is False
     app.state.core.close()
 
 
@@ -183,4 +184,68 @@ def test_imported_point_is_selectable_in_graphics_and_web_pages(tmp_path):
         "type": "value", "point_id": point_id, "x": 10, "y": 10, "width": 240, "height": 100,
     }])
     assert updated["layout"][0]["point_id"] == point_id
+    app.state.core.close()
+
+
+
+def test_point_becomes_licensed_when_used_in_fbd_and_graphics_and_releases_after_last_use(tmp_path):
+    from types import SimpleNamespace
+    from avic_core.licensing import LicenseStatus, LicenseLimitExceeded
+
+    app, station, driver, inspection = _setup(tmp_path)
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    gate = Gate()
+    app.state.core.installation_license_service = gate
+    app.state.core.license_file = tmp_path / "signed.aviclic"
+    app.state.core.objects.license_service = gate
+    app.state.core.objects.license_file = app.state.core.license_file
+
+    selected = [item["native_identity"] for item in inspection["points"]]
+    imported = app.state.protocol_point_import.import_points(
+        station["id"], driver["id"], inspection, selected)
+    first_id, second_id = imported["points_added"]
+    first = app.state.core.repository.get_record(first_id)
+    second = app.state.core.repository.get_record(second_id)
+    assert first["payload"]["licensed_active"] is False
+    assert second["payload"]["licensed_active"] is False
+
+    fbd = app.state.fbd.create(station["id"], "Licensed FBD")
+    app.state.fbd.add_point_node(fbd["id"], first_id)
+    first = app.state.core.repository.get_record(first_id)
+    assert first["payload"]["licensed_active"] is True
+    assert first["payload"]["licensed_usage"] == [f"logic:{fbd['id']}"]
+
+    other = app.state.fbd.create(station["id"], "Over limit FBD")
+    with pytest.raises(LicenseLimitExceeded):
+        app.state.fbd.add_point_node(other["id"], second_id)
+    second = app.state.core.repository.get_record(second_id)
+    assert second["payload"]["licensed_active"] is False
+
+    graphic = app.state.graphics.create(station["id"], "Licensed mimic")
+    saved = app.state.graphics.save(graphic["id"], graphic["revision"], [{
+        "name": "Fan", "symbol_key": "fan", "x": 20, "y": 20,
+        "width": 120, "height": 100,
+        "bindings": [{"point_id": first_id, "role": "value"}],
+    }])
+    first = app.state.core.repository.get_record(first_id)
+    assert first["payload"]["licensed_usage"] == sorted([
+        f"logic:{fbd['id']}", f"graphics:{graphic['id']}"
+    ])
+
+    current_fbd = app.state.fbd.get(fbd["id"])
+    app.state.fbd.save(fbd["id"], current_fbd["revision"], [], [])
+    first = app.state.core.repository.get_record(first_id)
+    assert first["payload"]["licensed_active"] is True
+    assert first["payload"]["licensed_usage"] == [f"graphics:{graphic['id']}"]
+
+    app.state.graphics.save(graphic["id"], saved["revision"], [])
+    first = app.state.core.repository.get_record(first_id)
+    assert first["payload"]["licensed_active"] is False
+    assert first["payload"]["licensed_usage"] == []
     app.state.core.close()
