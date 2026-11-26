@@ -501,6 +501,11 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: {typ} должен содержать конечное число")
+                if typ == "KNOB":
+                    try:
+                        core._normalize_knob_config(params)
+                    except ValueError as exc:
+                        issues.append(f"Блок «{module.get('name') or typ}»: {exc}")
                 if typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                     raw_value = params.get("rawValue", params.get("value", 0.0))
                     try:
@@ -841,6 +846,8 @@ class FBDStudioService:
                     elif typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                         params = {key: params[key] for key in ("rawValue", "value", "sensorType", "sensorPart",
                                   "scalingRange", "scalingMode", "scalingInput", "scalingPoints") if key in params}
+                    elif typ == "KNOB":
+                        params = core_fbd._normalize_knob_config(params)
                     elif typ == "SWITCH":
                         params = {"value": bool(params.get("value", False)),
                                   "user_level": int(params.get("user_level", 0))}
