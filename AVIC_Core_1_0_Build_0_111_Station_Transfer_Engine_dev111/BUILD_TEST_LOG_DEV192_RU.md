@@ -25,3 +25,11 @@
 DEV192 — исходники и документация обновлены; статус **НЕ ПОДТВЕРЖДЁН** до ручного Windows/Linux CI.
 
 - Добавлен отрицательный тест миграции: старый TIME.OCC placeholder отклоняется с явным сообщением, автоматическое опасное переподключение не выполняется.
+
+## Ручной запуск проверок
+
+После согласования бюджета откройте GitHub → Actions → AVIC Core CI → Run workflow, выберите ветку `ci/fbd-connective-compiler` и включите:
+- `run_windows_self_hosted` — Windows suite на self-hosted runner;
+- `run_linux_matrix` — Ubuntu/Python compatibility matrix.
+
+Каждый флаг независим. Пока оба выключены, push/PR создаёт только skipped workflow и не запускает compute jobs. Self-hosted и hosted usage в private repository могут списываться с включённого compute allowance; не включать без проверки Billing.
