@@ -15,6 +15,7 @@ from uuid import uuid4
 from time import monotonic
 
 from avic_core.application.container import CoreApplication
+from avic_core.licensing import InstallationLicenseService, LicenseManager
 from avic_core.transfer import StationTransferError
 from avic_core.repository.sqlite_repository import ConcurrencyConflict, EntityNotFound
 from avic_core.domain.models import Point, PointQuality, PhysicalNetwork, ProtocolChannel
@@ -402,7 +403,17 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     """Create the DEV175 local-only Workbench host. Drivers and OT commands remain stopped."""
     app = FastAPI(title=title, version="1.0.0.dev196")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
-    app.state.core = CoreApplication(root)
+    license_public_key = os.environ.get("AVIC_LICENSE_PUBLIC_KEY")
+    license_file = os.environ.get("AVIC_LICENSE_FILE")
+    if bool(license_public_key) != bool(license_file):
+        raise RuntimeError("Для включения лицензирования задайте одновременно AVIC_LICENSE_PUBLIC_KEY и AVIC_LICENSE_FILE")
+    license_service = None
+    if license_public_key and license_file:
+        license_service = InstallationLicenseService(root, LicenseManager(license_public_key))
+    app.state.core = CoreApplication(
+        root, license_service=license_service,
+        license_file=license_file if license_service is not None else None,
+    )
     app.state.project_station = ProjectStationService(app.state.core)
     app.state.device_import = DeviceImportService(app.state.core)
     app.state.protocol_point_import = ProtocolDeviceImportService(app.state.core)
