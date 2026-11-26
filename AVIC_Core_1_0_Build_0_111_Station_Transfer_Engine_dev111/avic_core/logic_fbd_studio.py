@@ -34,6 +34,20 @@ class FBDStudioService:
     def __init__(self, core):
         self.core = core
 
+    @staticmethod
+    def _nonnegative_index(value: Any, label: str) -> int:
+        if isinstance(value, bool):
+            raise ValueError(f"{label} must be a non-negative integer")
+        if isinstance(value, int):
+            index = value
+        elif isinstance(value, str) and value.isdecimal():
+            index = int(value)
+        else:
+            raise ValueError(f"{label} must be a non-negative integer")
+        if index < 0:
+            raise ValueError(f"{label} must be a non-negative integer")
+        return index
+
     def _station(self, station_id: str):
         row = self.core.repository.get_record(station_id)
         if row["entity_type"] != "Station":
@@ -147,11 +161,8 @@ class FBDStudioService:
             if source:
                 page_id = str(source.get("pageId") or "")
                 module_id = str(source.get("moduleId") or "")
-                try:
-                    port_index = int(source.get("portIndex"))
-                except (TypeError, ValueError):
-                    raise ValueError("FBD point source portIndex must be an integer")
-                if not page_id or not module_id or port_index < 0:
+                port_index = cls._nonnegative_index(source.get("portIndex"), "FBD point source portIndex")
+                if not page_id or not module_id:
                     raise ValueError("FBD point source must identify page, module and non-negative port index")
                 source_page = page_by_id.get(page_id)
                 if source_page is None:
@@ -164,8 +175,8 @@ class FBDStudioService:
                 if not isinstance(outputs, list) or port_index >= len(outputs):
                     raise ValueError("FBD point source output port does not exist")
                 port_id = str(source.get("portId") or "")
-                if port_id and not any(isinstance(port, dict) and str(port.get("id") or "") == port_id for port in outputs):
-                    raise ValueError("FBD point source port UID does not exist on the source module")
+                if port_id and str(outputs[port_index].get("id") or "") != port_id:
+                    raise ValueError("FBD point source port UID does not match its portIndex")
                 source_key = (page_id, module_id, port_id or str(port_index))
                 if source_key in seen_sources:
                     raise ValueError("Only one exposed FBD point may reference a source output port")
@@ -191,8 +202,18 @@ class FBDStudioService:
             for module in page.get("modules", []):
                 modules[str(module.get("id"))] = (page_id, module)
 
+        markers_by_reference: dict[str, list[tuple[str, str, dict[str, Any]]]] = {}
+        for module_id, (page_id, module) in modules.items():
+            if str(module.get("type") or "") == "TO_CONNECTIVE":
+                marker_params = module.get("params") if isinstance(module.get("params"), dict) else {}
+                marker_reference_id = str(marker_params.get("referenceId") or "").strip()
+                if not marker_reference_id:
+                    raise ValueError("FBD To Connective marker must reference a Page Reference")
+                markers_by_reference.setdefault(marker_reference_id, []).append((module_id, page_id, module))
+
         seen_ids: set[str] = set()
         seen_proxies: set[str] = set()
+        seen_markers: set[str] = set()
         seen_endpoints: set[tuple[str, str, int, str]] = set()
         for reference in references:
             if not isinstance(reference, dict):
@@ -219,15 +240,7 @@ class FBDStudioService:
                 raise ValueError("FBD reference source must be a real logic block, not a navigation proxy")
             if str(proxy.get("type") or "") != "CONNECTIVE":
                 raise ValueError("FBD reference target module must be a CONNECTIVE proxy")
-            raw_port = reference.get("sourcePort")
-            if isinstance(raw_port, bool):
-                raise ValueError("FBD reference sourcePort must be a non-negative integer")
-            try:
-                source_port_index = int(raw_port)
-            except (TypeError, ValueError):
-                raise ValueError("FBD reference sourcePort must be a non-negative integer")
-            if source_port_index < 0:
-                raise ValueError("FBD reference sourcePort must be a non-negative integer")
+            source_port_index = cls._nonnegative_index(reference.get("sourcePort"), "FBD reference sourcePort")
             source_outputs = source.get("outs", [])
             proxy_outputs = proxy.get("outs", [])
             if source_port_index >= len(source_outputs):
@@ -236,13 +249,17 @@ class FBDStudioService:
                 raise ValueError("FBD CONNECTIVE proxy must expose exactly one output")
             source_output = source_outputs[source_port_index]
             proxy_output = proxy_outputs[0]
-            if cls._signal_type(source_output.get("type")) != cls._signal_type(proxy_output.get("type")):
+            source_signal = cls._signal_type(source_output.get("type"))
+            proxy_signal = cls._signal_type(proxy_output.get("type"))
+            if not source_signal or source_signal != proxy_signal:
                 raise ValueError("FBD CONNECTIVE proxy signal type differs from its source output")
             if str(source_output.get("name") or "") != str(proxy_output.get("name") or ""):
                 raise ValueError("FBD CONNECTIVE proxy output name differs from its source output")
             proxy_params = proxy.get("params") if isinstance(proxy.get("params"), dict) else {}
             if str(proxy_params.get("referenceId") or "") != reference_id:
                 raise ValueError("FBD CONNECTIVE proxy referenceId does not match its reference")
+            if proxy.get("ins", []):
+                raise ValueError("FBD CONNECTIVE proxy must not expose input ports")
             if proxy_module_id in seen_proxies:
                 raise ValueError("Only one FBD reference may own a CONNECTIVE proxy")
             seen_proxies.add(proxy_module_id)
@@ -252,26 +269,30 @@ class FBDStudioService:
             seen_endpoints.add(endpoint)
 
             marker_id = str(reference.get("toModuleId") or "")
-            marker_row = modules.get(marker_id) if marker_id else None
-            matching_markers = []
-            for marker_page_id, marker in modules.values():
-                marker_params = marker.get("params") if isinstance(marker.get("params"), dict) else {}
-                if (str(marker.get("type") or "") == "TO_CONNECTIVE"
-                        and str(marker_params.get("referenceId") or "") == reference_id):
-                    matching_markers.append((marker_page_id, marker))
+            matching_markers = markers_by_reference.get(reference_id, [])
             if len(matching_markers) > 1:
                 raise ValueError("FBD reference has more than one To Connective marker")
-            if matching_markers and matching_markers[0][0] != source_page_id:
-                raise ValueError("FBD To Connective marker must be on the source page")
-            if marker_row is not None:
-                marker_page_id, marker = marker_row
-                marker_params = marker.get("params") if isinstance(marker.get("params"), dict) else {}
-                if (marker_page_id != source_page_id or str(marker.get("type") or "") != "TO_CONNECTIVE"
-                        or str(marker_params.get("referenceId") or "") != reference_id):
-                    raise ValueError("FBD To Connective marker does not match its reference")
+            if matching_markers:
+                actual_marker_id, marker_page_id, marker = matching_markers[0]
+                if marker_page_id != source_page_id:
+                    raise ValueError("FBD To Connective marker must be on the source page")
+                if not marker_id or marker_id != actual_marker_id:
+                    raise ValueError("FBD reference toModuleId must identify its To Connective marker")
                 marker_inputs = marker.get("ins", [])
-                if len(marker_inputs) != 1 or cls._signal_type(marker_inputs[0].get("type")) != cls._signal_type(source_output.get("type")):
+                if len(marker_inputs) != 1 or cls._signal_type(marker_inputs[0].get("type")) != source_signal:
                     raise ValueError("FBD To Connective marker input does not match its source signal")
+                if marker.get("outs", []):
+                    raise ValueError("FBD To Connective marker must not expose output ports")
+                seen_markers.add(actual_marker_id)
+            elif marker_id:
+                raise ValueError("FBD To Connective marker does not exist or does not reference this Page Reference")
+
+        for module_id, (_page_id, module) in modules.items():
+            module_type = str(module.get("type") or "")
+            if module_type == "CONNECTIVE" and module_id not in seen_proxies:
+                raise ValueError("FBD CONNECTIVE proxy has no owning Page Reference")
+            if module_type == "TO_CONNECTIVE" and module_id not in seen_markers:
+                raise ValueError("FBD To Connective marker has no matching Page Reference")
 
     @staticmethod
     def _view(doc: FBDStudioDocument, revision: int) -> dict[str, Any]:
