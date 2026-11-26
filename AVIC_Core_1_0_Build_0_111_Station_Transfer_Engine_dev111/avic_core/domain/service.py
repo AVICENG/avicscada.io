@@ -228,18 +228,27 @@ class CoreObjectService:
             }
             records_by_id = {record["entity_id"]: record for record in records}
 
-            # Release references owned by Alarm rules that are part of this same
-            # deletion batch before checking Point usage. This lets an Alarm and
-            # its source Point be deleted atomically while still blocking a Point
-            # that is referenced by an Alarm left in the repository.
+            # Release references from deleted Alarm rules, except when their
+            # source Point is also in this deletion batch. In that case the Point
+            # row itself is removed, so mutating it first would invalidate the
+            # caller's optimistic version supplied for this atomic delete.
+            alarm_usages_owned_by_deleted_points: dict[str, set[str]] = {}
             for entity_id in deleting:
-                if records_by_id[entity_id]["entity_type"] == "Alarm":
+                if records_by_id[entity_id]["entity_type"] != "Alarm":
+                    continue
+                payload = records_by_id[entity_id]["payload"]
+                source_id = payload.get("source_object_id")
+                source_record = records_by_id.get(source_id)
+                if source_record and source_record["entity_type"] == "Point" and source_id in deleting:
+                    alarm_usages_owned_by_deleted_points.setdefault(source_id, set()).add(f"alarm:{entity_id}")
+                else:
                     self.set_point_usage(f"alarm:{entity_id}", [], connection=connection)
 
             for entity_id in deleting:
                 if records_by_id[entity_id]["entity_type"] == "Point":
                     current = self.repository.get_record(entity_id, connection=connection)
-                    usages = current.get("payload", {}).get("licensed_usage") or []
+                    usages = set(current.get("payload", {}).get("licensed_usage") or [])
+                    usages.difference_update(alarm_usages_owned_by_deleted_points.get(entity_id, set()))
                     if usages:
                         raise DomainIntegrityError(
                             f"Cannot delete licensed Point {entity_id}; remove active usages first: {', '.join(sorted(usages))}"
