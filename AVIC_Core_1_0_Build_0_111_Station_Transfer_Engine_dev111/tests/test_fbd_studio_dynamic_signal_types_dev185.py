@@ -146,7 +146,7 @@ def test_fbd_reference_requires_marker_uid_to_match_existing_marker():
 def test_fbd_reference_rejects_orphan_connective_and_to_connective_modules():
     data = _reference_data()
     data["references"] = []
-    with pytest.raises(ValueError, match="no owning Page Reference"):
+    with pytest.raises(ValueError, match="no matching Page Reference"):
         FBDStudioService._validate_references(data)
 
 
