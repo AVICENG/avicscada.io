@@ -433,6 +433,11 @@ class FBDService:
         if visited_count != len(adjacency):
             raise ValueError("Циклическая зависимость в FBD-схеме")
         with self.core.repository.transaction() as conn:
+            logic_point_ids = {
+                str(node["params"].get("point_id")) for node in prepared
+                if node["type"] == "POINT_INPUT" and node["params"].get("point_id")
+            }
+            self.core.objects.set_point_usage(f"logic:{document_id}", logic_point_ids, connection=conn)
             for item in prepared:
                 if item["id"] in old_nodes:
                     obj,ov=self.core.repository.get(item["id"],LogicNode)
