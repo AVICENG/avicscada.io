@@ -313,7 +313,6 @@
     }
 
     async function prepareForExit(timeoutMs = 8000) {
-      await recoveryReady.catch(() => {});
       if (!dirty && !timer && !localTimer && !busy && !pending) {
         return { safeToClose: true, localSaved: localDurable, coreSaved: coreSynced, conflict };
       }

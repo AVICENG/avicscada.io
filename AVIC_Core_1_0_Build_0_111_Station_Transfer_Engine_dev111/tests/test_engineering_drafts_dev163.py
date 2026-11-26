@@ -110,6 +110,10 @@ def test_save_manager_script_is_served_only_as_editor_support_and_injected(tmp_p
     assert "getExitStatus" in script.text
     assert "shouldWarnBeforeUnload" in script.text
     assert "JSON.parse(encode(config.getContent()))" in script.text
+    exit_start = script.text.index("async function prepareForExit")
+    exit_end = script.text.index("function getExitStatus", exit_start)
+    assert "await recoveryReady" not in script.text[exit_start:exit_end]
+    assert "const operation = flush(target" in script.text[exit_start:exit_end]
     assert "beforeunload" not in script.text
     assert "expected_draft_revision" in script.text
     assert "recoveryReady" in script.text
