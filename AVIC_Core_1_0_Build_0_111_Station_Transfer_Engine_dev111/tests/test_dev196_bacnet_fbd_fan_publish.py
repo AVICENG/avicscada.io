@@ -1,0 +1,214 @@
+"""DEV196: managed BACnet/IP read -> FBD point -> fan graphic -> published page."""
+import time
+
+from fastapi.testclient import TestClient
+
+from avic_core.domain.models import Device, Point
+from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
+from avic_core.ui import create_ui_app
+
+
+class FakeTrendBacnetController:
+    """Deterministic ReadProperty peer used in CI; no physical device is contacted."""
+
+    def __init__(self):
+        self.calls = []
+
+    def read_property(self, address, device_instance, object_type, object_instance,
+                      property_id, array_index=None):
+        self.calls.append((address, device_instance, object_type, object_instance,
+                           property_id, array_index))
+        if property_id != 85:
+            raise AssertionError("the demo must read Present_Value only")
+        return True
+
+
+def _studio_graph(physical_point_id: str, exposed_point_id: str) -> dict:
+    return {
+        "format": "AVIC-FBD-STRATEGY",
+        "version": "1.1.1",
+        "project": "BACnet fan demo",
+        "pages": [{
+            "id": "ahu-main", "name": "Основная", "code": "P1",
+            "modules": [
+                {"id": "bacnet-run", "type": "POINT_INPUT", "name": "BACnet Fan Status",
+                 "x": 20, "y": 40, "params": {"pointRef": {"id": physical_point_id}},
+                 "ins": [], "outs": [{"id": "bacnet-out", "name": "OUT", "type": "bool"}]},
+                {"id": "safety", "type": "BOOL_INPUT", "name": "Тепловая защита",
+                 "x": 20, "y": 180, "params": {"value": True}, "ins": [],
+                 "outs": [{"id": "safety-out", "name": "OUT", "type": "bool"}]},
+                {"id": "permit", "type": "AND", "name": "Разрешение вентилятора",
+                 "x": 250, "y": 100, "params": {},
+                 "ins": [{"id": "permit-a", "name": "A", "type": "bool"},
+                         {"id": "permit-b", "name": "B", "type": "bool"}],
+                 "outs": [{"id": "permit-out", "name": "OUT", "type": "bool"}]},
+                {"id": "run-output", "type": "BOOL_OUTPUT", "name": "FAN_RUN",
+                 "x": 470, "y": 100, "params": {},
+                 "ins": [{"id": "run-in", "name": "IN", "type": "bool"}], "outs": []},
+            ],
+        }],
+        "links": [
+            {"id": "l1", "pageId": "ahu-main", "from": "out:bacnet-run:0",
+             "to": "in:permit:0", "signalType": "bool"},
+            {"id": "l2", "pageId": "ahu-main", "from": "out:safety:0",
+             "to": "in:permit:1", "signalType": "bool"},
+            {"id": "l3", "pageId": "ahu-main", "from": "out:permit:0",
+             "to": "in:run-output:0", "signalType": "bool"},
+        ],
+        "references": [],
+        "fbdPoints": [{
+            "id": exposed_point_id,
+            "tag": "AHU_FAN_RUN",
+            "name": "FAN_RUN",
+            "path": "AHU-01/FBD/AHU_FAN_RUN",
+            "dataType": "digital",
+            "unit": "",
+            "direction": "output",
+            "source": {"pageId": "ahu-main", "moduleId": "permit",
+                       "portIndex": 0, "portId": "permit-out", "portName": "OUT"},
+            "license": {"status": "pending_core_registration"},
+        }],
+    }
+
+
+def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
+    app = create_ui_app(data_dir=str(tmp_path / "dev196"))
+    controller = FakeTrendBacnetController()
+    with TestClient(app) as client:
+        project = client.post("/api/projects", json={"name": "DEV196 BACnet AHU"}).json()
+        station = client.post("/api/stations", json={
+            "project_id": project["id"], "name": "AHU-01",
+        }).json()
+
+        # Create a real Core driver instance and bind the physical Point to its owner.
+        driver = app.state.driver_manager.create_instance(
+            station["id"], "bacnet-ip", "Trend BACnet/IP", config={})
+        driver_id = driver["id"]
+        device = Device(
+            name="Trend BACnet Controller", station_id=station["id"],
+            protocol="bacnet/ip", address="192.0.2.50:47808",
+            driver_instance_id=driver_id,
+        )
+        app.state.core.repository.save(device)
+        physical = Point(
+            name="Fan Status", device_id=device.id, data_type="binary-input",
+            native_identity="bacnet:binary-input:1",
+            source_ref="bacnet://device/1234/binary-input/1/present-value",
+            value=None, quality="UNCERTAIN",
+        )
+        app.state.core.repository.save(physical)
+
+        # Use the same managed Driver Manager lifecycle as production, with a fake
+        # ReadProperty transport so the CI run never needs access to plant hardware.
+        app.state.driver_manager.register_adapter_factory(
+            "bacnet-ip",
+            lambda core, instance: BacnetIpPointAdapter(
+                controller, core.point_runtime, instance.id,
+                [BacnetIpPointBinding(
+                    physical.id, ("192.0.2.50", 47808), 1234, 3, 1, property_id=85,
+                )],
+            ),
+        )
+        driver_state = app.state.driver_manager.start_instance(
+            driver_id, poll_interval_seconds=0.1)
+        assert driver_state["field_read_enabled"] is True
+        deadline = time.monotonic() + 3.0
+        sample = app.state.core.point_runtime.read(physical.id)
+        while sample.quality != "GOOD" and time.monotonic() < deadline:
+            time.sleep(0.02)
+            sample = app.state.core.point_runtime.read(physical.id)
+        assert sample.value is True and sample.quality == "GOOD"
+        assert controller.calls and controller.calls[0][4] == 85
+
+        exposed_id = "b6a8a9a2-6f76-4e12-8a36-1b2c3d4e5f60"
+        created = client.post(f"/api/stations/{station['id']}/fbd-studio", json={
+            "name": "AHU-01 Fan Logic",
+            "data": _studio_graph(physical.id, exposed_id),
+        })
+        assert created.status_code == 201, created.text
+        source = created.json()
+        compiled = client.post(f"/api/fbd-studio/{source['id']}/compile", json={
+            "expected_revision": source["revision"],
+        })
+        assert compiled.status_code == 200, compiled.text
+        core_document_id = compiled.json()["core_document"]["id"]
+        assert compiled.json()["registered_fbd_points"] == 1
+
+        started = client.post(f"/api/fbd-runtime/{core_document_id}/start", json={
+            "interval_ms": 100, "background": False,
+        })
+        assert started.status_code == 200, started.text
+        tick = client.post(f"/api/fbd-runtime/{core_document_id}/tick", json={})
+        assert tick.status_code == 200, tick.text
+        assert tick.json()["runtime_published"] is True
+        assert app.state.core.point_runtime.read(exposed_id).value is True
+        assert app.state.core.point_runtime.read(exposed_id).quality == "GOOD"
+
+        # Bind the published fan animation to the FBD virtual point, not to a copied value.
+        graphic = client.post(f"/api/stations/{station['id']}/graphics", json={
+            "name": "AHU-01 Fan Mimic",
+        }).json()
+        saved_graphic = client.put(f"/api/graphics/{graphic['id']}", json={
+            "expected_revision": graphic["revision"],
+            "elements": [{
+                "id": "fan-sf01", "name": "Вентилятор SF-01", "symbol_key": "fan",
+                "x": 120, "y": 100, "width": 180, "height": 140,
+                "rotation": 0, "layer": 1,
+                "bindings": [
+                    {"point_id": exposed_id, "role": "feedback", "binding_type": "status",
+                     "target_property": "animation", "settings": {"converter": "boolean"}},
+                    {"point_id": exposed_id, "role": "quality", "binding_type": "status",
+                     "target_property": "status", "settings": {}},
+                ],
+            }],
+        })
+        assert saved_graphic.status_code == 200, saved_graphic.text
+
+        site = client.post("/api/web-pages", json={
+            "station_id": station["id"], "name": "Здание", "kind": "site",
+        }).json()
+        page = client.post("/api/web-pages", json={
+            "station_id": station["id"], "name": "AHU-01", "kind": "page",
+            "parent_id": site["id"], "slug": "ahu-01",
+        }).json()
+        assigned = client.post(f"/api/web-pages/{page['id']}/graphics", json={
+            "expected_revision": page["revision"], "graphic_id": graphic["id"],
+        })
+        assert assigned.status_code == 200, assigned.text
+        saved_page = client.put(f"/api/web-pages/{page['id']}", json={
+            "expected_revision": assigned.json()["revision"],
+            "layout": [
+                {"type": "heading", "text": "Приточная установка AHU-01",
+                 "x": 24, "y": 20, "width": 600, "height": 58},
+                {"type": "value", "label": "Состояние BACnet-контроллера",
+                 "point_id": physical.id, "x": 24, "y": 100, "width": 260, "height": 90},
+                {"type": "value", "label": "Команда FAN_RUN из FBD",
+                 "point_id": exposed_id, "x": 24, "y": 210, "width": 260, "height": 90},
+                {"type": "graphic", "graphic_id": graphic["id"],
+                 "label": "Вентилятор SF-01", "x": 320, "y": 90, "width": 700, "height": 520},
+            ],
+        })
+        assert saved_page.status_code == 200, saved_page.text
+        published = client.post(f"/api/web-pages/{page['id']}/publish", json={
+            "expected_revision": saved_page.json()["revision"],
+        })
+        assert published.status_code == 200, published.text
+
+        rendered = client.get(f"/published/{station['id']}/ahu-01")
+        assert rendered.status_code == 200, rendered.text
+        assert "Приточная установка AHU-01" in rendered.text
+        assert physical.id in rendered.text and exposed_id in rendered.text
+        assert f"/published-graphics/{station['id']}/{graphic['id']}" in rendered.text
+
+        fan_runtime = client.get(
+            f"/published-graphics/{station['id']}/{graphic['id']}/bindings?page_id={page['id']}"
+        )
+        assert fan_runtime.status_code == 200, fan_runtime.text
+        assert any(item["value"] is True and item["quality"] == "GOOD"
+                   for item in fan_runtime.json()["bindings"].values())
+
+        # Loss of the physical controller link degrades the source; it must not
+        # continue to look like a healthy running fan on the operator page.
+        app.state.driver_manager.stop_instance(driver_id)
+        app.state.core.fbd_execution.stop(core_document_id)
+        app.state.core.close()
