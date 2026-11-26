@@ -138,3 +138,45 @@ def test_workbench_rejects_partial_license_configuration(tmp_path, monkeypatch):
     monkeypatch.delenv("AVIC_LICENSE_FILE", raising=False)
     with pytest.raises(RuntimeError, match="задайте одновременно"):
         create_ui_app(data_dir=str(tmp_path / "workbench"))
+
+def test_workbench_license_status_endpoint_is_safe_and_reports_capacity(tmp_path):
+    from fastapi.testclient import TestClient
+    from types import SimpleNamespace
+    from avic_core.application.container import CoreApplication
+    from avic_core.ui.app import create_ui_app
+
+    class Entitlements:
+        def inspect(self, license_file):
+            return SimpleNamespace(
+                host_id="AVIC-HOST-TEST",
+                status=LicenseStatus(True, "OK", "AVIC-HOST-TEST", "Test Customer",
+                                     12, ("driver.bacnet-ip",), "LIC-123"),
+            )
+
+    app = create_ui_app(data_dir=str(tmp_path / "api"))
+    app.state.core.close()
+    core = CoreApplication(tmp_path / "api", license_service=Entitlements(),
+                           license_file=tmp_path / "api" / "customer.aviclic")
+    app.state.core = core
+    payload = TestClient(app).get("/api/licensing/status").json()
+    assert payload == {
+        "configured": True, "valid": True, "reason": "OK",
+        "customer": "Test Customer", "license_id": "LIC-123",
+        "host_id": "AVIC-HOST-TEST", "point_limit": 12,
+        "licensed_active_points": 0, "remaining_points": 12,
+        "features": ["driver.bacnet-ip"],
+    }
+    assert "private_key" not in payload and "license_file" not in payload
+    core.close()
+
+
+def test_workbench_license_status_reports_unconfigured_development_mode(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui.app import create_ui_app
+    app = create_ui_app(data_dir=str(tmp_path / "api"))
+    payload = TestClient(app).get("/api/licensing/status").json()
+    assert payload["configured"] is False
+    assert payload["valid"] is None
+    assert payload["reason"] == "LICENSE_NOT_CONFIGURED"
+    assert payload["remaining_points"] is None
+    app.state.core.close()
