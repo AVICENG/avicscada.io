@@ -308,3 +308,28 @@ def test_deleting_alarm_rule_releases_only_alarm_usage(tmp_path):
     stored = repo.get_record(point.id)["payload"]
     assert stored["licensed_active"] is False
     assert stored["licensed_usage"] == []
+
+
+
+def test_point_deletion_is_blocked_until_licensed_alarm_usage_is_removed(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService, DomainIntegrityError
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-point-delete.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    alarm = Alarm("No flow", station_id=station.id, source_object_id=point.id)
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+
+    with pytest.raises(DomainIntegrityError, match="remove active usages first"):
+        service.delete_graph({point.id: versions[point.id]})
+
+    service.delete_graph({alarm.id: versions[alarm.id]})
+    refreshed = repo.get_record(point.id)
+    service.delete_graph({point.id: refreshed["version"]})
+    assert not any(row["entity_id"] == point.id for row in repo.list_records(entity_type="Point"))
