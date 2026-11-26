@@ -551,7 +551,7 @@ function copyActivePage(){
   snapshot();
   const c=JSON.parse(JSON.stringify(pg));
   c.id=uid();
-  const base=pg.name+' (Copy');let candidate=base,k=2;
+  const base=pg.name+' (Copy)';let candidate=base,k=2;
   while(state.pages.some(x=>x.name.trim().toLocaleLowerCase()===candidate.toLocaleLowerCase()))candidate=base+' '+(k++);
   c.name=candidate;
   const incomingByProxy=new Map(incomingRefs.map(r=>[String(r.proxyModuleId),r]));
