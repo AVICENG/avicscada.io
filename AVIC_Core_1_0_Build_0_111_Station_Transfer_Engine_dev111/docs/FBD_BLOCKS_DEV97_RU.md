@@ -111,3 +111,5 @@ PIN level KNOB сохраняется как политика метаданны
 
 ### TIME
 Блок выдаёт время станции и календарные сигналы через 21 именованный выход: `CURRENT_TIME` (hh.mm), `MINUTES_PAST_MIDNIGHT`, `DAY`, `MONTH`, `WEEKDAY`, `DAY_BIT_5/6/7`, `SECOND_PULSE`, `MINUTE_PULSE`, `PULSE_5_MIN/10_MIN/15_MIN/20_MIN/30_MIN/60_MIN`, `PULSE_6_HOUR`, `PULSE_24_HOUR`, `WEEKLY_PULSE`, `MONTHLY_PULSE`, `YEARLY_PULSE`. Пульсы формируются на границе периода и удерживаются 1 секунду. Время/часовой пояс берутся из Core TimeManagementService станции. Настройка IANA timezone, NTP и DST выполняется в Time Manager; блок TIME не устанавливает часы и не запускает синхронизацию устройств. Это безопасное разделение ответственности AVIC Core.
+
+Старый редакторский placeholder `TIME.OCC` не мигрируется автоматически: его смысл не соответствует реальному Trend Time Module. Удалите старый блок, создайте новый TIME и переподключите связи к нужному именованному выходу (например, `MINUTE_PULSE` или `CURRENT_TIME`).
