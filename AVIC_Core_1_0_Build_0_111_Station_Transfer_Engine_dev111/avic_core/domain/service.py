@@ -226,11 +226,16 @@ class CoreObjectService:
                 record["entity_id"]: (record["entity_type"], record["payload"])
                 for record in records if record["entity_id"] not in deleting
             }
-            self._validate_graph(remaining)
             records_by_id = {record["entity_id"]: record for record in records}
+
+            # Release references owned by Alarm rules that are part of this same
+            # deletion batch before checking Point usage. This lets an Alarm and
+            # its source Point be deleted atomically while still blocking a Point
+            # that is referenced by an Alarm left in the repository.
             for entity_id in deleting:
                 if records_by_id[entity_id]["entity_type"] == "Alarm":
                     self.set_point_usage(f"alarm:{entity_id}", [], connection=connection)
+
             for entity_id in deleting:
                 if records_by_id[entity_id]["entity_type"] == "Point":
                     current = self.repository.get_record(entity_id, connection=connection)
@@ -239,5 +244,10 @@ class CoreObjectService:
                         raise DomainIntegrityError(
                             f"Cannot delete licensed Point {entity_id}; remove active usages first: {', '.join(sorted(usages))}"
                         )
+
+            # Validate after usage reconciliation: a Point with a surviving
+            # Alarm reference is rejected by the licensing guard above, while
+            # deleting both objects in one batch leaves no dangling reference.
+            self._validate_graph(remaining)
             for entity_id, expected_version in entity_versions.items():
                 self.repository.delete(entity_id, expected_version=expected_version, connection=connection)
