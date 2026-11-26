@@ -86,6 +86,6 @@ https://autorem.fr/Docs/Trend/iq3_config_EN.pdf
 
 ## Статус DEV191
 
-<badge>НЕ ПОДТВЕРЖДЁН CI</badge>
+**НЕ ПОДТВЕРЖДЁН CI**
 
 Исходный код и документация внесены в ветку `ci/fbd-connective-compiler`. PR #5 остаётся Draft. Автоматические compute jobs выключены; для приёмки требуется явный запуск тестов с согласованным бюджетом.
