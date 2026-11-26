@@ -102,3 +102,5 @@ DEV192 extends KNOB from a bare numeric source to the documented engineering con
 Added `tests/test_fbd_catalog_parity_dev192.py`, which asserts exact equality of the 29 UI type IDs, Core block contracts, compiler mappings and named input/output port sets.
 
 PIN level for KNOB and SWITCH remains metadata until the runtime operator command path is connected to AVIC RBAC. The blocks can be compiled and simulated; this must not be interpreted as operator write authorization.
+
+- Legacy `TIME.OCC` placeholder documents are rejected with an explicit migration instruction. No automatic mapping to a time output is attempted because OCC is not a Trend Time Module output.
