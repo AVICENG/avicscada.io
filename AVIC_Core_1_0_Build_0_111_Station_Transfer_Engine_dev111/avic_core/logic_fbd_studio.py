@@ -541,6 +541,8 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: DELAY требует конечные неотрицательные onDelay/offDelay")
+                    if not isinstance(cfg.get("initial", False), bool):
+                        issues.append(f"Блок «{module.get('name') or typ}»: DELAY.initial должен быть bool")
                 if typ == "SWITCH":
                     value = params.get("value", False)
                     level = params.get("user_level", 0)
@@ -860,7 +862,7 @@ class FBDStudioService:
                         cfg = params.get("delay") or {}
                         params = {"on_delay": float(cfg.get("onDelay", 5.0)),
                                   "off_delay": float(cfg.get("offDelay", 0.0)),
-                                  "initial_state": bool(cfg.get("initial", False))}
+                                  "initial_state": cfg.get("initial", False)}
                     elif typ == "LATCH":
                         cfg = params.get("latch") or {}
                         initial = cfg.get("initial", 0)
