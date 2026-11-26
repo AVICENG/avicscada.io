@@ -110,6 +110,8 @@ class FBDService:
       "FLOAT_INPUT":{"category":"Analog","label":"Аналоговый вход","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":0.0}},
       "KNOB":{"category":"Analog","label":"Ручной источник (KNOB)","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":50.0}},
       "CONSTANT":{"category":"Math","label":"Константа","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":1.0}},
+      "ANALOG_INPUT":{"category":"Analog","label":"Аналоговый источник/датчик","inputs":{},"outputs":{"OUT":"float"},"defaults":{"rawValue":0.0}},
+      "EXTERNAL_SENSOR":{"category":"Analog","label":"Внешний датчик","inputs":{},"outputs":{"OUT":"float"},"defaults":{"rawValue":0.0}},
       "POINT_INPUT":{"category":"Points","label":"Точка станции","inputs":{},"outputs":{"OUT":"any"},"defaults":{}},
       "SCHEDULE":{"category":"Schedule","label":"Расписание станции","inputs":{},"outputs":{"OUT":"any"},"defaults":{"schedule_id":""}},
       "AND":{"category":"Logic","label":"И (AND)","inputs":{"A":"bool","B":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
@@ -214,6 +216,27 @@ class FBDService:
                 if isinstance(val,bool) or not isinstance(val,(int,float)) or not math.isfinite(float(val)):
                     raise ValueError(f"{typ}.value должен быть конечным числом")
                 params={**params,"value":float(val)}
+            if typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
+                raw_value=params.get("rawValue",params.get("value",0.0))
+                if isinstance(raw_value,bool) or not isinstance(raw_value,(int,float)) or not math.isfinite(float(raw_value)):
+                    raise ValueError(f"{typ}.rawValue должен быть конечным числом")
+                points=params.get("scalingPoints",[])
+                if not isinstance(points,list) or len(points)>20:
+                    raise ValueError(f"{typ}.scalingPoints должен содержать не более 20 точек")
+                clean_points=[]
+                seen_x=set()
+                for index,pair in enumerate(points):
+                    if not isinstance(pair,(list,tuple)) or len(pair)!=2:
+                        raise ValueError(f"{typ}.scalingPoints[{index}] должен быть парой X/Y")
+                    x,y=pair
+                    if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(float(v)) for v in (x,y)):
+                        raise ValueError(f"{typ}.scalingPoints[{index}] должен содержать конечные числа")
+                    if float(x) in seen_x:
+                        raise ValueError(f"{typ}.scalingPoints: значения X должны быть уникальны")
+                    seen_x.add(float(x)); clean_points.append([float(x),float(y)])
+                if params.get("sensorType") is not None and len(clean_points)<2:
+                    raise ValueError(f"{typ}: для выбранного Sensor Type требуется минимум две scalingPoints")
+                params={**params,"rawValue":float(raw_value),"scalingPoints":clean_points}
             if typ == "DELAY":
                 on_delay=params.get("on_delay", params.get("onDelay", 5.0))
                 off_delay=params.get("off_delay", params.get("offDelay", 0.0))
@@ -524,7 +547,7 @@ class FBDService:
         nodes = {n["id"]: n for n in graph["nodes"]}
         overridable = {nid for nid, node in nodes.items()
                        if (node["type"].endswith("_INPUT") and node["type"] != "POINT_INPUT")
-                       or node["type"] == "KNOB"}
+                       or node["type"] in {"KNOB", "ANALOG_INPUT", "EXTERNAL_SENSOR"}}
         unknown = set(inputs) - overridable
         if unknown:
             raise ValueError("Переопределять можно только виртуальные входы и KNOB; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
@@ -593,6 +616,28 @@ class FBDService:
                 raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value")))
                 out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), raw, node_name=node["name"])
                 source_meta = {"kind": "virtual_simulation_input", "overridden": node_id in inputs}
+            elif typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
+                raw = inputs.get(node_id, params.get("rawValue", params.get("value", 0.0)))
+                raw = self._validate_simulation_value("float", raw, node_name=node["name"])
+                points = params.get("scalingPoints") or []
+                if points:
+                    ordered = sorted(points, key=lambda pair: float(pair[0]))
+                    if raw <= ordered[0][0]:
+                        out = float(ordered[0][1])
+                    elif raw >= ordered[-1][0]:
+                        out = float(ordered[-1][1])
+                    else:
+                        out = raw
+                        for index in range(1, len(ordered)):
+                            x2, y2 = ordered[index]
+                            if raw <= x2:
+                                x1, y1 = ordered[index - 1]
+                                out = float(y1) + (raw - float(x1)) * (float(y2) - float(y1)) / (float(x2) - float(x1))
+                                break
+                else:
+                    out = raw
+                source_meta = {"kind": "virtual_sensor_input", "sensor_type": params.get("sensorType"),
+                               "raw_value": raw, "scaled": bool(points), "overridden": node_id in inputs}
             elif typ in {"KNOB", "CONSTANT"}:
                 raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value", 0.0)))
                 out = self._validate_simulation_value("float", raw, node_name=node["name"])
