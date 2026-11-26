@@ -66,3 +66,83 @@ def test_history_rejects_point_from_another_station(tmp_path):
         assert "другой станции" in str(exc)
     else:
         raise AssertionError("Cross-station history binding must be rejected")
+
+
+def test_history_startup_reconciliation_restores_missing_core_usage(tmp_path):
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.repository import SQLiteRepository
+
+    repo = SQLiteRepository(tmp_path / "objects.sqlite3")
+    objects = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    objects.save_graph([platform, project, station, device, point])
+
+    history = HistoryService(tmp_path / "history.sqlite3", repository=repo,
+                             point_usage_service=objects)
+    history.configure_point(station.id, point.id)
+    # Simulate a crash/partial cross-database update that lost the Core usage row.
+    objects.set_point_usage(f"history:{station.id}", [])
+    result = history.reconcile_point_usage()
+
+    stored = repo.get_record(point.id)["payload"]
+    assert result["reconciled"] == 1
+    assert stored["licensed_usage"] == [f"history:{station.id}"]
+    assert stored["licensed_active"] is True
+
+
+def test_history_startup_reconciliation_releases_orphaned_usage(tmp_path):
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.repository import SQLiteRepository
+
+    repo = SQLiteRepository(tmp_path / "objects.sqlite3")
+    objects = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    objects.save_graph([platform, project, station, device, point])
+    objects.set_point_usage(f"history:{station.id}", [point.id])
+
+    history = HistoryService(tmp_path / "history.sqlite3", repository=repo,
+                             point_usage_service=objects)
+    result = history.reconcile_point_usage()
+
+    stored = repo.get_record(point.id)["payload"]
+    assert result["reconciled"] == 1
+    assert stored["licensed_usage"] == []
+    assert stored["licensed_active"] is False
+
+
+def test_history_startup_reconciliation_removes_cross_station_stale_binding(tmp_path):
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.repository import SQLiteRepository
+
+    repo = SQLiteRepository(tmp_path / "objects.sqlite3")
+    objects = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station_a = Station("Station A", project_id=project.id)
+    station_b = Station("Station B", project_id=project.id)
+    device = Device("Device", station_id=station_b.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    objects.save_graph([platform, project, station_a, station_b, device, point])
+
+    history = HistoryService(tmp_path / "history.sqlite3", repository=repo,
+                             point_usage_service=objects)
+    with history._db() as db:
+        db.execute("INSERT INTO history_bindings VALUES(?,?,?)",
+                   (station_a.id, point.id, "2026-01-01T00:00:00+00:00"))
+
+    result = history.reconcile_point_usage()
+    assert result["removed_invalid_bindings"] == [
+        {"station_id": station_a.id, "point_id": point.id}
+    ]
+    assert history.configured_points(station_a.id) == []
