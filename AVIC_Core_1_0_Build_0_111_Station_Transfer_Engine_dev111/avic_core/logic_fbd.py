@@ -116,7 +116,7 @@ class FBDService:
       "SCHEDULE":{"category":"Schedule","label":"Расписание станции","inputs":{},"outputs":{"OUT":"any"},"defaults":{"schedule_id":""}},
       "AND":{"category":"Logic","label":"И (AND)","inputs":{"A":"bool","B":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
       "OR":{"category":"Logic","label":"ИЛИ (OR)","inputs":{"A":"bool","B":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
-      "COMBINATION":{"category":"Logic","label":"Комбинационная логика","inputs":{"E":"bool","F":"bool","G":"bool","H":"bool"},"outputs":{"OUT":"bool"},"defaults":{"comboRows":[{"enabled":true,"cells":["E","F","",""]},{"enabled":false,"cells":["","","",""]},{"enabled":false,"cells":["","","",""]},{"enabled":false,"cells":["","","",""]}]}},
+      "COMBINATION":{"category":"Logic","label":"Комбинационная логика","inputs":{"E":"bool","F":"bool","G":"bool","H":"bool"},"outputs":{"OUT":"bool"},"defaults":{"comboRows":[{"enabled":True,"cells":["E","F","",""]},{"enabled":False,"cells":["","","",""]},{"enabled":False,"cells":["","","",""]},{"enabled":False,"cells":["","","",""]}]}},
       "NOT":{"category":"Logic","label":"НЕ (NOT)","inputs":{"IN":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
       "ADD":{"category":"Math","label":"Сложение","inputs":{"A":"float","B":"float"},"outputs":{"OUT":"float"},"defaults":{}},
       "SUB":{"category":"Math","label":"Вычитание","inputs":{"A":"float","B":"float"},"outputs":{"OUT":"float"},"defaults":{}},
