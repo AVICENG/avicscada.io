@@ -1,8 +1,8 @@
 name: AVIC Core CI
 
 on:
-  # Normal development is validated on the private Windows self-hosted runner.
-  # Linux compatibility runs on PRs; manual runs remain opt-in to control hosted minutes.
+  # All private-repository compute jobs are opt-in to avoid unapproved usage charges.
+  # Run Windows self-hosted and Ubuntu compatibility checks manually when authorized.
   push:
     branches:
       - dev112-station-transfer-reliability
@@ -14,6 +14,11 @@ on:
       - dev183-linux-cli-test-fix
   workflow_dispatch:
     inputs:
+      run_windows_self_hosted:
+        description: "Run the Windows self-hosted test suite (private-repository runner usage may be billed)"
+        required: false
+        type: boolean
+        default: false
       run_linux_matrix:
         description: "Run the Ubuntu/Python compatibility matrix (uses GitHub-hosted minutes)"
         required: false
@@ -31,7 +36,7 @@ jobs:
   windows-tests:
     name: Python system / Windows self-hosted
     # Never execute fork-controlled pull request code on the persistent private runner.
-    if: github.actor == github.repository_owner && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'workflow_dispatch' && inputs.run_windows_self_hosted
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 45
     defaults:
