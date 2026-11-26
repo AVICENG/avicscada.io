@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from avic_core.ui import create_ui_app
+from avic_core.logic_fbd import FBDService
 
 
 def _station(client):
@@ -92,3 +93,9 @@ def test_combination_rejects_unknown_condition_cell(tmp_path):
     assert preview.status_code == 200, preview.text
     assert preview.json()["compilable"] is False
     assert any("COMBINATION" in issue for issue in preview.json()["issues"])
+
+
+def test_combination_catalog_defaults_use_python_boolean_values():
+    rows = FBDService.BLOCKS["COMBINATION"]["defaults"]["comboRows"]
+    assert [row["enabled"] for row in rows] == [True, False, False, False]
+    assert all(type(row["enabled"]) is bool for row in rows)
