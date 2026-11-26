@@ -41,7 +41,7 @@ PR: https://github.com/AVICENG/avicscada.io/pull/5
 | LATCH | Да | Да | Да | SET/RESET, настраиваемый приоритет |
 | SWITCH | Да | Да | Да | Status source/constant → Destination; PIN level сохраняется |
 | KNOB | Да | Да | Да | Числовой источник; test override только в симуляции |
-| TIME | Да | Да | Да | 21 выход станции; Core TimeManagementService |
+| TIME | Да | Да | Да | 22 выхода станции (в DEV194 добавлен UTC_OFFSET); Core TimeManagementService |
 | SCHEDULE | Да | Да | Да | Тип результата соответствует конфигурации Scheduler |
 | CONSTANT | Да | Да | Да | Конечная числовая константа |
 
