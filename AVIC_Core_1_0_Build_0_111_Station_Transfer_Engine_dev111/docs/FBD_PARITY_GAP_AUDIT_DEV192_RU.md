@@ -104,3 +104,5 @@ Added `tests/test_fbd_catalog_parity_dev192.py`, which asserts exact equality of
 PIN level for KNOB and SWITCH remains metadata until the runtime operator command path is connected to AVIC RBAC. The blocks can be compiled and simulated; this must not be interpreted as operator write authorization.
 
 - Legacy `TIME.OCC` placeholder documents are rejected with an explicit migration instruction. No automatic mapping to a time output is attempted because OCC is not a Trend Time Module output.
+
+- `SCALE` намеренно имеет в Studio один signal input IN; compiler материализует IN_MIN/IN_MAX/OUT_MIN/OUT_MAX как отдельные Core FLOAT_INPUT nodes, сохраняя canonical Core-контракт. Catalog parity test учитывает это проектное отображение.
