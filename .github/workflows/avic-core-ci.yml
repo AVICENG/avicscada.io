@@ -6,8 +6,6 @@ on:
   push:
     branches:
       - dev112-station-transfer-reliability
-      - ci/self-hosted-windows-runner
-      - ci/fbd-connective-compiler
   pull_request:
     branches:
       - main
