@@ -180,3 +180,11 @@ def test_workbench_license_status_reports_unconfigured_development_mode(tmp_path
     assert payload["reason"] == "LICENSE_NOT_CONFIGURED"
     assert payload["remaining_points"] is None
     app.state.core.close()
+
+def test_workbench_can_require_license_for_commercial_installation(tmp_path, monkeypatch):
+    from avic_core.ui.app import create_ui_app
+    monkeypatch.setenv("AVIC_LICENSE_REQUIRED", "true")
+    monkeypatch.delenv("AVIC_LICENSE_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("AVIC_LICENSE_FILE", raising=False)
+    with pytest.raises(RuntimeError, match="Коммерческий режим требует"):
+        create_ui_app(data_dir=str(tmp_path / "commercial"))
