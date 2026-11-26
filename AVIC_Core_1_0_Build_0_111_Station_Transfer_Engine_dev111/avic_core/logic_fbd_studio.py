@@ -410,7 +410,8 @@ class FBDStudioService:
         "SUB": "SUB", "MUL": "MUL", "DIV": "DIV", "SELECT": "SELECT",
         "COMPARE_GT": "COMPARE_GT", "COMPARE_LT": "COMPARE_LT",
         "LIMIT": "LIMIT", "SCALE": "SCALE", "HYSTERESIS": "HYSTERESIS",
-        "DELAY": "DELAY", "LATCH": "LATCH", "PID_LOOP": "PID_LOOP", "BOOL_OUTPUT": "BOOL_OUTPUT",
+        "DELAY": "DELAY", "LATCH": "LATCH", "PID_LOOP": "PID_LOOP",
+        "SWITCH": "SWITCH", "TIME": "TIME", "BOOL_OUTPUT": "BOOL_OUTPUT",
         "FLOAT_OUTPUT": "FLOAT_OUTPUT",
     }
 
@@ -532,6 +533,11 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: DELAY требует конечные неотрицательные onDelay/offDelay")
+                if typ == "SWITCH":
+                    value = params.get("value", False)
+                    level = params.get("user_level", 0)
+                    if not isinstance(value, bool) or isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 99:
+                        issues.append(f"Блок «{module.get('name') or typ}»: SWITCH требует bool Status и PIN level 0..99")
                 if typ == "PID_LOOP":
                     try:
                         core._normalize_pid_config(params.get("pid"))
@@ -835,6 +841,9 @@ class FBDStudioService:
                     elif typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                         params = {key: params[key] for key in ("rawValue", "value", "sensorType", "sensorPart",
                                   "scalingRange", "scalingMode", "scalingInput", "scalingPoints") if key in params}
+                    elif typ == "SWITCH":
+                        params = {"value": bool(params.get("value", False)),
+                                  "user_level": int(params.get("user_level", 0))}
                     elif typ == "PID_LOOP":
                         params = {"pid": core_fbd._normalize_pid_config(params.get("pid"))}
                     elif typ == "DELAY":
