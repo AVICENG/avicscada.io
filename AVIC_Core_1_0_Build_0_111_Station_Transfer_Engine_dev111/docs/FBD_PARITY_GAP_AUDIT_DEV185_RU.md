@@ -185,3 +185,27 @@ FBD нельзя объявить завершённым, пока каждый 
 **Покрытие после DEV190:** 27 из 29 типов редактора имеют Core-контракт и путь компиляции. Остаются SWITCH и TIME. Добавлены тесты AUTO/MANUAL, bumpless transfer, RESET и сквозной Studio → Core compile/simulation. CI должен подтвердить результат.
 
 
+
+
+## 18. Изменения DEV191 — SWITCH и TIME
+
+DEV191 закрывает оставшиеся два типа редактора на уровне Core-контракта, компиляции и симуляции.
+
+### SWITCH
+- BOOL-вход IN является источником Status; если он не подключён, используется сохранённый bool-параметр Status.
+- BOOL-выход OUT представляет Destination.
+- Сохраняется PIN/user_level (0–99) как параметр доступа.
+- Обратная связь запрещается общей проверкой циклов FBD.
+- Симуляция и компиляция не выполняют физические записи.
+
+Ограничение: PIN level сохраняется в модели, но отдельный операторский API изменения статуса с проверкой пользователя ещё не включён; изменение через инженерный редактор не следует считать runtime-командой.
+
+### TIME
+- Заменён ошибочный одиночный BOOL `OCC` на 21 выход Trend Time Module: Current Time (hh.mm), Minutes Past Midnight, Day, Month, Weekday, три day bits и 13 timing pulses.
+- Пульсы фиксируются по переходу временного периода и удерживаются одну секунду.
+- Время берётся из Core `TimeManagementService` и часового пояса станции; синхронизация/NTP и DST принадлежат Core Time Manager, а не скрытой логике FBD-блока.
+- Time Master/запись системных часов из FBD не выполняются. Это намеренное безопасное отличие от контроллерной функции Trend Time Master.
+
+**Покрытие после DEV191:** 29 из 29 типов редактора имеют Core-контракт, compile-preview, Core compile и simulation path. Это не означает полного совпадения всех внешних функций Trend: операторское управление SWITCH через RBAC и Time Master distribution остаются отдельными задачами.
+
+Семантика сверена с Trend IQ3 Configuration Manual TE200768, Part 2 Section 31 (Switches) и Section 32 (Time): https://autorem.fr/Docs/Trend/iq3_config_EN.pdf
