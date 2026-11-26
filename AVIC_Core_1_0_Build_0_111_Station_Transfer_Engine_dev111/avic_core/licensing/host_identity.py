@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import csv
 import json
 import os
 import platform
@@ -127,37 +128,61 @@ class HostIdentity:
             identity_dir.mkdir(parents=True, exist_ok=True)
 
             if os.name == "nt":
-                # Windows ACL: current account, SYSTEM and local administrators.
-                # Inheritance from parent directories is disabled.
-                username = os.environ.get("USERNAME", "").strip()
-                domain = os.environ.get("USERDOMAIN", "").strip()
-
-                account = (
-                    f"{domain}\\{username}"
-                    if domain
-                    else username
+                # Build the DACL with .NET SecurityIdentifier objects. icacls can
+                # canonicalize local-account principals to the broad LA alias on
+                # hosted Windows runners; explicit SID objects avoid that ambiguity.
+                who = subprocess.run(
+                    ["whoami", "/user", "/fo", "csv", "/nh"],
+                    check=True, capture_output=True, text=True, timeout=10,
                 )
-
-                if not username:
+                rows = list(csv.reader(line for line in who.stdout.splitlines() if line.strip()))
+                current_sid = rows[0][-1].strip() if rows and rows[0] else ""
+                if not re.fullmatch(r"S-1-5-21-(?:\d+-){2,}\d+", current_sid):
                     raise HostIdentityError(
-                        "Не удалось определить Windows account "
-                        "для ACL installation identity"
+                        "Не удалось определить точный Windows user SID для ACL installation identity"
                     )
 
+                # Disable inheritance, remove every existing ACE, then grant
+                # FullControl only to the current user SID, SYSTEM and Administrators.
+                # The same protected DACL applies to child files and directories.
+                import base64
+
+                ps_path = str(identity_dir).replace("'", "''")
+                ps_user_sid = current_sid.replace("'", "''")
+                ps_script = r"""
+$ErrorActionPreference = 'Stop'
+$path = '__AVIC_PATH__'
+$userSid = '__AVIC_USER_SID__'
+$acl = Get-Acl -LiteralPath $path
+$acl.SetAccessRuleProtection($true, $false)
+foreach ($existingRule in @($acl.Access)) {
+    $acl.RemoveAccessRuleAll($existingRule)
+}
+$principals = @(
+    [System.Security.Principal.SecurityIdentifier]::new($userSid),
+    [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18'),
+    [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')
+)
+$inheritance = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+foreach ($principal in $principals) {
+    $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
+        $principal,
+        [System.Security.AccessControl.FileSystemRights]::FullControl,
+        $inheritance,
+        [System.Security.AccessControl.PropagationFlags]::None,
+        [System.Security.AccessControl.AccessControlType]::Allow
+    )
+    [void]$acl.AddAccessRule($rule)
+}
+Set-Acl -LiteralPath $path -AclObject $acl
+""".replace("__AVIC_PATH__", ps_path).replace("__AVIC_USER_SID__", ps_user_sid)
+                encoded_script = base64.b64encode(ps_script.encode("utf-16le")).decode("ascii")
                 subprocess.run(
                     [
-                        "icacls",
-                        str(identity_dir),
-                        "/inheritance:r",
-                        "/grant:r",
-                        f"{account}:(OI)(CI)F",
-                        "*S-1-5-18:(OI)(CI)F",
-                        "*S-1-5-32-544:(OI)(CI)F",
+                        "powershell", "-NoProfile", "-NonInteractive",
+                        "-EncodedCommand", encoded_script,
                     ],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=10,
+                    check=True, capture_output=True, text=True, timeout=15,
                 )
 
             if identity_file.exists():

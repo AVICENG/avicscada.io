@@ -80,10 +80,23 @@ class PointRuntimeService:
             if not isinstance(value, bool):
                 raise ValueError("Для булевой точки требуется bool")
             return value
-        if kind in {"float", "double", "real", "analog", "numeric", "number"} or kind.startswith(("analog-", "real-")):
+        if kind in {"float", "double", "real", "analog", "numeric", "number", "float32", "float64"} or kind.startswith(("analog-", "real-")):
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(float(value)):
                 raise ValueError("Для аналоговой точки требуется конечное число")
             return float(value)
+        integer_ranges = {
+            "uint8": (0, 255), "uint16": (0, 65535), "uint32": (0, 4294967295),
+            "uint64": (0, 18446744073709551615), "int8": (-128, 127),
+            "int16": (-32768, 32767), "int32": (-2147483648, 2147483647),
+            "int64": (-9223372036854775808, 9223372036854775807),
+        }
+        if kind in integer_ranges:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError("Для целочисленной точки требуется int")
+            lower, upper = integer_ranges[kind]
+            if not lower <= value <= upper:
+                raise ValueError(f"Значение вне диапазона {kind}")
+            return value
         if kind in {"int", "integer", "uint", "counter", "long"} or kind.startswith(("multi-state", "integer-")):
             if isinstance(value, bool) or not isinstance(value, int):
                 raise ValueError("Для целочисленной точки требуется int")
@@ -215,6 +228,40 @@ class PointRuntimeService:
             subscribers = tuple(self._subscribers.get(point.id, {}).values())
         for callback in subscribers:
             try: callback(result)
+            except Exception as exc:
+                with self._lock:
+                    self._subscriber_errors.append(f"{point_id}: {type(exc).__name__}: {exc}")
+                    self._subscriber_errors = self._subscriber_errors[-100:]
+        return result
+
+    def mark_quality(self, point_id: str, quality: PointQuality | str, *,
+                     source_driver_id: str | None = None) -> PointRuntimeValue:
+        """Change input-point quality without replacing its last value or sample timestamp."""
+        q = self._quality(quality)
+        if q == PointQuality.GOOD:
+            raise ValueError("mark_quality cannot restore GOOD without a new sample")
+        with self._lock:
+            point, version, device = self._read_entity(point_id)
+            if not isinstance(point, Point) or device is None:
+                raise ValueError("Only a physical input point can be marked by a driver")
+            direction = getattr(point.direction, "value", str(point.direction)).lower()
+            if direction == PointDirection.OUTPUT.value:
+                raise ValueError("A driver cannot mark an OUTPUT point as an input measurement")
+            owner = str(device.get("payload", {}).get("driver_instance_id") or "")
+            if source_driver_id and owner and source_driver_id != owner:
+                raise ValueError("Quality source does not match point's owning driver")
+            point.quality = q
+            point.updated_at = _utcnow()
+            new_version = self.repository.save(point, expected_version=version)
+            result = PointRuntimeValue(
+                point_id=point.id, value=point.value, quality=q.value, timestamp=point.timestamp,
+                unit=point.unit, data_type=point.data_type,
+                source=point.source_ref or point.native_identity or "unassigned", revision=new_version,
+            )
+            subscribers = tuple(self._subscribers.get(point.id, {}).values())
+        for callback in subscribers:
+            try:
+                callback(result)
             except Exception as exc:
                 with self._lock:
                     self._subscriber_errors.append(f"{point_id}: {type(exc).__name__}: {exc}")

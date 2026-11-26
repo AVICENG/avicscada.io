@@ -293,9 +293,93 @@ function nextModuleTag(type){const prefix=moduleTagPrefix(type),used=allModules(
 function normalizeFbdIdentifiers(){const used=new Set();let maxNo=0;for(const pg of state.pages||[])for(const m of pg.modules||[]){m.id=m.id||uid();if(!Number.isFinite(Number(m.no))||Number(m.no)<1)m.no=++maxNo;maxNo=Math.max(maxNo,Number(m.no)||0);let tag=String(m.tag||'').trim();if(!tag||used.has(tag.toLowerCase()))tag=nextModuleTag(m.type);m.tag=tag;used.add(tag.toLowerCase());m.name=String(m.name||m.params?.label||m.type||'Block').trim();m.ins=Array.isArray(m.ins)?m.ins:[];m.outs=Array.isArray(m.outs)?m.outs:[];for(const port of [...m.ins,...m.outs])if(port&&!port.id)port.id=uid()}state.nextModule=Math.max(Number(state.nextModule)||1,maxNo+1);const pointUsed=new Set();for(const pt of state.fbdPoints||[]){pt.id=pt.id||uid();const prefix=(pt.dataType==='digital'?'DO':'AO');let tag=String(pt.tag||'');if(!/^(AI|DI|AO|DO)_\d{3,}$/i.test(tag)||pointUsed.has(tag.toLowerCase())){const nums=(state.fbdPoints||[]).filter(x=>String(x.tag||'').startsWith(prefix+'_')).map(x=>Number(String(x.tag).split('_').at(-1))).filter(Number.isFinite);tag=`${prefix}_${String(Math.max(0,...nums)+1).padStart(3,'0')}`}pt.legacy_tag=pt.legacy_tag||(/^FBDP-/i.test(pt.tag||'')?pt.tag:undefined);pt.tag=tag;pointUsed.add(tag.toLowerCase())}state.nextFbdPoint=Math.max(Number(state.nextFbdPoint)||1,(state.fbdPoints||[]).length+1)}
 function addModule(type,x=100,y=100,customName){if(!defs[type]&&!['CONNECTIVE','TO_CONNECTIVE'].includes(type)){toast('Этот файл SET ещё не декодирован и не может быть добавлен как исполняемый блок');return null}let d=defs[type]||{label:type,ins:['IN'],outs:['OUT'],kind:'num'};let params={value:d.value??0,description:'',label:customName||d.label};if(type==='ANALOG_INPUT'||type==='EXTERNAL_SENSOR'){Object.assign(params,{sensorType:null,sensorPart:'',scalingRange:'',rawValue:0,pointRef:null})}if(type==='COMBINATION')params.comboRows=[{enabled:true,cells:['E','F','','']},{enabled:false,cells:['','','','']},{enabled:false,cells:['','','','']} ,{enabled:false,cells:['','','','']}];if(type==='PID_LOOP')params.pid={kp:1,ti:60,td:0,action:'direct',mode:'auto',outputMin:0,outputMax:100,disabledOutput:0,manualOutput:0,bias:0,deadband:0,derivativeFilter:0,outputRateLimit:0,sampleTime:1,integralMin:-100,integralMax:100};if(type==='SCALE')params.scale={inputLow:0,inputHigh:100,outputLow:0,outputHigh:100,clampOutput:true};if(type==='HYSTERESIS')params.hysteresis={low:18,high:22,initial:0};if(type==='DELAY')params.delay={onDelay:5,offDelay:0};if(type==='LATCH')params.latch={resetPriority:true,initial:0};if(type==='SCHEDULE')params.schedule={enabled:true,timezone:'UTC',valueType:'bool',defaultValue:0,weeklyEvents:[],exceptions:[],override:null};let m={id:uid(),type,name:customName||d.label,tag:nextModuleTag(type),no:state.nextModule++,x,y,w: type==='PID_LOOP'?190:142,params,ins:d.ins.map(n=>({name:n,type:(type==='PID_LOOP'&&['ENABLE','MANUAL','RESET'].includes(n))||d.kind==='bool'?'bool':'num'})),outs:d.outs.map(n=>({name:n,type:(type==='PID_LOOP'&&n==='OUT')?'num':d.kind==='bool'?'bool':'num'})),value:d.value??'—',outputValues:{},runtimeState:{},quality:'GOOD'};activePage().modules.push(m);saveSoon();render();select(m.id);return m}
 function activePage(){return state.pages.find(p=>p.id===state.active)||state.pages[0]};function allModules(){return state.pages.flatMap(p=>p.modules.map(m=>({...m,page:p.name,pageId:p.id}))) };function snapshot(){state.undo.push(JSON.stringify({pages:state.pages,links:state.links,references:state.references,fbdPoints:state.fbdPoints,nextModule:state.nextModule,nextFbdPoint:state.nextFbdPoint,active:state.active}));if(state.undo.length>60)state.undo.shift();state.redo=[]}
-let saveTimer;function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{const snapshot=exportData();try{localStorage.setItem('avicFbdStudio11',JSON.stringify(snapshot))}catch(e){}if(studioReady&&studioDocumentId){studioSaveQueue=studioSaveQueue.then(()=>persistStudioState(snapshot)).catch(e=>{studioReady=false;toast('Не удалось сохранить FBD в Core: '+e.message)})}},450)}
-async function persistStudioState(snapshot){if(!studioReady||!studioDocumentId)return;const r=await fetch(`/api/fbd-studio/${encodeURIComponent(studioDocumentId)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({expected_revision:studioRevision,name:state.project,data:snapshot})});if(r.status===409){const latest=await fetch(`/api/fbd-studio/${encodeURIComponent(studioDocumentId)}`).then(x=>x.json());throw Error(`конфликт ревизий (Core ${latest.revision}, локальная ${studioRevision}); перезагрузите проект перед продолжением`)}if(!r.ok)throw Error((await r.json()).detail||`HTTP ${r.status}`);const saved=await r.json();studioRevision=saved.revision;$('#statusleft').textContent=`Сохранено в AVIC Core · ревизия ${studioRevision}`;refreshEngineeringTreeSnapshot()}
-async function loadStudioDocument(stationId,requestedDocumentId=null){clearTimeout(saveTimer);if(studioReady&&studioDocumentId){await studioSaveQueue;await persistStudioState(exportData())}await studioSaveQueue.catch(()=>{});studioReady=false;studioDocumentId=null;studioRevision=0;const listResponse=await fetch(`/api/stations/${encodeURIComponent(stationId)}/fbd-studio`);if(!listResponse.ok)throw Error(`Не удалось получить FBD-проекты станции: HTTP ${listResponse.status}`);const list=await listResponse.json();let doc;const item=requestedDocumentId?(list.documents||[]).find(x=>x.id===requestedDocumentId):((list.documents||[]).slice().sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)))[0]);if(requestedDocumentId&&!item)throw Error('Выбранный FBD-проект не принадлежит этой станции или не найден');if(item){const response=await fetch(`/api/fbd-studio/${encodeURIComponent(item.id)}`);if(!response.ok)throw Error(`Не удалось открыть FBD-проект: HTTP ${response.status}`);doc=await response.json();if(doc.station_id!==stationId)throw Error('FBD-проект принадлежит другой станции');studioDocumentId=doc.id;importData(doc.data)}else{const data=exportData();const response=await fetch(`/api/stations/${encodeURIComponent(stationId)}/fbd-studio`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:state.project||'FBD Project',data})});if(!response.ok)throw Error((await response.json()).detail||`HTTP ${response.status}`);doc=await response.json()}studioDocumentId=doc.id;studioRevision=doc.revision;studioReady=true;try{localStorage.setItem('avicFbdStudio11',JSON.stringify(exportData()))}catch(e){}const params=new URLSearchParams(location.search),requestedPage=params.get('page');if(requestedPage&&state.pages.some(pg=>pg.id===requestedPage)){state.active=requestedPage;render()}renderTree();$('#statusleft').textContent=`FBD Core · ${doc.name} · ревизия ${studioRevision}`;if(params.get('newpage')==='1'){addPage();params.delete('newpage');history.replaceState(null,'',location.pathname+'?'+params.toString())}if(params.get('print')==='1'){setTimeout(()=>{if(requestedPage)printCurrentPage();else printAllPages();params.delete('print');history.replaceState(null,'',location.pathname+'?'+params.toString())},500)}}
+let saveTimer;
+let saveDraft=null;
+const studioRevisionByDocument=new Map();
+function attachFbdDraftManager(stationId){
+ if(saveDraft){saveDraft.dispose();saveDraft=null}
+ if(!window.AVICSaveManager||!studioDocumentId)return;
+ const resourceId=studioDocumentId;
+ saveDraft=window.AVICSaveManager.register({
+  editor:'fbd',stationId,resourceId,
+  getBaseRevision:()=>studioRevisionByDocument.get(resourceId)||studioRevision,
+  getContent:()=>exportData(),
+  applyContent:async content=>{importData(content);render();toast('Черновик FBD восстановлен. Схема не опубликована и не запущена.');},
+  onState:value=>{const el=$('#statusleft');if(el)el.textContent=value}
+ });
+}
+function saveSoon(){
+ clearTimeout(saveTimer);
+ saveDraft?.schedule();
+ saveTimer=setTimeout(()=>{
+  const snapshot=exportData();
+  try{localStorage.setItem('avicFbdStudio11',JSON.stringify(snapshot))}catch(e){}
+  if(studioReady&&studioDocumentId){
+   const targetId=studioDocumentId;
+   studioSaveQueue=studioSaveQueue.then(()=>persistStudioState(snapshot,targetId)).catch(e=>{
+    if(studioDocumentId===targetId)studioReady=false;
+    toast('Не удалось сохранить FBD в Core: '+e.message);
+   });
+  }
+ },450)
+}
+async function persistStudioState(snapshot,targetId=studioDocumentId){
+ if(!targetId)return;
+ const expectedRevision=studioRevisionByDocument.get(targetId)??(targetId===studioDocumentId?studioRevision:0);
+ const r=await fetch(`/api/fbd-studio/${encodeURIComponent(targetId)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({expected_revision:expectedRevision,name:snapshot.project||state.project,data:snapshot})});
+ if(r.status===409){const latest=await fetch(`/api/fbd-studio/${encodeURIComponent(targetId)}`).then(x=>x.json());throw Error(`конфликт ревизий (Core ${latest.revision}, локальная ${expectedRevision}); черновик оставлен для восстановления`)}
+ if(!r.ok)throw Error((await r.json()).detail||`HTTP ${r.status}`);
+ const saved=await r.json();
+ studioRevisionByDocument.set(targetId,saved.revision);
+ if(studioDocumentId===targetId){
+  studioRevision=saved.revision;
+  $('#statusleft').textContent=`Сохранено в AVIC Core · ревизия ${studioRevision}`;
+  refreshEngineeringTreeSnapshot();
+  if(saveDraft&&!await saveDraft.clear(snapshot)){
+   $('#statusleft').textContent=`FBD ревизия ${studioRevision} сохранена; более новые изменения оставлены в черновике.`;
+   return;
+  }
+ }
+}
+async function loadStudioDocument(stationId,requestedDocumentId=null){
+ clearTimeout(saveTimer);
+ const previousDocumentId=studioDocumentId;
+ if(studioReady&&previousDocumentId){
+  const pendingSnapshot=exportData();
+  saveDraft?.flush();
+  studioSaveQueue=studioSaveQueue.then(()=>persistStudioState(pendingSnapshot,previousDocumentId)).catch(e=>{
+   toast('Черновик FBD оставлен для восстановления: '+e.message);
+  });
+ }
+ if(saveDraft){saveDraft.dispose();saveDraft=null}
+ studioReady=false;studioDocumentId=null;studioRevision=0;
+ const listResponse=await fetch(`/api/stations/${encodeURIComponent(stationId)}/fbd-studio`);
+ if(!listResponse.ok)throw Error(`Не удалось получить FBD-проекты станции: HTTP ${listResponse.status}`);
+ const list=await listResponse.json();
+ let doc;
+ const item=requestedDocumentId?(list.documents||[]).find(x=>x.id===requestedDocumentId):((list.documents||[]).slice().sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)))[0]);
+ if(requestedDocumentId&&!item)throw Error('Выбранный FBD-проект не принадлежит этой станции или не найден');
+ if(item){
+  const response=await fetch(`/api/fbd-studio/${encodeURIComponent(item.id)}`);
+  if(!response.ok)throw Error(`Не удалось открыть FBD-проект: HTTP ${response.status}`);
+  doc=await response.json();
+  if(doc.station_id!==stationId)throw Error('FBD-проект принадлежит другой станции');
+  studioDocumentId=doc.id;importData(doc.data);
+ }else{
+  const data=exportData();
+  const response=await fetch(`/api/stations/${encodeURIComponent(stationId)}/fbd-studio`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:state.project||'FBD Project',data})});
+  if(!response.ok)throw Error((await response.json()).detail||`HTTP ${response.status}`);
+  doc=await response.json();
+ }
+ studioDocumentId=doc.id;studioRevision=doc.revision;studioRevisionByDocument.set(doc.id,doc.revision);studioReady=true;
+ try{localStorage.setItem('avicFbdStudio11',JSON.stringify(exportData()))}catch(e){}
+ attachFbdDraftManager(stationId);
+ const params=new URLSearchParams(location.search),requestedPage=params.get('page');
+ if(requestedPage&&state.pages.some(pg=>pg.id===requestedPage)){state.active=requestedPage;render()}
+ renderTree();$('#statusleft').textContent=`FBD Core · ${doc.name} · ревизия ${studioRevision}`;
+ if(params.get('newpage')==='1'){addPage();params.delete('newpage');history.replaceState(null,'',location.pathname+'?'+params.toString())}
+ if(params.get('print')==='1'){setTimeout(()=>{if(requestedPage)printCurrentPage();else printAllPages();params.delete('print');history.replaceState(null,'',location.pathname+'?'+params.toString())},500)}
+}
 function exportData(){return {format:'AVIC-FBD-STRATEGY',version:'1.1.1',project:state.project,description:state.description,author:state.author,nextModule:state.nextModule,nextFbdPoint:state.nextFbdPoint,active:state.active,pages:state.pages,links:state.links,references:state.references||[],fbdPoints:state.fbdPoints||[]}}
 function importData(o){if(!o||!Array.isArray(o.pages))throw Error('Неверный формат проекта');state.project=o.project||'AVIC FBD Project';state.description=o.description||'';state.author=o.author||'';state.device='';state.pages=o.pages;state.pages.forEach((pg,i)=>{pg.modules=Array.isArray(pg.modules)?pg.modules:[];pg.notes=Array.isArray(pg.notes)?pg.notes:[];pg.code=pg.code||('P'+(i+1));if(/^Page\\s*0*\\d+$/i.test(String(pg.name||'')))pg.name=pg.code;pg.modules.forEach(m=>{m.ins=Array.isArray(m.ins)?m.ins:[];m.outs=Array.isArray(m.outs)?m.outs:[];if(m.type==='PID_LOOP'&&m.params?.pid&&m.params.pid.pidConfigVersion!==2&&m.params.pid.integralMin===-1000&&m.params.pid.integralMax===1000){m.params.pid.integralMin=-100;m.params.pid.integralMax=100;m.params.pid.pidConfigVersion=2;}});});state.links=Array.isArray(o.links)?o.links:[];state.references=o.references||[];state.fbdPoints=Array.isArray(o.fbdPoints)?o.fbdPoints:[];const migratedCandidates=sourcePortCandidates();state.fbdPoints.forEach((pt,i)=>{pt.id=pt.id||uid();pt.tag=pt.tag||`FBDP-${String(i+1).padStart(4,'0')}`;pt.direction=pt.direction||'output';if(pt.source){const candidate=migratedCandidates.find(c=>pt.source.portId?c.portId===pt.source.portId:(c.pageId===pt.source.pageId&&c.moduleId===pt.source.moduleId&&Number(c.portIndex)===Number(pt.source.portIndex)));if(candidate){pt.source.portId=candidate.portId;pt.source.portIndex=candidate.portIndex;pt.source.portName=candidate.portName;const page=state.pages.find(p=>p.id===candidate.pageId);pt.symbolic_address=`${page?.code||'P1'}.${String(candidate.moduleType||'BLOCK').replace(/[^A-Za-z0-9_]/g,'_')}_${candidate.moduleNo}.${String(candidate.portName||'OUT').replace(/[^A-Za-z0-9_]/g,'_')}`;pt.path=`FBD/${pt.symbolic_address}`;}}if(!pt.native_identity||pt.native_identity.startsWith('fbd://local/'))pt.native_identity=`fbd://${studioDocumentId||'local'}/${pt.source?.pageId||'unknown'}/${pt.source?.moduleId||'unknown'}/${pt.source?.portId||pt.source?.portIndex||0}`;pt.license=pt.license||{metered:true,countOnce:true,countingKey:pt.id,activation:'on-active-use',status:'pending_core_registration'};});state.nextFbdPoint=Number(o.nextFbdPoint)||nextFbdPointNumber(state.fbdPoints);state.nextModule=o.nextModule||Math.max(1,...allModules().map(m=>m.no+1));normalizeFbdIdentifiers();state.active=o.active&&state.pages.some(p=>p.id===o.active)?o.active:state.pages[0].id;state.selected=null;normalizeStoredLinks();render();saveSoon()}
 function normalizeStoredLinks(){

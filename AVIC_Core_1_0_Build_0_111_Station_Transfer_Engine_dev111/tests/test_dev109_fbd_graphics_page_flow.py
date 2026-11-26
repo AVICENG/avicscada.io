@@ -146,6 +146,7 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
             "expected_revision": saved_page.json()["revision"],
         })
         assert published.status_code == 200, published.text
+        first_published_revision = published.json()["published_revision"]
 
         # Re-open and edit the same page, then publish the next revision.
         page_reopened = client.get(f"/api/web-pages/{page['id']}").json()
@@ -160,18 +161,57 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
         })
         assert republished.status_code == 200, republished.text
 
+        # Published geometry and bindings must remain frozen if the source graphic changes.
+        live_graphic = client.get(f"/api/graphics/{graphics['id']}").json()
+        changed_elements = live_graphic["elements"]
+        changed_elements[0]["x"] = 900
+        changed_elements[0]["bindings"] = []
+        changed_graphic = client.put(f"/api/graphics/{graphics['id']}", json={
+            "expected_revision": live_graphic["revision"], "elements": changed_elements,
+        })
+        assert changed_graphic.status_code == 200, changed_graphic.text
+
         rendered = client.get(f"/published/{station['id']}/ahu-01")
         assert rendered.status_code == 200
         assert "Приточная установка AHU-01 · редакция 2" in rendered.text
         assert point_id in rendered.text
         assert f"/published-graphics/{station['id']}/{graphics['id']}" in rendered.text
 
+        graphic_runtime = client.get(
+            f"/published-graphics/{station['id']}/{graphics['id']}?page_id={page['id']}"
+        )
+        assert graphic_runtime.status_code == 200, graphic_runtime.text
+        assert "left:140px" in graphic_runtime.text
+        assert "left:900px" not in graphic_runtime.text
+
         runtime = client.get(
             f"/published-graphics/{station['id']}/{graphics['id']}/bindings?page_id={page['id']}"
         )
         assert runtime.status_code == 200, runtime.text
+        assert len(runtime.json()["bindings"]) == 2
         assert any(v["quality"] == "GOOD" and v["value"] is True
                    for v in runtime.json()["bindings"].values())
+
+        # Roll back to the first published revision; its graphic snapshot must also survive.
+        rolled_back = client.post(f"/api/web-pages/{page['id']}/rollback", json={
+            "expected_revision": republished.json()["revision"],
+            "target_published_revision": first_published_revision,
+        })
+        assert rolled_back.status_code == 200, rolled_back.text
+        rolled_page = client.get(f"/published/{station['id']}/ahu-01")
+        assert rolled_page.status_code == 200
+        assert "Приточная установка AHU-01" in rolled_page.text
+        assert "редакция 2" not in rolled_page.text
+        rolled_graphic = client.get(
+            f"/published-graphics/{station['id']}/{graphics['id']}?page_id={page['id']}"
+        )
+        assert rolled_graphic.status_code == 200, rolled_graphic.text
+        assert "left:140px" in rolled_graphic.text
+        rolled_bindings = client.get(
+            f"/published-graphics/{station['id']}/{graphics['id']}/bindings?page_id={page['id']}"
+        )
+        assert rolled_bindings.status_code == 200, rolled_bindings.text
+        assert len(rolled_bindings.json()["bindings"]) == 2
 
         # UI contract: the engineering tree emits the exact point IDs consumed by
         # Graphics Workbench; the editor accepts both physical and FBD drag payloads.
@@ -184,6 +224,13 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
         assert "getData('point')||e.dataTransfer.getData('fbd-point')" in graphics_ui
         assert "bindDroppedPoint(pointId,target)" in graphics_ui
         assert "getScreenCTM().inverse()" in graphics_ui
+        pages_ui = (source_root / "static" / "pages.html").read_text(encoding="utf-8")
+        assert 'id="publish"' in pages_ui and "function publishPage()" in pages_ui
+        assert 'id="openPublished"' in pages_ui and "function openPublishedPage()" in pages_ui
+        assert 'id="unpublish"' in pages_ui and "function unpublishPage()" in pages_ui
+        assert 'id="rollback"' in pages_ui and "function rollbackPage()" in pages_ui
+        assert 'id="publishedVersion"' in pages_ui and "/rollback" in pages_ui
+        assert "/unpublish" in pages_ui and "/publish" in pages_ui
 
         client.post(f"/api/fbd-runtime/{core_document_id}/stop")
         app.state.core.close()
@@ -195,5 +242,12 @@ def test_dev109_fbd_tree_point_to_graphic_bindings_and_published_page_survive_re
         assert page_after_restart.status_code == 200, page_after_restart.text
         graphic_after_restart = client.get(f"/api/graphics/{graphics['id']}")
         assert graphic_after_restart.status_code == 200, graphic_after_restart.text
-        assert graphic_after_restart.json()["elements"][0]["bindings"][0]["point_id"] == point_id
+        # The editable source graphic reflects the deliberate post-publication edit.
+        assert graphic_after_restart.json()["elements"][0]["bindings"] == []
+        # The published revision still owns the original frozen two bindings after restart.
+        published_bindings_after_restart = client.get(
+            f"/published-graphics/{station['id']}/{graphics['id']}/bindings?page_id={page['id']}"
+        )
+        assert published_bindings_after_restart.status_code == 200
+        assert len(published_bindings_after_restart.json()["bindings"]) == 2
         reopened_app.state.core.close()

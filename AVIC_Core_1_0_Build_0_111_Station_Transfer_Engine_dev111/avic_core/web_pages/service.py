@@ -313,7 +313,7 @@ class WebPagesService:
         n.published_layout = published_layout
         n.published_revision = version + 1
         n.published_versions.append({"revision": n.published_revision, "published_at": n.published_at.isoformat(),
-                                     "layout": list(n.layout), "rollback_of": None})
+                                     "layout": deepcopy(published_layout), "rollback_of": None})
         n.published_versions = n.published_versions[-50:]
         self.core.repository.save(n, expected_version=version)
         self.core.audit.append(actor_id="local-engineer", action="web_pages.published", resource_type="page", resource_id=n.id, details={"station_id": n.station_id, "url": self.url_for(n), "revision": n.published_revision})
@@ -341,10 +341,16 @@ class WebPagesService:
         now = datetime.now(timezone.utc)
         n.published = True
         n.published_at = now
-        n.published_layout = list(target.get("layout", []))
+        from copy import deepcopy
+        n.published_layout = deepcopy(target.get("layout", []))
+        if not isinstance(n.published_layout, list):
+            raise ValueError("История публикации повреждена: снимок страницы недоступен")
+        for block in n.published_layout:
+            if isinstance(block, dict) and block.get("type") == "graphic" and not isinstance(block.get("graphic_snapshot"), dict):
+                raise ValueError("Эта историческая версия не содержит замороженного снимка мнемосхемы; откат запрещён")
         n.published_revision = version + 1
         n.published_versions.append({"revision": n.published_revision, "published_at": now.isoformat(),
-                                     "layout": list(n.published_layout), "rollback_of": target_published_revision})
+                                     "layout": deepcopy(n.published_layout), "rollback_of": target_published_revision})
         n.published_versions = n.published_versions[-50:]
         n.updated_at = now
         self.core.repository.save(n, expected_version=version)

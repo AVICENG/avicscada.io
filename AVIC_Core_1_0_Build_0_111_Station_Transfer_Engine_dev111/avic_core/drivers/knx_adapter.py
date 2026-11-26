@@ -1,0 +1,151 @@
+"""Read-only KNX group monitor publishing into AVIC's shared Point Runtime."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from avic_core.domain.models import PointQuality
+from avic_core.network.knx_cemi import CemiMessageCode, KnxGroupService, parse_cemi_frame
+from avic_core.network.knxnet_ip import KnxProtocolError, decode_datapoint, parse_group_address
+
+
+@dataclass(frozen=True, slots=True)
+class KnxPointBinding:
+    point_id: str
+    group_address: str | int
+    datapoint_type: str
+    group_address_style: str = "three_level"
+
+    def __post_init__(self):
+        if not self.point_id.strip():
+            raise ValueError("point_id is required")
+        address = parse_group_address(self.group_address, self.group_address_style)
+        object.__setattr__(self, "group_address", address)
+        normalized = self.datapoint_type.strip().upper().replace("DPT-", "").replace("DPT", "")
+        if normalized not in {"1.001", "5.001", "9.001", "14.000"}:
+            raise ValueError(f"Unsupported KNX DPT binding: {self.datapoint_type}")
+        object.__setattr__(self, "datapoint_type", normalized)
+
+
+class KnxPointAdapter:
+    """Passively monitors mapped group telegrams; does not transmit field writes."""
+
+    def __init__(self, session, point_runtime, driver_instance_id: str, bindings):
+        if not driver_instance_id.strip():
+            raise ValueError("driver_instance_id is required")
+        normalized = tuple(bindings)
+        if not normalized:
+            raise ValueError("at least one KNX point binding is required")
+        if len({b.point_id for b in normalized}) != len(normalized):
+            raise ValueError("duplicate point_id in KNX binding map")
+        if len({b.group_address for b in normalized}) != len(normalized):
+            raise ValueError("duplicate KNX group address in binding map")
+        self.session = session
+        self.point_runtime = point_runtime
+        self.driver_instance_id = driver_instance_id
+        self.bindings = normalized
+        self._by_group = {b.group_address: b for b in normalized}
+        self._last_errors = {}
+        self._success_count = 0
+        self._failure_count = 0
+        self._ignored_count = 0
+        self._malformed_count = 0
+
+    def _mark_all_bad(self, error: str) -> list[dict]:
+        results = []
+        for binding in self.bindings:
+            self._last_errors[binding.point_id] = error
+            try:
+                sample = self.point_runtime.mark_quality(
+                    binding.point_id, PointQuality.BAD_COMMUNICATION,
+                    source_driver_id=self.driver_instance_id,
+                )
+                results.append({"point_id": binding.point_id, "ok": False,
+                                "value": sample.value, "quality": sample.quality, "error": error})
+            except Exception as exc:
+                results.append({"point_id": binding.point_id, "ok": False, "quality": "UNKNOWN",
+                                "error": error, "quality_error": f"{type(exc).__name__}: {exc}"})
+        self._failure_count += len(results)
+        return results
+
+    def poll_once(self) -> dict:
+        try:
+            if not self.session.connected:
+                self.session.connect()
+            cemi = self.session.poll_cemi()
+        except Exception as exc:
+            message = f"{type(exc).__name__}: {exc}"
+            results = self._mark_all_bad(message)
+            return self._result(results)
+
+        if cemi is None:
+            return self._result([])
+        try:
+            frame = parse_cemi_frame(cemi)
+        except KnxProtocolError as exc:
+            self._malformed_count += 1
+            return self._result([{"ok": False, "error": f"Malformed cEMI: {exc}"}])
+
+        if frame.message_code is not CemiMessageCode.L_DATA_INDICATION:
+            self._ignored_count += 1
+            return self._result([])
+        if not frame.destination_is_group or frame.service not in {
+            KnxGroupService.GROUP_VALUE_RESPONSE, KnxGroupService.GROUP_VALUE_WRITE,
+        }:
+            self._ignored_count += 1
+            return self._result([])
+        binding = self._by_group.get(frame.destination_address)
+        if binding is None:
+            self._ignored_count += 1
+            return self._result([])
+
+        try:
+            if binding.datapoint_type == "1.001":
+                if frame.short_value not in (0, 1):
+                    raise KnxProtocolError("DPT 1.001 requires a one-bit short APDU value")
+                raw = bytes((frame.short_value,))
+            else:
+                raw = frame.data
+            value = decode_datapoint(raw, binding.datapoint_type)
+            sample = self.point_runtime.publish(
+                binding.point_id, value, quality=PointQuality.GOOD,
+                source_driver_id=self.driver_instance_id,
+            )
+            self._last_errors.pop(binding.point_id, None)
+            self._success_count += 1
+            result = {"point_id": binding.point_id, "ok": True,
+                      "value": sample.value, "quality": sample.quality,
+                      "group_address": frame.destination_address,
+                      "source_address": frame.source_address,
+                      "service": frame.service.value}
+            return self._result([result])
+        except Exception as exc:
+            message = f"{type(exc).__name__}: {exc}"
+            self._last_errors[binding.point_id] = message
+            self._failure_count += 1
+            try:
+                sample = self.point_runtime.mark_quality(
+                    binding.point_id, PointQuality.BAD_CONFIGURATION,
+                    source_driver_id=self.driver_instance_id,
+                )
+                result = {"point_id": binding.point_id, "ok": False,
+                          "value": sample.value, "quality": sample.quality, "error": message}
+            except Exception as qexc:
+                result = {"point_id": binding.point_id, "ok": False, "quality": "UNKNOWN",
+                          "error": message, "quality_error": f"{type(qexc).__name__}: {qexc}"}
+            return self._result([result])
+
+    def _result(self, results):
+        return {"driver_instance_id": self.driver_instance_id, "polled": len(results),
+                "success_count": self._success_count, "failure_count": self._failure_count,
+                "ignored_count": self._ignored_count, "malformed_count": self._malformed_count,
+                "results": results}
+
+    def close(self):
+        self.session.disconnect()
+
+    def diagnostics(self):
+        return {"driver_id": "knxnet-ip", "mode": "READ_ONLY_PASSIVE_GROUP_MONITOR",
+                "write_supported": False, "configured_points": len(self.bindings),
+                "success_count": self._success_count, "failure_count": self._failure_count,
+                "ignored_count": self._ignored_count, "malformed_count": self._malformed_count,
+                "last_errors": dict(self._last_errors), "transport": self.session.diagnostics()}

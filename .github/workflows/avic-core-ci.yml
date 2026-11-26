@@ -1,6 +1,9 @@
 name: AVIC Core CI
 
 on:
+  # The active development branch is validated through its pull request.
+  # Do not also run the same 4-job matrix on every push to that branch:
+  # that duplicated the full test workload and burned Actions minutes.
   push:
     branches:
       - dev112-station-transfer-reliability
@@ -14,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: avic-core-ci-${{ github.ref }}
+  group: avic-core-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

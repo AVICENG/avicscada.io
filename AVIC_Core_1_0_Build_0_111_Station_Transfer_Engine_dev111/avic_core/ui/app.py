@@ -1,29 +1,37 @@
 from __future__ import annotations
 
 from pathlib import Path
+import logging
 import ipaddress
 import re
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from tempfile import gettempdir
 import os
+from urllib.parse import urlsplit
+import shutil
+import tempfile
+from uuid import uuid4
+from time import monotonic
 
 from avic_core.application.container import CoreApplication
+from avic_core.transfer import StationTransferError
 from avic_core.repository.sqlite_repository import ConcurrencyConflict, EntityNotFound
 from avic_core.domain.models import Point, PointQuality, PhysicalNetwork, ProtocolChannel
 from avic_core.network.bacnet_ip import BacnetObjectIdentifier
 from avic_core.ui.project_station import ProjectStationService
 from avic_core.ui.device_import import DeviceImportService
+from avic_core.ui.protocol_point_import import ProtocolDeviceImportService
 from avic_core.ui.engineering_tree import EngineeringTreeService
 from avic_core.graphics import GraphicsService
 from avic_core.graphics.svg_library import SVG_SYMBOLS, list_symbols, read_symbol_svg
 from avic_core.graphics.custom_svg_library import SvgImportError
 from avic_core.drivers import DriverManagerService
 from avic_core.logic_fbd import FBDService
-from avic_core.runtime.fbd_execution import FBDExecutionService
 from avic_core.logic_fbd_studio import FBDStudioService
 from avic_core.engineering.workflow import EngineeringWorkflowService
 from avic_core.web_pages import WebPagesService
+from avic_core.ui.drafts import EngineeringDraftStore, DraftError, DraftConflict, DraftNotFound
 from avic_core.commands import CommandManagerService, CommandRejected
 from avic_core.scheduling import ScheduleConflict, ScheduleError, ScheduleNotFound
 from fastapi.responses import HTMLResponse, Response
@@ -39,6 +47,7 @@ WORKSPACES = [
     ("dashboard", "Главная", "Общее состояние инженерной среды и быстрые сценарии", "⌂", "implemented"),
     ("projects", "Проекты и объекты", "Иерархия Company → Site → Building → Project → Station", "▣", "partial"),
     ("stations", "Станции", "Независимые конфигурации, версии и жизненный цикл", "▤", "partial"),
+    ("station-transfer", "Перенос станций", "Экспорт, проверка, перенос и безопасное клонирование", "⇄", "implemented"),
     ("equipment", "Оборудование", "Системы, установки, агрегаты и паспорта оборудования", "▦", "planned"),
     ("documents", "Документы и AI-анализ", "Реестр, ревизии, извлечение данных и доказательные замечания", "▧", "designed"),
     ("network", "Сети и топология", "Сегменты, интерфейсы, шлюзы и карта связности", "⌘", "partial"),
@@ -99,6 +108,25 @@ class StationInput(ProjectInput):
     project_id: str
 
 
+class StationTransferExportInput(BaseModel):
+    station_id: str = Field(min_length=1, max_length=80)
+
+
+class StationTransferStageInput(BaseModel):
+    upload_token: str = Field(min_length=32, max_length=32)
+    package_id: str = Field(min_length=24, max_length=24)
+    acknowledge_unsigned: bool = False
+
+
+class StationTransferCommitInput(BaseModel):
+    stage_token: str = Field(min_length=32, max_length=32)
+    package_id: str = Field(min_length=24, max_length=24)
+    target_project_id: str = Field(min_length=1, max_length=80)
+    mode: str = Field(pattern="^(transfer|clone)$")
+    clone_station_name: str | None = Field(default=None, min_length=1, max_length=160)
+    confirmation: str = Field(min_length=1, max_length=16)
+
+
 class BacnetDiscoveryInput(BaseModel):
     network_id: str = Field(min_length=1, max_length=80)
     interface_id: str = Field(min_length=1, max_length=120)
@@ -134,6 +162,14 @@ class DriverInstanceCreateInput(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     config: dict = Field(default_factory=dict)
 
+
+class DriverStartInput(BaseModel):
+    poll_interval_seconds: float | None = Field(default=None, ge=0.1, le=86400)
+
+
+class DriverStopInput(BaseModel):
+    timeout_seconds: float = Field(default=5.0, gt=0, le=60)
+
 class AccessLeaseInput(BaseModel):
     duration_seconds: int = Field(default=300, ge=1, le=900)
 
@@ -147,6 +183,15 @@ class CommandRequestInput(BaseModel):
 class SimulatedFeedbackInput(BaseModel):
     value: bool
     quality: str = Field(default="GOOD", pattern="^GOOD$")
+
+class EngineeringDraftInput(BaseModel):
+    base_revision: int = Field(default=0, ge=0)
+    expected_draft_revision: int = Field(default=0, ge=0)
+    content: dict
+
+class CoreShutdownInput(BaseModel):
+    confirmation: str = Field(pattern="^STOP AVIC CORE$")
+
 
 class GraphicCreateInput(BaseModel):
     name: str = Field(min_length=1, max_length=160)
@@ -354,22 +399,41 @@ class ObjectPatch(BaseModel):
 
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
-    """Create local-only Workbench host. Runtime, drivers and OT commands remain stopped."""
-    app = FastAPI(title=title, version="1.0.0.dev109")
+    """Create the DEV175 local-only Workbench host. Drivers and OT commands remain stopped."""
+    app = FastAPI(title=title, version="1.0.0.dev175")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     app.state.core = CoreApplication(root)
     app.state.project_station = ProjectStationService(app.state.core)
     app.state.device_import = DeviceImportService(app.state.core)
+    app.state.protocol_point_import = ProtocolDeviceImportService(app.state.core)
     app.state.engineering_tree = EngineeringTreeService(app.state.core)
     app.state.graphics = GraphicsService(app.state.core)
-    app.state.driver_manager = DriverManagerService(app.state.core)
+    app.state.driver_manager = app.state.core.driver_manager
     app.state.fbd = FBDService(app.state.core)
-    app.state.fbd_execution = FBDExecutionService(app.state.core)
+    app.state.fbd_execution = app.state.core.fbd_execution
+    app.state.process_shutdown_callback = None
     app.state.fbd_studio = FBDStudioService(app.state.core)
     app.state.engineering_workflow = EngineeringWorkflowService(app.state.core)
     app.state.web_pages = WebPagesService(app.state.core)
+    app.state.engineering_drafts = EngineeringDraftStore(app.state.core.paths.databases / "engineering_drafts.sqlite3")
     app.state.command_manager = CommandManagerService(app.state.core, app.state.core.paths.databases / "commands.sqlite3")
     app.state.discovery_history = DiscoveryHistory(app.state.core.paths.databases / "discovery_history.sqlite3")
+    app.state.station_transfer_tokens = {}
+    # Staging tokens are process-local; clean abandoned work from a previous process.
+    for transfer_dir in ("station-transfer-inbox", "station-transfer-staging"):
+        stale_dir = app.state.core.paths.backups / transfer_dir
+        if stale_dir.exists():
+            shutil.rmtree(stale_dir, ignore_errors=True)
+        stale_dir.mkdir(parents=True, exist_ok=True)
+
+    @app.on_event("shutdown")
+    def close_core_on_asgi_shutdown() -> None:
+        try:
+            app.state.core.close()
+        except Exception:
+            # Do not hide the shutdown failure: retain a full diagnostic in the
+            # host log. The API-triggered path refuses process exit before this.
+            logging.getLogger("avic_core.ui").exception("AVIC Core graceful shutdown failed")
 
     def require_local_operator(request: Request) -> None:
         # DEV25 mutations are intentionally restricted to loopback until session/RBAC
@@ -378,14 +442,56 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         if host not in {"127.0.0.1", "::1", "localhost", "testclient"}:
             raise HTTPException(status_code=403, detail="Изменение доступно только локальному оператору Workbench")
         origin = request.headers.get("origin")
-        if origin and not any(origin.startswith(prefix) for prefix in ("http://127.0.0.1", "http://localhost", "http://[::1]")):
-            raise HTTPException(status_code=403, detail="Недопустимый Origin")
+        if origin:
+            parsed_origin = urlsplit(origin)
+            if (parsed_origin.scheme not in {"http", "https"}
+                    or parsed_origin.hostname not in {"127.0.0.1", "localhost", "::1"}
+                    or parsed_origin.username is not None or parsed_origin.password is not None
+                    or parsed_origin.path not in {"", "/"} or parsed_origin.query or parsed_origin.fragment):
+                raise HTTPException(status_code=403, detail="Недопустимый Origin")
+
+    @app.get("/api/core/shutdown-preview")
+    def core_shutdown_preview(request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.core.shutdown_preview()
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"Не удалось проверить состояние Core: {exc}") from exc
+
+    @app.post("/api/core/shutdown")
+    def core_shutdown(payload: CoreShutdownInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            app.state.core.close()
+        except Exception as exc:
+            raise HTTPException(status_code=409, detail=f"Безопасная остановка отменена: {exc}") from exc
+        callback = getattr(app.state, "process_shutdown_callback", None)
+        if callable(callback):
+            try:
+                callback()
+                return {"status": "SHUTTING_DOWN", "core_state": "STOPPED",
+                        "message": "Службы Core остановлены; Workbench завершает работу."}
+            except Exception as exc:
+                return {"status": "CORE_STOPPED_WORKBENCH_OPEN", "core_state": "STOPPED",
+                        "message": f"Core остановлен, но сервер Workbench не смог завершить процесс: {exc}"}
+        return {"status": "CORE_STOPPED_WORKBENCH_OPEN", "core_state": "STOPPED",
+                "message": "Службы Core остановлены. Этот способ запуска не предоставляет управление завершением HTTP-процесса; закройте Workbench отдельно."}
+
+    def expire_station_transfer_tokens() -> None:
+        now = monotonic()
+        for token, item in list(app.state.station_transfer_tokens.items()):
+            if now - item.get("created_at", now) > 900:
+                app.state.station_transfer_tokens.pop(token, None)
+                item["package_path"].unlink(missing_ok=True)
+                if item.get("stage_path") is not None:
+                    shutil.rmtree(item["stage_path"], ignore_errors=True)
 
     def render_workspace(filename: str, active: str) -> str:
         html = (_UI_DIR / filename).read_text(encoding="utf-8")
         nav_items = [
             ("/?page=dashboard", "⌂", "Главная", "home"),
             ("/?page=projects", "▣", "Проекты", "projects"),
+            ("/station-transfer", "⇄", "Перенос и клонирование станции", "transfer"),
             ("/?page=network", "⌘", "Сети", "network"),
             ("/?page=devices", "▥", "Устройства и Discovery", "devices"),
             ("/?page=points", "⌗", "Точки", "points"),
@@ -404,7 +510,9 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             for href, icon, label, key in nav_items
         )
         tree_toggle = '<button class="rail-btn avic-global-rail-link" id="avicSharedTreeToggle" type="button" title="Общее инженерное дерево" aria-label="Общее инженерное дерево" aria-expanded="false">☷</button>'
-        shared_rail = f'<nav class="avic-global-rail avic-shared-rail" aria-label="Общая навигация AVIC">{tree_toggle}{rail_links}</nav>'
+        core_stop_button = '<button class="rail-btn avic-global-rail-link" id="avicCoreStop" type="button" title="Остановить AVIC Core" aria-label="Остановить AVIC Core">■</button>'
+        exit_button = '<button class="rail-btn avic-global-rail-link" id="avicApplicationExit" type="button" title="Выход из Workbench" aria-label="Выход из Workbench">⏻</button>'
+        shared_rail = f'<nav class="avic-global-rail avic-shared-rail" aria-label="Общая навигация AVIC">{tree_toggle}{rail_links}{core_stop_button}{exit_button}</nav>'
         shared_tree = """<aside id="avic-shared-tree" aria-label="Общее инженерное дерево" hidden>
           <header><strong>Инженерное дерево</strong><button type="button" id="avicSharedTreeRefresh" title="Обновить">↻</button><button type="button" id="avicSharedTreeClose" title="Закрыть">×</button></header>
           <input id="avicSharedTreeSearch" type="search" placeholder="Поиск проектов, устройств и точек">
@@ -500,6 +608,10 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
           color:#526779;font:19px/1 "Segoe UI",Arial,sans-serif;cursor:pointer}
         .avic-global-rail .rail-btn:hover,.avic-global-rail-link:hover{background:#f0f5f6;color:#203b50}
         .avic-global-rail .rail-btn.active,.avic-global-rail-link.active{background:#eaf1f8;color:#145d83;box-shadow:inset 3px 0 #2563b8}
+        #avicCoreStop{margin-top:auto;border:1px solid #ead2d2;color:#a34848}
+        #avicCoreStop:hover{background:#fff2f1;color:#a52f2f;border-color:#e5baba}
+        #avicApplicationExit{border:1px solid #e4e9ed;color:#71808b}
+        #avicApplicationExit:hover{background:#f0f5f6;color:#344e61;border-color:#d5e0e6}
         .avic-workspace-logic,.avic-workspace-pages{margin-left:54px!important;width:calc(100% - 54px)!important}
         .avic-workspace-logic .layout{height:calc(100vh - 105px)!important}
         .avic-workspace-home .app{margin-left:54px!important;width:calc(100% - 54px)!important}
@@ -528,7 +640,24 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 body_tag = body_tag[:-1] + f' class="{workspace_class}">'
             insertion = shared_rail + shared_tree
             html = html[:body_match.start()] + body_tag + insertion + html[body_match.end():]
+        if active in {"graphics", "logic", "repository"}:
+            html = html.replace("</head>",
+                '<script src="/avic-static/save-manager.js" defer></script></head>', 1)
+        html = html.replace("</head>",
+            '<script src="/avic-static/application-lifecycle.js" defer></script></head>', 1)
         return html
+
+    @app.get("/avic-static/save-manager.js", include_in_schema=False)
+    def engineering_save_manager_script() -> Response:
+        source = (_UI_DIR / "save-manager.js").read_text(encoding="utf-8")
+        return Response(content=source, media_type="application/javascript",
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+    @app.get("/avic-static/application-lifecycle.js", include_in_schema=False)
+    def application_lifecycle_script() -> Response:
+        source = (_UI_DIR / "application-lifecycle.js").read_text(encoding="utf-8")
+        return Response(content=source, media_type="application/javascript",
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def index() -> str:
@@ -995,6 +1124,54 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         try: return app.state.fbd.evaluate_graphic_bindings(document_id)
         except Exception as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/api/stations/{station_id}/engineering-drafts")
+    def list_engineering_drafts(station_id: str, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return {"drafts": app.state.engineering_drafts.list_station(station_id)}
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
+    def get_engineering_draft(editor: str, station_id: str, resource_id: str, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.engineering_drafts.get(editor, station_id, resource_id)
+        except DraftNotFound as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.put("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
+    def save_engineering_draft(editor: str, station_id: str, resource_id: str,
+                               payload: EngineeringDraftInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.engineering_drafts.save(
+                editor, station_id, resource_id, content=payload.content,
+                base_revision=payload.base_revision,
+                expected_draft_revision=payload.expected_draft_revision,
+            )
+        except DraftConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.delete("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
+    def delete_engineering_draft(editor: str, station_id: str, resource_id: str,
+                                 expected_draft_revision: int, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            deleted = app.state.engineering_drafts.delete(
+                editor, station_id, resource_id,
+                expected_draft_revision=expected_draft_revision,
+            )
+            return {"deleted": deleted}
+        except DraftConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except DraftError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/api/graphics/{document_id}")
     def get_graphic(document_id: str) -> dict:
         try: return app.state.graphics.get(document_id)
@@ -1039,6 +1216,58 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         try: return app.state.driver_manager.get_instance(instance_id)
         except EntityNotFound as exc: raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
         except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.put("/api/driver-instances/{instance_id}/config")
+    def update_driver_instance_config(instance_id: str, payload: dict, request: Request) -> dict:
+        require_local_operator(request)
+        config = payload.get("config")
+        expected_version = payload.get("expected_version")
+        if not isinstance(config, dict) or not isinstance(expected_version, int):
+            raise HTTPException(status_code=400, detail="Требуются config и expected_version")
+        try:
+            return app.state.driver_manager.update_config(
+                instance_id, config, expected_version=expected_version)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
+        except ConcurrencyConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/driver-instances/{instance_id}/start")
+    def start_driver_instance(instance_id: str, payload: DriverStartInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.driver_manager.start_instance(
+                instance_id, poll_interval_seconds=payload.poll_interval_seconds)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/api/driver-instances/{instance_id}/stop")
+    def stop_driver_instance(instance_id: str, payload: DriverStopInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.driver_manager.stop_instance(
+                instance_id, timeout=payload.timeout_seconds)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except (RuntimeError, TimeoutError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/api/driver-instances/{instance_id}/diagnostics")
+    def driver_instance_diagnostics(instance_id: str) -> dict:
+        try:
+            return app.state.driver_manager.diagnostics(instance_id)
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Экземпляр драйвера не найден") from exc
 
     @app.get("/api/stations/{station_id}/engineering-workflow")
     def engineering_workflow(station_id: str) -> dict:
@@ -1798,6 +2027,39 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         except (ValueError, OSError, TimeoutError) as exc:
             raise HTTPException(status_code=400, detail=f"Импорт устройства не выполнен: {exc}") from exc
 
+
+    @app.post("/api/stations/{station_id}/protocol-devices/import-preview")
+    def preview_protocol_device_import(station_id: str, payload: dict, request: Request) -> dict:
+        """Preview normalized discovery data for any implemented protocol; performs no field I/O."""
+        require_local_operator(request)
+        inspection = payload.get("inspection")
+        if not isinstance(inspection, dict):
+            raise HTTPException(status_code=400, detail="inspection должен быть объектом")
+        try:
+            return app.state.protocol_point_import.preview(
+                station_id, str(payload.get("driver_instance_id") or ""), inspection,
+                payload.get("selected_native_ids"), bool(payload.get("import_all", False)))
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция или драйвер не найдены") from exc
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/stations/{station_id}/protocol-devices/import")
+    def import_protocol_device(station_id: str, payload: dict, request: Request) -> dict:
+        """Transactionally import selected normalized device points; never writes to field devices."""
+        require_local_operator(request)
+        inspection = payload.get("inspection")
+        if not isinstance(inspection, dict):
+            raise HTTPException(status_code=400, detail="inspection должен быть объектом")
+        try:
+            return app.state.protocol_point_import.import_points(
+                station_id, str(payload.get("driver_instance_id") or ""), inspection,
+                payload.get("selected_native_ids"), bool(payload.get("import_all", False)))
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция или драйвер не найдены") from exc
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/api/stations/{station_id}/device-tree")
     def station_device_tree(station_id: str) -> dict:
         try:
@@ -2237,6 +2499,171 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
 
     @app.get("/api/stations/{station_id}/devices/{device_id}/time-sync-permission")
     def time_device_permission_get(station_id: str, device_id: str) -> dict: return app.state.core.time_management.device_sync_permission(station_id,device_id)
+
+    @app.get("/station-transfer", response_class=HTMLResponse, include_in_schema=False)
+    def station_transfer_workspace() -> str:
+        return render_workspace("station-transfer.html", "transfer")
+
+    @app.get("/api/station-transfer/catalog")
+    def station_transfer_catalog(request: Request) -> dict:
+        require_local_operator(request)
+        records = app.state.core.repository.list_records()
+        projects = [row for row in records if row.get("entity_type") == "Project"]
+        stations = [row for row in records if row.get("entity_type") == "Station"]
+        result = []
+        for project in sorted(projects, key=lambda row: row.get("name", "").casefold()):
+            result.append({"id": project["entity_id"], "name": project["name"],
+                "archived": bool(project.get("payload", {}).get("archived", False)),
+                "stations": [{"id": row["entity_id"], "name": row["name"]}
+                    for row in sorted(stations, key=lambda item: item.get("name", "").casefold())
+                    if row.get("payload", {}).get("project_id") == project["entity_id"]]})
+        return {"projects": result, "core_version": "1.0.0.dev148"}
+
+    @app.post("/api/station-transfer/export")
+    def station_transfer_export(payload: StationTransferExportInput, request: Request) -> Response:
+        require_local_operator(request)
+        core = app.state.core
+        try:
+            station_record = core.repository.get_record(payload.station_id)
+            if station_record.get("entity_type") != "Station":
+                raise StationTransferError("Выбранный объект не является станцией")
+            try:
+                runtime = core.runtime.get(payload.station_id)
+            except KeyError:
+                runtime = None
+            if runtime is not None and runtime.state.value != "STOPPED":
+                raise StationTransferError("Перед экспортом остановите Station Runtime")
+            if any(x.get("state") != "STOPPED" or x.get("enabled")
+                   for x in core.driver_manager.list_instances(payload.station_id)):
+                raise StationTransferError("Перед экспортом остановите все драйверы станции")
+            export_dir = Path(tempfile.mkdtemp(prefix="avic-station-export-"))
+            try:
+                package_path = export_dir / "station.avicstation"
+                core.station_transfer.export_station(
+                    core, payload.station_id, package_path, source_core_version="1.0.0.dev148")
+                content = package_path.read_bytes()
+            finally:
+                shutil.rmtree(export_dir, ignore_errors=True)
+            return Response(content=content, media_type="application/vnd.avic.station+zip",
+                headers={"Content-Disposition": "attachment; filename=avic-station.avicstation",
+                         "Cache-Control": "no-store"})
+        except StationTransferError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция не найдена") from exc
+
+    @app.post("/api/station-transfer/inspect")
+    async def station_transfer_inspect(request: Request) -> dict:
+        require_local_operator(request)
+        length = request.headers.get("content-length")
+        if length and (not length.isdigit() or int(length) > app.state.core.station_transfer.MAX_PACKAGE_BYTES):
+            raise HTTPException(status_code=413, detail="Размер пакета превышает допустимый предел")
+        expire_station_transfer_tokens()
+        if len(app.state.station_transfer_tokens) >= 16:
+            raise HTTPException(status_code=429, detail="Слишком много незавершённых операций переноса; завершите или перезапустите Workbench")
+        inbox = app.state.core.paths.backups / "station-transfer-inbox"
+        inbox.mkdir(parents=True, exist_ok=True)
+        token = uuid4().hex
+        package_path = inbox / (token + ".avicstation")
+        total = 0
+        try:
+            with package_path.open("xb") as stream:
+                async for chunk in request.stream():
+                    total += len(chunk)
+                    if total > app.state.core.station_transfer.MAX_PACKAGE_BYTES:
+                        raise HTTPException(status_code=413, detail="Размер пакета превышает допустимый предел")
+                    stream.write(chunk)
+            if total == 0:
+                raise HTTPException(status_code=400, detail="Пустой пакет станции")
+            preview = app.state.core.station_transfer.inspect_package(
+                package_path, target_core_version="1.0.0.dev148")
+        except HTTPException:
+            package_path.unlink(missing_ok=True)
+            raise
+        except StationTransferError as exc:
+            package_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            package_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="Не удалось прочитать пакет станции") from exc
+        if not preview.compatible:
+            package_path.unlink(missing_ok=True)
+        else:
+            app.state.station_transfer_tokens[token] = {
+                "package_path": package_path, "package_id": preview.package_id,
+                "stage_path": None, "created_at": monotonic()}
+        warnings = list(preview.warnings) + [
+            "Пакет не имеет цифровой подписи издателя. Его происхождение не подтверждено; проверьте источник файла."]
+        return {
+            "upload_token": token if preview.compatible else None, "package_id": preview.package_id,
+            "station_id": preview.station_id, "station_name": preview.station_name,
+            "source_project_id": preview.source_project_id,
+            "source_core_version": preview.source_core_version,
+            "target_core_version": "1.0.0.dev148",
+            "entity_count": preview.entity_count,
+            "auxiliary_record_count": preview.auxiliary_record_count,
+            "compatible": preview.compatible, "warnings": warnings,
+            "trust_status": "UNSIGNED_UNVERIFIED",
+            "requires_unsigned_acknowledgement": True,
+            "activation": "NOT_ACTIVATED"}
+
+    @app.post("/api/station-transfer/stage")
+    def station_transfer_stage(payload: StationTransferStageInput, request: Request) -> dict:
+        require_local_operator(request)
+        expire_station_transfer_tokens()
+        item = app.state.station_transfer_tokens.get(payload.upload_token)
+        if not item or item.get("package_id") != payload.package_id:
+            raise HTTPException(status_code=404, detail="Загрузка пакета не найдена или устарела")
+        if not payload.acknowledge_unsigned:
+            raise HTTPException(status_code=400, detail="Требуется явное подтверждение, что пакет не подписан издателем")
+        if item.get("stage_path") is not None:
+            raise HTTPException(status_code=409, detail="Этот пакет уже подготовлен к импорту")
+        try:
+            stage_path = app.state.core.station_transfer.stage_import(
+                item["package_path"], app.state.core.paths.backups / "station-transfer-staging",
+                expected_package_id=payload.package_id, target_core_version="1.0.0.dev148")
+            item["stage_path"] = stage_path
+            return {"stage_token": payload.upload_token, "package_id": payload.package_id,
+                    "state": "STAGED_NOT_ACTIVATED", "activation": "NOT_ACTIVATED"}
+        except StationTransferError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/api/station-transfer/commit")
+    def station_transfer_commit(payload: StationTransferCommitInput, request: Request) -> dict:
+        require_local_operator(request)
+        expire_station_transfer_tokens()
+        item = app.state.station_transfer_tokens.get(payload.stage_token)
+        if not item or item.get("package_id") != payload.package_id or item.get("stage_path") is None:
+            raise HTTPException(status_code=404, detail="Подготовленный пакет не найден или устарел")
+        expected = "CLONE" if payload.mode == "clone" else "IMPORT"
+        if payload.confirmation != expected:
+            raise HTTPException(status_code=400, detail="Для подтверждения введите " + expected)
+        if payload.mode == "clone" and not payload.clone_station_name:
+            raise HTTPException(status_code=400, detail="Для клона требуется новое имя станции")
+        try:
+            target = app.state.core.repository.get_record(payload.target_project_id)
+            if target.get("entity_type") != "Project" or target.get("payload", {}).get("archived", False):
+                raise StationTransferError("Выберите действующий целевой проект")
+            if payload.mode == "clone":
+                duplicate = [row for row in app.state.core.repository.list_records(entity_type="Station")
+                    if row.get("payload", {}).get("project_id") == payload.target_project_id
+                    and row.get("name", "").casefold() == payload.clone_station_name.strip().casefold()]
+                if duplicate:
+                    raise StationTransferError("В целевом проекте уже есть станция с таким именем")
+            result = app.state.core.station_transfer.commit_import(
+                app.state.core, item["stage_path"], expected_package_id=payload.package_id,
+                target_project_id=payload.target_project_id, actor="local-engineer",
+                clone=payload.mode == "clone", clone_station_name=payload.clone_station_name)
+            package_path, stage_path = item["package_path"], item["stage_path"]
+            app.state.station_transfer_tokens.pop(payload.stage_token, None)
+            package_path.unlink(missing_ok=True)
+            shutil.rmtree(stage_path, ignore_errors=True)
+            return {**result, "activation": "NOT_ACTIVATED",
+                "message": "Импорт завершён. Станция остановлена; выполните привязку площадки и пусконаладку вручную."}
+        except StationTransferError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Целевой проект не найден") from exc
 
     @app.get("/api/platform/status")
     def platform_status() -> dict:

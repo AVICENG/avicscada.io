@@ -1,7 +1,7 @@
 [project]
 name = "avic-core"
-version = "1.0.0.dev112"
-description = "AVIC SCADA Core — IQVISION-inspired engineering workbench"
+version = "1.0.0.dev182"
+description = "AVIC SCADA Core — independent engineering workbench"
 requires-python = ">=3.11"
 dependencies = ["argon2-cffi>=23.1,<26", "cryptography>=42,<47", "psutil>=5.9,<8", "tzdata>=2024.1"]
 
@@ -10,9 +10,10 @@ pythonpath = ["."]
 
 
 [project.optional-dependencies]
+mqtt = ["paho-mqtt>=2.0,<3"]
 http = ["fastapi>=0.110,<1", "uvicorn>=0.27,<1"]
 test-http = ["httpx>=0.27,<1", "httpx2>=2.12,<3"]
 dev = ["pytest>=8,<10", "fastapi>=0.110,<1", "uvicorn>=0.27,<1", "httpx>=0.27,<1", "httpx2>=2.12,<3", "tzdata>=2024.1"]
 
 [tool.setuptools.package-data]
-"avic_core.ui" = ["static/*.html", "static/svg-library/*.svg"]
+"avic_core.ui" = ["static/*.html", "static/*.js", "static/svg-library/*.svg"]

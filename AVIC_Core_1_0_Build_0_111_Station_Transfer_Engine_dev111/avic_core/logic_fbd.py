@@ -270,15 +270,29 @@ class FBDService:
             if (tn,tp) in occupied or (tn,tp) in connective_occupied: raise ValueError("Входной порт уже занят")
             occupied.add((tn,tp)); adjacency[sn].add(tn)
             links_prepared.append({"id":lid,"source_node_id":sn,"source_port":sp,"target_node_id":tn,"target_port":tp})
-        # Reject combinational cycles before any repository mutation.
-        visiting=set(); visited=set()
-        def visit(n):
-            if n in visiting: raise ValueError("Циклическая зависимость в FBD-схеме")
-            if n in visited:return
-            visiting.add(n)
-            for nxt in adjacency[n]: visit(nxt)
-            visiting.remove(n); visited.add(n)
-        for n in adjacency: visit(n)
+        # Include cross-page Connectives in cycle detection, then use iterative
+        # Kahn traversal. Recursive DFS fails on valid long chains near the 1000-node limit.
+        for row in connective_rows:
+            source_id = row["payload"].get("source_node_id")
+            target_id = row["payload"].get("target_node_id")
+            if source_id in adjacency and target_id in adjacency:
+                adjacency[source_id].add(target_id)
+        from collections import deque
+        indegree = {node_id: 0 for node_id in adjacency}
+        for source_id, targets in adjacency.items():
+            for target_id in targets:
+                indegree[target_id] += 1
+        ready = deque(node_id for node_id in adjacency if indegree[node_id] == 0)
+        visited_count = 0
+        while ready:
+            node_id = ready.popleft()
+            visited_count += 1
+            for target_id in adjacency[node_id]:
+                indegree[target_id] -= 1
+                if indegree[target_id] == 0:
+                    ready.append(target_id)
+        if visited_count != len(adjacency):
+            raise ValueError("Циклическая зависимость в FBD-схеме")
         with self.core.repository.transaction() as conn:
             for item in prepared:
                 if item["id"] in old_nodes:
@@ -450,99 +464,121 @@ class FBDService:
             incoming[(link["target_node_id"], link["target_port"])] = (link["source_node_id"], link["source_port"])
         for connective in graph.get("connectives", []):
             incoming[(connective["target_node_id"], connective["target_port"])] = (connective["source_node_id"], connective["source_port"])
-        values, diagnostics, pending = {}, {}, set(nodes)
-        # Work on a copy so a failed pass cannot partially advance stateful blocks.
+        # Build a deterministic topological order in O(V + E log V).
+        # The previous repeated pending-set scan could become quadratic on long FBD chains.
+        import heapq
+        values, diagnostics = {}, {}
         state_work = dict(runtime_state or {})
-        while pending:
-            progressed = False
-            for node_id in list(pending):
-                node = nodes[node_id]; spec = self.BLOCKS[node["type"]]
-                deps = [incoming.get((node_id, port)) for port in spec["inputs"]]
-                if any(dep and (dep[0], dep[1]) not in values for dep in deps):
+        node_order = {node_id: index for index, node_id in enumerate(nodes)}
+        indegree = {node_id: 0 for node_id in nodes}
+        downstream = {node_id: [] for node_id in nodes}
+        for target_id, target_node in nodes.items():
+            for port in self.BLOCKS[target_node["type"]]["inputs"]:
+                dependency = incoming.get((target_id, port))
+                if dependency is None:
                     continue
-                args = {}
-                for port, signal_type in spec["inputs"].items():
-                    dep = incoming.get((node_id, port))
-                    raw = values.get(dep) if dep else (False if signal_type == "bool" else "" if signal_type == "string" else 0)
-                    args[port] = self._validate_simulation_value(signal_type, raw, node_name=node["name"])
-                typ, params, source_meta = node["type"], node["params"], None
-                if typ == "POINT_INPUT":
-                    from avic_core.domain.models import Point
-                    point, _ = self.core.repository.get(str(params.get("point_id") or ""), Point)
-                    live = self.core.point_runtime.read(point.id)
-                    if live.quality != "GOOD":
-                        raise ValueError(f"Точка «{point.name}» имеет качество {live.quality}; сигнал не допускается в расчёт")
-                    if live.value is None:
-                        raise ValueError(f"Точка «{point.name}» не имеет текущего значения")
-                    out = self._validate_simulation_value(params.get("data_type", "any"), live.value, node_name=node["name"])
-                    source_meta = {"kind": "station_point", "point_id": point.id, "source": live.source,
-                                   "quality": live.quality, "timestamp": live.timestamp.isoformat() if live.timestamp else None,
-                                   "unit": live.unit, "revision": live.revision}
-                elif typ.endswith("_INPUT"):
-                    raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value")))
-                    out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), raw, node_name=node["name"])
-                    source_meta = {"kind": "virtual_simulation_input", "overridden": node_id in inputs}
-                elif typ == "SCHEDULE":
-                    schedule_id = str(params.get("schedule_id") or "")
-                    schedule = self.core.schedules.get(schedule_id)
-                    if schedule["station_id"] != graph["station_id"]:
-                        raise ValueError(f"Расписание блока «{node['name']}» принадлежит другой станции")
-                    evaluated = self.core.schedules.evaluate(schedule_id)
-                    value_type = evaluated["value_type"]
-                    signal_type = {"BOOLEAN":"bool", "NUMERIC":"float", "STRING":"string", "ENUM":"any"}[value_type]
-                    out = self._validate_simulation_value(signal_type, evaluated["value"], node_name=node["name"])
-                    source_meta = {"kind":"station_schedule", "schedule_id":schedule_id,
-                                   "schedule_name":schedule["name"], "schedule_revision":schedule["revision"],
-                                   "value_type":value_type, "source":evaluated["source"],
-                                   "evaluated_at":evaluated["evaluated_at"], "local_time":evaluated["local_time"],
-                                   "timezone":evaluated["timezone"], "next_change":evaluated["next_change"],
-                                   "output_mode":"INTENT_ONLY_NO_FIELD_WRITE"}
-                elif typ == "AND": out = bool(args["A"] and args["B"])
-                elif typ == "OR": out = bool(args["A"] or args["B"])
-                elif typ == "NOT": out = not bool(args["IN"])
-                elif typ == "ADD": out = float(args["A"]) + float(args["B"])
-                elif typ == "SUB": out = float(args["A"]) - float(args["B"])
-                elif typ == "MUL": out = float(args["A"]) * float(args["B"])
-                elif typ == "DIV":
-                    denominator = float(args["B"])
-                    if denominator == 0.0:
-                        raise ValueError(f"Блок «{node['name']}»: деление на ноль запрещено")
-                    out = float(args["A"]) / denominator
-                elif typ == "SELECT": out = float(args["A"]) if args["SEL"] else float(args["B"])
-                elif typ == "COMPARE_GT": out = float(args["A"]) > float(args["B"])
-                elif typ == "COMPARE_LT": out = float(args["A"]) < float(args["B"])
-                elif typ == "LIMIT":
-                    low, high = float(args["LOW"]), float(args["HIGH"])
-                    if low > high: raise ValueError("LIMIT: LOW не может быть больше HIGH")
-                    out = max(low, min(high, float(args["IN"])))
-                elif typ == "SCALE":
-                    low, high = float(args["IN_MIN"]), float(args["IN_MAX"])
-                    if low == high: raise ValueError("SCALE: IN_MIN и IN_MAX не должны совпадать")
-                    out_low, out_high = float(args["OUT_MIN"]), float(args["OUT_MAX"])
-                    out = out_low + ((float(args["IN"]) - low) / (high - low)) * (out_high - out_low)
-                    if params.get("clamp_output", False):
-                        out = max(min(out_low, out_high), min(max(out_low, out_high), out))
-                elif typ == "HYSTERESIS":
-                    low, high, value = float(args["LOW"]), float(args["HIGH"]), float(args["IN"])
-                    if low >= high:
-                        raise ValueError(f"Блок «{node['name']}»: LOW должен быть строго меньше HIGH")
-                    previous = state_work.get(node_id, bool(params.get("initial_state", False)))
-                    if not isinstance(previous, bool):
-                        raise ValueError(f"Блок «{node['name']}»: повреждено сохранённое состояние HYSTERESIS")
-                    out = True if (not previous and value >= high) else False if (previous and value <= low) else previous
-                    state_work[node_id] = out
-                elif typ in {"BOOL_OUTPUT", "FLOAT_OUTPUT"}: out = args["IN"]
-                else: raise ValueError(f"Нет симулятора для блока {typ}")
-                if spec["outputs"]:
-                    out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), out, node_name=node["name"])
-                    values[(node_id, "OUT")] = out; port = "OUT"
-                else:
-                    values[(node_id, "IN")] = out; port = "IN"
-                diagnostics[node_id] = {"name": node["name"], "block_type": typ, "status": "GOOD",
-                                        "output_port": port, "value": out, "source": source_meta}
-                pending.remove(node_id); progressed = True
-            if not progressed:
-                raise ValueError("Не удалось вычислить FBD-граф: цикл или незамкнутая зависимость")
+                source_id, _source_port = dependency
+                if source_id not in nodes:
+                    raise ValueError("FBD-связь ссылается на отсутствующий исходный блок")
+                downstream[source_id].append(target_id)
+                indegree[target_id] += 1
+        ready = [(node_order[node_id], node_id) for node_id, degree in indegree.items() if degree == 0]
+        heapq.heapify(ready)
+        execution_order = []
+        while ready:
+            _position, node_id = heapq.heappop(ready)
+            execution_order.append(node_id)
+            for target_id in downstream[node_id]:
+                indegree[target_id] -= 1
+                if indegree[target_id] == 0:
+                    heapq.heappush(ready, (node_order[target_id], target_id))
+        if len(execution_order) != len(nodes):
+            raise ValueError("Не удалось вычислить FBD-граф: цикл или незамкнутая зависимость")
+        for node_id in execution_order:
+            node = nodes[node_id]; spec = self.BLOCKS[node["type"]]
+            deps = [incoming.get((node_id, port)) for port in spec["inputs"]]
+            if any(dep and (dep[0], dep[1]) not in values for dep in deps):
+                raise ValueError("FBD-связь ссылается на отсутствующий выходной порт")
+            args = {}
+            for port, signal_type in spec["inputs"].items():
+                dep = incoming.get((node_id, port))
+                raw = values.get(dep) if dep else (False if signal_type == "bool" else "" if signal_type == "string" else 0)
+                args[port] = self._validate_simulation_value(signal_type, raw, node_name=node["name"])
+            typ, params, source_meta = node["type"], node["params"], None
+            if typ == "POINT_INPUT":
+                from avic_core.domain.models import Point
+                point, _ = self.core.repository.get(str(params.get("point_id") or ""), Point)
+                live = self.core.point_runtime.read(point.id)
+                if live.quality != "GOOD":
+                    raise ValueError(f"Точка «{point.name}» имеет качество {live.quality}; сигнал не допускается в расчёт")
+                if live.value is None:
+                    raise ValueError(f"Точка «{point.name}» не имеет текущего значения")
+                out = self._validate_simulation_value(params.get("data_type", "any"), live.value, node_name=node["name"])
+                source_meta = {"kind": "station_point", "point_id": point.id, "source": live.source,
+                               "quality": live.quality, "timestamp": live.timestamp.isoformat() if live.timestamp else None,
+                               "unit": live.unit, "revision": live.revision}
+            elif typ.endswith("_INPUT"):
+                raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value")))
+                out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), raw, node_name=node["name"])
+                source_meta = {"kind": "virtual_simulation_input", "overridden": node_id in inputs}
+            elif typ == "SCHEDULE":
+                schedule_id = str(params.get("schedule_id") or "")
+                schedule = self.core.schedules.get(schedule_id)
+                if schedule["station_id"] != graph["station_id"]:
+                    raise ValueError(f"Расписание блока «{node['name']}» принадлежит другой станции")
+                evaluated = self.core.schedules.evaluate(schedule_id)
+                value_type = evaluated["value_type"]
+                signal_type = {"BOOLEAN":"bool", "NUMERIC":"float", "STRING":"string", "ENUM":"any"}[value_type]
+                out = self._validate_simulation_value(signal_type, evaluated["value"], node_name=node["name"])
+                source_meta = {"kind":"station_schedule", "schedule_id":schedule_id,
+                               "schedule_name":schedule["name"], "schedule_revision":schedule["revision"],
+                               "value_type":value_type, "source":evaluated["source"],
+                               "evaluated_at":evaluated["evaluated_at"], "local_time":evaluated["local_time"],
+                               "timezone":evaluated["timezone"], "next_change":evaluated["next_change"],
+                               "output_mode":"INTENT_ONLY_NO_FIELD_WRITE"}
+            elif typ == "AND": out = bool(args["A"] and args["B"])
+            elif typ == "OR": out = bool(args["A"] or args["B"])
+            elif typ == "NOT": out = not bool(args["IN"])
+            elif typ == "ADD": out = float(args["A"]) + float(args["B"])
+            elif typ == "SUB": out = float(args["A"]) - float(args["B"])
+            elif typ == "MUL": out = float(args["A"]) * float(args["B"])
+            elif typ == "DIV":
+                denominator = float(args["B"])
+                if denominator == 0.0:
+                    raise ValueError(f"Блок «{node['name']}»: деление на ноль запрещено")
+                out = float(args["A"]) / denominator
+            elif typ == "SELECT": out = float(args["A"]) if args["SEL"] else float(args["B"])
+            elif typ == "COMPARE_GT": out = float(args["A"]) > float(args["B"])
+            elif typ == "COMPARE_LT": out = float(args["A"]) < float(args["B"])
+            elif typ == "LIMIT":
+                low, high = float(args["LOW"]), float(args["HIGH"])
+                if low > high: raise ValueError("LIMIT: LOW не может быть больше HIGH")
+                out = max(low, min(high, float(args["IN"])))
+            elif typ == "SCALE":
+                low, high = float(args["IN_MIN"]), float(args["IN_MAX"])
+                if low == high: raise ValueError("SCALE: IN_MIN и IN_MAX не должны совпадать")
+                out_low, out_high = float(args["OUT_MIN"]), float(args["OUT_MAX"])
+                out = out_low + ((float(args["IN"]) - low) / (high - low)) * (out_high - out_low)
+                if params.get("clamp_output", False):
+                    out = max(min(out_low, out_high), min(max(out_low, out_high), out))
+            elif typ == "HYSTERESIS":
+                low, high, value = float(args["LOW"]), float(args["HIGH"]), float(args["IN"])
+                if low >= high:
+                    raise ValueError(f"Блок «{node['name']}»: LOW должен быть строго меньше HIGH")
+                previous = state_work.get(node_id, bool(params.get("initial_state", False)))
+                if not isinstance(previous, bool):
+                    raise ValueError(f"Блок «{node['name']}»: повреждено сохранённое состояние HYSTERESIS")
+                out = True if (not previous and value >= high) else False if (previous and value <= low) else previous
+                state_work[node_id] = out
+            elif typ in {"BOOL_OUTPUT", "FLOAT_OUTPUT"}: out = args["IN"]
+            else: raise ValueError(f"Нет симулятора для блока {typ}")
+            if spec["outputs"]:
+                out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), out, node_name=node["name"])
+                values[(node_id, "OUT")] = out; port = "OUT"
+            else:
+                values[(node_id, "IN")] = out; port = "IN"
+            diagnostics[node_id] = {"name": node["name"], "block_type": typ, "status": "GOOD",
+                                    "output_port": port, "value": out, "source": source_meta}
         outputs = {n["name"]: values.get((n["id"], "IN")) for n in graph["nodes"] if n["type"].endswith("_OUTPUT")}
         if runtime_state is not None:
             runtime_state.clear()

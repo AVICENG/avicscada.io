@@ -42,9 +42,14 @@ def test_installation_identity_is_uuid_and_private(tmp_path):
     else:
         identity_dir = str(identity_file.parent).replace("'", "''")
         command = (
-            f"$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value; "
             f"$acl = Get-Acl -LiteralPath '{identity_dir}'; "
-            "Write-Output $sid; Write-Output $acl.Sddl"
+            "$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value; "
+            "Write-Output ('CURRENT|' + $sid); "
+            "Write-Output ('PROTECTED|' + $acl.AreAccessRulesProtected); "
+            "foreach ($rule in $acl.Access) { "
+            "$resolved = $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value; "
+            "Write-Output ('ACE|' + $resolved + '|' + $rule.AccessControlType + '|' + "
+            "$rule.FileSystemRights + '|' + $rule.InheritanceFlags + '|' + $rule.IsInherited) }"
         )
         result = subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
@@ -55,15 +60,29 @@ def test_installation_identity_is_uuid_and_private(tmp_path):
             timeout=10,
         )
 
-        lines = result.stdout.splitlines()
-        assert len(lines) >= 2, "Windows did not return the expected ACL information"
-
-        current_sid = lines[0].strip()
-        sddl = lines[1].strip()
-
+        lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        current_line = next((line for line in lines if line.startswith("CURRENT|")), "")
+        protected_line = next((line for line in lines if line.startswith("PROTECTED|")), "")
+        assert current_line and protected_line, "Windows did not return the expected ACL information"
+        current_sid = current_line.split("|", 1)[1]
         assert current_sid.startswith("S-1-5-21-"), "Could not identify current Windows user SID"
-        assert "D:PAI" in sddl, "Identity directory ACL is not protected from inheritance"
+        assert protected_line == "PROTECTED|True", "Identity directory ACL is not protected from inheritance"
 
-        aces = re.findall(r"\(A;OICI;FA;;;([^)]+)\)", sddl)
-        assert len(aces) == 3, f"Unexpected ACL entries: {aces}"
-        assert set(aces) == {"SY", "BA", current_sid}
+        # Resolve SDDL aliases to numeric SIDs before asserting policy.
+        # LA is the local built-in Administrator alias (RID 500), not
+        # the broad Local Account principal S-1-5-113.
+        aces = [line.split("|") for line in lines if line.startswith("ACE|")]
+        all_sids = {parts[1] for parts in aces if len(parts) > 1}
+        allowed = {current_sid, "S-1-5-18", "S-1-5-32-544", "S-1-3-4"}
+        allow_full_control = {
+            parts[1] for parts in aces
+            if len(parts) == 6 and parts[2] == "Allow"
+            and "FullControl" in parts[3]
+            and "ContainerInherit" in parts[4] and "ObjectInherit" in parts[4]
+            and parts[5] == "False"
+        }
+        assert {current_sid, "S-1-5-18", "S-1-5-32-544"}.issubset(allow_full_control), (
+            f"Required protected FullControl ACEs missing: {aces}"
+        )
+        assert "S-1-5-113" not in all_sids, f"Broad Local Account access is not permitted: {aces}"
+        assert all_sids.issubset(allowed), f"Unexpected ACL principals: {aces}"

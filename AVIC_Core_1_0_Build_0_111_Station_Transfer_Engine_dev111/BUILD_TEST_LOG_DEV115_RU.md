@@ -1,0 +1,32 @@
+# DEV115 — BACnet/IP и Modbus TCP Point Runtime adapters
+
+Дата: 2026-11-25  
+Ветка: `dev113-network-drivers`
+
+## Изучение архива Niagara
+Инвентаризация архива показывает отдельные модули `bacnet-rt`, `modbusTcp-rt`, `modbusAsync-rt`, `modbusCore-rt`, `modbusSlave-rt`. Их наличие использовано только для определения семейств/объёма интеграций. Внутренности закрытых JAR не декомпилировались и не копировались. Для wire-level реализации применяются открытые протоколы и собственные тесты.
+
+## Реализовано в AVIC
+- BACnet/IP: binding + polling adapter, чтение Present_Value через существующий ReadProperty, публикация в Point Runtime.
+- Modbus TCP: binding + polling adapter, функции чтения 01/02/03/04, декодирование, byte/word order, scale/offset, публикация в Point Runtime.
+- Ошибки по отдельным точкам не останавливают весь цикл; последнее значение сохраняется, качество меняется на BAD_COMMUNICATION, время последнего GOOD образца сохраняется.
+- PointRuntime.mark_quality для изменения качества без подмены значения и timestamp.
+- Публичные экспорты адаптеров из `avic_core.drivers`.
+- Автоматические тесты с fake transports: публикация, масштабирование, ownership, потеря связи и валидация binding.
+
+## Ограничения
+- Реализован синхронный однократный poll; фонового scheduler, оптимизированного группирования чтения, COV, BBMD/FDR, полноценного MS/TP/RTU и UI point-map importer пока нет.
+- Реальные устройства не подключались; это не полевые испытания.
+- Оба адаптера read-only; никаких функций записи не добавлено.
+- Trend IP/vCNC ещё не реализован; нужен подтверждённый протокол/SDK или разрешённые тестовые векторы и реальный IQ3 endpoint.
+
+## CI
+Предыдущий CI выявил ImportError из-за отсутствовавшего экспорта `DriverCategory`. Экспортный файл исправлен и включён в текущий HEAD. Повторная матрица CI запущена; до завершения тесты не объявляются пройденными.
+
+
+## DEV122 — CI regressions and Windows HostIdentity ACL
+
+- Исправлен тест каталога: MQTT является реализованным read-only subscribe transport и включён в ожидаемый набор read-capable drivers.
+- Windows HostIdentity теперь определяет текущего пользователя по SID через whoami и назначает ACL непосредственно SID, а не неоднозначной строке USERDOMAIN/USERNAME.
+- Широкий principal Local Account (S-1-5-113) удаляется; ACL тест требует текущий SID, SYSTEM и Administrators, разрешает специальную запись Owner Rights и запрещает неизвестные principals.
+- Предыдущий CI: Linux — 31 175 passed, 1 failed (устаревшее ожидание каталога); Windows — 31 173 passed, 1 skipped, 2 failed (ожидание каталога и ACL principal). DEV122 требует повторного полного CI.

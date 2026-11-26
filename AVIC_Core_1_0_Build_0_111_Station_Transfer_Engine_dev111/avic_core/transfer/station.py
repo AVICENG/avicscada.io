@@ -386,6 +386,12 @@ class StationTransferManager:
     def export_station(self, core, station_id: str, package_path: str | Path, *, source_core_version: str) -> Path:
         with core._lock:
             core._ensure_open()
+            try: runtime = core.runtime.get(station_id)
+            except KeyError: runtime = None
+            if runtime is not None and runtime.state.value != "STOPPED":
+                raise StationTransferError("Station Runtime must be STOPPED before export")
+            if any(item.get("state") != "STOPPED" or item.get("enabled") for item in core.driver_manager.list_instances(station_id)):
+                raise StationTransferError("All Station drivers must be STOPPED before export")
             station, records, entity_ids = self._resolve_entities(core, station_id)
             point_ids = {r["entity_id"] for r in records if r["entity_type"] == "Point"}
             auxiliary = self._read_auxiliary(core, station_id, point_ids)
@@ -454,6 +460,67 @@ class StationTransferManager:
             core.audit.append(actor_id="system", action="station.exported", resource_type="station", resource_id=station_id, details={"package": output.name, "entity_count": len(records)})
             return output
 
+    @staticmethod
+    def _validate_auxiliary_references(records: list[dict[str, Any]], auxiliary: dict[str, Any]) -> None:
+        """Validate station-scoped auxiliary rows before staging an untrusted package."""
+        entity_ids = {str(row["entity_id"]) for row in records}
+        point_ids = {str(row["entity_id"]) for row in records
+                     if row.get("entity_type") in {"Point", "FBDExposedPoint"}}
+        station_rows = [row for row in records if row.get("entity_type") == "Station"]
+        if len(station_rows) != 1:
+            raise StationTransferError("Auxiliary validation requires exactly one Station root")
+        station_id = str(station_rows[0]["entity_id"])
+
+        def rows(db_key: str, table: str) -> list[dict[str, Any]]:
+            database = auxiliary.get(db_key, {})
+            if not isinstance(database, dict):
+                raise StationTransferError(f"Auxiliary database {db_key} must be an object")
+            values = database.get(table, [])
+            if not isinstance(values, list) or any(not isinstance(row, dict) for row in values):
+                raise StationTransferError(f"Auxiliary table {db_key}.{table} must contain objects")
+            return values
+
+        for row in rows("custom_svg", "custom_svg_assets"):
+            if row.get("station_id") != station_id:
+                raise StationTransferError("Custom SVG row references a Station outside the package")
+        for row in rows("dependencies", "dependencies"):
+            if row.get("station_id") != station_id:
+                raise StationTransferError("Dependency row references a Station outside the package")
+            if row.get("dependent_id") not in entity_ids or row.get("dependency_id") not in entity_ids:
+                raise StationTransferError("Dependency graph contains a dangling entity reference")
+        for table in ("station_time_policy", "device_time_permission"):
+            for row in rows("time_management", table):
+                if row.get("station_id") != station_id:
+                    raise StationTransferError(f"{table} references a Station outside the package")
+                if table == "device_time_permission" and row.get("device_id") not in entity_ids:
+                    raise StationTransferError("Device time permission references a missing device")
+        schedule_rows = rows("schedules", "schedules")
+        schedule_station_by_id = {
+            str(row.get("schedule_id")): row.get("station_id")
+            for row in schedule_rows
+            if row.get("schedule_id") is not None
+        }
+        schedule_ids = set(schedule_station_by_id)
+        for row in schedule_rows:
+            if row.get("station_id") != station_id:
+                raise StationTransferError("Schedule references a Station outside the package")
+        for table in ("weekly_events", "special_events"):
+            for row in rows("schedules", table):
+                if row.get("schedule_id") not in schedule_ids:
+                    raise StationTransferError(f"{table} references a missing schedule")
+        # schedule_bindings has no station_id column: station ownership is
+        # inherited through its schedule_id foreign key.
+        for row in rows("schedules", "schedule_bindings"):
+            schedule_id = row.get("schedule_id")
+            if schedule_id not in schedule_ids or schedule_station_by_id.get(str(schedule_id)) != station_id:
+                raise StationTransferError("Schedule binding references a missing schedule or Station")
+            if row.get("point_id") not in point_ids:
+                raise StationTransferError("Schedule binding references a missing Point")
+        for table in ("point_tags", "point_hierarchy"):
+            for row in rows("analytics", table):
+                if row.get("point_id") not in point_ids:
+                    raise StationTransferError(f"{table} references a missing Point")
+
     def _read_package(self, package_path: str | Path) -> tuple[dict[str, Any], dict[str, Any], str]:
         path = Path(package_path)
         if not path.is_file() or path.stat().st_size > self.MAX_PACKAGE_BYTES:
@@ -490,7 +557,11 @@ class StationTransferManager:
                 payload = json.loads(raw)
                 if not isinstance(payload, dict):
                     raise StationTransferError("Station payload must be a JSON object")
-                package_id = hashlib.sha256(path.read_bytes()).hexdigest()[:24]
+                digest = hashlib.sha256()
+                with path.open("rb") as package_stream:
+                    for chunk in iter(lambda: package_stream.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                package_id = digest.hexdigest()[:24]
                 return manifest, payload, package_id
         except (OSError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
             raise StationTransferError("Station package is invalid or unreadable") from exc
@@ -526,6 +597,14 @@ class StationTransferManager:
             warnings.append("Core version differs; explicit migration rules are required")
         if manifest.get("security", {}).get("authenticity") != "unsigned; publisher signature not implemented":
             warnings.append("Package authenticity metadata is not recognized")
+        # Validate internal references during inspection, before staging.
+        for row in payload["entities"]:
+            if not isinstance(row.get("entity_id"), str) or not row["entity_id"]:
+                raise StationTransferError("Station entity ID must be a non-empty string")
+            if not isinstance(row.get("entity_type"), str) or not isinstance(row.get("payload"), dict):
+                raise StationTransferError("Station entity type/payload is invalid")
+        self._validate_engineering_references(payload["entities"], auxiliary)
+        self._validate_auxiliary_references(payload["entities"], auxiliary)
         if not payload.get("transfer_policy", {}).get("target_site_binding_required"):
             raise StationTransferError("Station package does not require target-site binding")
         return StationTransferPreview(
@@ -660,8 +739,98 @@ class StationTransferManager:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    @staticmethod
+    def _replace_clone_references(value: Any, id_map: dict[str, str]) -> Any:
+        if isinstance(value, str): return id_map.get(value, value)
+        if isinstance(value, list): return [StationTransferManager._replace_clone_references(item, id_map) for item in value]
+        if isinstance(value, dict): return {key: StationTransferManager._replace_clone_references(item, id_map) for key, item in value.items()}
+        return value
+
+    @classmethod
+    def _prepare_clone_payload(cls, records: list[dict[str, Any]], auxiliary: dict[str, Any], *, target_project_id: str, station_name: str) -> tuple[list[dict[str, Any]], dict[str, Any], str]:
+        if not isinstance(station_name, str) or not station_name.strip() or len(station_name.strip()) > 160:
+            raise StationTransferError('Clone Station name must contain 1–160 characters')
+        cloned_records = json.loads(json.dumps(records, ensure_ascii=False))
+        cloned_aux = json.loads(json.dumps(auxiliary, ensure_ascii=False))
+        station_rows = [row for row in cloned_records if row.get('entity_type') == 'Station']
+        if len(station_rows) != 1: raise StationTransferError('Clone package must contain exactly one Station root')
+        source_station_id = str(station_rows[0].get('entity_id', ''))
+        source_project_id = station_rows[0].get('payload', {}).get('project_id')
+        if not source_station_id: raise StationTransferError('Clone source Station ID is missing')
+        id_map: dict[str, str] = {}
+        for row in cloned_records:
+            old_id = str(row.get('entity_id', ''))
+            if not old_id or old_id in id_map: raise StationTransferError('Clone source contains missing or duplicate entity IDs')
+            id_map[old_id] = str(uuid4())
+        if source_project_id: id_map[str(source_project_id)] = target_project_id
+        aux_id_groups = (('custom_svg','custom_svg_assets','symbol_id','custom_'),('dependencies','dependencies','edge_id',''),('schedules','schedules','schedule_id',''),('schedules','weekly_events','event_id',''),('schedules','special_events','event_id',''))
+        for db_key, table, field, prefix in aux_id_groups:
+            for row in cloned_aux.get(db_key, {}).get(table, []):
+                old_id = str(row.get(field, ''))
+                if not old_id or old_id in id_map: raise StationTransferError(f'Clone auxiliary identity is missing or duplicated: {table}.{field}')
+                id_map[old_id] = prefix + uuid4().hex if prefix else str(uuid4())
+        # Nested document identities must also be unique in an independent clone.
+        def collect_nested_ids(value: Any) -> None:
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    if key in {"nodes", "elements", "links", "connectives"} and isinstance(child, list):
+                        for nested in child:
+                            if isinstance(nested, dict) and nested.get("id") is not None:
+                                old_nested_id = str(nested["id"])
+                                if old_nested_id in id_map:
+                                    raise StationTransferError("Clone contains duplicate nested engineering IDs")
+                                id_map[old_nested_id] = str(uuid4())
+                    collect_nested_ids(child)
+            elif isinstance(value, list):
+                for child in value: collect_nested_ids(child)
+        collect_nested_ids(cloned_records)
+        cloned_records = cls._replace_clone_references(cloned_records, id_map)
+        # Re-key auxiliary primary keys as well as their foreign keys.
+        for row in cloned_aux.get('custom_svg', {}).get('custom_svg_assets', []):
+            row['symbol_id'] = id_map[str(row['symbol_id'])]
+        for row in cloned_aux.get('dependencies', {}).get('dependencies', []):
+            row['edge_id'] = id_map[str(row['edge_id'])]
+        for row in cloned_aux.get('schedules', {}).get('schedules', []):
+            row['schedule_id'] = id_map[str(row['schedule_id'])]
+        for table in ('weekly_events', 'special_events'):
+            for row in cloned_aux.get('schedules', {}).get(table, []):
+                row['event_id'] = id_map[str(row['event_id'])]
+        for row in cloned_aux.get('custom_svg', {}).get('custom_svg_assets', []):
+            row['station_id'] = id_map.get(str(row.get('station_id')), row.get('station_id'))
+        for row in cloned_aux.get('dependencies', {}).get('dependencies', []):
+            for field in ('dependent_id','dependency_id','station_id'):
+                if row.get(field) is not None: row[field] = id_map.get(str(row[field]), row[field])
+            raw = row.get('metadata_json')
+            if isinstance(raw, str):
+                try: row['metadata_json'] = json.dumps(cls._replace_clone_references(json.loads(raw), id_map), ensure_ascii=False, sort_keys=True)
+                except json.JSONDecodeError as exc: raise StationTransferError('Dependency metadata contains invalid JSON') from exc
+        for row in cloned_aux.get('time_management', {}).get('station_time_policy', []):
+            row['station_id'] = id_map.get(str(row.get('station_id')), row.get('station_id'))
+        for row in cloned_aux.get('time_management', {}).get('device_time_permission', []):
+            for field in ('station_id','device_id'): row[field] = id_map.get(str(row.get(field)), row.get(field))
+        for table in ('schedules','weekly_events','special_events','schedule_bindings'):
+            for row in cloned_aux.get('schedules', {}).get(table, []):
+                for field in ('station_id','schedule_id','point_id'):
+                    if row.get(field) is not None: row[field] = id_map.get(str(row[field]), row[field])
+        for row in cloned_aux.get('analytics', {}).get('point_tags', []):
+            row['point_id'] = id_map.get(str(row.get('point_id')), row.get('point_id'))
+        for row in cloned_aux.get('analytics', {}).get('point_hierarchy', []):
+            row['point_id'] = id_map.get(str(row.get('point_id')), row.get('point_id'))
+            raw = row.get('metadata_json')
+            if isinstance(raw, str):
+                try: row['metadata_json'] = json.dumps(cls._replace_clone_references(json.loads(raw), id_map), ensure_ascii=False, sort_keys=True)
+                except json.JSONDecodeError as exc: raise StationTransferError('Point hierarchy metadata contains invalid JSON') from exc
+        for row in cloned_records:
+            if row.get('project_id') is not None: row['project_id'] = id_map.get(str(row['project_id']), target_project_id)
+        cloned_station = next(row for row in cloned_records if row.get('entity_type') == 'Station')
+        cloned_station['name'] = station_name.strip()
+        cloned_station['payload']['project_id'] = target_project_id
+        if 'name' in cloned_station['payload']: cloned_station['payload']['name'] = station_name.strip()
+        return cloned_records, cloned_aux, cloned_station['entity_id']
+
     def commit_import(self, core, staged_path: str | Path, *, expected_package_id: str, target_project_id: str,
-                      actor: str = "local-engineer") -> dict[str, Any]:
+                      actor: str = "local-engineer", clone: bool = False,
+                      clone_station_name: str | None = None) -> dict[str, Any]:
         stage_input = Path(staged_path).expanduser()
         if stage_input.is_symlink():
             raise StationTransferError("Staged Station directory cannot be a symbolic link")
@@ -696,10 +865,27 @@ class StationTransferManager:
                 raise StationTransferError("Target parent is not a Project")
             if target_project["payload"].get("archived", False):
                 raise StationTransferError("Cannot import a Station into an archived Project")
+            if clone:
+                requested_name = (clone_station_name or "").strip().casefold()
+                if not requested_name:
+                    raise StationTransferError("Clone Station name is required")
+                duplicate_names = [row for row in core.repository.list_records(entity_type="Station")
+                    if row.get("payload", {}).get("project_id") == target_project_id
+                    and row.get("name", "").casefold() == requested_name]
+                if duplicate_names:
+                    raise StationTransferError("A Station with this name already exists in the target Project")
             records = payload.get("entities", [])
             station_id = stage_meta.get("station_id")
             if not records or records[0] is None:
                 raise StationTransferError("Staged package has no entities")
+            if clone:
+                if not clone_station_name:
+                    raise StationTransferError("Clone Station name is required")
+                records, payload["auxiliary"], station_id = self._prepare_clone_payload(
+                    records, payload.get("auxiliary", {}), target_project_id=target_project_id,
+                    station_name=clone_station_name,
+                )
+                payload["entities"] = records
             incoming_ids = {str(r.get("entity_id")) for r in records}
             if len(incoming_ids) != len(records):
                 raise StationTransferError("Duplicate entity IDs in staged Station")
@@ -829,7 +1015,8 @@ class StationTransferManager:
                 # the auxiliary writes, so it is safe to attempt idempotent delivery now.
                 pass
             delivered = self._deliver_outbox(core, operation_id, allow_prepared=True)
+            core.runtime.register(station_id)
             return {"station_id": station_id, "station_name": station_record["name"], "entity_count": len(records),
                     "activation": "NOT_ACTIVATED", "site_binding_required": True,
-                    "operation_id": operation_id,
+                    "operation_id": operation_id, "cloned": bool(clone),
                     "journal_status": "DELIVERED" if delivered else "PENDING_RETRY"}

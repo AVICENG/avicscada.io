@@ -157,3 +157,27 @@ def test_fbd_studio_compiler_normalizes_values_edited_as_text_in_ui(tmp_path):
     nodes = compiled.json()["core_document"]["nodes"]
     start = next(node for node in nodes if node["name"] == "Команда Пуск")
     assert start["params"]["value"] is True
+
+
+
+def test_fbd_studio_rejects_module_id_collision_across_pages(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    project = client.app.state.project_station.create_project("Global IDs")
+    station = client.app.state.project_station.create_station(project["id"], "Station")
+    data = {
+        "pages": [
+            {"id": "page-a", "name": "A", "modules": [
+                {"id": "same-module-id", "type": "BOOL_INPUT", "ins": [], "outs": []}
+            ]},
+            {"id": "page-b", "name": "B", "modules": [
+                {"id": "same-module-id", "type": "BOOL_INPUT", "ins": [], "outs": []}
+            ]},
+        ],
+        "links": [],
+    }
+    response = client.post(
+        f"/api/stations/{station['id']}/fbd-studio",
+        json={"name": "Duplicate global identity", "data": data},
+    )
+    assert response.status_code == 400
+    assert "unique across the entire project" in response.json()["detail"]

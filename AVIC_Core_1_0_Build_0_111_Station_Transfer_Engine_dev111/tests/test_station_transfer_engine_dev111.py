@@ -304,3 +304,83 @@ def test_station_import_journal_failure_is_retryable_and_idempotent(tmp_path, mo
     finally:
         source.close()
         target.close()
+
+def test_station_clone_remaps_engineering_and_auxiliary_ids(tmp_path):
+    source, _, station, _, component, device, point, channel = _source_core(tmp_path / "source")
+    target = CoreApplication(tmp_path / "target")
+    target_project = ProjectStationService(target).create_project("Clone Target")
+    try:
+        from avic_core.graphics import GraphicsService
+        from avic_core.logic_fbd import FBDService
+        from avic_core.web_pages import WebPagesService
+        from uuid import uuid4
+        symbol = source.custom_svg.list_for_station(station["id"])[0]
+        graphics = GraphicsService(source)
+        graphic = graphics.create(station["id"], "Clone Graphic")
+        graphic = graphics.save(graphic["id"], graphic["revision"], [{
+            "name": "Temperature", "symbol_key": symbol["id"], "x": 10, "y": 10,
+            "width": 80, "height": 60, "bindings": [{"point_id": point.id, "role": "value"}],
+        }])
+        fbd = FBDService(source)
+        logic = fbd.create(station["id"], "Clone Logic")
+        input_id, output_id = str(uuid4()), str(uuid4())
+        logic = fbd.save(logic["id"], logic["revision"], [
+            {"id": input_id, "type": "BOOL_INPUT", "name": "Enable", "params": {"value": True}},
+            {"id": output_id, "type": "BOOL_OUTPUT", "name": "Fan", "params": {}},
+        ], [{"source_node_id": input_id, "source_port": "OUT", "target_node_id": output_id, "target_port": "IN"}])
+        pages = WebPagesService(source)
+        site = pages.create(station["id"], "Clone Site", "site")
+        page = pages.create(station["id"], "Overview", "page", parent_id=site["id"], slug="overview")
+        page = pages.assign_graphic(page["id"], graphic["id"], page["revision"])
+        package = source.station_transfer.export_station(source, station["id"], tmp_path / "clone.avicstation", source_core_version="1.0.0.dev145")
+        preview = target.station_transfer.inspect_package(package, target_core_version="1.0.0.dev145")
+        stage = target.station_transfer.stage_import(package, tmp_path / "staging", expected_package_id=preview.package_id, target_core_version="1.0.0.dev145")
+        result = target.station_transfer.commit_import(target, stage, expected_package_id=preview.package_id, target_project_id=target_project["id"], clone=True, clone_station_name="AHU Clone")
+        clone_id = result["station_id"]
+        assert result["cloned"] is True and clone_id != station["id"]
+        clone_station = target.repository.get_record(clone_id)
+        assert clone_station["name"] == "AHU Clone"
+        assert clone_station["payload"]["project_id"] == target_project["id"]
+        cloned_devices = target.repository.list_records(entity_type="Device")
+        cloned_points = target.repository.list_records(entity_type="Point")
+        assert len(cloned_devices) == 1 and cloned_devices[0]["entity_id"] != device.id
+        assert len(cloned_points) == 1 and cloned_points[0]["entity_id"] != point.id
+        assert cloned_points[0]["payload"]["device_id"] == cloned_devices[0]["entity_id"]
+        cloned_graphics = target.repository.list_records(entity_type="GraphicDocument")
+        cloned_logic = target.repository.list_records(entity_type="LogicDocument")
+        cloned_pages = target.repository.list_records(entity_type="WebPageNode")
+        assert len(cloned_graphics) == 1 and cloned_graphics[0]["entity_id"] != graphic["id"]
+        assert len(cloned_logic) == 1 and cloned_logic[0]["entity_id"] != logic["id"]
+        assert len(cloned_pages) == 2
+        assert all(row["station_id"] == clone_id for row in target.repository.list_records(station_id=clone_id))
+        cloned_graphic = GraphicsService(target).get(cloned_graphics[0]["entity_id"])
+        assert cloned_graphic["elements"][0]["bindings"][0]["point_id"] == cloned_points[0]["entity_id"]
+        assert cloned_graphic["elements"][0]["id"] != graphic["elements"][0]["id"]
+        cloned_logic_doc = FBDService(target).get(cloned_logic[0]["entity_id"])
+        assert len(cloned_logic_doc["nodes"]) == 2 and len(cloned_logic_doc["links"]) == 1
+        assert {node["id"] for node in cloned_logic_doc["nodes"]}.isdisjoint({input_id, output_id})
+        cloned_page = WebPagesService(target).get(next(r["entity_id"] for r in cloned_pages if r["name"] == "Overview"))
+        assert cloned_page["graphic_ids"] == [cloned_graphics[0]["entity_id"]]
+        assert result["activation"] == "NOT_ACTIVATED"
+    finally:
+        source.close()
+        target.close()
+
+
+@pytest.mark.parametrize("auxiliary, message", [
+    ({"dependencies": {"dependencies": [{"station_id": "station", "dependent_id": "missing", "dependency_id": "missing"}]}},
+     "dangling entity reference"),
+    ({"time_management": {"device_time_permission": [{"station_id": "station", "device_id": "missing"}]}},
+     "missing device"),
+    ({"schedules": {"schedules": [{"station_id": "station", "schedule_id": "schedule"}],
+                    "schedule_bindings": [{"station_id": "station", "schedule_id": "schedule", "point_id": "missing"}]}},
+     "missing Point"),
+    ({"analytics": {"point_tags": [{"point_id": "missing"}]}},
+     "missing Point"),
+])
+def test_station_transfer_rejects_dangling_auxiliary_references(auxiliary, message):
+    from avic_core.transfer.station import StationTransferError, StationTransferManager
+
+    records = [{"entity_id": "station", "entity_type": "Station", "payload": {}}]
+    with pytest.raises(StationTransferError, match=message):
+        StationTransferManager._validate_auxiliary_references(records, auxiliary)

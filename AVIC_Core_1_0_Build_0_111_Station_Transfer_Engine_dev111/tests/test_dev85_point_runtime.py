@@ -89,3 +89,21 @@ def test_fbd_simulation_rejects_non_good_live_quality(tmp_path):
     with pytest.raises(ValueError, match="качество STALE"):
         app.state.fbd.simulate(doc["id"])
     app.state.core.close()
+
+
+
+@pytest.mark.parametrize("data_type,value,valid", [
+    ("uint16", 65535, True),
+    ("uint16", 65536, False),
+    ("int16", -32768, True),
+    ("int16", 32768, False),
+    ("float32", 12.5, True),
+])
+def test_point_runtime_validates_modbus_scalar_ranges(tmp_path, data_type, value, valid):
+    app, _, _, _, point = _setup(tmp_path, data_type=data_type)
+    if valid:
+        assert app.state.core.point_runtime.publish(point.id, value).value == value
+    else:
+        with pytest.raises(ValueError):
+            app.state.core.point_runtime.publish(point.id, value)
+    app.state.core.close()
