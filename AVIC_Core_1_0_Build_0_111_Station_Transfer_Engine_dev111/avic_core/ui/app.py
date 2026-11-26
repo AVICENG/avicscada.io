@@ -2526,7 +2526,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 "stations": [{"id": row["entity_id"], "name": row["name"]}
                     for row in sorted(stations, key=lambda item: item.get("name", "").casefold())
                     if row.get("payload", {}).get("project_id") == project["entity_id"]]})
-        return {"projects": result, "core_version": "1.0.0.dev148"}
+        return {"projects": result, "core_version": "1.0.0.dev196"}
 
     @app.post("/api/station-transfer/export")
     def station_transfer_export(payload: StationTransferExportInput, request: Request) -> Response:
@@ -2549,7 +2549,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             try:
                 package_path = export_dir / "station.avicstation"
                 core.station_transfer.export_station(
-                    core, payload.station_id, package_path, source_core_version="1.0.0.dev148")
+                    core, payload.station_id, package_path, source_core_version="1.0.0.dev196")
                 content = package_path.read_bytes()
             finally:
                 shutil.rmtree(export_dir, ignore_errors=True)
@@ -2585,7 +2585,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             if total == 0:
                 raise HTTPException(status_code=400, detail="Пустой пакет станции")
             preview = app.state.core.station_transfer.inspect_package(
-                package_path, target_core_version="1.0.0.dev148")
+                package_path, target_core_version="1.0.0.dev196")
         except HTTPException:
             package_path.unlink(missing_ok=True)
             raise
@@ -2608,7 +2608,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             "station_id": preview.station_id, "station_name": preview.station_name,
             "source_project_id": preview.source_project_id,
             "source_core_version": preview.source_core_version,
-            "target_core_version": "1.0.0.dev148",
+            "target_core_version": "1.0.0.dev196",
             "entity_count": preview.entity_count,
             "auxiliary_record_count": preview.auxiliary_record_count,
             "compatible": preview.compatible, "warnings": warnings,
@@ -2630,7 +2630,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         try:
             stage_path = app.state.core.station_transfer.stage_import(
                 item["package_path"], app.state.core.paths.backups / "station-transfer-staging",
-                expected_package_id=payload.package_id, target_core_version="1.0.0.dev148")
+                expected_package_id=payload.package_id, target_core_version="1.0.0.dev196")
             item["stage_path"] = stage_path
             return {"stage_token": payload.upload_token, "package_id": payload.package_id,
                     "state": "STAGED_NOT_ACTIVATED", "activation": "NOT_ACTIVATED"}
@@ -2695,7 +2695,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     def manifest() -> dict:
         return {
             "product": "AVIC Engineering & Automation Platform",
-            "version": "1.0.0.dev77",
+            "version": "1.0.0.dev196",
             "mode": "engineering-workbench-project-station",
             "execution_enabled": False,
             "network_discovery_enabled": False,
