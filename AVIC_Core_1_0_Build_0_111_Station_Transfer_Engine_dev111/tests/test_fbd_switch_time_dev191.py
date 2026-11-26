@@ -118,3 +118,34 @@ def test_studio_compiles_time_multi_outputs_and_switch_source(tmp_path):
     simulation = client.post(f"/api/fbd/{core_doc['id']}/simulate", json={})
     assert simulation.status_code == 200, simulation.text
     assert simulation.json()["outputs"]["Switch"] is True
+
+
+def test_legacy_time_occ_placeholder_requires_explicit_recreation(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    project = client.app.state.project_station.create_project("Legacy TIME")
+    station = client.app.state.project_station.create_station(project["id"], "Legacy station")
+    data = {
+        "format": "AVIC-FBD-STRATEGY", "version": "1.1.1", "project": "Legacy TIME",
+        "pages": [{"id": "page-main", "name": "Main", "code": "P1", "modules": [
+            {"id": "time", "type": "TIME", "name": "Old TIME", "params": {},
+             "ins": [], "outs": [{"id": "old-occ", "name": "OCC", "type": "bool"}]},
+            {"id": "output", "type": "BOOL_OUTPUT", "name": "Old occupancy", "params": {},
+             "ins": [{"id": "output-in", "name": "IN", "type": "bool"}], "outs": []},
+        ]}],
+        "links": [{"id": "legacy-link", "pageId": "page-main", "from": "out:time:0",
+                   "to": "in:output:0", "signalType": "bool"}],
+        "references": [], "fbdPoints": [],
+    }
+    created = client.post(
+        f"/api/stations/{station['id']}/fbd-studio",
+        json={"name": "Legacy TIME", "data": data},
+    )
+    assert created.status_code == 201, created.text
+    source = created.json()
+    preview = client.post(
+        f"/api/fbd-studio/{source['id']}/compile-preview",
+        json={"expected_revision": source["revision"]},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["compilable"] is False
+    assert any("TIME.OCC placeholder" in issue for issue in preview.json()["issues"])
