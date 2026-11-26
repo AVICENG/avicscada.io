@@ -212,3 +212,36 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
         app.state.driver_manager.stop_instance(driver_id)
         client.post(f"/api/fbd-runtime/{core_document_id}/stop")
         app.state.core.close()
+
+
+def test_dev196_bacnet_discovery_import_and_driver_manager_ui_are_wired_and_parse(tmp_path):
+    import re
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).parents[1]
+    index = (root / "avic_core" / "ui" / "static" / "index.html").read_text(encoding="utf-8")
+    logic = (root / "avic_core" / "ui" / "static" / "logic.html").read_text(encoding="utf-8")
+    pages = (root / "avic_core" / "ui" / "static" / "pages.html").read_text(encoding="utf-8")
+
+    assert "state.bacnetInspection" in index
+    assert "/protocol-devices/import-preview" in index
+    assert "/protocol-devices/import" in index
+    assert "function driversWorkspace()" in index
+    assert "data-driver-start" in index and "data-driver-stop" in index
+    assert "POINT_INPUT" in logic
+    assert "loadPointCatalog()" in pages
+    assert "bindDroppedPagePoint(pointId,index)" in pages
+
+    node = shutil.which("node")
+    if node:
+        scripts = re.findall(r"<script[^>]*>(.*?)</script>", index, re.S)
+        assert scripts, "index.html must contain its inline application script"
+        for number, script in enumerate(scripts):
+            if not script.strip():
+                continue
+            source = tmp_path / f"index-inline-{number}.js"
+            source.write_text(script, encoding="utf-8")
+            result = subprocess.run([node, "--check", str(source)], capture_output=True, text=True, timeout=20)
+            assert result.returncode == 0, result.stdout + result.stderr
