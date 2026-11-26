@@ -336,3 +336,27 @@ def test_driver_catalog_exposes_license_feature_and_enforces_entitlement(tmp_pat
         core.driver_manager.start_instance(created["id"])
     assert core.driver_manager.diagnostics(created["id"])["state"] == "STOPPED"
     core.close()
+
+def test_driver_config_update_requires_current_feature_entitlement(tmp_path):
+    from avic_core.licensing import LicenseStatus
+    from types import SimpleNamespace
+
+    class Entitlements:
+        status = LicenseStatus(True, "OK", features=("driver.modbus-tcp",))
+        def inspect(self, license_file):
+            return SimpleNamespace(status=self.status)
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid or feature not in status.features:
+                raise PermissionError("driver entitlement denied")
+
+    core, station = make_station(tmp_path)
+    core.installation_license_service = Entitlements()
+    core.license_file = "signed.aviclic"
+    created = core.driver_manager.create_instance(station["id"], "modbus-tcp", "Modbus")
+    _, version = core.driver_manager._load(created["id"])
+    core.installation_license_service.status = LicenseStatus(False, "LICENSE_EXPIRED")
+    with pytest.raises(PermissionError, match="entitlement denied"):
+        core.driver_manager.update_config(created["id"], {"host": "192.0.2.10"},
+                                          expected_version=version)
+    assert core.driver_manager.diagnostics(created["id"])["state"] == "STOPPED"
+    core.close()
