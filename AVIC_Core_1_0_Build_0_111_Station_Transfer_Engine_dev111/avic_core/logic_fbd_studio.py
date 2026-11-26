@@ -403,6 +403,7 @@ class FBDStudioService:
     # semantics and port contracts already exist in Core FBD.
     _COMPILER_BLOCKS = {
         "BOOL_INPUT": "BOOL_INPUT", "FLOAT_INPUT": "FLOAT_INPUT",
+        "KNOB": "KNOB", "CONSTANT": "CONSTANT",
         "POINT_INPUT": "POINT_INPUT", "SCHEDULE": "SCHEDULE",
         "AND": "AND", "OR": "OR", "NOT": "NOT", "ADD": "ADD",
         "SUB": "SUB", "MUL": "MUL", "DIV": "DIV", "SELECT": "SELECT",
@@ -489,14 +490,14 @@ class FBDStudioService:
                     value = params.get("value", False)
                     if not isinstance(value, bool) and str(value).strip().casefold() not in {"true", "false", "да", "нет", "1", "0"}:
                         issues.append(f"Блок «{module.get('name') or typ}»: значение BOOL_INPUT должно быть Да или Нет")
-                if typ == "FLOAT_INPUT":
-                    value = params.get("value", 0.0)
+                if typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
+                    value = params.get("value", core.BLOCKS[mapped]["defaults"].get("value", 0.0))
                     try:
                         import math
                         if isinstance(value, bool) or not math.isfinite(float(value)):
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
-                        issues.append(f"Блок «{module.get('name') or typ}»: FLOAT_INPUT должен содержать конечное число")
+                        issues.append(f"Блок «{module.get('name') or typ}»: {typ} должен содержать конечное число")
                 if typ == "SCALE":
                     scale = params.get("scale") or {}
                     try:
@@ -772,8 +773,8 @@ class FBDStudioService:
                             params = {"value": raw_value.strip().casefold() in {"true", "да", "1"}}
                         else:
                             params = {"value": bool(raw_value)}
-                    elif typ == "FLOAT_INPUT":
-                        params = {"value": float(params.get("value", 0.0))}
+                    elif typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
+                        params = {"value": float(params.get("value", core_fbd.BLOCKS[typ]["defaults"].get("value", 0.0)))}
                     elif typ == "HYSTERESIS":
                         cfg = params.get("hysteresis") or {}
                         initial = cfg.get("initial", False)
