@@ -38,6 +38,71 @@ class HistoryService:
             ).fetchall()
         return [row["point_id"] for row in rows]
 
+    def reconcile_point_usage(self) -> dict:
+        """Rebuild Core Point usage from durable History bindings after startup.
+
+        History and Core use separate SQLite databases, so this is an idempotent
+        repair protocol rather than a cross-database ACID transaction.
+        """
+        if self.repository is None or self.point_usage_service is None:
+            return {"reconciled": 0, "removed_invalid_bindings": [], "issues": []}
+
+        with self._db() as db:
+            bindings = db.execute(
+                "SELECT station_id, point_id FROM history_bindings ORDER BY station_id, point_id"
+            ).fetchall()
+
+        desired_by_source: dict[str, set[str]] = {}
+        invalid: list[tuple[str, str]] = []
+        issues: list[dict] = []
+        for row in bindings:
+            station_id, point_id = row["station_id"], row["point_id"]
+            try:
+                point = self.repository.get_record(point_id)
+                if point.get("entity_type") != "Point":
+                    raise ValueError("reference is not a Point")
+                device = self.repository.get_record(point.get("payload", {}).get("device_id"))
+                if device.get("entity_type") != "Device":
+                    raise ValueError("Point device reference is invalid")
+                if device.get("payload", {}).get("station_id") != station_id:
+                    raise ValueError("Point belongs to another station")
+            except Exception as exc:
+                invalid.append((station_id, point_id))
+                issues.append({"station_id": station_id, "point_id": point_id,
+                               "reason": f"{type(exc).__name__}: {exc}"})
+                continue
+            desired_by_source.setdefault(f"history:{station_id}", set()).add(point_id)
+
+        if invalid:
+            with self._db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                db.executemany(
+                    "DELETE FROM history_bindings WHERE station_id=? AND point_id=?",
+                    invalid,
+                )
+                db.commit()
+
+        # Include old Core keys with no remaining History binding, otherwise a
+        # crash between the two SQLite commits could leave a phantom license slot.
+        source_keys = set(desired_by_source)
+        for record in self.repository.list_records(entity_type="Point"):
+            for key in record.get("payload", {}).get("licensed_usage") or []:
+                if isinstance(key, str) and key.startswith("history:"):
+                    source_keys.add(key)
+
+        for source_key in sorted(source_keys):
+            self.point_usage_service.set_point_usage(
+                source_key, sorted(desired_by_source.get(source_key, set()))
+            )
+        return {
+            "reconciled": len(source_keys),
+            "removed_invalid_bindings": [
+                {"station_id": station_id, "point_id": point_id}
+                for station_id, point_id in invalid
+            ],
+            "issues": issues,
+        }
+
     def configure_point(self, station_id: str, point_id: str, *, enabled: bool = True) -> dict:
         """Enable/disable persistent history acquisition for one real engineering Point."""
         if self.repository is None:
