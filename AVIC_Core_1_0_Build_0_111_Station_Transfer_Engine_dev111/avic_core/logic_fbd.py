@@ -131,6 +131,8 @@ class FBDService:
       "DELAY":{"category":"Logic","label":"Задержка включения/выключения","inputs":{"IN":"bool","TIME":"float"},"outputs":{"OUT":"bool"},"defaults":{"on_delay":5.0,"off_delay":0.0,"initial_state":False}},
       "LATCH":{"category":"Logic","label":"RS-защёлка","inputs":{"SET":"bool","RESET":"bool"},"outputs":{"OUT":"bool"},"defaults":{"initial_state":False,"reset_priority":True}},
       "PID_LOOP":{"category":"Control","label":"PID-регулятор","inputs":{"PV":"float","SP":"float","ENABLE":"bool","MANUAL":"bool","MANUAL_OUT":"float","RESET":"bool"},"outputs":{"OUT":"float","P":"float","I":"float","D":"float"},"defaults":{"pid":{"kp":1.0,"ti":60.0,"td":0.0,"action":"direct","mode":"auto","outputMin":0.0,"outputMax":100.0,"disabledOutput":0.0,"manualOutput":0.0,"bias":0.0,"deadband":0.0,"derivativeFilter":0.0,"outputRateLimit":0.0,"sampleTime":1.0,"integralMin":-100.0,"integralMax":100.0}}},
+      "SWITCH":{"category":"Control","label":"Ручной переключатель","inputs":{"IN":"bool"},"outputs":{"OUT":"bool"},"defaults":{"value":False,"user_level":0}},
+      "TIME":{"category":"System","label":"Часы станции","inputs":{},"outputs":{"CURRENT_TIME":"float","MINUTES_PAST_MIDNIGHT":"float","DAY":"float","MONTH":"float","WEEKDAY":"float","DAY_BIT_5":"bool","DAY_BIT_6":"bool","DAY_BIT_7":"bool","SECOND_PULSE":"bool","MINUTE_PULSE":"bool","PULSE_5_MIN":"bool","PULSE_10_MIN":"bool","PULSE_15_MIN":"bool","PULSE_20_MIN":"bool","PULSE_30_MIN":"bool","PULSE_60_MIN":"bool","PULSE_6_HOUR":"bool","PULSE_24_HOUR":"bool","WEEKLY_PULSE":"bool","MONTHLY_PULSE":"bool","YEARLY_PULSE":"bool"},"defaults":{}},
       "BOOL_OUTPUT":{"category":"Data","label":"Булевый выход","inputs":{"IN":"bool"},"outputs":{},"defaults":{}},
       "FLOAT_OUTPUT":{"category":"Data","label":"Аналоговый выход","inputs":{"IN":"float"},"outputs":{},"defaults":{}},
     }
@@ -284,6 +286,12 @@ class FBDService:
                 params={**params,"initial_state":initial,"reset_priority":priority}
             if typ == "PID_LOOP":
                 params={**params,"pid":self._normalize_pid_config(params.get("pid"))}
+            if typ == "SWITCH":
+                value=params.get("value",False); level=params.get("user_level",0)
+                if not isinstance(value,bool): raise ValueError("SWITCH.value должен быть bool")
+                if isinstance(level,bool) or not isinstance(level,int) or not 0<=level<=99:
+                    raise ValueError("SWITCH.user_level должен быть целым числом 0..99")
+                params={**params,"value":value,"user_level":level}
             if typ == "COMBINATION":
                 rows=params.get("comboRows", spec["defaults"]["comboRows"])
                 if not isinstance(rows,list) or len(rows)!=4:
@@ -565,12 +573,16 @@ class FBDService:
             raise ValueError(f"Блок «{node_name}»: составное значение не поддерживается")
         return value
 
-    def simulate(self, document_id, inputs=None, runtime_state=None, *, dt_seconds: float = 1.0):
+    def simulate(self, document_id, inputs=None, runtime_state=None, *, dt_seconds: float = 1.0, now_utc=None):
         """Run an isolated FBD pass. Optional mutable state is committed only after a successful pass."""
         import math
         if isinstance(dt_seconds, bool) or not isinstance(dt_seconds, (int, float)) or not math.isfinite(float(dt_seconds)) or not 0 < float(dt_seconds) <= 3600:
             raise ValueError("dt_seconds должен быть конечным числом в диапазоне (0, 3600]")
         dt_seconds = float(dt_seconds)
+        if now_utc is not None:
+            from datetime import datetime
+            if not isinstance(now_utc, datetime) or now_utc.tzinfo is None:
+                raise ValueError("now_utc должен быть timezone-aware datetime")
         graph = self.get(document_id)
         if inputs is None:
             inputs = {}
@@ -579,7 +591,7 @@ class FBDService:
         nodes = {n["id"]: n for n in graph["nodes"]}
         overridable = {nid for nid, node in nodes.items()
                        if (node["type"].endswith("_INPUT") and node["type"] != "POINT_INPUT")
-                       or node["type"] in {"KNOB", "ANALOG_INPUT", "EXTERNAL_SENSOR"}}
+                       or node["type"] in {"KNOB", "ANALOG_INPUT", "EXTERNAL_SENSOR", "SWITCH"}}
         unknown = set(inputs) - overridable
         if unknown:
             raise ValueError("Переопределять можно только виртуальные входы и KNOB; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
@@ -630,6 +642,8 @@ class FBDService:
                 default_value = False if signal_type == "bool" else "" if signal_type == "string" else 0
                 if node["type"] == "DELAY" and port == "TIME":
                     default_value = params.get("on_delay", 5.0)
+                if node["type"] == "SWITCH" and port == "IN":
+                    default_value = params.get("value", False)
                 if node["type"] == "PID_LOOP":
                     pid_cfg = params.get("pid", {})
                     default_value = {"PV": 0.0, "SP": 20.0, "ENABLE": True,
@@ -759,6 +773,61 @@ class FBDService:
                     off_elapsed += dt_seconds; on_elapsed = 0.0
                     out = False if off_elapsed >= off_delay else previous
                 state_work[node_id] = {"value": out, "on": on_elapsed, "off": off_elapsed}
+            elif typ == "SWITCH":
+                out = bool(args["IN"])
+                source_meta = {"kind": "operator_switch", "status": out,
+                               "user_level": params.get("user_level", 0), "physical_write": False}
+            elif typ == "TIME":
+                from datetime import datetime, timedelta
+                from zoneinfo import ZoneInfo
+                time_info = self.core.time_management.station_time(station_id)
+                utc_now = now_utc or datetime.fromisoformat(time_info["utc_now"])
+                local_now = utc_now.astimezone(ZoneInfo(time_info["timezone"]))
+                weekday = local_now.isoweekday()
+                midnight = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+                bucket_specs = {
+                    "SECOND_PULSE": local_now.replace(microsecond=0),
+                    "MINUTE_PULSE": local_now.replace(second=0, microsecond=0),
+                    "PULSE_5_MIN": local_now.replace(minute=(local_now.minute//5)*5, second=0, microsecond=0),
+                    "PULSE_10_MIN": local_now.replace(minute=(local_now.minute//10)*10, second=0, microsecond=0),
+                    "PULSE_15_MIN": local_now.replace(minute=(local_now.minute//15)*15, second=0, microsecond=0),
+                    "PULSE_20_MIN": local_now.replace(minute=(local_now.minute//20)*20, second=0, microsecond=0),
+                    "PULSE_30_MIN": local_now.replace(minute=(local_now.minute//30)*30, second=0, microsecond=0),
+                    "PULSE_60_MIN": local_now.replace(minute=0, second=0, microsecond=0),
+                    "PULSE_6_HOUR": local_now.replace(hour=(local_now.hour//6)*6, minute=0, second=0, microsecond=0),
+                    "PULSE_24_HOUR": midnight,
+                    "WEEKLY_PULSE": (midnight - timedelta(days=weekday-1)),
+                    "MONTHLY_PULSE": midnight.replace(day=1),
+                    "YEARLY_PULSE": midnight.replace(month=1, day=1),
+                }
+                state = state_work.get(node_id, {})
+                if not isinstance(state, dict):
+                    raise ValueError(f"Блок «{node['name']}»: повреждено состояние TIME")
+                last_buckets = dict(state.get("last_buckets") or {})
+                pulse_until = dict(state.get("pulse_until") or {})
+                now_ts = utc_now.timestamp()
+                pulse_outputs = {}
+                for pulse_name, bucket in bucket_specs.items():
+                    token = bucket.isoformat()
+                    previous = last_buckets.get(pulse_name)
+                    if previous is not None and previous != token:
+                        pulse_until[pulse_name] = now_ts + 1.0
+                    last_buckets[pulse_name] = token
+                    pulse_outputs[pulse_name] = now_ts < float(pulse_until.get(pulse_name, 0.0))
+                output_values = {
+                    "CURRENT_TIME": float(local_now.hour) + float(local_now.minute)/100.0,
+                    "MINUTES_PAST_MIDNIGHT": float(local_now.hour*60 + local_now.minute) +
+                        float(local_now.second)/60.0 + float(local_now.microsecond)/60000000.0,
+                    "DAY": float(local_now.day), "MONTH": float(local_now.month),
+                    "WEEKDAY": float(weekday),
+                    "DAY_BIT_5": bool(weekday & 1), "DAY_BIT_6": bool(weekday & 2),
+                    "DAY_BIT_7": bool(weekday & 4), **pulse_outputs,
+                }
+                state_work[node_id] = {"last_buckets": last_buckets, "pulse_until": pulse_until}
+                out = output_values["CURRENT_TIME"]
+                source_meta = {"kind": "station_time", "timezone": time_info["timezone"],
+                               "utc_now": utc_now.isoformat(), "local_now": local_now.isoformat(),
+                               "time_master": False, "clock_write": False}
             elif typ == "LATCH":
                 previous = state_work.get(node_id, params.get("initial_state", False))
                 if not isinstance(previous, bool):
