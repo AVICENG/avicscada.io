@@ -2,7 +2,7 @@ name: AVIC Core CI
 
 on:
   # Normal development is validated on the private Windows self-hosted runner.
-  # Linux compatibility remains available as an explicit, opt-in hosted matrix.
+  # Linux compatibility runs on PRs; manual runs remain opt-in to control hosted minutes.
   push:
     branches:
       - dev112-station-transfer-reliability
@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       run_linux_matrix:
-        description: "Run the optional Ubuntu/Python compatibility matrix (uses GitHub-hosted minutes)"
+        description: "Run the Ubuntu/Python compatibility matrix (uses GitHub-hosted minutes)"
         required: false
         type: boolean
         default: false
@@ -76,8 +76,8 @@ jobs:
           retention-days: 14
 
   linux-compatibility:
-    name: Python ${{ matrix.python-version }} / Ubuntu (manual opt-in)
-    if: github.event_name == 'workflow_dispatch' && inputs.run_linux_matrix
+    name: Python ${{ matrix.python-version }} / Ubuntu
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.run_linux_matrix)
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
