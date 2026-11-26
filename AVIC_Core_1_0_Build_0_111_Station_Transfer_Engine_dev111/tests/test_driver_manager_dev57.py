@@ -306,3 +306,33 @@ def test_polling_session_start_waits_until_worker_is_running():
     assert session.diagnostics()["state"] in {"RUNNING", "DEGRADED"}
     assert session.diagnostics()["worker_alive"] is True
     session.stop()
+
+
+def test_driver_catalog_exposes_license_feature_and_enforces_entitlement(tmp_path):
+    from avic_core.licensing import LicenseStatus
+    from types import SimpleNamespace
+
+    class Entitlements:
+        status = LicenseStatus(True, "OK", features=("driver.modbus-tcp",))
+        def inspect(self, license_file):
+            return SimpleNamespace(status=self.status)
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid:
+                raise PermissionError("license invalid")
+            if feature not in status.features:
+                raise PermissionError("feature not included")
+
+    core, station = make_station(tmp_path)
+    core.installation_license_service = Entitlements()
+    core.license_file = "signed.aviclic"
+    catalog = {x["driver_id"]: x for x in core.driver_manager.catalog()}
+    assert catalog["modbus-tcp"]["license_feature"] == "driver.modbus-tcp"
+    assert catalog["bacnet-ip"]["license_feature"] == "driver.bacnet-ip"
+    with pytest.raises(PermissionError, match="feature not included"):
+        core.driver_manager.create_instance(station["id"], "bacnet-ip", "Denied")
+    created = core.driver_manager.create_instance(station["id"], "modbus-tcp", "Allowed")
+    core.installation_license_service.status = LicenseStatus(False, "LICENSE_EXPIRED")
+    with pytest.raises(PermissionError, match="license invalid"):
+        core.driver_manager.start_instance(created["id"])
+    assert core.driver_manager.diagnostics(created["id"])["state"] == "STOPPED"
+    core.close()
