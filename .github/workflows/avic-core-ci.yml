@@ -13,6 +13,7 @@ on:
       - main
       - dev112-station-transfer-reliability
       - dev113-network-drivers
+      - dev183-linux-cli-test-fix
   workflow_dispatch:
     inputs:
       run_linux_matrix:
