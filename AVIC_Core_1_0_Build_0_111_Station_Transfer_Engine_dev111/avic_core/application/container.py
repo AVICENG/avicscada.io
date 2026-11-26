@@ -94,6 +94,8 @@ class CoreApplication:
             license_file=self.license_file,
         )
         self.history = HistoryService(self.paths.databases / "history.sqlite3", repository=self.repository, point_usage_service=self.objects)
+        # Reconcile History's independent catalog into Core's authoritative point-usage ledger.
+        self.history_point_usage_recovery = self.history.reconcile_point_usage()
         self.engineering_lifecycle = EngineeringLifecycleService(self.paths.databases / "engineering_lifecycle.sqlite3")
         self.alarms = AlarmService(self.paths.databases / "alarms.sqlite3", audit_service=self.audit, event_publisher=lambda e: self.events.record("alarm." + e.event_type.lower(), e.message, station_id=e.station_id, severity="WARNING" if e.to_state in {"ACTIVE", "RETURNED_TO_NORMAL"} else "NOTICE", source_id=e.alarm_id, actor_id=e.actor_id, details={"from_state":e.from_state,"to_state":e.to_state,"alarm_id":e.alarm_id}))
         self.schedules = ScheduleService(self.paths.databases / "schedules.sqlite3", repository=self.repository, audit_service=self.audit, point_usage_service=self.objects)
