@@ -70,7 +70,7 @@ def test_fbd_studio_compiler_refuses_unknown_semantics_without_creating_core_doc
     client = TestClient(create_ui_app(data_dir=str(tmp_path)))
     station = _station(client)
     data = _studio_graph()
-    data["pages"][0]["modules"][2]["type"] = "PID_LOOP"
+    data["pages"][0]["modules"][2]["type"] = "UNSUPPORTED_CUSTOM_BLOCK"
     created = client.post(f"/api/stations/{station['id']}/fbd-studio",
                           json={"name": "Unsupported PID", "data": data})
     assert created.status_code == 201, created.text
@@ -81,7 +81,7 @@ def test_fbd_studio_compiler_refuses_unknown_semantics_without_creating_core_doc
                           json={"expected_revision": source["revision"]})
     assert preview.status_code == 200
     assert preview.json()["compilable"] is False
-    assert any("PID_LOOP" in issue for issue in preview.json()["issues"])
+    assert any("UNSUPPORTED_CUSTOM_BLOCK" in issue for issue in preview.json()["issues"])
 
     compiled = client.post(f"/api/fbd-studio/{source['id']}/compile",
                            json={"expected_revision": source["revision"]})
