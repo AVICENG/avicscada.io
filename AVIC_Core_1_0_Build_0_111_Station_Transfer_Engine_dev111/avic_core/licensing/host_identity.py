@@ -16,66 +16,33 @@ from typing import Callable
 
 
 def _set_windows_identity_acl(path: Path, user_sid: str, *, is_directory: bool) -> None:
-    """Apply a protected DACL without invoking PowerShell or changing execution policy."""
-    import ctypes
-    from ctypes import wintypes
+    """Apply a protected DACL using explicit numeric SIDs; never grant Local Account."""
+    if not re.fullmatch(r"S-1-5-21-(?:\\d+-){2,}\\d+", user_sid):
+        raise HostIdentityError("Некорректный Windows user SID для ACL installation identity")
 
-    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    inheritance = "OICI" if is_directory else ""
-    sddl = (
-        f"D:P(A;{inheritance};FA;;;{user_sid})"
-        f"(A;{inheritance};FA;;;S-1-5-18)"
-        f"(A;{inheritance};FA;;;S-1-5-32-544)"
+    inheritance = "(OI)(CI)" if is_directory else ""
+    permission = f"{inheritance}F"
+    # Remove the broad Local Account group if an older installation created it.
+    # The next command disables inheritance and replaces grants for the exact
+    # current user, Local System and Builtin Administrators.
+    subprocess.run(
+        ["icacls", str(path), "/remove:g", "*S-1-5-113"],
+        capture_output=True, text=True, timeout=10,
     )
-
-    convert = advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW
-    convert.argtypes = [
-        wintypes.LPCWSTR, wintypes.DWORD,
-        ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.DWORD),
+    grants = [
+        f"*{user_sid}:{permission}",
+        f"*S-1-5-18:{permission}",
+        f"*S-1-5-32-544:{permission}",
     ]
-    convert.restype = wintypes.BOOL
-
-    get_dacl = advapi32.GetSecurityDescriptorDacl
-    get_dacl.argtypes = [
-        ctypes.c_void_p, ctypes.POINTER(wintypes.BOOL),
-        ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.BOOL),
-    ]
-    get_dacl.restype = wintypes.BOOL
-
-    set_named = advapi32.SetNamedSecurityInfoW
-    set_named.argtypes = [
-        wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD,
-        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-    ]
-    set_named.restype = wintypes.DWORD
-
-    local_free = kernel32.LocalFree
-    local_free.argtypes = [ctypes.c_void_p]
-    local_free.restype = ctypes.c_void_p
-
-    descriptor = ctypes.c_void_p()
-    descriptor_size = wintypes.DWORD()
-    if not convert(sddl, 1, ctypes.byref(descriptor), ctypes.byref(descriptor_size)):
-        raise ctypes.WinError(ctypes.get_last_error())
     try:
-        present = wintypes.BOOL()
-        defaulted = wintypes.BOOL()
-        dacl = ctypes.c_void_p()
-        if not get_dacl(descriptor, ctypes.byref(present), ctypes.byref(dacl), ctypes.byref(defaulted)):
-            raise ctypes.WinError(ctypes.get_last_error())
-        if not present.value or not dacl.value:
-            raise HostIdentityError("Не удалось сформировать защищённый DACL installation identity")
-        # SE_FILE_OBJECT=1; DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION.
-        result = set_named(
-            str(path), 1, 0x00000004 | 0x80000000,
-            None, None, dacl, None,
+        subprocess.run(
+            ["icacls", str(path), "/inheritance:r", "/grant:r", *grants],
+            check=True, capture_output=True, text=True, timeout=10,
         )
-        if result:
-            raise ctypes.WinError(result)
-    finally:
-        local_free(descriptor)
-
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HostIdentityError(
+            f"Не удалось установить защищённый ACL installation identity: {exc}"
+        ) from exc
 
 class HostIdentityError(RuntimeError):
     """Raised when a stable machine identity cannot safely be obtained."""
