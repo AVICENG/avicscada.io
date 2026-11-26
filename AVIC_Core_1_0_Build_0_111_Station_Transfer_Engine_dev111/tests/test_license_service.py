@@ -360,3 +360,24 @@ def test_usage_removal_preserves_legacy_active_physical_point_baseline(tmp_path)
     assert stored["licensed_active"] is True
     assert stored["licensed_usage"] == []
     assert stored["licensed_base_active"] is None
+
+
+def test_alarm_and_source_point_can_be_deleted_in_one_optimistic_batch(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-point-batch-delete.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    alarm = Alarm("No flow", station_id=station.id, source_object_id=point.id)
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+
+    # Both original optimistic versions must remain valid through the atomic delete.
+    service.delete_graph({alarm.id: versions[alarm.id], point.id: versions[point.id]})
+    assert repo.get_record(alarm.id) is None
+    assert repo.get_record(point.id) is None
