@@ -129,6 +129,59 @@ class FBDStudioService:
         module_count = sum(len(p.get("modules", [])) for p in pages if isinstance(p, dict) and isinstance(p.get("modules", []), list))
         if module_count > cls.MAX_MODULES:
             raise ValueError("FBD Studio module count exceeds limit")
+
+        # Validate every persisted wire on the server, not only when the user compiles.
+        page_by_id = {str(page.get("id")): page for page in pages}
+        module_index = {
+            str(module.get("id")): (str(page.get("id")), module)
+            for page in pages for module in page.get("modules", [])
+        }
+        seen_link_ids: set[str] = set()
+        occupied_inputs: set[tuple[str, int]] = set()
+        for link_index, link in enumerate(links):
+            if not isinstance(link, dict):
+                raise ValueError(f"FBD link {link_index} must be an object")
+            link_id = str(link.get("id") or "").strip()
+            if link_id:
+                if link_id in seen_link_ids:
+                    raise ValueError("FBD link IDs must be unique within a project")
+                seen_link_ids.add(link_id)
+            page_id = str(link.get("pageId") or "")
+            if page_id not in page_by_id:
+                raise ValueError("FBD link must identify an existing page")
+            endpoints = []
+            for token, direction in ((link.get("from"), "out"), (link.get("to"), "in")):
+                parts = str(token or "").split(":")
+                if len(parts) != 3 or parts[0] != direction or not parts[1] or not parts[2].isdecimal():
+                    raise ValueError("FBD link endpoint has an invalid direction, module UID or port index")
+                module_id = parts[1]
+                port_index = cls._nonnegative_index(parts[2], "FBD link port index")
+                row = module_index.get(module_id)
+                if row is None or row[0] != page_id:
+                    raise ValueError("FBD link endpoint module must exist on the link page")
+                module = row[1]
+                if direction == "out":
+                    if str(module.get("type") or "") == "TO_CONNECTIVE":
+                        raise ValueError("To Connective is a navigation marker and cannot be a wire source")
+                    ports = module.get("outs", [])
+                else:
+                    if str(module.get("type") or "") in {"CONNECTIVE", "TO_CONNECTIVE"}:
+                        raise ValueError("FBD wire target must be an executable block input")
+                    ports = module.get("ins", [])
+                if port_index >= len(ports):
+                    raise ValueError("FBD link endpoint port index is outside the module port list")
+                endpoints.append((module_id, port_index, ports[port_index]))
+            source_module_id, source_port_index, source_port = endpoints[0]
+            target_module_id, target_port_index, target_port = endpoints[1]
+            target_key = (target_module_id, target_port_index)
+            if target_key in occupied_inputs:
+                raise ValueError("FBD input port may have only one incoming wire")
+            occupied_inputs.add(target_key)
+            source_signal = cls._signal_type(source_port.get("type"))
+            target_signal = cls._signal_type(target_port.get("type"))
+            if source_signal and target_signal and source_signal != "any" and target_signal != "any" and source_signal != target_signal:
+                raise ValueError("FBD wire connects incompatible signal types")
+
         fbd_points = data.get("fbdPoints", [])
         if not isinstance(fbd_points, list):
             raise ValueError("FBD Studio fbdPoints must be a list")
