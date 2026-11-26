@@ -1,17 +1,24 @@
 name: AVIC Core CI
 
 on:
-  # The active development branch is validated through its pull request.
-  # Do not also run the same 4-job matrix on every push to that branch:
-  # that duplicated the full test workload and burned Actions minutes.
+  # Normal development is validated on the private Windows self-hosted runner.
+  # Linux compatibility remains available as an explicit, opt-in hosted matrix.
   push:
     branches:
       - dev112-station-transfer-reliability
+      - ci/self-hosted-windows-runner
   pull_request:
     branches:
       - main
       - dev112-station-transfer-reliability
+      - dev113-network-drivers
   workflow_dispatch:
+    inputs:
+      run_linux_matrix:
+        description: "Run the optional Ubuntu/Python compatibility matrix (uses GitHub-hosted minutes)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -21,21 +28,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tests:
-    name: Python ${{ matrix.python-version }} / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  windows-tests:
+    name: Python ${{ matrix.python-version }} / Windows self-hosted
+    # Never execute fork-controlled pull request code on the persistent private runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
-        include:
-          - os: ubuntu-latest
-            python-version: "3.11"
-          - os: ubuntu-latest
-            python-version: "3.12"
-          - os: ubuntu-latest
-            python-version: "3.13"
-          - os: windows-latest
-            python-version: "3.13"
+        python-version: ["3.11", "3.12", "3.13"]
 
     defaults:
       run:
@@ -64,7 +67,56 @@ jobs:
         run: python -m compileall -q avic_core
 
       - name: Run full test suite
-        shell: bash
+        run: |
+          New-Item -ItemType Directory -Force -Path test-results | Out-Null
+          python -m pytest -q -rs --junitxml=test-results/junit.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: avic-test-report-windows-self-hosted-py${{ matrix.python-version }}
+          path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  linux-compatibility:
+    name: Python ${{ matrix.python-version }} / Ubuntu (manual opt-in)
+    if: github.event_name == 'workflow_dispatch' && inputs.run_linux_matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/pyproject.toml
+
+      - name: Install AVIC Core and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Compile package
+        run: python -m compileall -q avic_core
+
+      - name: Run full test suite
         run: |
           mkdir -p test-results
           python -m pytest -q -rs --junitxml=test-results/junit.xml
@@ -73,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: avic-test-report-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: avic-test-report-ubuntu-py${{ matrix.python-version }}
           path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
           if-no-files-found: ignore
           retention-days: 14
