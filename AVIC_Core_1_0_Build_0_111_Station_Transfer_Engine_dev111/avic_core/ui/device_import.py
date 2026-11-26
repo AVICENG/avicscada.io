@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any
 from uuid import uuid4
-from avic_core.domain.models import Device, Point, DriverInstance, PointDirection, PointQuality
+from avic_core.domain.models import Device, Point, DriverInstance, DriverPackage, PointDirection, PointQuality
 from avic_core.repository.sqlite_repository import EntityNotFound
 
 
@@ -80,7 +80,18 @@ class DeviceImportService:
                     pass
             created_device = False
         else:
-            driver = DriverInstance(name="BACnet/IP", station_id=station_id, package_id="bacnet-ip",
+            # A built-in driver is still represented by an installed package record:
+            # DomainIntegrityService validates DriverInstance.package_id against it.
+            package_id = "bacnet-ip"
+            installed = next((row for row in self.core.repository.list_records(entity_type="DriverPackage")
+                              if row.get("payload", {}).get("package_id") == package_id
+                              and row.get("payload", {}).get("version") == "1.0"), None)
+            if installed is None:
+                self.core.repository.save(DriverPackage(
+                    name="BACnet/IP", package_id=package_id, version="1.0",
+                    vendor="AVIC", core_api_version="1.0", signature_status="BUILTIN",
+                ))
+            driver = DriverInstance(name="BACnet/IP", station_id=station_id, package_id=package_id,
                 package_version="1.0", configuration={"network_id": inspection.get("network_id", ""), "interface_id": interface_id,
                                "udp_port": udp_port, "mode": "read_only"})
             self.core.repository.save(driver)
