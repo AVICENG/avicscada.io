@@ -832,7 +832,7 @@ function moduleTechnicalDescription(m){
  CONNECTIVE:['CONNECTIVE','Межстраничная ссылка на конкретный именованный выход исходного блока; не копирует алгоритм.','Core compiler проверяет source/proxy ownership, port index/name, signal type, уникальность и orphan references.'],
  TO_CONNECTIVE:['TO CONNECTIVE','Визуальный маркер использования выхода на исходной странице; не является логической связью.','Маркер реализован как навигационный объект.']
  };
- const d=docs[m.type];if(!d)return `Неизвестный тип ${m.type}. Формула не реализована и не должна использоваться в проекте.`;
+ if(m.type==='TIME'&&m.outs?.length===1&&m.outs[0].name==='OCC')return '<b>Устаревший TIME.OCC</b><br>Этот placeholder не является реальным Trend Time Module.<br><br><b>Действие:</b> удалите блок, создайте новый TIME и переподключите связи к одному из 21 именованных выходов. Автоматическая миграция запрещена.';const d=docs[m.type];if(!d)return `Неизвестный тип ${m.type}. Формула не реализована и не должна использоваться в проекте.`;
  return `<b>${d[0]}</b><br>${d[1]}<br><br><b>Статус:</b> ${d[2]}<br><b>Порты:</b> входы ${(m.ins||[]).map(x=>x.name).join(', ')||'нет'}; выходы ${(m.outs||[]).map(x=>x.name).join(', ')||'нет'}`;
 }
 function moduleIcon(type){return ({BOOL_INPUT:'◉',FLOAT_INPUT:'◉',POINT_INPUT:'◉',ANALOG_INPUT:'◉',EXTERNAL_SENSOR:'◉',BOOL_OUTPUT:'◎',FLOAT_OUTPUT:'◎',COMBINATION:'▦',PID_LOOP:'PID',AND:'∧',OR:'∨',NOT:'¬',ADD:'＋',SUB:'−',MUL:'×',DIV:'÷',COMPARE_GT:'＞',COMPARE_LT:'＜',LIMIT:'↕',SCALE:'↗',SELECT:'⇥',HYSTERESIS:'⌁',DELAY:'◷',LATCH:'▣',SWITCH:'◫',KNOB:'◉',TIME:'◷',CONSTANT:'№',CONNECTIVE:'↗',TO_CONNECTIVE:'→'})[type]||'▧'}
