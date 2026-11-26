@@ -560,13 +560,21 @@ function copyActivePage(){
   while(usedPageCodes.has(('P'+pageNumber).toLocaleLowerCase()))pageNumber++;
   c.code='P'+pageNumber;
   const incomingByProxy=new Map(incomingRefs.map(r=>[String(r.proxyModuleId),r]));
+  const usedTags=new Set(allModules().map(m=>String(m.tag||'').trim().toLocaleLowerCase()).filter(Boolean));
+  const nextCopyTag=type=>{
+   const prefix=moduleTagPrefix(type),usedNumbers=[...usedTags]
+    .filter(tag=>tag.startsWith(prefix.toLocaleLowerCase()+'_'))
+    .map(tag=>Number(tag.slice(prefix.length+1))).filter(Number.isFinite);
+   const tag=prefix+'_'+String(Math.max(0,...usedNumbers)+1).padStart(3,'0');
+   usedTags.add(tag.toLocaleLowerCase());return tag;
+  };
   const remap=new Map(),newReferences=[];
   const clonedModules=[];
   c.modules.forEach(m=>{
    const oldId=String(m.id);
    if(m.type==='TO_CONNECTIVE')return;
    if(m.type==='CONNECTIVE'&&!incomingByProxy.has(oldId))return;
-   m.id=uid();remap.set(oldId,m.id);m.no=state.nextModule++;m.tag=nextModuleTag(m.type);
+   m.id=uid();remap.set(oldId,m.id);m.no=state.nextModule++;m.tag=nextCopyTag(m.type);
    if(m.type==='CONNECTIVE'){
     const oldRef=incomingByProxy.get(oldId),newRefId=uid();
     m.params={...(m.params||{}),referenceId:newRefId,targetPageId:c.id,targetPageName:c.name};

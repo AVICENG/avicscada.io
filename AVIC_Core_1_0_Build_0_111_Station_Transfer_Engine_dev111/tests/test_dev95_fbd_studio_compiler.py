@@ -395,3 +395,16 @@ def test_fbd_studio_navigation_proxies_cannot_be_copied_as_orphan_modules():
     html = html_path.read_text(encoding="utf-8")
     assert "if(!['CONNECTIVE','TO_CONNECTIVE'].includes(m.type))items.push({id:'copy'" in html
     assert "Connective и To Connective нельзя копировать отдельно" in html
+
+
+def test_fbd_studio_page_copy_generates_unique_module_tags_within_the_copy():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    copy_start = html.index("function copyActivePage(){")
+    copy_end = html.index("\nfunction deleteActivePage(){", copy_start)
+    copy_function = html[copy_start:copy_end]
+    assert "const usedTags=new Set(allModules().map" in copy_function
+    assert "const nextCopyTag=type=>" in copy_function
+    assert "m.tag=nextCopyTag(m.type)" in copy_function
