@@ -390,6 +390,20 @@ class FBDService:
         spec_s=self.BLOCKS[source["type"]]; spec_t=self.BLOCKS[target["type"]]
         sport=payload.get("source_port","OUT"); tport=payload.get("target_port")
         st=spec_s["outputs"].get(sport); tt=spec_t["inputs"].get(tport)
+        if st == "any" and source["type"] == "POINT_INPUT":
+            source_params = source.get("params") if isinstance(source.get("params"), dict) else {}
+            st = source_params.get("data_type")
+            if not st:
+                from avic_core.domain.models import Point
+                point, _ = self.core.repository.get(str(source_params.get("point_id") or ""), Point)
+                st = self._point_signal_type(point.data_type)
+        elif st == "any" and source["type"] == "SCHEDULE":
+            source_params = source.get("params") if isinstance(source.get("params"), dict) else {}
+            schedule_id = str(source_params.get("schedule_id") or "")
+            schedule = self.core.schedules.get(schedule_id)
+            if schedule["station_id"] != graph["station_id"]:
+                raise ValueError("Расписание Connective принадлежит другой станции")
+            st = {"BOOLEAN":"bool", "NUMERIC":"float", "STRING":"string", "ENUM":"any"}.get(schedule["value_type"])
         if not st or st!=tt: raise ValueError("Несовместимые типы портов Connective")
         if source.get("page_id") not in (None,sp) or target.get("page_id") not in (None,tp):
             raise ValueError("Блоки Connective должны находиться на указанных страницах")
