@@ -3,6 +3,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Iterable
 
 from avic_core.repository.sqlite_repository import SQLiteRepository
+from avic_core.licensing.service import summarize_point_usage
 from .models import (
     Project, Station, Device, Point, Component, Link, PropertyDefinition, Alarm,
     Event, HistoryRecord, DriverInstance, DriverPackage, RuntimeInstance,
@@ -111,17 +112,27 @@ class CoreObjectService:
                 seen.add(entity_id)
                 by_id[entity_id] = (item.__class__.__name__, asdict(item))
 
-            # Enforce licensing inside the same repository transaction as Point creation.
-            # Existing Point UUIDs are updates and do not consume another slot.
-            new_points = [item for item in items
-                          if isinstance(item, Point)
-                          and not any(r["entity_id"] == str(item.id) and r["entity_type"] == "Point" for r in existing)]
-            if new_points and self.license_service is not None:
+            # License only unique points that are actually active in the Core catalogue.
+            # Discovered/imported drafts do not consume capacity until activated/published.
+            # This check also covers updates that activate an existing draft point.
+            if self.license_service is not None and any(isinstance(item, Point) for item in items):
                 status = self.license_service.inspect(self.license_file).status
-                current_point_ids = {r["entity_id"] for r in existing if r["entity_type"] == "Point"}
-                for point in new_points:
-                    self.license_service.assert_can_create_point(status, current_point_ids, str(point.id))
-                    current_point_ids.add(str(point.id))
+                existing_point_records = [
+                    {"entity_type": record["entity_type"], "entity_id": record["entity_id"],
+                     "payload": record["payload"]}
+                    for record in existing if record["entity_type"] == "Point"
+                ]
+                resulting_points = {record["entity_id"]: record for record in existing_point_records}
+                for item in items:
+                    if isinstance(item, Point):
+                        resulting_points[str(item.id)] = {
+                            "entity_type": "Point", "entity_id": str(item.id), "payload": asdict(item)
+                        }
+                existing_active = set(summarize_point_usage(existing_point_records)["licensed_active_point_ids"])
+                resulting_active = set(summarize_point_usage(resulting_points.values())["licensed_active_point_ids"])
+                for point_id in sorted(resulting_active - existing_active):
+                    self.license_service.assert_can_create_point(status, existing_active, point_id)
+                    existing_active.add(point_id)
 
             self._validate_graph(by_id)
             versions = {}
