@@ -94,9 +94,9 @@ class CoreApplication:
         # Crash-interrupted PREPARED operations are deliberately flagged for manual
         # reconciliation rather than being reported as successful imports.
         self.station_transfer_recovery = self.station_transfer.recover_pending(self)
-        self.events.record("core.initialized", "AVIC Core initialized", severity="INFO", details={"api_version": "1.0.0.dev112"})
+        self.events.record("core.initialized", "AVIC Core initialized", severity="INFO", details={"api_version": "1.0.0.dev191"})
         self.audit.append(actor_id="system", action="core.initialized", resource_type="core",
-                          resource_id="local", details={"data_dir": str(self.paths.root), "api_version": "1.0.0.dev112"})
+                          resource_id="local", details={"data_dir": str(self.paths.root), "api_version": "1.0.0.dev191"})
 
     @property
     def closed(self) -> bool:
@@ -219,7 +219,7 @@ class CoreApplication:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         output = Path(destination) if destination is not None else self.paths.backups / f"avic-system-{stamp}.avicbackup"
         result = self.system_backups.create_backup(
-            self, output, passphrase=passphrase, core_version="1.0.0.dev145"
+            self, output, passphrase=passphrase, core_version="1.0.0.dev191"
         )
         details = {"path": str(result), "encrypted": True}
         self.events.record("system_backup.created", f"Encrypted system backup created: {result.name}",
