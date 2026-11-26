@@ -63,8 +63,8 @@ def test_repository_root_in_shared_tree_opens_web_application_page_builder(tmp_p
     assert "Repository · Graphics Workbench" in graphics.text
 
 
-def test_ui_health_reports_actual_dev109_version(tmp_path):
+def test_ui_health_reports_actual_dev196_version(tmp_path):
     client = TestClient(create_ui_app(data_dir=str(tmp_path)))
     response = client.get("/api/ui/health")
     assert response.status_code == 200
-    assert response.json()["version"] == "1.0.0.dev109"
+    assert response.json()["version"] == "1.0.0.dev196"
