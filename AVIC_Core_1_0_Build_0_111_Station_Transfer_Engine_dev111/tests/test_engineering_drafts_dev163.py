@@ -259,13 +259,15 @@ def test_core_shutdown_api_does_not_exit_when_worker_shutdown_is_not_confirmed(t
     def fail_shutdown():
         raise RuntimeError("simulated worker did not stop")
     app.state.core.fbd_execution.close = fail_shutdown
+    requested = []
+    app.state.process_shutdown_callback = lambda: requested.append(True)
 
     stopped = client.post("/api/core/shutdown", json={"confirmation": "STOP AVIC CORE"})
     assert stopped.status_code == 409
     assert "Безопасная остановка отменена" in stopped.json()["detail"]
     assert app.state.core.closed is False
     assert app.state.core.shutdown_preview()["core_state"] == "SHUTDOWN_BLOCKED"
-    app.state.process_shutdown_callback = None
+    assert requested == []
 
 
 
