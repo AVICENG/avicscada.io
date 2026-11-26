@@ -104,7 +104,43 @@ def test_save_manager_script_is_served_only_as_editor_support_and_injected(tmp_p
     assert "indexedDB" in script.text
     assert "beforeunload" not in script.text
     assert "expected_draft_revision" in script.text
+    assert "recoveryReady" in script.text
+    assert "remoteContent" in script.text
+    assert "recoveryPending" in script.text
+    assert "preservedMatches" in script.text
+    assert "localWrite = Promise.resolve()" in script.text
+    assert "await localWrite.catch" in script.text
+    assert "pendingSnapshot = { snapshot, baseRevision }" in script.text
+    assert "flush(next?.snapshot" in script.text
+    assert "другой черновик" in script.text
     for path in ("/graphics", "/logic", "/repository?section=WebApplication"):
         response = client.get(path)
         assert response.status_code == 200
         assert "/avic-static/save-manager.js" in response.text
+
+
+
+def test_engineering_draft_reads_reject_untrusted_cross_origin_requests(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui import create_ui_app
+
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    url = "/api/engineering-drafts/graphics/station-1/graphic-1"
+    payload = {
+        "base_revision": 0,
+        "expected_draft_revision": 0,
+        "content": {"elements": []},
+    }
+    saved = client.put(url, json=payload)
+    assert saved.status_code == 200
+
+    blocked = client.get(url, headers={"Origin": "https://untrusted.example"})
+    assert blocked.status_code == 403
+    allowed = client.get(url, headers={"Origin": "http://127.0.0.1"})
+    assert allowed.status_code == 200
+
+    blocked_list = client.get(
+        "/api/stations/station-1/engineering-drafts",
+        headers={"Origin": "https://untrusted.example"},
+    )
+    assert blocked_list.status_code == 403

@@ -71,15 +71,22 @@
       return { schedule() {}, flush: async () => false, restore: async () => false, clear: async () => false };
     }
     const key = [editor, stationId, resourceId].join(":");
+    const recoveryKey = key + ":recovery";
+    const initialContent = encode(config.getContent());
     const endpoint = "/api/engineering-drafts/" +
       [editor, stationId, resourceId].map(encodeURIComponent).join("/");
     let draftRevision = 0;
+    let remoteContent = null;
     let timer = null;
     let localTimer = null;
+    let localWrite = Promise.resolve();
     let busy = false;
     let pending = false;
+    let pendingSnapshot = null;
     let conflict = false;
     let recovered = false;
+    let recoveryPending = false;
+    let recoveryReady = Promise.resolve();
     const bar = document.createElement("div");
     bar.id = "avic-save-manager";
     bar.setAttribute("role", "status");
@@ -105,25 +112,35 @@
     }
 
     async function loadRecovery() {
-      let local = null, remote = null;
+      let local = null, preserved = null, remote = null;
       try { local = await localGet(key); } catch (_) {}
+      try { preserved = await localGet(recoveryKey); } catch (_) {}
       try {
         remote = await requestJson(endpoint);
         draftRevision = remote.draft_revision || 0;
+        remoteContent = remote.content || null;
       } catch (error) {
         if (error.status !== 404) state("Черновик: сервер временно недоступен");
       }
-      const localTime = Date.parse(local?.updatedAt || "") || 0;
-      const remoteTime = Date.parse(remote?.updated_at || "") || 0;
-      const candidate = local && localTime > remoteTime ? local : (remote || local);
+      const candidates = [local, preserved, remote].filter(Boolean);
+      candidates.sort((a, b) =>
+        (Date.parse(a.updatedAt || a.updated_at || "") || 0)
+        - (Date.parse(b.updatedAt || b.updated_at || "") || 0));
+      const candidate = candidates[candidates.length - 1];
       if (!candidate || recovered) return;
       const content = candidate.content;
-      if (!content || encode(content) === encode(config.getContent())) return;
-      state("Найден черновик · " + new Date(candidate.updated_at || local?.updatedAt || Date.now()).toLocaleString());
+      if (!content || encode(content) === initialContent) return;
+      recoveryPending = true;
+      // Preserve the found local recovery copy before new edits can replace the
+      // primary local key. The server copy is already durable when it exists.
+      if (candidate === local) await localPut({ ...local, key: recoveryKey }).catch(() => {});
+      state("Найден черновик · " + new Date(candidate.updated_at || candidate.updatedAt || Date.now()).toLocaleString());
       const restoreButton = action("Восстановить", async () => {
         try {
           await config.applyContent(content);
           recovered = true;
+          recoveryPending = false;
+          await localDelete(recoveryKey).catch(() => {});
           state("Черновик восстановлен · ещё не опубликован");
           restoreButton.remove();
           discardButton.remove();
@@ -134,8 +151,16 @@
         try {
           if (remote && remote.draft_revision) {
             await requestJson(endpoint + "?expected_draft_revision=" + remote.draft_revision, { method: "DELETE" });
+            draftRevision = 0;
+            remoteContent = null;
           }
-          await localDelete(key).catch(() => {});
+          await localDelete(recoveryKey).catch(() => {});
+          recoveryPending = false;
+          if (encode(config.getContent()) === initialContent) {
+            await localDelete(key).catch(() => {});
+          } else {
+            schedule();
+          }
           restoreButton.remove();
           discardButton.remove();
           state("Черновик отклонён");
@@ -143,24 +168,36 @@
       });
     }
 
-    async function persistLocal(snapshot) {
+    async function persistLocal(snapshot, baseRevision = Number(config.getBaseRevision() || 0)) {
       const record = {
         key, editor, stationId, resourceId, content: snapshot,
-        base_revision: Number(config.getBaseRevision() || 0),
+        base_revision: baseRevision,
         updatedAt: new Date().toISOString()
       };
       await localPut(record);
       return record;
     }
 
-    async function flush() {
+    async function flush(snapshotOverride = null, baseRevisionOverride = null) {
+      const snapshot = snapshotOverride === null ? config.getContent() : snapshotOverride;
+      const baseRevision = baseRevisionOverride === null
+        ? Number(config.getBaseRevision() || 0) : baseRevisionOverride;
       if (timer) { clearTimeout(timer); timer = null; }
       if (localTimer) { clearTimeout(localTimer); localTimer = null; }
-      if (busy) { pending = true; return false; }
+      if (busy) {
+        pending = true;
+        pendingSnapshot = { snapshot, baseRevision };
+        return false;
+      }
       busy = true;
       try {
-        const snapshot = config.getContent();
-        const local = await persistLocal(snapshot);
+        await recoveryReady.catch(() => {});
+        await localWrite.catch(() => {});
+        const local = await persistLocal(snapshot, baseRevision);
+        if (recoveryPending && !recovered) {
+          state("Найден существующий черновик · выберите восстановление или отклонение; новые изменения сохранены локально");
+          return false;
+        }
         state("Локальный черновик сохранён · синхронизация с Core…");
         try {
           const saved = await requestJson(endpoint, {
@@ -172,6 +209,7 @@
             })
           });
           draftRevision = saved.draft_revision;
+          remoteContent = snapshot;
           conflict = false;
           state("Черновик сохранён в Core · ревизия " + draftRevision);
           return true;
@@ -189,7 +227,12 @@
         return false;
       } finally {
         busy = false;
-        if (pending) { pending = false; flush(); }
+        if (pending) {
+          const next = pendingSnapshot;
+          pending = false;
+          pendingSnapshot = null;
+          flush(next?.snapshot ?? null, next?.baseRevision ?? null);
+        }
       }
     }
 
@@ -198,21 +241,53 @@
       if (localTimer) clearTimeout(localTimer);
       state("Есть изменения · сохранение черновика…");
       const snapshot = config.getContent();
-      localTimer = setTimeout(async () => {
+      const baseRevision = Number(config.getBaseRevision() || 0);
+      localTimer = setTimeout(() => {
         localTimer = null;
-        try { await persistLocal(snapshot); state("Локальный черновик надёжно сохранён · синхронизация с Core…"); }
-        catch (error) { state("Не удалось сохранить локальный черновик: " + error.message); }
+        localWrite = persistLocal(snapshot, baseRevision).then(() => {
+          if (encode(config.getContent()) === encode(snapshot)) {
+            state("Локальный черновик надёжно сохранён · синхронизация с Core…");
+          }
+        }).catch(error => state("Не удалось сохранить локальный черновик: " + error.message));
       }, 80);
       timer = setTimeout(() => { timer = null; flush(); }, 350);
     }
 
-    async function clear() {
+    async function clear(savedContent) {
+      await recoveryReady.catch(() => {});
       if (timer) { clearTimeout(timer); timer = null; }
-      await localDelete(key).catch(() => {});
-      if (draftRevision) {
-        await requestJson(endpoint + "?expected_draft_revision=" + draftRevision, { method: "DELETE" }).catch(() => {});
-        draftRevision = 0;
+      if (localTimer) { clearTimeout(localTimer); localTimer = null; }
+      await localWrite.catch(() => {});
+      // Do not discard edits made while the primary save request was in flight.
+      if (savedContent && encode(config.getContent()) !== encode(savedContent)) {
+        schedule();
+        return false;
       }
+      while (busy) await new Promise(resolve => setTimeout(resolve, 20));
+      if (pending) { pending = false; await flush(); }
+      if (savedContent && encode(config.getContent()) !== encode(savedContent)) {
+        schedule();
+        return false;
+      }
+      const local = await localGet(key).catch(() => null);
+      const preserved = await localGet(recoveryKey).catch(() => null);
+      const localMatches = !local || !savedContent || encode(local.content) === encode(savedContent);
+      const preservedMatches = !preserved || !savedContent || encode(preserved.content) === encode(savedContent);
+      const remoteMatches = !draftRevision || (savedContent && remoteContent
+        && encode(remoteContent) === encode(savedContent));
+      // A draft from another tab/session may be newer or different from the content
+      // just saved to the primary document. Never delete it as a side effect.
+      if (!localMatches || !preservedMatches || !remoteMatches) {
+        state("Основная конфигурация сохранена, но найден другой черновик · он оставлен для восстановления");
+        return false;
+      }
+      if (draftRevision) {
+        await requestJson(endpoint + "?expected_draft_revision=" + draftRevision, { method: "DELETE" });
+        draftRevision = 0;
+        remoteContent = null;
+      }
+      if (local) await localDelete(key);
+      if (preserved) await localDelete(recoveryKey);
       state("Основная конфигурация сохранена");
       return true;
     }
@@ -226,14 +301,16 @@
     };
     window.addEventListener("online", handleOnline);
     window.addEventListener("pagehide", handlePageHide);
-    loadRecovery();
+    recoveryReady = loadRecovery().catch(error => {
+      state("Не удалось проверить черновики: " + error.message);
+    });
     const manager = {
       schedule, flush, clear,
       dispose() {
         if (timer) { clearTimeout(timer); timer = null; flush(); }
         else if (localTimer) {
           clearTimeout(localTimer); localTimer = null;
-          persistLocal(config.getContent()).catch(() => {});
+          persistLocal(config.getContent(), Number(config.getBaseRevision() || 0)).catch(() => {});
         }
         window.removeEventListener("online", handleOnline);
         window.removeEventListener("pagehide", handlePageHide);

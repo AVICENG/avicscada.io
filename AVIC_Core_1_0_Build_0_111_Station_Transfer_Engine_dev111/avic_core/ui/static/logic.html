@@ -335,7 +335,10 @@ async function persistStudioState(snapshot,targetId=studioDocumentId){
   studioRevision=saved.revision;
   $('#statusleft').textContent=`Сохранено в AVIC Core · ревизия ${studioRevision}`;
   refreshEngineeringTreeSnapshot();
-  saveDraft?.clear();
+  if(saveDraft&&!await saveDraft.clear(snapshot)){
+   $('#statusleft').textContent=`FBD ревизия ${studioRevision} сохранена; более новые изменения оставлены в черновике.`;
+   return;
+  }
  }
 }
 async function loadStudioDocument(stationId,requestedDocumentId=null){

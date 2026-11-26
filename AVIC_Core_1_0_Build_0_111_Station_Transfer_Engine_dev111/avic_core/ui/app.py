@@ -1071,14 +1071,16 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         except Exception as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/stations/{station_id}/engineering-drafts")
-    def list_engineering_drafts(station_id: str) -> dict:
+    def list_engineering_drafts(station_id: str, request: Request) -> dict:
+        require_local_operator(request)
         try:
             return {"drafts": app.state.engineering_drafts.list_station(station_id)}
         except DraftError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/engineering-drafts/{editor}/{station_id}/{resource_id}")
-    def get_engineering_draft(editor: str, station_id: str, resource_id: str) -> dict:
+    def get_engineering_draft(editor: str, station_id: str, resource_id: str, request: Request) -> dict:
+        require_local_operator(request)
         try:
             return app.state.engineering_drafts.get(editor, station_id, resource_id)
         except DraftNotFound as exc:
