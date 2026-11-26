@@ -291,3 +291,14 @@ def test_fbd_studio_recompile_does_not_reuse_legacy_compiler_artifact(tmp_path):
     assert compiled.status_code == 200, compiled.text
     assert compiled.json()["core_document"]["id"] != legacy["id"]
     assert len(compiled.json()["core_document"]["connectives"]) == 1
+
+
+def test_fbd_studio_page_copy_and_delete_are_reference_aware():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    assert "const incomingRefs=state.references.filter(r=>r.targetPageId===pg.id)" in html
+    assert "const outgoingRefs=state.references.filter(r=>r.sourcePageId===pg.id)" in html
+    assert "deadModuleIds" in html
+    assert "state.links.filter(l=>" in html

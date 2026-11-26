@@ -537,8 +537,97 @@ function renderPageTree(){
  el.querySelector('[data-tree-fbdpoints]').addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();showContext(e.clientX,e.clientY,fbdPointsContextItems())});
  bindFbdPointTreeEvents(el);
 }
-function copyActivePage(){let pg=activePage();snapshot();let c=JSON.parse(JSON.stringify(pg));c.id=uid();let base=pg.name+' (Copy)',candidate=base,k=2;while(state.pages.some(x=>x.name.trim().toLocaleLowerCase()===candidate.toLocaleLowerCase()))candidate=base+' '+(k++);c.name=candidate;let remap=new Map();c.modules.forEach((m,i)=>{let old=m.id;m.id=uid();remap.set(old,m.id);m.no=state.nextModule++;m.tag=nextModuleTag(m.type)});let copied=state.links.filter(l=>l.pageId===pg.id).map(l=>({...l,id:uid(),pageId:c.id,from:l.from.replace(/:(.*?):/,(_,x)=>':'+(remap.get(x)||x)+':'),to:l.to.replace(/:(.*?):/,(_,x)=>':'+(remap.get(x)||x)+':')}));state.links.push(...copied);state.pages.push(c);state.active=c.id;render();saveSoon()}
-function deleteActivePage(){if(state.pages.length<2){toast('Нельзя удалить последнюю страницу');return}snapshot();let id=state.active;let deadRefs=state.references.filter(r=>r.sourcePageId===id||r.targetPageId===id);deadRefs.forEach(r=>{state.pages.forEach(pg=>pg.modules=pg.modules.filter(m=>m.id!==r.proxyModuleId&&m.id!==r.toModuleId))});state.pages=state.pages.filter(p=>p.id!==id);state.links=state.links.filter(l=>l.pageId!==id);state.references=state.references.filter(r=>r.sourcePageId!==id&&r.targetPageId!==id);state.active=state.pages[0].id;state.selected=null;render();saveSoon()}
+function copyActivePage(){
+ const pg=activePage();
+ const incomingRefs=state.references.filter(r=>r.targetPageId===pg.id);
+ const outgoingRefs=state.references.filter(r=>r.sourcePageId===pg.id);
+ const invalidIncoming=incomingRefs.find(r=>{
+  const sourcePage=state.pages.find(p=>p.id===r.sourcePageId);
+  const source=sourcePage?.modules.find(m=>m.id===r.sourceModuleId);
+  return !source?.outs?.[Number(r.sourcePort||0)];
+ });
+ if(invalidIncoming){toast('Копирование отменено: исходный блок одного из Connective не найден');return}
+ const performCopy=()=>{
+  snapshot();
+  const c=JSON.parse(JSON.stringify(pg));
+  c.id=uid();
+  const base=pg.name+' (Copy');let candidate=base,k=2;
+  while(state.pages.some(x=>x.name.trim().toLocaleLowerCase()===candidate.toLocaleLowerCase()))candidate=base+' '+(k++);
+  c.name=candidate;
+  const incomingByProxy=new Map(incomingRefs.map(r=>[String(r.proxyModuleId),r]));
+  const remap=new Map(),newReferences=[];
+  const clonedModules=[];
+  c.modules.forEach(m=>{
+   const oldId=String(m.id);
+   if(m.type==='TO_CONNECTIVE')return;
+   if(m.type==='CONNECTIVE'&&!incomingByProxy.has(oldId))return;
+   m.id=uid();remap.set(oldId,m.id);m.no=state.nextModule++;m.tag=nextModuleTag(m.type);
+   if(m.type==='CONNECTIVE'){
+    const oldRef=incomingByProxy.get(oldId),newRefId=uid();
+    m.params={...(m.params||{}),referenceId:newRefId,targetPageId:c.id,targetPageName:c.name};
+    newReferences.push({...oldRef,id:newRefId,targetPageId:c.id,proxyModuleId:m.id,toModuleId:null});
+   }
+   clonedModules.push(m);
+  });
+  c.modules=clonedModules;
+  const copied=state.links.filter(l=>{
+   if(l.pageId!==pg.id)return false;
+   const sourceId=String(l.from||'').split(':')[1],targetId=String(l.to||'').split(':')[1];
+   return remap.has(sourceId)&&remap.has(targetId);
+  }).map(l=>({...l,id:uid(),pageId:c.id,
+   from:l.from.replace(/^out:([^:]+):/,(_,id)=>'out:'+remap.get(id)+':'),
+   to:l.to.replace(/^in:([^:]+):/,(_,id)=>'in:'+remap.get(id)+':')}));
+  state.links.push(...copied);
+  state.pages.push(c);
+  newReferences.forEach((ref,index)=>{
+   const sourcePage=state.pages.find(p=>p.id===ref.sourcePageId);
+   const source=sourcePage?.modules.find(m=>m.id===ref.sourceModuleId);
+   const portIndex=Number(ref.sourcePort||0),out=source?.outs?.[portIndex];
+   const markerId=uid(),targetName=c.name;
+   const marker={id:markerId,type:'TO_CONNECTIVE',name:'To Connective '+(source.name||'Connective'),
+    tag:nextModuleTag('TO_CONNECTIVE'),no:state.nextModule++,
+    x:(source.x||0)+(source.w||142)+18,y:(source.y||0)+index*34,w:90,
+    params:{label:'TO '+targetName,referenceId:ref.id,targetPageId:c.id,targetPageName:targetName},
+    ins:[{name:out.name,type:portType(source,'out',portIndex)}],outs:[],value:'—',quality:'GOOD'};
+   sourcePage.modules.push(marker);ref.toModuleId=markerId;state.references.push(ref);
+  });
+  state.active=c.id;state.selected=null;render();saveSoon();
+  if(incomingRefs.length||outgoingRefs.length)toast('Страница скопирована. Входящие Connective сохранены; исходящие ссылки не перенаправлялись на старые потребители.');
+ };
+ if(incomingRefs.length||outgoingRefs.length){
+  const details='<p>Страница содержит внешние Connective.</p><ul>'+
+   '<li>Входящие связи: '+incomingRefs.length+' — будут продублированы к копии с новыми идентификаторами.</li>'+
+   '<li>Исходящие связи: '+outgoingRefs.length+' — не будут скопированы, чтобы не подключать новую логику к прежним потребителям.</li>'+
+   '</ul><p>Продолжить безопасное копирование?</p>';
+  showModal('Копирование страницы с Connective',details,()=>{performCopy()});
+ }else performCopy();
+}
+function deleteActivePage(){
+ if(state.pages.length<2){toast('Нельзя удалить последнюю страницу');return}
+ const id=state.active,deadRefs=state.references.filter(r=>r.sourcePageId===id||r.targetPageId===id);
+ const performDelete=()=>{
+  snapshot();
+  const deadModuleIds=new Set(deadRefs.flatMap(r=>[String(r.proxyModuleId||''),String(r.toModuleId||'')]).filter(Boolean));
+  state.pages.forEach(pg=>pg.modules=pg.modules.filter(m=>!deadModuleIds.has(String(m.id))));
+  state.pages=state.pages.filter(p=>p.id!==id);
+  state.links=state.links.filter(l=>{
+   if(l.pageId===id)return false;
+   const sourceId=String(l.from||'').split(':')[1],targetId=String(l.to||'').split(':')[1];
+   return !deadModuleIds.has(sourceId)&&!deadModuleIds.has(targetId);
+  });
+  state.references=state.references.filter(r=>r.sourcePageId!==id&&r.targetPageId!==id);
+  state.active=state.pages[0].id;state.selected=null;render();saveSoon();
+  if(deadRefs.length)toast('Страница удалена; связанные Connective и их связи очищены.');
+ };
+ if(deadRefs.length){
+  const details=deadRefs.map(r=>{
+   const sourcePage=state.pages.find(p=>p.id===r.sourcePageId),targetPage=state.pages.find(p=>p.id===r.targetPageId);
+   const source=sourcePage?.modules.find(m=>m.id===r.sourceModuleId);
+   return '<li>'+esc(sourcePage?.name||r.sourcePageId)+' / '+esc(source?.name||r.sourceModuleId)+' → '+esc(targetPage?.name||r.targetPageId)+'</li>';
+  }).join('');
+  showModal('Удалить страницу с зависимостями?', '<p>Удаление также удалит связанные Connective proxy/маркеры и все связи от этих proxy:</p><ul>'+details+'</ul><p>Продолжить?</p>',()=>{performDelete()});
+ }else performDelete();
+}
 const sensorCatalog=[{number:4,name:'Thermistor TBTS',part:'T/TS',range:'0 to +40C Type 5',input:'Thermistor Volts',mode:'Characterise',upper:50,lower:-5,exponent:0,points:[[0.48,110],[0.549,105],[0.63,100],[0.724,95],[0.833,90],[0.961,85],[1.11,80],[1.484,70],[1.985,60],[2.641,50],[3.47,40],[4.46,30],[5.2,20],[6.663,10],[7.668,0],[8.102,-5],[8.482,-10],[8.807,-15],[9.078,-20],[9.299,-25]]},{number:1,name:'Linear 0–10V',part:'Generic',range:'0 to 100',input:'Volts',mode:'Linear',upper:100,lower:0,exponent:1},{number:2,name:'Thermistor Ohms',part:'T/TS',range:'-30 to +110C',input:'Thermistor Ohms',mode:'Characterise',upper:110,lower:-30,exponent:0}];
 function sensorTypesDialog(targetModule=null,selectedNo=null){let catalog=JSON.parse(localStorage.getItem('avicSensorLibrary')||'null')||sensorCatalog;let no=+(selectedNo||targetModule?.params.sensorType||4);let def=catalog.find(x=>x.number===no)||catalog[0];let pts=(def.points||def.scalingPoints||[[0.48,110],[0.549,105],[0.63,100],[0.724,95],[0.833,90],[0.961,85],[1.11,80],[1.484,70],[1.985,60],[2.641,50],[3.47,40],[4.46,30],[5.2,20],[6.663,10],[7.668,0],[8.102,-5],[8.482,-10],[8.807,-15],[9.078,-20],[9.299,-25]]).map(p=>[+p[0],+p[1]]);let body=`<div class="propgrid"><label>Sensor Type Number</label><select id="stNumber">${catalog.map(x=>`<option value="${x.number}" ${x.number===no?'selected':''}>${String(x.number).padStart(2,'0')} — ${esc(x.name)}</option>`).join('')}</select><label>Sensor Name</label><input id="stUnique" value="${esc(def.name)}"><label>Sensor Part</label><input id="stPart" value="${esc(def.part||'')}"><label>Scaling Range</label><input id="stRange" value="${esc(def.range||'')}"><label>Scaling Method</label><select id="stMode"><option>Characterise</option><option>Linear</option><option>Log</option><option>Linearise thermistor volts</option><option>Linearise volts</option><option>Linearise thermistor ohms</option></select><label>Input Type</label><select id="stInput"><option>Thermistor Volts</option><option>Volts</option><option>Thermistor Ohms</option><option>Resistance</option></select></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div><b>Scaling points (X → Y)</b><div style="height:245px;overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>#</th><th>Input X</th><th>Output Y</th></tr></thead><tbody id="sensorRows">${pts.map((p,i)=>`<tr><td>${i+1}</td><td><input class="sx" data-i="${i}" value="${p[0]}" style="width:80px"></td><td><input class="sy" data-i="${i}" value="${p[1]}" style="width:80px"></td></tr>`).join('')}</tbody></table></div><button id="addScalePoint">＋ Точка</button></div><div><b>Характеристика</b><svg id="sensorPlot" viewBox="0 0 360 260" style="width:100%;height:260px;background:#fff;border:1px solid #aab8c8"><g stroke="#e1e6ec"><path d="M35 15V225H345 M35 67H345 M35 120H345 M35 172H345"/></g><polyline id="sensorCurve" fill="none" stroke="#1264ee" stroke-width="2" points=""/></svg><div style="font-size:11px;color:#66788c">X — входная величина; Y — преобразованное значение. График обновляется при изменении таблицы.</div></div></div><p><button id="saveSensorLibrary">Сохранить тип в библиотеку</button> ${targetModule?'<button id="assignSensor">Назначить выбранному аналоговому входу</button>':''}</p>`;showModal('Device → Sensor Types',body,()=>{saveDefinition(true)});$('#stMode').value=def.mode||'Characterise';$('#stInput').value=def.input||'Thermistor Volts';function current(){return [...document.querySelectorAll('.sx')].map((x,i)=>[Number(x.value),Number(document.querySelector(`.sy[data-i="${i}"]`).value)]).filter(p=>p.every(Number.isFinite)).sort((a,b)=>a[0]-b[0])}function redraw(){let a=current();if(!a.length)return;let xs=a.map(p=>p[0]),ys=a.map(p=>p[1]),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);if(xmin===xmax)xmax=xmin+1;if(ymin===ymax)ymax=ymin+1;let points=a.map(p=>`${35+(p[0]-xmin)/(xmax-xmin)*310},${225-(p[1]-ymin)/(ymax-ymin)*210}`).join(' ');$('#sensorCurve').setAttribute('points',points)}function saveDefinition(close=false){let d={number:+$('#stNumber').value,name:$('#stUnique').value,part:$('#stPart').value,range:$('#stRange').value,mode:$('#stMode').value,input:$('#stInput').value,points:current()};if(d.points.length<2){toast('Нужно минимум две точки характеристики');return}let a=JSON.parse(localStorage.getItem('avicSensorLibrary')||'null')||catalog;a=a.filter(x=>x.number!==d.number);a.push(d);a.sort((x,y)=>x.number-y.number);localStorage.setItem('avicSensorLibrary',JSON.stringify(a));catalog=a;toast('Тип датчика сохранён');if(close){} }$('#sensorRows').oninput=redraw;$('#addScalePoint').onclick=()=>{let n=$('#sensorRows').querySelectorAll('tr').length;if(n>=20){toast('Максимум 20 точек');return}let last=current().at(-1)||[0,0];let tr=document.createElement('tr');tr.innerHTML=`<td>${n+1}</td><td><input class="sx" data-i="${n}" value="${last[0]+1}" style="width:80px"></td><td><input class="sy" data-i="${n}" value="${last[1]+1}" style="width:80px"></td>`;$('#sensorRows').appendChild(tr);redraw()};$('#saveSensorLibrary').onclick=()=>saveDefinition();$('#assignSensor')?.addEventListener('click',()=>{let d={number:+$('#stNumber').value,name:$('#stUnique').value,part:$('#stPart').value,range:$('#stRange').value,mode:$('#stMode').value,input:$('#stInput').value,points:current()};if(!targetModule||!['ANALOG_INPUT','EXTERNAL_SENSOR'].includes(targetModule.type)){toast('Sensor Type назначается только аналоговому входу');return}saveDefinition();snapshot();targetModule.params.sensorType=d.number;targetModule.params.sensorPart=d.part;targetModule.params.scalingRange=d.range;targetModule.params.scalingMode=d.mode;targetModule.params.scalingPoints=d.points;saveSoon();$('#modal').style.display='none';render()});redraw()}
 function getSensorCatalog(){let saved=JSON.parse(localStorage.getItem('avicSensorLibrary')||'[]');let all=[...sensorCatalog];saved.forEach(x=>{let i=all.findIndex(y=>y.number===x.number);if(i>=0)all[i]=x;else all.push(x)});return all.sort((a,b)=>a.number-b.number)}
