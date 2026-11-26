@@ -114,6 +114,41 @@ class CoreObjectService:
             self.license_service.assert_can_create_point(status, existing_active, point_id)
             existing_active.add(point_id)
 
+    def set_point_usage(self, source_key: str, point_ids: Iterable[str], *, connection=None) -> None:
+        """Reconcile one engineering-use reference set and enforce licensing atomically.
+
+        source_key is a stable owner such as logic:<document-id> or graphics:<document-id>.
+        Multiple independent engineering objects can therefore reference the same point.
+        """
+        if not isinstance(source_key, str) or not any(
+            source_key.startswith(prefix) for prefix in
+            ("logic:", "graphics:", "alarm:", "history:", "schedule:", "control:")
+        ):
+            raise ValueError("Unsupported licensed point usage source")
+        desired = {str(point_id) for point_id in point_ids if str(point_id)}
+        records = self.repository.list_records(entity_type="Point", connection=connection)
+        changed = []
+        for record in records:
+            point_id = record["entity_id"]
+            usages = set(record["payload"].get("licensed_usage") or [])
+            if source_key not in usages and point_id not in desired:
+                continue
+            point, version = self.repository.get(point_id, Point, connection=connection)
+            had_tracked_usage = bool(point.licensed_usage)
+            if point_id in desired:
+                usages.add(source_key)
+            else:
+                usages.discard(source_key)
+            point.licensed_usage = sorted(usages)
+            if point.licensed_usage:
+                point.licensed_active = True
+            elif had_tracked_usage:
+                point.licensed_active = False
+            changed.append((point, version))
+        self.assert_point_usage_transition(records, [point for point, _ in changed])
+        for point, version in changed:
+            self.repository.save(point, expected_version=version, connection=connection)
+
     def save_graph(self, entities: Iterable[Any], *, expected_versions: dict[str, int] | None = None) -> dict[str, int]:
         items = list(entities)
         if not items:
