@@ -109,3 +109,32 @@ def test_core_application_wires_license_service_into_point_creation(tmp_path):
         core.objects.save_graph([Point("P2", device_id=device.id)])
     assert len(core.repository.list_records(entity_type="Point")) == 1
     core.close()
+
+
+def test_workbench_loads_installation_license_from_explicit_environment(tmp_path, monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+    from avic_core.ui.app import create_ui_app
+
+    public_key = tmp_path / "avic-license-public.pem"
+    private = Ed25519PrivateKey.generate()
+    public_key.write_bytes(private.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ))
+    license_file = tmp_path / "customer.aviclic"
+    license_file.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("AVIC_LICENSE_PUBLIC_KEY", str(public_key))
+    monkeypatch.setenv("AVIC_LICENSE_FILE", str(license_file))
+    app = create_ui_app(data_dir=str(tmp_path / "workbench"))
+    assert app.state.core.installation_license_service is not None
+    assert app.state.core.license_file == license_file
+    app.state.core.close()
+
+
+def test_workbench_rejects_partial_license_configuration(tmp_path, monkeypatch):
+    from avic_core.ui.app import create_ui_app
+    monkeypatch.setenv("AVIC_LICENSE_PUBLIC_KEY", str(tmp_path / "public.pem"))
+    monkeypatch.delenv("AVIC_LICENSE_FILE", raising=False)
+    with pytest.raises(RuntimeError, match="задайте одновременно"):
+        create_ui_app(data_dir=str(tmp_path / "workbench"))
