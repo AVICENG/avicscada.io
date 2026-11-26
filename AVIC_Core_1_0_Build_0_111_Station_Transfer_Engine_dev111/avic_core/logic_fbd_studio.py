@@ -844,7 +844,7 @@ class FBDStudioService:
                             params = {"value": raw_value.strip().casefold() in {"true", "да", "1"}}
                         else:
                             params = {"value": bool(raw_value)}
-                    elif typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
+                    elif typ in {"FLOAT_INPUT", "CONSTANT"}:
                         params = {"value": float(params.get("value", core_fbd.BLOCKS[typ]["defaults"].get("value", 0.0)))}
                     elif typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                         params = {key: params[key] for key in ("rawValue", "value", "sensorType", "sensorPart",
