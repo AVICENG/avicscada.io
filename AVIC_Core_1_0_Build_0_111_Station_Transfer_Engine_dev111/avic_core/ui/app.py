@@ -400,7 +400,7 @@ class ObjectPatch(BaseModel):
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
     """Create the DEV175 local-only Workbench host. Drivers and OT commands remain stopped."""
-    app = FastAPI(title=title, version="1.0.0.dev175")
+    app = FastAPI(title=title, version="1.0.0.dev196")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     app.state.core = CoreApplication(root)
     app.state.project_station = ProjectStationService(app.state.core)
@@ -2684,7 +2684,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                     "generation": item.generation, "last_error": item.last_error}
                    for item in app.state.core.runtime.all()]
         backup_files = sorted(p.name for p in app.state.core.paths.backups.glob("*.avicbackup.zip") if p.is_file())
-        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev77",
+        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev196",
                 "core_open": not app.state.core.closed, "object_counts": counts,
                 "runtime_stations": runtime, "backup_archives": backup_files,
                 "safety": {"driver_autostart": False, "field_writes_enabled": False,
@@ -2717,6 +2717,12 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 "project_station_persistence": True,
                 "project_station_api": True,
                 "bacnet_ip_discovery": "explicit-read-only-manual-trigger",
+                "driver_manager": True,
+                "driver_lifecycle": "create-start-stop-diagnostics",
+                "bacnet_ip_polling": "managed-read-only-present-value",
+                "physical_point_to_fbd_binding": True,
+                "fbd_exposed_points": True,
+                "field_writes_enabled": False,
                 "discovery_history": "persistent-session-journal",
                 "point_import_preview": "non-mutating-preview-before-import",
                 "modbus_tcp_read": "explicit-read-only",
@@ -2750,6 +2756,6 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
 
     @app.get("/api/ui/health")
     def ui_health() -> dict:
-        return {"status": "ok", "ui": "available", "version": "1.0.0.dev109", "mode": "safe-workbench-project-station"}
+        return {"status": "ok", "ui": "available", "version": "1.0.0.dev196", "mode": "safe-workbench-project-station"}
 
     return app
