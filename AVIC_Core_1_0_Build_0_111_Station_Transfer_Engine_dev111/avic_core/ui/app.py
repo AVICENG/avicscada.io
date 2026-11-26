@@ -356,6 +356,9 @@ class HistoryCreateInput(BaseModel):
     recorded_at: str | None = None
     source: str = "manual-import"
 
+class HistoryPointConfigInput(BaseModel):
+    enabled: bool = True
+
 class DependencyCreateInput(BaseModel):
     dependent_id: str
     dependency_id: str
@@ -2449,6 +2452,33 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             app.state.core.audit.append(actor_id=payload.actor_id or "local-engineer", action="event.recorded", resource_type="event", resource_id=event.event_id, details={"event_type":event.event_type,"severity":event.severity})
             return {k:getattr(event,k) for k in event.__dataclass_fields__}
         except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/stations/{station_id}/history/points")
+    def history_configured_points(station_id: str) -> dict:
+        try:
+            app.state.core.repository.get_record(station_id)
+            return {"station_id": station_id,
+                    "point_ids": app.state.core.history.configured_points(station_id)}
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция не найдена") from exc
+
+    @app.put("/api/stations/{station_id}/history/points/{point_id}")
+    def history_configure_point(station_id: str, point_id: str,
+                                payload: HistoryPointConfigInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            result = app.state.core.history.configure_point(
+                station_id, point_id, enabled=payload.enabled)
+            app.state.core.audit.append(
+                actor_id="local-engineer",
+                action="history.point_enabled" if payload.enabled else "history.point_disabled",
+                resource_type="point", resource_id=point_id,
+                details={"station_id": station_id, "enabled": payload.enabled})
+            return result
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except PermissionError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.post("/api/history/samples", status_code=201)
     def history_append(payload: HistoryCreateInput, request: Request) -> dict:
