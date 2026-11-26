@@ -240,8 +240,6 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
             assert any(item["value"] is True and item["quality"] == "GOOD"
                        for item in fan_runtime.json()["bindings"].values())
 
-            # Loss of the physical controller link degrades the source; it must not
-            # continue to look like a healthy running fan on the operator page.
         finally:
             client.post(f"/api/fbd-runtime/{core_document_id}/stop")
             app.state.driver_manager.stop_instance(driver_id)
