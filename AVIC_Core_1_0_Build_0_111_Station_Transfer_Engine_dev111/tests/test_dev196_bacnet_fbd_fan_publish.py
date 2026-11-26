@@ -184,7 +184,7 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
         saved_graphic = client.put(f"/api/graphics/{graphic['id']}", json={
             "expected_revision": graphic["revision"],
             "elements": [{
-                "id": "fan-sf01", "name": "Вентилятор SF-01", "symbol_key": "fan",
+                "id": "f1a10000-0000-4000-8000-000000000001", "name": "Вентилятор SF-01", "symbol_key": "fan",
                 "x": 120, "y": 100, "width": 180, "height": 140,
                 "rotation": 0, "layer": 1,
                 "bindings": [
