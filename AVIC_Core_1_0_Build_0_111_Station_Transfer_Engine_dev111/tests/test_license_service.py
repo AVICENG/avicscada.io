@@ -73,3 +73,39 @@ def test_point_usage_separates_project_total_and_licensed_points():
     assert result["remaining_points"] == 0
     assert result["warning"] == "LIMIT_REACHED"
     assert result["by_type"] == {"physical": 1, "calculated": 2, "software": 0, "manual": 1}
+
+
+def test_feature_entitlement_requires_valid_signed_feature():
+    service = InstallationLicenseService(".", Manager(), Identity())
+    valid = LicenseStatus(True, "OK", features=("driver.bacnet-ip",))
+    service.assert_feature_enabled(valid, "driver.bacnet-ip")
+    with pytest.raises(PermissionError, match="не включена"):
+        service.assert_feature_enabled(valid, "driver.modbus-tcp")
+    invalid = LicenseStatus(False, "LICENSE_EXPIRED", features=("driver.bacnet-ip",))
+    with pytest.raises(PermissionError, match="недействительна"):
+        service.assert_feature_enabled(invalid, "driver.bacnet-ip")
+
+
+def test_core_application_wires_license_service_into_point_creation(tmp_path):
+    from avic_core.application.container import CoreApplication
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from types import SimpleNamespace
+
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    core = CoreApplication(tmp_path, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    first = Point("P1", device_id=device.id)
+    core.objects.save_graph([platform, project, station, device, first])
+    with pytest.raises(LicenseLimitExceeded):
+        core.objects.save_graph([Point("P2", device_id=device.id)])
+    assert len(core.repository.list_records(entity_type="Point")) == 1
+    core.close()
