@@ -405,8 +405,11 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     license_public_key = os.environ.get("AVIC_LICENSE_PUBLIC_KEY")
     license_file = os.environ.get("AVIC_LICENSE_FILE")
+    license_required = os.environ.get("AVIC_LICENSE_REQUIRED", "").strip().lower() in {"1", "true", "yes", "on"}
     if bool(license_public_key) != bool(license_file):
         raise RuntimeError("Для включения лицензирования задайте одновременно AVIC_LICENSE_PUBLIC_KEY и AVIC_LICENSE_FILE")
+    if license_required and not license_public_key:
+        raise RuntimeError("Коммерческий режим требует AVIC_LICENSE_PUBLIC_KEY и AVIC_LICENSE_FILE; режим без лицензии запрещён")
     license_service = None
     if license_public_key and license_file:
         license_service = InstallationLicenseService(root, LicenseManager(license_public_key))
