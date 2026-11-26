@@ -176,6 +176,9 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
         assert tick.json()["runtime_published"] is True
         assert app.state.core.point_runtime.read(exposed_id).value is True
         assert app.state.core.point_runtime.read(exposed_id).quality == "GOOD"
+        # The point sample is persisted in Point Runtime; stop the strategy before
+        # page rendering so a failed assertion cannot leave an active FBD strategy.
+        client.post(f"/api/fbd-runtime/{core_document_id}/stop")
 
         # Bind the published fan animation to the FBD virtual point, not to a copied value.
         graphic = client.post(f"/api/stations/{station['id']}/graphics", json={
@@ -243,7 +246,6 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
         # Loss of the physical controller link degrades the source; it must not
         # continue to look like a healthy running fan on the operator page.
         app.state.driver_manager.stop_instance(driver_id)
-        client.post(f"/api/fbd-runtime/{core_document_id}/stop")
         app.state.core.close()
 
 
