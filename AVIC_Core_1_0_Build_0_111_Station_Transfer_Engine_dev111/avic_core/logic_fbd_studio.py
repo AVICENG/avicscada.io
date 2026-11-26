@@ -562,7 +562,7 @@ class FBDStudioService:
                     try:
                         core._normalize_pid_config(params.get("pid"))
                     except ValueError as exc:
-                        issues.append(f"Блок «{module.get('name') or typ}»: {exc}")
+                        issues.append(f"Блок «{module.get('name') or typ}» ({typ}): {exc}")
                 if typ == "LATCH":
                     cfg = params.get("latch") or {}
                     if not isinstance(cfg, dict):
