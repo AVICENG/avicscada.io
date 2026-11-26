@@ -278,9 +278,11 @@ def test_alarm_rule_configuration_activates_and_releases_its_point_usage(tmp_pat
     alarm = Alarm("High temperature alarm", station_id=station.id, source_object_id=point.id)
 
     versions = service.save_graph([platform, project, station, device, point, alarm])
-    stored = repo.get_record(point.id)["payload"]
+    point_record = repo.get_record(point.id)
+    stored = point_record["payload"]
     assert stored["licensed_active"] is True
     assert stored["licensed_usage"] == [f"alarm:{alarm.id}"]
+    assert versions[point.id] == point_record["version"]
 
     alarm.source_object_id = ""
     service.save_graph([alarm], expected_versions={alarm.id: versions[alarm.id]})
