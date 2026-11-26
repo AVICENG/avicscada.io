@@ -622,7 +622,7 @@ class FBDStudioService:
             raise ValueError(f"CONCURRENCY_CONFLICT: current revision is {revision}")
         data = source.data
         core_fbd = FBDService(self.core)
-        compile_marker = f"AVIC_FBD_STUDIO_SOURCE={document_id};REV={revision}"
+        compile_marker = f"AVIC_FBD_STUDIO_SOURCE={document_id};REV={revision};COMPILER=2"
         existing = next((row for row in self.core.repository.list_records(entity_type="LogicDocument")
                          if row["payload"].get("station_id") == source.station_id
                          and row["payload"].get("description") == compile_marker), None)

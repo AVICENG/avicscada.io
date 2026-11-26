@@ -268,3 +268,26 @@ def test_fbd_studio_rejects_connective_proxy_with_wrong_signal_type(tmp_path):
                            json={"name": "Wrong proxy type", "data": data})
     assert response.status_code == 400
     assert "signal type differs" in response.json()["detail"]
+
+
+def test_fbd_studio_recompile_does_not_reuse_legacy_compiler_artifact(tmp_path):
+    from avic_core.logic_fbd import FBDService
+
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    created = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                          json={"name": "Compiler versioning", "data": data})
+    assert created.status_code == 201, created.text
+    source = created.json()
+
+    legacy_marker = f"AVIC_FBD_STUDIO_SOURCE={source['id']};REV={source['revision']}"
+    legacy = FBDService(client.app.state.core).create(
+        station["id"], "Legacy compiler output", legacy_marker
+    )
+
+    compiled = client.post(f"/api/fbd-studio/{source['id']}/compile",
+                           json={"expected_revision": source["revision"]})
+    assert compiled.status_code == 200, compiled.text
+    assert compiled.json()["core_document"]["id"] != legacy["id"]
+    assert len(compiled.json()["core_document"]["connectives"]) == 1
