@@ -13,7 +13,7 @@ TIME_OUTPUTS = [
     "DAY_BIT_5", "DAY_BIT_6", "DAY_BIT_7", "SECOND_PULSE", "MINUTE_PULSE",
     "PULSE_5_MIN", "PULSE_10_MIN", "PULSE_15_MIN", "PULSE_20_MIN",
     "PULSE_30_MIN", "PULSE_60_MIN", "PULSE_6_HOUR", "PULSE_24_HOUR",
-    "WEEKLY_PULSE", "MONTHLY_PULSE", "YEARLY_PULSE",
+    "WEEKLY_PULSE", "MONTHLY_PULSE", "YEARLY_PULSE", "UTC_OFFSET",
 ]
 
 
@@ -149,3 +149,22 @@ def test_legacy_time_occ_placeholder_requires_explicit_recreation(tmp_path):
     assert preview.status_code == 200, preview.text
     assert preview.json()["compilable"] is False
     assert any("TIME.OCC placeholder" in issue for issue in preview.json()["issues"])
+
+
+def test_time_module_exposes_station_utc_offset(tmp_path):
+    core, station, _ = setup(tmp_path)
+    core.time_management.configure_station(station["id"], "Europe/Moscow")
+    fbd = FBDService(core)
+    doc = fbd.create(station["id"], "Station UTC offset")
+    page_id = doc["pages"][0]["id"]
+    time_id = _uid()
+    fbd.save(doc["id"], doc["revision"], [
+        {"id": time_id, "type": "TIME", "name": "Station clock", "params": {}, "page_id": page_id},
+    ], [])
+    result = fbd.simulate(
+        doc["id"],
+        now_utc=datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+    )
+    assert result["node_values"][f"{time_id}:UTC_OFFSET"] == 3.0
+    assert result["node_values"][f"{time_id}:CURRENT_TIME"] == 3.0
+    core.close()
