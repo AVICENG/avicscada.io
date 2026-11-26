@@ -355,6 +355,37 @@ class FBDStudioService:
         if not pages:
             raise ValueError("В FBD-проекте должна быть хотя бы одна страница")
         core = FBDService(self.core)
+
+        def resolved_output_signal(module: dict[str, Any], block_type: str, port_name: str) -> str | None:
+            """Resolve dynamic Core output contracts before validating Studio links."""
+            signal = core.BLOCKS[block_type]["outputs"].get(port_name)
+            if signal != "any":
+                return signal
+            params = module.get("params") if isinstance(module.get("params"), dict) else {}
+            if block_type == "POINT_INPUT":
+                point_id = ((params.get("pointRef") or {}).get("id")
+                            or (params.get("externalPointBinding") or {}).get("pointId")
+                            or params.get("point_id"))
+                if not point_id:
+                    return None
+                from avic_core.domain.models import Point
+                point, _ = self.core.repository.get(str(point_id), Point)
+                device = self.core.repository.get_record(point.device_id)
+                if device["entity_type"] != "Device" or device["payload"].get("station_id") != doc.station_id:
+                    raise ValueError("точка POINT_INPUT принадлежит другой станции")
+                return core._point_signal_type(point.data_type)
+            if block_type == "SCHEDULE":
+                schedule_id = params.get("schedule_id") or (params.get("schedule") or {}).get("schedule_id")
+                if not schedule_id:
+                    return None
+                schedule = self.core.schedules.get(str(schedule_id))
+                if schedule["station_id"] != doc.station_id:
+                    raise ValueError("расписание SCHEDULE принадлежит другой станции")
+                return {"BOOLEAN": "bool", "NUMERIC": "float", "STRING": "string", "ENUM": "any"}.get(
+                    str(schedule.get("value_type") or "").upper()
+                )
+            return signal
+
         page_by_id = {str(page["id"]): page for page in pages}
         modules: dict[str, dict[str, Any]] = {}
         page_for_module: dict[str, str] = {}
@@ -506,7 +537,7 @@ class FBDStudioService:
                         raise ValueError("исходный выход Connective не найден")
                     source_port_name = str(source_outputs[source_port_index].get("name") or "")
                     source_core_type = self._COMPILER_BLOCKS[source_type_real]
-                    source_signal = core.BLOCKS[source_core_type]["outputs"].get(source_port_name)
+                    source_signal = resolved_output_signal(source_module, source_core_type, source_port_name)
                     if source_signal is None or source_signal != target_signal:
                         raise ValueError("несовместимые типы исходного и целевого портов Connective")
                     target_key = (target_id, target_port_name)
@@ -523,7 +554,7 @@ class FBDStudioService:
                         raise ValueError("индекс выходного порта вне диапазона")
                     source_port_name = str(source["outs"][source_index].get("name") or "")
                     source_core_type = self._COMPILER_BLOCKS[source_type]
-                    source_signal = core.BLOCKS[source_core_type]["outputs"].get(source_port_name)
+                    source_signal = resolved_output_signal(source, source_core_type, source_port_name)
                     if source_signal is None or source_signal != target_signal:
                         raise ValueError("несовместимые типы выходного и входного портов")
                     target_key = (target_id, target_port_name)
