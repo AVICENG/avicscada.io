@@ -170,7 +170,108 @@ class FBDStudioService:
                 if source_key in seen_sources:
                     raise ValueError("Only one exposed FBD point may reference a source output port")
                 seen_sources.add(source_key)
+        cls._validate_references(data)
         return data
+
+    @staticmethod
+    def _signal_type(value: Any) -> str:
+        token = str(value or "").strip().casefold()
+        return {"num": "float", "analog": "float", "float": "float",
+                "digital": "bool", "binary": "bool", "bool": "bool",
+                "integer": "int", "int": "int", "string": "string"}.get(token, token)
+
+    @classmethod
+    def _validate_references(cls, data: dict[str, Any]) -> None:
+        references = data.get("references", [])
+        if not isinstance(references, list) or len(references) > cls.MAX_LINKS:
+            raise ValueError("FBD Studio references must be a list within the project limit")
+        pages = {str(page.get("id")): page for page in data.get("pages", [])}
+        modules: dict[str, tuple[str, dict[str, Any]]] = {}
+        for page_id, page in pages.items():
+            for module in page.get("modules", []):
+                modules[str(module.get("id"))] = (page_id, module)
+
+        seen_ids: set[str] = set()
+        seen_proxies: set[str] = set()
+        seen_endpoints: set[tuple[str, str, int, str]] = set()
+        for reference in references:
+            if not isinstance(reference, dict):
+                raise ValueError("FBD references must be objects")
+            reference_id = str(reference.get("id") or "").strip()
+            source_page_id = str(reference.get("sourcePageId") or "")
+            source_module_id = str(reference.get("sourceModuleId") or "")
+            target_page_id = str(reference.get("targetPageId") or "")
+            proxy_module_id = str(reference.get("proxyModuleId") or "")
+            if not reference_id or reference_id in seen_ids:
+                raise ValueError("FBD reference IDs must be present and unique")
+            seen_ids.add(reference_id)
+            if source_page_id not in pages or target_page_id not in pages or source_page_id == target_page_id:
+                raise ValueError("FBD reference must connect two different pages in the same project")
+            source_row = modules.get(source_module_id)
+            proxy_row = modules.get(proxy_module_id)
+            if source_row is None or source_row[0] != source_page_id:
+                raise ValueError("FBD reference source module does not exist on its source page")
+            if proxy_row is None or proxy_row[0] != target_page_id:
+                raise ValueError("FBD reference proxy does not exist on its target page")
+            source = source_row[1]
+            proxy = proxy_row[1]
+            if str(source.get("type") or "") in {"CONNECTIVE", "TO_CONNECTIVE"}:
+                raise ValueError("FBD reference source must be a real logic block, not a navigation proxy")
+            if str(proxy.get("type") or "") != "CONNECTIVE":
+                raise ValueError("FBD reference target module must be a CONNECTIVE proxy")
+            raw_port = reference.get("sourcePort")
+            if isinstance(raw_port, bool):
+                raise ValueError("FBD reference sourcePort must be a non-negative integer")
+            try:
+                source_port_index = int(raw_port)
+            except (TypeError, ValueError):
+                raise ValueError("FBD reference sourcePort must be a non-negative integer")
+            if source_port_index < 0:
+                raise ValueError("FBD reference sourcePort must be a non-negative integer")
+            source_outputs = source.get("outs", [])
+            proxy_outputs = proxy.get("outs", [])
+            if source_port_index >= len(source_outputs):
+                raise ValueError("FBD reference source output port does not exist")
+            if not isinstance(proxy_outputs, list) or len(proxy_outputs) != 1:
+                raise ValueError("FBD CONNECTIVE proxy must expose exactly one output")
+            source_output = source_outputs[source_port_index]
+            proxy_output = proxy_outputs[0]
+            if cls._signal_type(source_output.get("type")) != cls._signal_type(proxy_output.get("type")):
+                raise ValueError("FBD CONNECTIVE proxy signal type differs from its source output")
+            if str(source_output.get("name") or "") != str(proxy_output.get("name") or ""):
+                raise ValueError("FBD CONNECTIVE proxy output name differs from its source output")
+            proxy_params = proxy.get("params") if isinstance(proxy.get("params"), dict) else {}
+            if str(proxy_params.get("referenceId") or "") != reference_id:
+                raise ValueError("FBD CONNECTIVE proxy referenceId does not match its reference")
+            if proxy_module_id in seen_proxies:
+                raise ValueError("Only one FBD reference may own a CONNECTIVE proxy")
+            seen_proxies.add(proxy_module_id)
+            endpoint = (source_page_id, source_module_id, source_port_index, target_page_id)
+            if endpoint in seen_endpoints:
+                raise ValueError("Duplicate FBD reference for the same source output and target page")
+            seen_endpoints.add(endpoint)
+
+            marker_id = str(reference.get("toModuleId") or "")
+            marker_row = modules.get(marker_id) if marker_id else None
+            matching_markers = []
+            for marker_page_id, marker in modules.values():
+                marker_params = marker.get("params") if isinstance(marker.get("params"), dict) else {}
+                if (str(marker.get("type") or "") == "TO_CONNECTIVE"
+                        and str(marker_params.get("referenceId") or "") == reference_id):
+                    matching_markers.append((marker_page_id, marker))
+            if len(matching_markers) > 1:
+                raise ValueError("FBD reference has more than one To Connective marker")
+            if matching_markers and matching_markers[0][0] != source_page_id:
+                raise ValueError("FBD To Connective marker must be on the source page")
+            if marker_row is not None:
+                marker_page_id, marker = marker_row
+                marker_params = marker.get("params") if isinstance(marker.get("params"), dict) else {}
+                if (marker_page_id != source_page_id or str(marker.get("type") or "") != "TO_CONNECTIVE"
+                        or str(marker_params.get("referenceId") or "") != reference_id):
+                    raise ValueError("FBD To Connective marker does not match its reference")
+                marker_inputs = marker.get("ins", [])
+                if len(marker_inputs) != 1 or cls._signal_type(marker_inputs[0].get("type")) != cls._signal_type(source_output.get("type")):
+                    raise ValueError("FBD To Connective marker input does not match its source signal")
 
     @staticmethod
     def _view(doc: FBDStudioDocument, revision: int) -> dict[str, Any]:
@@ -253,8 +354,6 @@ class FBDStudioService:
         pages = data.get("pages", [])
         if not pages:
             raise ValueError("В FBD-проекте должна быть хотя бы одна страница")
-        if data.get("references"):
-            raise ValueError("Межстраничные Connective пока не компилируются. Уберите их или дождитесь поддержки межстраничных связей.")
         core = FBDService(self.core)
         page_by_id = {str(page["id"]): page for page in pages}
         modules: dict[str, dict[str, Any]] = {}
@@ -266,6 +365,8 @@ class FBDStudioService:
                 modules[mid] = module
                 page_for_module[mid] = str(page["id"])
                 typ = str(module.get("type") or "")
+                if typ in {"CONNECTIVE", "TO_CONNECTIVE"}:
+                    continue
                 if typ not in self._COMPILER_BLOCKS:
                     issues.append(f"Страница «{page.get('name','')}», блок «{module.get('name') or typ}»: тип {typ or 'не указан'} пока не поддержан компилятором")
                     continue
@@ -341,7 +442,22 @@ class FBDStudioService:
                         except Exception:
                             issues.append(f"Блок «{module.get('name') or typ}»: расписание Core не найдено")
 
+        references = data.get("references", [])
+        reference_by_proxy = {str(ref["proxyModuleId"]): ref for ref in references}
+        reference_ids = {str(ref["id"]) for ref in references}
+        executable_module_ids = {mid for mid, module in modules.items()
+                                 if str(module.get("type") or "") not in {"CONNECTIVE", "TO_CONNECTIVE"}}
+        for mid, module in modules.items():
+            typ = str(module.get("type") or "")
+            params = module.get("params") if isinstance(module.get("params"), dict) else {}
+            if typ == "CONNECTIVE" and mid not in reference_by_proxy:
+                issues.append(f"Страница «{page_by_id[page_for_module[mid]].get('name','')}»: CONNECTIVE {module.get('name') or mid} не имеет Page Reference")
+            elif typ == "TO_CONNECTIVE" and str(params.get("referenceId") or "") not in reference_ids:
+                issues.append(f"Страница «{page_by_id[page_for_module[mid]].get('name','')}»: TO_CONNECTIVE {module.get('name') or mid} ссылается на отсутствующий Page Reference")
+
         link_count = 0
+        graph_edges: list[tuple[str, str]] = []
+        occupied_inputs: set[tuple[str, str]] = set()
         for link in data.get("links", []):
             if not isinstance(link, dict):
                 issues.append("Обнаружена связь некорректного формата")
@@ -351,27 +467,103 @@ class FBDStudioService:
                 direction_b, target_id, target_index = self._port_token(link.get("to"))
                 if direction_a != "out" or direction_b != "in":
                     raise ValueError("связь должна идти от выхода к входу")
-                source = modules.get(source_id); target = modules.get(target_id)
+                source = modules.get(source_id)
+                target = modules.get(target_id)
                 if source is None or target is None:
                     raise ValueError("блок-источник или блок-приёмник не найден")
-                if page_for_module[source_id] != page_for_module[target_id] or str(link.get("pageId")) != page_for_module[source_id]:
-                    raise ValueError("межстраничные связи пока не поддерживаются компилятором")
-                if source_index >= len(source.get("outs", [])) or target_index >= len(target.get("ins", [])):
-                    raise ValueError("индекс порта вне диапазона")
+                source_type = str(source.get("type") or "")
+                target_type = str(target.get("type") or "")
+                if target_type in {"CONNECTIVE", "TO_CONNECTIVE"}:
+                    raise ValueError("нельзя подключать сигнал к навигационному proxy/marker")
+                if target_type not in self._COMPILER_BLOCKS:
+                    raise ValueError(f"тип блока-приёмника {target_type or 'не указан'} не поддерживается")
+                if target_index >= len(target.get("ins", [])):
+                    raise ValueError("индекс входного порта вне диапазона")
+                target_port_name = str(target["ins"][target_index].get("name") or "")
+                target_core_type = self._COMPILER_BLOCKS[target_type]
+                target_signal = core.BLOCKS[target_core_type]["inputs"].get(target_port_name)
+                if target_signal is None:
+                    raise ValueError(f"входной порт {target_port_name} отсутствует в контракте Core")
+
+                if source_type == "CONNECTIVE":
+                    reference = reference_by_proxy.get(source_id)
+                    if reference is None:
+                        raise ValueError("CONNECTIVE proxy не имеет действующей Page Reference")
+                    if source_index != 0 or source_index >= len(source.get("outs", [])):
+                        raise ValueError("CONNECTIVE proxy должен использовать свой единственный выход")
+                    if page_for_module[target_id] != str(reference["targetPageId"]) or str(link.get("pageId")) != str(reference["targetPageId"]):
+                        raise ValueError("потребитель Connective должен находиться на странице назначения")
+                    source_module_id = str(reference["sourceModuleId"])
+                    source_module = modules.get(source_module_id)
+                    if source_module is None or page_for_module.get(source_module_id) != str(reference["sourcePageId"]):
+                        raise ValueError("исходный блок Connective не найден на исходной странице")
+                    source_type_real = str(source_module.get("type") or "")
+                    if source_type_real not in self._COMPILER_BLOCKS:
+                        raise ValueError(f"тип исходного блока Connective {source_type_real or 'не указан'} не поддерживается")
+                    source_port_index = int(reference["sourcePort"])
+                    source_outputs = source_module.get("outs", [])
+                    if source_port_index >= len(source_outputs):
+                        raise ValueError("исходный выход Connective не найден")
+                    source_port_name = str(source_outputs[source_port_index].get("name") or "")
+                    source_core_type = self._COMPILER_BLOCKS[source_type_real]
+                    source_signal = core.BLOCKS[source_core_type]["outputs"].get(source_port_name)
+                    if source_signal is None or source_signal != target_signal:
+                        raise ValueError("несовместимые типы исходного и целевого портов Connective")
+                    target_key = (target_id, target_port_name)
+                    if target_key in occupied_inputs:
+                        raise ValueError("входной порт уже занят другой связью")
+                    occupied_inputs.add(target_key)
+                    graph_edges.append((source_module_id, target_id))
+                else:
+                    if source_type in {"TO_CONNECTIVE"} or source_type not in self._COMPILER_BLOCKS:
+                        raise ValueError(f"источник связи {source_type or 'не указан'} не является поддерживаемым вычислительным блоком")
+                    if page_for_module[source_id] != page_for_module[target_id] or str(link.get("pageId")) != page_for_module[source_id]:
+                        raise ValueError("обычная связь должна находиться внутри одной страницы")
+                    if source_index >= len(source.get("outs", [])):
+                        raise ValueError("индекс выходного порта вне диапазона")
+                    source_port_name = str(source["outs"][source_index].get("name") or "")
+                    source_core_type = self._COMPILER_BLOCKS[source_type]
+                    source_signal = core.BLOCKS[source_core_type]["outputs"].get(source_port_name)
+                    if source_signal is None or source_signal != target_signal:
+                        raise ValueError("несовместимые типы выходного и входного портов")
+                    target_key = (target_id, target_port_name)
+                    if target_key in occupied_inputs:
+                        raise ValueError("входной порт уже занят другой связью")
+                    occupied_inputs.add(target_key)
+                    graph_edges.append((source_id, target_id))
                 link_count += 1
-            except ValueError as exc:
+            except (KeyError, TypeError, ValueError) as exc:
                 issues.append(f"Связь {link.get('id') or link_count + 1}: {exc}")
+
+        # Validate the complete graph after expanding Connective aliases.
+        adjacency = {mid: set() for mid in executable_module_ids}
+        indegree = {mid: 0 for mid in executable_module_ids}
+        for source_id, target_id in graph_edges:
+            if source_id in adjacency and target_id in adjacency and target_id not in adjacency[source_id]:
+                adjacency[source_id].add(target_id)
+                indegree[target_id] += 1
+        ready = [mid for mid, degree in indegree.items() if degree == 0]
+        processed = 0
+        while ready:
+            current = ready.pop()
+            processed += 1
+            for target_id in adjacency[current]:
+                indegree[target_id] -= 1
+                if indegree[target_id] == 0:
+                    ready.append(target_id)
+        if processed != len(executable_module_ids):
+            issues.append("После раскрытия межстраничных Connective стратегия содержит циклическую зависимость")
 
         if issues:
             return {"document_id": document_id, "revision": revision, "compilable": False,
-                    "source_pages": len(pages), "source_blocks": len(modules), "source_links": len(data.get("links", [])),
+                    "source_pages": len(pages), "source_blocks": len(executable_module_ids), "source_links": link_count,
                     "supported_block_types": sorted(self._COMPILER_BLOCKS), "issues": issues,
                     "field_writes_enabled": False, "runtime_published": False}
         return {"document_id": document_id, "revision": revision, "compilable": True,
-                "source_pages": len(pages), "source_blocks": len(modules), "source_links": link_count,
+                "source_pages": len(pages), "source_blocks": len(executable_module_ids), "source_links": link_count,
                 "supported_block_types": sorted(self._COMPILER_BLOCKS), "issues": [],
                 "field_writes_enabled": False, "runtime_published": False,
-                "message": "Все блоки и связи прошли проверку контракта. Можно создать исполняемую Core FBD-стратегию в режиме без записи в оборудование."}
+                "message": "Все блоки, локальные связи и межстраничные Connective прошли проверку. Можно создать исполняемую Core FBD-стратегию без записи в оборудование."}
 
     def _register_exposed_points(self, source: FBDStudioDocument, core_document_id: str) -> int:
         """Upsert stable virtual points for exposed Studio output ports."""
@@ -439,7 +631,7 @@ class FBDStudioService:
             registered_points = self._register_exposed_points(source, existing["entity_id"])
             return {"source_document_id": document_id, "source_revision": revision,
                     "core_document": existing_graph, "compiled_blocks": len(existing_graph["nodes"]),
-                    "compiled_links": len(existing_graph["links"]), "already_compiled": True,
+                    "compiled_links": len(existing_graph["links"]) + len(existing_graph.get("connectives", [])), "already_compiled": True,
                     "registered_fbd_points": registered_points, "runtime_published": False, "field_writes_enabled": False,
                     "message": "Эта ревизия уже скомпилирована. Возвращена существующая Core FBD-стратегия; виртуальные точки синхронизированы без дубликатов."}
         created = core_fbd.create(source.station_id, source.name + " · Core", compile_marker)
@@ -455,10 +647,14 @@ class FBDStudioService:
                 current = core_fbd.add_page(core_id, str(page.get("name") or "Страница"))
                 core_pages.append(next(p["id"] for p in current["pages"] if p["name"] == str(page.get("name") or "Страница")))
             page_map = {str(page["id"]): core_pages[i] for i, page in enumerate(pages)}
-            module_map = {str(m["id"]): str(uuid4()) for page in pages for m in page.get("modules", [])}
+            studio_modules = {str(m["id"]): m for page in pages for m in page.get("modules", [])}
+            reference_by_proxy = {str(ref["proxyModuleId"]): ref for ref in data.get("references", [])}
+            module_map = {mid: str(uuid4()) for mid, m in studio_modules.items() if str(m.get("type") or "") not in {"CONNECTIVE", "TO_CONNECTIVE"}}
             nodes = []
             for page in pages:
                 for module in page.get("modules", []):
+                    if str(module.get("type") or "") in {"CONNECTIVE", "TO_CONNECTIVE"}:
+                        continue
                     typ = self._COMPILER_BLOCKS[module["type"]]
                     params = dict(module.get("params") or {})
                     if typ == "POINT_INPUT":
@@ -526,11 +722,27 @@ class FBDStudioService:
                         links.append({"id": str(uuid4()), "source_node_id": constant_id,
                                       "source_port": "OUT", "target_node_id": target_node_id,
                                       "target_port": port_name})
+            cross_connectives = []
             for link in data.get("links", []):
                 _, source_id, source_index = self._port_token(link["from"])
                 _, target_id, target_index = self._port_token(link["to"])
-                source_module = next(m for p in pages for m in p.get("modules", []) if str(m["id"]) == source_id)
-                target_module = next(m for p in pages for m in p.get("modules", []) if str(m["id"]) == target_id)
+                source_module = studio_modules[source_id]
+                target_module = studio_modules[target_id]
+                if str(source_module.get("type") or "") == "CONNECTIVE":
+                    reference = reference_by_proxy[source_id]
+                    real_source = studio_modules[str(reference["sourceModuleId"])]
+                    source_port_name = str(real_source["outs"][int(reference["sourcePort"])]["name"])
+                    target_port_name = str(target_module["ins"][target_index]["name"])
+                    cross_connectives.append({
+                        "name": str((source_module.get("params") or {}).get("label") or source_module.get("name") or "Connective"),
+                        "source_page_id": page_map[str(reference["sourcePageId"])],
+                        "source_node_id": module_map[str(reference["sourceModuleId"])],
+                        "source_port": source_port_name,
+                        "target_page_id": page_map[str(reference["targetPageId"])],
+                        "target_node_id": module_map[target_id],
+                        "target_port": target_port_name,
+                    })
+                    continue
                 links.append({"id": str(uuid4()), "source_node_id": module_map[source_id],
                               "source_port": str(source_module["outs"][source_index]["name"]),
                               "target_node_id": module_map[target_id],
@@ -539,13 +751,16 @@ class FBDStudioService:
             # revision after page creation rather than using the initial one.
             latest_revision = core_fbd.get(core_id)["revision"]
             saved = core_fbd.save(core_id, latest_revision, nodes, links)
+            for connective in cross_connectives:
+                core_fbd.create_connective(core_id, connective)
+            saved = core_fbd.get(core_id)
             registered_points = self._register_exposed_points(source, core_id)
             self.core.audit.append(actor_id="local-engineer", action="fbd_studio.compiled_to_core",
                 resource_type="fbd_studio_document", resource_id=document_id,
                 details={"source_revision": revision, "core_document_id": core_id,
-                         "blocks": len(nodes), "links": len(links)})
+                         "blocks": len(nodes), "links": len(links) + len(cross_connectives)})
             return {"source_document_id": document_id, "source_revision": revision,
-                    "core_document": saved, "compiled_blocks": len(nodes), "compiled_links": len(links),
+                    "core_document": saved, "compiled_blocks": len(nodes), "compiled_links": len(links) + len(cross_connectives),
                     "registered_fbd_points": registered_points, "runtime_published": False, "field_writes_enabled": False,
                     "message": "Создана отдельная Core FBD-стратегия. Исходный проект Studio не изменён. Запись в оборудование отключена."}
         except Exception:

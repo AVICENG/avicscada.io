@@ -181,3 +181,90 @@ def test_fbd_studio_rejects_module_id_collision_across_pages(tmp_path):
     )
     assert response.status_code == 400
     assert "unique across the entire project" in response.json()["detail"]
+
+
+
+def _studio_graph_with_connective():
+    data = _studio_graph()
+    data["pages"].append({
+        "id": "page-fan", "name": "Вентилятор", "code": "P2", "modules": [
+            {"id": "proxy-start", "type": "CONNECTIVE", "name": "Connective Команда Пуск",
+             "params": {"referenceId": "ref-start-fan", "label": "Команда Пуск",
+                        "sourcePageId": "page-main", "sourceModuleId": "start",
+                        "sourcePort": 0, "targetPageId": "page-fan"},
+             "ins": [], "outs": [{"id": "proxy-out", "name": "OUT", "type": "bool"}]},
+            {"id": "remote-run", "type": "BOOL_OUTPUT", "name": "REMOTE_RUN",
+             "params": {}, "ins": [{"id": "remote-in", "name": "IN", "type": "bool"}], "outs": []},
+        ],
+    })
+    data["pages"][0]["modules"].append({
+        "id": "marker-start-fan", "type": "TO_CONNECTIVE", "name": "To Connective Команда Пуск",
+        "params": {"referenceId": "ref-start-fan", "targetPageId": "page-fan"},
+        "ins": [{"id": "marker-in", "name": "OUT", "type": "bool"}], "outs": [],
+    })
+    data["links"].append({
+        "id": "cross-link-start-fan", "pageId": "page-fan",
+        "from": "out:proxy-start:0", "to": "in:remote-run:0", "signalType": "bool",
+    })
+    data["references"] = [{
+        "id": "ref-start-fan", "sourcePageId": "page-main", "sourceModuleId": "start",
+        "sourcePort": 0, "targetPageId": "page-fan",
+        "proxyModuleId": "proxy-start", "toModuleId": "marker-start-fan",
+    }]
+    return data
+
+
+def test_fbd_studio_compiles_connective_alias_to_core_cross_page_runtime(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    created = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                          json={"name": "Cross-page Connective", "data": data})
+    assert created.status_code == 201, created.text
+    source = created.json()
+
+    preview = client.post(f"/api/fbd-studio/{source['id']}/compile-preview",
+                          json={"expected_revision": source["revision"]})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["compilable"] is True, preview.json()
+    assert preview.json()["source_blocks"] == 5
+    assert preview.json()["source_links"] == 4
+
+    compiled = client.post(f"/api/fbd-studio/{source['id']}/compile",
+                           json={"expected_revision": source["revision"]})
+    assert compiled.status_code == 200, compiled.text
+    result = compiled.json()
+    core_doc = result["core_document"]
+    assert result["compiled_blocks"] == 5
+    assert result["compiled_links"] == 4
+    assert len(core_doc["connectives"]) == 1
+    assert len(core_doc["links"]) == 3
+    assert all(node["type"] not in {"CONNECTIVE", "TO_CONNECTIVE"} for node in core_doc["nodes"])
+
+    simulation = client.post(f"/api/fbd/{core_doc['id']}/simulate", json={})
+    assert simulation.status_code == 200, simulation.text
+    assert simulation.json()["outputs"]["RUN"] is True
+    assert simulation.json()["outputs"]["REMOTE_RUN"] is True
+    assert simulation.json()["field_writes_performed"] is False
+
+
+def test_fbd_studio_rejects_connective_reference_with_missing_proxy(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    data["references"][0]["proxyModuleId"] = "missing-proxy"
+    response = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                           json={"name": "Missing proxy", "data": data})
+    assert response.status_code == 400
+    assert "proxy does not exist" in response.json()["detail"]
+
+
+def test_fbd_studio_rejects_connective_proxy_with_wrong_signal_type(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    data["pages"][1]["modules"][0]["outs"][0]["type"] = "float"
+    response = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                           json={"name": "Wrong proxy type", "data": data})
+    assert response.status_code == 400
+    assert "signal type differs" in response.json()["detail"]
