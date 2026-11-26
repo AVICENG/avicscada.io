@@ -98,3 +98,75 @@ def test_studio_compiler_resolves_numeric_schedule_output_before_link_validation
     assert compiled["compiled_blocks"] == 2
     assert compiled["compiled_links"] == 1
     core.close()
+
+
+import pytest
+
+from avic_core.logic_fbd_studio import FBDStudioService
+
+
+def _reference_data(source_port=0, to_module_id="marker"):
+    source = {
+        "id": "source", "type": "BOOL_INPUT", "name": "Source", "params": {},
+        "ins": [], "outs": [{"id": "source-out", "name": "OUT", "type": "bool"}],
+    }
+    marker = {
+        "id": "marker", "type": "TO_CONNECTIVE", "name": "To Connective",
+        "params": {"referenceId": "ref"}, "ins": [{"id": "marker-in", "name": "OUT", "type": "bool"}], "outs": [],
+    }
+    proxy = {
+        "id": "proxy", "type": "CONNECTIVE", "name": "Connective",
+        "params": {"referenceId": "ref"}, "ins": [], "outs": [{"id": "proxy-out", "name": "OUT", "type": "bool"}],
+    }
+    reference = {
+        "id": "ref", "sourcePageId": "p1", "sourceModuleId": "source",
+        "sourcePort": source_port, "targetPageId": "p2", "proxyModuleId": "proxy",
+    }
+    if to_module_id is not None:
+        reference["toModuleId"] = to_module_id
+    return {
+        "pages": [
+            {"id": "p1", "name": "Source", "modules": [source, marker]},
+            {"id": "p2", "name": "Target", "modules": [proxy]},
+        ],
+        "references": [reference],
+    }
+
+
+def test_fbd_reference_rejects_fractional_source_port():
+    with pytest.raises(ValueError, match="sourcePort must be a non-negative integer"):
+        FBDStudioService._validate_references(_reference_data(source_port=0.5))
+
+
+def test_fbd_reference_requires_marker_uid_to_match_existing_marker():
+    with pytest.raises(ValueError, match="toModuleId must identify"):
+        FBDStudioService._validate_references(_reference_data(to_module_id=None))
+
+
+def test_fbd_reference_rejects_orphan_connective_and_to_connective_modules():
+    data = _reference_data()
+    data["references"] = []
+    with pytest.raises(ValueError, match="no owning Page Reference"):
+        FBDStudioService._validate_references(data)
+
+
+def test_fbd_point_port_uid_must_match_declared_port_index():
+    data = {
+        "pages": [{
+            "id": "p1", "name": "Main", "modules": [{
+                "id": "source", "type": "BOOL_INPUT", "name": "Source", "params": {},
+                "ins": [], "outs": [
+                    {"id": "out-0", "name": "OUT", "type": "bool"},
+                    {"id": "out-1", "name": "OUT2", "type": "bool"},
+                ],
+            }],
+        }],
+        "links": [],
+        "fbdPoints": [{
+            "id": "point-1",
+            "source": {"pageId": "p1", "moduleId": "source", "portIndex": 0, "portId": "out-1"},
+        }],
+        "references": [],
+    }
+    with pytest.raises(ValueError, match="does not match its portIndex"):
+        FBDStudioService._validate(data)
