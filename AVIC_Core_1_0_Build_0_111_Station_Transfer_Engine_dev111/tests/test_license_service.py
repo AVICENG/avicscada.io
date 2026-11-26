@@ -260,3 +260,51 @@ def test_calculated_point_requires_publication_and_activation_to_be_licensed():
     result = summarize_point_usage(records, point_limit=1)
     assert result["licensed_active_points"] == 1
     assert result["licensed_active_point_ids"] == ["calc-live"]
+
+
+
+def test_alarm_rule_configuration_activates_and_releases_its_point_usage(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("High temperature", device_id=device.id, licensed_active=False)
+    alarm = Alarm("High temperature alarm", station_id=station.id, source_object_id=point.id)
+
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is True
+    assert stored["licensed_usage"] == [f"alarm:{alarm.id}"]
+
+    alarm.source_object_id = ""
+    service.save_graph([alarm], expected_versions={alarm.id: versions[alarm.id]})
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is False
+    assert stored["licensed_usage"] == []
+
+
+def test_deleting_alarm_rule_releases_only_alarm_usage(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-delete-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Pressure", device_id=device.id, licensed_active=False)
+    alarm = Alarm("Low pressure", station_id=station.id, source_object_id=point.id)
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+
+    service.delete_graph({alarm.id: versions[alarm.id]})
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is False
+    assert stored["licensed_usage"] == []
