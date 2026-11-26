@@ -182,7 +182,7 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
                  "x": 24, "y": 20, "width": 600, "height": 58},
                 {"type": "value", "label": "Состояние BACnet-контроллера",
                  "point_id": physical.id, "x": 24, "y": 100, "width": 260, "height": 90},
-                {"type": "value", "label": "Команда FAN_RUN из FBD",
+                {"type": "value", "label": "Состояние FAN_RUN по FBD",
                  "point_id": exposed_id, "x": 24, "y": 210, "width": 260, "height": 90},
                 {"type": "graphic", "graphic_id": graphic["id"],
                  "label": "Вентилятор SF-01", "x": 320, "y": 90, "width": 700, "height": 520},
@@ -210,5 +210,5 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
         # Loss of the physical controller link degrades the source; it must not
         # continue to look like a healthy running fan on the operator page.
         app.state.driver_manager.stop_instance(driver_id)
-        app.state.core.fbd_execution.stop(core_document_id)
+        client.post(f"/api/fbd-runtime/{core_document_id}/stop")
         app.state.core.close()
