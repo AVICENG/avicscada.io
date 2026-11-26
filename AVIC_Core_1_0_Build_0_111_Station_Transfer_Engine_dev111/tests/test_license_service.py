@@ -335,3 +335,28 @@ def test_point_deletion_is_blocked_until_licensed_alarm_usage_is_removed(tmp_pat
     refreshed = repo.get_record(point.id)
     service.delete_graph({point.id: refreshed["version"]})
     assert not any(row["entity_id"] == point.id for row in repo.list_records(entity_type="Point"))
+
+
+
+def test_usage_removal_preserves_legacy_active_physical_point_baseline(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "legacy-point-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Legacy physical", device_id=device.id)  # None means legacy active.
+    alarm = Alarm("Legacy alarm", station_id=station.id, source_object_id=point.id)
+
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+    alarm.source_object_id = ""
+    service.save_graph([alarm], expected_versions={alarm.id: versions[alarm.id]})
+
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is True
+    assert stored["licensed_usage"] == []
+    assert stored["licensed_base_active"] is None
