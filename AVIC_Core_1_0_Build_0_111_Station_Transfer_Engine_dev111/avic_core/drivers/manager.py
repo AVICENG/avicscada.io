@@ -172,7 +172,7 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "notes": x.notes} for x in list_builtin_drivers()]
+                 "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
         station = self.core.repository.get_record(station_id)
@@ -190,6 +190,17 @@ class DriverManagerService:
                 "config": p.get("config", {})})
         return result
 
+    def _assert_driver_entitlement(self, driver_id: str) -> None:
+        service = getattr(self.core, "installation_license_service", None)
+        license_file = getattr(self.core, "license_file", None)
+        if service is None:
+            return  # Explicit development/unconfigured mode; production must inject a signed license service.
+        entry = next((item for item in list_builtin_drivers() if item.driver_id == driver_id), None)
+        if entry is None:
+            raise ValueError("Драйвер отсутствует во встроенном каталоге")
+        status = service.inspect(license_file).status
+        service.assert_feature_enabled(status, entry.license_feature)
+
     def create_instance(self, station_id: str, driver_id: str, name: str, config: dict | None = None):
         station = self.core.repository.get_record(station_id)
         if station["entity_type"] != "Station":
@@ -199,6 +210,7 @@ class DriverManagerService:
             raise ValueError("Драйвер отсутствует в доверенном встроенном каталоге")
         if entry.lifecycle.value == "planned":
             raise ValueError("Драйвер пока не реализован")
+        self._assert_driver_entitlement(driver_id)
         if config is not None and not isinstance(config, dict):
             raise ValueError("Конфигурация должна быть объектом")
         safe_config = dict(config or {})
@@ -261,6 +273,7 @@ class DriverManagerService:
             if instance_id in self._sessions:
                 return self.diagnostics(instance_id)
             item, version = self._load(instance_id)
+            self._assert_driver_entitlement(item.driver_id)
             factory = self._factories.get(item.driver_id)
             if factory is None:
                 raise RuntimeError(f"Для {item.driver_id} runtime adapter factory не зарегистрирована")
