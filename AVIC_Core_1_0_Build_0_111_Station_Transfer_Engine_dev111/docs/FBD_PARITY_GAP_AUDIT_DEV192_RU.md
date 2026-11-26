@@ -106,3 +106,7 @@ PIN level for KNOB and SWITCH remains metadata until the runtime operator comman
 - Legacy `TIME.OCC` placeholder documents are rejected with an explicit migration instruction. No automatic mapping to a time output is attempted because OCC is not a Trend Time Module output.
 
 - `SCALE` намеренно имеет в Studio один signal input IN; compiler материализует IN_MIN/IN_MAX/OUT_MIN/OUT_MAX как отдельные Core FLOAT_INPUT nodes, сохраняя canonical Core-контракт. Catalog parity test учитывает это проектное отображение.
+
+
+## DEV193 — уточнение SCHEDULE
+Табличная строка SCHEDULE означает только наличие AVIC Core Schedule consumer. Она не доказывает паритет с Trend IQ3 Schedule Module H. DEV193 подключил редактор к единому Core Scheduler object; см. `FBD_TREND_SET_PARITY_GAP_AUDIT_DEV193_RU.md` для полного списка Trend modules и пробелов.
