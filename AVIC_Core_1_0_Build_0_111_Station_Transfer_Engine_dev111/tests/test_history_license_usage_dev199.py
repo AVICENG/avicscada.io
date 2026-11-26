@@ -37,7 +37,6 @@ def test_history_configuration_activates_unique_points_and_releases_on_disable(t
     history = make_history(tmp_path, usage)
     history.configure_point("station-1", "point-1", enabled=True)
     history.configure_point("station-1", "point-1", enabled=True)
-    history.configure_point("station-1", "point-2", enabled=False) if False else None
     assert history.configured_points("station-1") == ["point-1"]
     assert usage.calls == [("history:station-1", ["point-1"]),
                            ("history:station-1", ["point-1"])]
