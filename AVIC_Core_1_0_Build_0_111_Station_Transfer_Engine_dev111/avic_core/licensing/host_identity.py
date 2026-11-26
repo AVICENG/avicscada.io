@@ -16,33 +16,49 @@ from typing import Callable
 
 
 def _set_windows_identity_acl(path: Path, user_sid: str, *, is_directory: bool) -> None:
-    """Apply a protected DACL using explicit numeric SIDs; never grant Local Account."""
-    if not re.fullmatch(r"S-1-5-21-(?:\d+-){2,}\d+", user_sid):
+    """Apply a protected DACL with explicit user/System/Admin SIDs using Win32 APIs."""
+    if not re.fullmatch(r"S-1-5-21-(?:\\d+-){2,}\\d+", user_sid):
         raise HostIdentityError("Некорректный Windows user SID для ACL installation identity")
 
-    inheritance = "(OI)(CI)" if is_directory else ""
-    permission = f"{inheritance}F"
-    # Remove the broad Local Account group if an older installation created it.
-    # The next command disables inheritance and replaces grants for the exact
-    # current user, Local System and Builtin Administrators.
-    subprocess.run(
-        ["icacls", str(path), "/remove:g", "*S-1-5-113"],
-        capture_output=True, text=True, timeout=10,
-    )
-    grants = [
-        f"*{user_sid}:{permission}",
-        f"*S-1-5-18:{permission}",
-        f"*S-1-5-32-544:{permission}",
+    # Replace the DACL rather than relying on icacls name/SID resolution. The
+    # protected DACL excludes inherited broad principals such as Local Account.
+    import ctypes
+    from ctypes import wintypes
+
+    inheritance = "OICI" if is_directory else ""
+    user_ace = f"(A;{inheritance};FA;;;{user_sid})"
+    system_ace = f"(A;{inheritance};FA;;;SY)"
+    admins_ace = f"(A;{inheritance};FA;;;BA)"
+    sddl = "D:P" + user_ace + system_ace + admins_ace
+
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    convert = advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW
+    convert.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.DWORD),
     ]
-    try:
-        subprocess.run(
-            ["icacls", str(path), "/inheritance:r", "/grant:r", *grants],
-            check=True, capture_output=True, text=True, timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+    convert.restype = wintypes.BOOL
+    set_security = advapi32.SetFileSecurityW
+    set_security.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p]
+    set_security.restype = wintypes.BOOL
+    local_free = kernel32.LocalFree
+    local_free.argtypes = [ctypes.c_void_p]
+    local_free.restype = ctypes.c_void_p
+
+    descriptor = ctypes.c_void_p()
+    size = wintypes.DWORD()
+    if not convert(sddl, 1, ctypes.byref(descriptor), ctypes.byref(size)):
         raise HostIdentityError(
-            f"Не удалось установить защищённый ACL installation identity: {exc}"
-        ) from exc
+            f"Не удалось сформировать защищённый ACL installation identity: {ctypes.WinError(ctypes.get_last_error())}"
+        )
+    try:
+        if not set_security(str(path), 0x00000004, descriptor):
+            raise HostIdentityError(
+                f"Не удалось применить защищённый ACL installation identity: {ctypes.WinError(ctypes.get_last_error())}"
+            )
+    finally:
+        local_free(descriptor)
 
 class HostIdentityError(RuntimeError):
     """Raised when a stable machine identity cannot safely be obtained."""
