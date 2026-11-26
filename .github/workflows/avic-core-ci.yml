@@ -34,9 +34,9 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 120
-
     defaults:
       run:
+        shell: cmd
         working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
 
     steps:
@@ -46,7 +46,7 @@ jobs:
       - name: Verify installed Python
         run: |
           python --version
-          python -c "import sys; assert sys.version_info >= (3, 11), f'AVIC requires Python >=3.11; found {sys.version}'"
+          python -c "import sys; assert sys.version_info >= (3, 11)"
 
       - name: Install AVIC Core and development dependencies
         run: |
@@ -61,7 +61,7 @@ jobs:
 
       - name: Run full test suite
         run: |
-          New-Item -ItemType Directory -Force -Path test-results | Out-Null
+          if not exist test-results mkdir test-results
           python -m pytest -q -rs --junitxml=test-results/junit.xml
 
       - name: Upload test report
