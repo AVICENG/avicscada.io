@@ -26,16 +26,16 @@
     backdrop.hidden = true;
     backdrop.innerHTML = `
       <section id="avic-exit-dialog" role="dialog" aria-modal="true" aria-labelledby="avic-exit-title">
-        <header><strong id="avic-exit-title">Выход из AVIC</strong></header>
+        <header><strong id="avic-exit-title">Выход из AVIC Workbench</strong></header>
         <div class="body">
           <div class="message" id="avic-exit-message">Проверка открытых черновиков…</div>
-          <div class="hint">AVIC сохраняет незавершённую работу как черновик. Публикация и применение конфигурации не выполняются при выходе.</div>
+          <div class="hint">Закрывается только интерфейс Workbench. Core и работающий Runtime не останавливаются; их остановка — отдельная инженерная операция. Публикация и применение конфигурации при выходе не выполняются.</div>
         </div>
         <div class="actions">
           <button type="button" id="avic-exit-stay">Остаться</button>
           <button type="button" id="avic-exit-discard" class="danger" hidden>Выйти с потерей изменений</button>
           <button type="button" id="avic-exit-prepare" class="primary">Сохранить черновики</button>
-          <button type="button" id="avic-exit-close" class="primary" hidden>Закрыть окно</button>
+          <button type="button" id="avic-exit-close" class="primary" hidden>Закрыть Workbench</button>
         </div>
       </section>`;
     document.body.append(backdrop);

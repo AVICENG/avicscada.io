@@ -193,6 +193,7 @@ def test_application_exit_flow_is_available_on_all_workspaces(tmp_path):
     assert "Выйти с потерей изменений" in script.text
     assert "noActiveEditor" in script.text
     assert "Открытых инженерных редакторов" in script.text
+    assert "Core и работающий Runtime не останавливаются" in script.text
 
     for path in ("/", "/graphics", "/logic", "/repository?section=WebApplication"):
         page = client.get(path)
