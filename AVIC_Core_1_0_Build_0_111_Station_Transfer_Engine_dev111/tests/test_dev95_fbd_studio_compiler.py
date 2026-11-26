@@ -375,3 +375,14 @@ def test_fbd_studio_page_copy_assigns_unique_page_code():
     copy_function = html[copy_start:copy_end]
     assert "const usedPageCodes=new Set(state.pages.map" in copy_function
     assert "c.code='P'+pageNumber" in copy_function
+
+
+def test_fbd_studio_page_check_ignores_to_connective_navigation_marker():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    check_start = html.index("function check(){")
+    check_end = html.index("\nfunction undo(){", check_start)
+    check_function = html[check_start:check_end]
+    assert "if(m.type==='TO_CONNECTIVE')return" in check_function
