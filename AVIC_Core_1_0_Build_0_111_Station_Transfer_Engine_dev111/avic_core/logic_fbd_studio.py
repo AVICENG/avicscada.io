@@ -404,6 +404,7 @@ class FBDStudioService:
     _COMPILER_BLOCKS = {
         "BOOL_INPUT": "BOOL_INPUT", "FLOAT_INPUT": "FLOAT_INPUT",
         "KNOB": "KNOB", "CONSTANT": "CONSTANT",
+        "ANALOG_INPUT": "ANALOG_INPUT", "EXTERNAL_SENSOR": "EXTERNAL_SENSOR",
         "POINT_INPUT": "POINT_INPUT", "SCHEDULE": "SCHEDULE",
         "AND": "AND", "OR": "OR", "NOT": "NOT", "COMBINATION": "COMBINATION", "ADD": "ADD",
         "SUB": "SUB", "MUL": "MUL", "DIV": "DIV", "SELECT": "SELECT",
@@ -499,6 +500,29 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: {typ} должен содержать конечное число")
+                if typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
+                    raw_value = params.get("rawValue", params.get("value", 0.0))
+                    try:
+                        import math
+                        if isinstance(raw_value, bool) or not math.isfinite(float(raw_value)):
+                            raise ValueError
+                        points = params.get("scalingPoints") or []
+                        if not isinstance(points, list) or len(points) > 20:
+                            raise ValueError
+                        xs = []
+                        for pair in points:
+                            if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                                raise ValueError
+                            x, y = pair
+                            if any(isinstance(v, bool) or not math.isfinite(float(v)) for v in (x, y)):
+                                raise ValueError
+                            xs.append(float(x))
+                        if len(xs) != len(set(xs)):
+                            raise ValueError
+                        if params.get("sensorType") is not None and len(points) < 2:
+                            raise ValueError
+                    except (TypeError, ValueError, OverflowError):
+                        issues.append(f"Блок «{module.get('name') or typ}»: {typ} требует конечный rawValue и корректную таблицу scalingPoints")
                 if typ == "DELAY":
                     cfg = params.get("delay") or {}
                     try:
@@ -803,6 +827,9 @@ class FBDStudioService:
                             params = {"value": bool(raw_value)}
                     elif typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
                         params = {"value": float(params.get("value", core_fbd.BLOCKS[typ]["defaults"].get("value", 0.0)))}
+                    elif typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
+                        params = {key: params[key] for key in ("rawValue", "value", "sensorType", "sensorPart",
+                                  "scalingRange", "scalingMode", "scalingInput", "scalingPoints") if key in params}
                     elif typ == "DELAY":
                         cfg = params.get("delay") or {}
                         params = {"on_delay": float(cfg.get("onDelay", 5.0)),
