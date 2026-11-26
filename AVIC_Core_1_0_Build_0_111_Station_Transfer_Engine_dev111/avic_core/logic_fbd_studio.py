@@ -180,7 +180,7 @@ class FBDStudioService:
             source_signal = cls._signal_type(source_port.get("type"))
             target_signal = cls._signal_type(target_port.get("type"))
             if source_signal and target_signal and source_signal != "any" and target_signal != "any" and source_signal != target_signal:
-                raise ValueError("FBD wire connects incompatible signal types")
+                raise ValueError("FBD signal type differs: wire connects incompatible signal types")
 
         fbd_points = data.get("fbdPoints", [])
         if not isinstance(fbd_points, list):
@@ -515,7 +515,7 @@ class FBDStudioService:
                     try:
                         core._normalize_knob_config(params)
                     except ValueError as exc:
-                        issues.append(f"Блок «{module.get('name') or typ}»: {exc}")
+                        issues.append(f"Блок «{module.get('name') or typ}» ({typ}): {exc}")
                 if typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                     raw_value = params.get("rawValue", params.get("value", 0.0))
                     try:
