@@ -185,17 +185,3 @@ FBD нельзя объявить завершённым, пока каждый 
 **Покрытие после DEV190:** 27 из 29 типов редактора имеют Core-контракт и путь компиляции. Остаются SWITCH и TIME. Добавлены тесты AUTO/MANUAL, bumpless transfer, RESET и сквозной Studio → Core compile/simulation. CI должен подтвердить результат.
 
 
-## 17. Изменения DEV190 — PID_LOOP
-
-В DEV190 добавлен Core PID с четырьмя числовыми выходами OUT/P/I/D и шестью входами PV/SP/ENABLE/MANUAL/MANUAL_OUT/RESET. Реализованы:
-- direct/reverse action;
-- пропорциональная, интегральная и дифференциальная составляющие;
-- derivative-on-measurement и фильтр D;
-- deadband, output/integral limits, conditional-integration anti-windup;
-- manual mode, tracking integrator и безударный возврат в AUTO;
-- disabled output, reset и ограничение скорости выхода;
-- фиксированный sampleTime и сохранение состояния в runtime_state стратегии.
-
-Семантика перенесена из локального AVIC PID engine редактора в Core; это не утверждение о полной идентичности закрытому алгоритму Trend. Параметры проходят строгую серверную проверку. Компилятор сохраняет все четыре выхода, а Core simulator публикует значения по именам портов.
-
-**Покрытие после DEV190:** 27 из 29 типов редактора имеют Core-контракт и путь компиляции. Остаются SWITCH и TIME. Добавлены тесты AUTO/MANUAL, bumpless transfer, RESET и сквозной Studio → Core compile/simulation. CI должен подтвердить результат.
