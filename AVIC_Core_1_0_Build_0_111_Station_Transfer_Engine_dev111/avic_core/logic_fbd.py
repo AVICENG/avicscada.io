@@ -594,7 +594,7 @@ class FBDService:
                        or node["type"] in {"KNOB", "ANALOG_INPUT", "EXTERNAL_SENSOR", "SWITCH"}}
         unknown = set(inputs) - overridable
         if unknown:
-            raise ValueError("Переопределять можно только виртуальные входы и KNOB; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
+            raise ValueError("Переопределять можно только виртуальные входы, KNOB, датчики и SWITCH; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
         incoming = {}
         for link in graph["links"]:
             incoming[(link["target_node_id"], link["target_port"])] = (link["source_node_id"], link["source_port"])
@@ -780,7 +780,7 @@ class FBDService:
             elif typ == "TIME":
                 from datetime import datetime, timedelta
                 from zoneinfo import ZoneInfo
-                time_info = self.core.time_management.station_time(station_id)
+                time_info = self.core.time_management.station_time(graph["station_id"])
                 utc_now = now_utc or datetime.fromisoformat(time_info["utc_now"])
                 local_now = utc_now.astimezone(ZoneInfo(time_info["timezone"]))
                 weekday = local_now.isoweekday()
