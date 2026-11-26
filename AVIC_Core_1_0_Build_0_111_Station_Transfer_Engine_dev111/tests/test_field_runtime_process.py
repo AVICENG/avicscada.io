@@ -59,3 +59,15 @@ def test_field_runtime_maintenance_stop_requires_confirmation_and_token():
     finally:
         _cleanup(runtime)
 
+
+
+def test_field_runtime_heartbeat_advances_without_supervisor_commands():
+    runtime = FieldRuntimeProcess(heartbeat_interval=0.05)
+    try:
+        runtime.start()
+        before = runtime.status()["last_heartbeat_monotonic"]
+        time.sleep(0.15)
+        after = runtime.status()["last_heartbeat_monotonic"]
+        assert after > before
+    finally:
+        _cleanup(runtime)

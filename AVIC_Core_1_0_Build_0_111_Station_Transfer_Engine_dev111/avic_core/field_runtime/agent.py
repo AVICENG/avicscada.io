@@ -8,17 +8,23 @@ import time
 from time import monotonic
 
 
-def _read_message(reader):
-    raw = reader.readline(65537)
-    if not raw:
-        return None
-    if len(raw) > 65536:
-        return None
-    try:
-        value = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    return value if isinstance(value, dict) else None
+def _recv_line(connection: socket.socket, buffer: bytearray, timeout: float):
+    connection.settimeout(timeout)
+    while b"\n" not in buffer:
+        try:
+            chunk = connection.recv(4096)
+        except socket.timeout:
+            return None
+        except OSError:
+            return False
+        if not chunk:
+            return False
+        buffer.extend(chunk)
+        if len(buffer) > 65536:
+            return False
+    line, _, remainder = buffer.partition(b"\n")
+    buffer[:] = remainder
+    return line
 
 
 def run(host: str, port: int, token: str, heartbeat: float) -> int:
@@ -27,33 +33,37 @@ def run(host: str, port: int, token: str, heartbeat: float) -> int:
     state = "RUNNING"
     last_heartbeat = started
     connection = None
-    reader = None
+    buffer = bytearray()
     while state == "RUNNING":
         if connection is None:
             try:
                 connection = socket.create_connection((host, port), timeout=1.0)
-                connection.settimeout(None)
-                reader = connection.makefile("rb")
                 connection.sendall((json.dumps({"kind": "hello", "token": token}) + "\n").encode("utf-8"))
+                buffer.clear()
             except OSError:
                 if connection is not None:
                     connection.close()
-                connection = reader = None
+                connection = None
                 time.sleep(min(heartbeat, 1.0))
                 last_heartbeat = monotonic()
                 continue
-        request = _read_message(reader)
-        if request is None:
-            try: reader.close()
-            except Exception: pass
-            try: connection.close()
-            except Exception: pass
-            connection = reader = None
-            # Supervisor loss is not a field stop. Keep the service process alive
-            # and retry its control connection while the local runtime continues.
+        raw = _recv_line(connection, buffer, heartbeat)
+        if raw is None:
+            # Local process heartbeat continues even with no Supervisor command.
             last_heartbeat = monotonic()
             continue
-        if request.get("protocol") != 1:
+        if raw is False:
+            try: connection.close()
+            except Exception: pass
+            connection = None
+            last_heartbeat = monotonic()
+            # Supervisor loss is not a field stop. Keep process alive and retry.
+            continue
+        try:
+            request = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if not isinstance(request, dict) or request.get("protocol") != 1:
             continue
         command = request.get("command")
         request_id = request.get("request_id")
@@ -88,14 +98,9 @@ def run(host: str, port: int, token: str, heartbeat: float) -> int:
         try:
             connection.sendall((json.dumps(response, separators=(",", ":")) + "\n").encode("utf-8"))
         except OSError:
-            try: reader.close()
-            except Exception: pass
             try: connection.close()
             except Exception: pass
-            connection = reader = None
-    if reader is not None:
-        try: reader.close()
-        except Exception: pass
+            connection = None
     if connection is not None:
         try: connection.close()
         except Exception: pass
