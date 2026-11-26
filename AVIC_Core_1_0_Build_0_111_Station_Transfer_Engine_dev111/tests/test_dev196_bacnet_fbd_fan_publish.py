@@ -3,7 +3,6 @@ import time
 
 from fastapi.testclient import TestClient
 
-from avic_core.domain.models import Device, Point
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.ui import create_ui_app
 
@@ -87,32 +86,59 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
             "project_id": project["id"], "name": "AHU-01",
         }).json()
 
-        # Create a real Core driver instance and bind the physical Point to its owner.
+        # Create the same network-bound BACnet driver that the Discovery UI creates.
         driver = app.state.driver_manager.create_instance(
-            station["id"], "bacnet-ip", "Trend BACnet/IP", config={})
+            station["id"], "bacnet-ip", "Trend BACnet/IP",
+            config={
+                "network_id": "test-lan", "interface_name": "Test Ethernet",
+                "local_address": "192.0.2.10", "subnet_cidr": "192.0.2.0/24",
+                "udp_port": 47808, "timeout": 2, "poll_interval_seconds": 5,
+                "bindings": [],
+            })
         driver_id = driver["id"]
-        device = Device(
-            name="Trend BACnet Controller", station_id=station["id"],
-            protocol="bacnet/ip", address="192.0.2.50:47808",
-            driver_instance_id=driver_id,
+        native = "bacnet:binary-input:1"
+        inspection = {
+            "protocol": "BACnet/IP", "network_id": "test-lan",
+            "device": {
+                "native_identity": "bacnet:device:1234",
+                "address": "192.0.2.50:47808", "device_instance": 1234,
+                "name": "Trend BACnet Controller", "manufacturer": "Trend",
+                "model": "BACnet Controller", "identity_sources": {"manufacturer": "BACnet Vendor ID"},
+            },
+            "points": [{
+                "native_identity": native, "name": "Fan Status",
+                "data_type": "binary-input", "direction": "input",
+                "unit": "", "object_type": "binary-input",
+            }],
+        }
+        import_payload = {
+            "driver_instance_id": driver_id, "inspection": inspection,
+            "selected_native_ids": [native], "import_all": False,
+        }
+        preview = client.post(
+            f"/api/stations/{station['id']}/protocol-devices/import-preview",
+            json=import_payload,
         )
-        app.state.core.repository.save(device)
-        physical = Point(
-            name="Fan Status", device_id=device.id, data_type="binary-input",
-            native_identity="bacnet:binary-input:1",
-            source_ref="bacnet://device/1234/binary-input/1/present-value",
-            value=None, quality="UNCERTAIN",
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["bindings_validated"] is True
+        imported = client.post(
+            f"/api/stations/{station['id']}/protocol-devices/import",
+            json=import_payload,
         )
-        app.state.core.repository.save(physical)
+        assert imported.status_code == 200, imported.text
+        physical_id = imported.json()["points_added"][0]
+        saved_driver = app.state.driver_manager.get_instance(driver_id)
+        assert saved_driver["config"]["bindings"][0]["point_id"] == physical_id
+        assert saved_driver["config"]["bindings"][0]["object_type"] == 3
 
-        # Use the same managed Driver Manager lifecycle as production, with a fake
-        # ReadProperty transport so the CI run never needs access to plant hardware.
+        # Use the managed Driver Manager lifecycle with a fake ReadProperty peer
+        # so CI never needs access to plant hardware.
         app.state.driver_manager.register_adapter_factory(
             "bacnet-ip",
             lambda core, instance: BacnetIpPointAdapter(
                 controller, core.point_runtime, instance.id,
                 [BacnetIpPointBinding(
-                    physical.id, ("192.0.2.50", 47808), 1234, 3, 1, property_id=85,
+                    physical_id, ("192.0.2.50", 47808), 1234, 3, 1, property_id=85,
                 )],
             ),
         )
@@ -120,17 +146,17 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
             driver_id, poll_interval_seconds=0.1)
         assert driver_state["field_read_enabled"] is True
         deadline = time.monotonic() + 3.0
-        sample = app.state.core.point_runtime.read(physical.id)
+        sample = app.state.core.point_runtime.read(physical_id)
         while sample.quality != "GOOD" and time.monotonic() < deadline:
             time.sleep(0.02)
-            sample = app.state.core.point_runtime.read(physical.id)
+            sample = app.state.core.point_runtime.read(physical_id)
         assert sample.value is True and sample.quality == "GOOD"
         assert controller.calls and controller.calls[0][4] == 85
 
         exposed_id = "b6a8a9a2-6f76-4e12-8a36-1b2c3d4e5f60"
         created = client.post(f"/api/stations/{station['id']}/fbd-studio", json={
             "name": "AHU-01 Fan Logic",
-            "data": _studio_graph(physical.id, exposed_id),
+            "data": _studio_graph(physical_id, exposed_id),
         })
         assert created.status_code == 201, created.text
         source = created.json()
@@ -188,7 +214,7 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
                 {"type": "heading", "text": "Приточная установка AHU-01",
                  "x": 24, "y": 20, "width": 600, "height": 58},
                 {"type": "value", "label": "Состояние BACnet-контроллера",
-                 "point_id": physical.id, "x": 24, "y": 100, "width": 260, "height": 90},
+                 "point_id": physical_id, "x": 24, "y": 100, "width": 260, "height": 90},
                 {"type": "value", "label": "Состояние FAN_RUN по FBD",
                  "point_id": exposed_id, "x": 24, "y": 210, "width": 260, "height": 90},
                 {"type": "graphic", "graphic_id": graphic["id"],
@@ -204,7 +230,7 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
         rendered = client.get(f"/published/{station['id']}/ahu-01")
         assert rendered.status_code == 200, rendered.text
         assert "Приточная установка AHU-01" in rendered.text
-        assert physical.id in rendered.text and exposed_id in rendered.text
+        assert physical_id in rendered.text and exposed_id in rendered.text
         assert f"/published-graphics/{station['id']}/{graphic['id']}" in rendered.text
 
         fan_runtime = client.get(
