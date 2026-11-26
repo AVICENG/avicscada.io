@@ -114,6 +114,7 @@ class FBDService:
       "SCHEDULE":{"category":"Schedule","label":"Расписание станции","inputs":{},"outputs":{"OUT":"any"},"defaults":{"schedule_id":""}},
       "AND":{"category":"Logic","label":"И (AND)","inputs":{"A":"bool","B":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
       "OR":{"category":"Logic","label":"ИЛИ (OR)","inputs":{"A":"bool","B":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
+      "COMBINATION":{"category":"Logic","label":"Комбинационная логика","inputs":{"E":"bool","F":"bool","G":"bool","H":"bool"},"outputs":{"OUT":"bool"},"defaults":{"comboRows":[{"enabled":true,"cells":["E","F","",""]},{"enabled":false,"cells":["","","",""]},{"enabled":false,"cells":["","","",""]},{"enabled":false,"cells":["","","",""]}]}},
       "NOT":{"category":"Logic","label":"НЕ (NOT)","inputs":{"IN":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
       "ADD":{"category":"Math","label":"Сложение","inputs":{"A":"float","B":"float"},"outputs":{"OUT":"float"},"defaults":{}},
       "SUB":{"category":"Math","label":"Вычитание","inputs":{"A":"float","B":"float"},"outputs":{"OUT":"float"},"defaults":{}},
@@ -211,6 +212,22 @@ class FBDService:
                 if isinstance(val,bool) or not isinstance(val,(int,float)) or not math.isfinite(float(val)):
                     raise ValueError(f"{typ}.value должен быть конечным числом")
                 params={**params,"value":float(val)}
+            if typ == "COMBINATION":
+                rows=params.get("comboRows", spec["defaults"]["comboRows"])
+                if not isinstance(rows,list) or len(rows)!=4:
+                    raise ValueError("COMBINATION.comboRows должен содержать ровно четыре строки")
+                clean_rows=[]
+                for row_index,row in enumerate(rows):
+                    if not isinstance(row,dict) or not isinstance(row.get("enabled"),bool):
+                        raise ValueError(f"COMBINATION: строка {row_index+1} должна иметь логический enabled")
+                    cells=row.get("cells")
+                    if not isinstance(cells,list) or len(cells)!=4:
+                        raise ValueError(f"COMBINATION: строка {row_index+1} должна содержать четыре ячейки E/F/G/H")
+                    allowed={"","E","e","F","f","G","g","H","h"}
+                    if any(not isinstance(cell,str) or cell not in allowed for cell in cells):
+                        raise ValueError(f"COMBINATION: недопустимая ячейка в строке {row_index+1}")
+                    clean_rows.append({"enabled":row["enabled"],"cells":list(cells)})
+                params={**params,"comboRows":clean_rows}
             studio_module_id = (raw.get("params") or {}).get("_studio_module_id")
             if studio_module_id:
                 params["_studio_module_id"] = str(studio_module_id)
@@ -572,6 +589,21 @@ class FBDService:
                                "evaluated_at":evaluated["evaluated_at"], "local_time":evaluated["local_time"],
                                "timezone":evaluated["timezone"], "next_change":evaluated["next_change"],
                                "output_mode":"INTENT_ONLY_NO_FIELD_WRITE"}
+            elif typ == "COMBINATION":
+                rows=params.get("comboRows",spec["defaults"]["comboRows"])
+                def row_matches(row):
+                    if not row.get("enabled"):
+                        return False
+                    cells=[cell for cell in row.get("cells",[]) if cell]
+                    if not cells:
+                        return False
+                    for cell in cells:
+                        letter=cell.upper()
+                        required=cell.isupper()
+                        if args[letter] is not required:
+                            return False
+                    return True
+                out=any(row_matches(row) for row in rows)
             elif typ == "AND": out = bool(args["A"] and args["B"])
             elif typ == "OR": out = bool(args["A"] or args["B"])
             elif typ == "NOT": out = not bool(args["IN"])
