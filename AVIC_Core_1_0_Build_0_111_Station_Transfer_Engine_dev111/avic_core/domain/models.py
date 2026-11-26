@@ -118,6 +118,7 @@ class Point(BaseObject):
     point_type: str = "physical"
     licensed_active: bool | None = None
     published: bool = False
+    licensed_usage: list[str] = field(default_factory=list)
 
     def update_value(self, value: Any, quality: PointQuality, timestamp: datetime | None = None):
         self.value = value
