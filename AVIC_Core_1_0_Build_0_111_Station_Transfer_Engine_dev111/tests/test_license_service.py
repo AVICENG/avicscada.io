@@ -384,3 +384,50 @@ def test_alarm_and_source_point_can_be_deleted_in_one_optimistic_batch(tmp_path)
         repo.get_record(alarm.id)
     with pytest.raises(EntityNotFound):
         repo.get_record(point.id)
+
+
+def test_one_point_shared_across_engineering_subsystems_consumes_one_license_slot(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+    from avic_core.licensing import summarize_point_usage
+
+    repo = SQLiteRepository(tmp_path / "shared-point-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Supply temperature", device_id=device.id, licensed_active=False)
+    service.save_graph([platform, project, station, device, point])
+
+    # The same physical point is referenced by multiple persistent functions.
+    service.set_point_usage("logic:ahu-sequence", [point.id])
+    service.set_point_usage("graphics:ahu-page", [point.id])
+    service.set_point_usage(f"schedule:{station.id}", [point.id])
+    service.set_point_usage(f"history:{station.id}", [point.id])
+    alarm = Alarm("Low supply temperature", station_id=station.id, source_object_id=point.id)
+    service.save_graph([alarm])
+
+    stored = repo.get_record(point.id)["payload"]
+    summary = summarize_point_usage(repo.list_records(entity_type="Point"))
+    assert set(stored["licensed_usage"]) == {
+        "logic:ahu-sequence", "graphics:ahu-page", f"schedule:{station.id}",
+        f"history:{station.id}", f"alarm:{alarm.id}",
+    }
+    assert summary["licensed_active_points"] == 1
+    assert summary["licensed_active_point_ids"] == [point.id]
+
+    service.set_point_usage("logic:ahu-sequence", [])
+    service.set_point_usage("graphics:ahu-page", [])
+    service.set_point_usage(f"schedule:{station.id}", [])
+    service.set_point_usage(f"history:{station.id}", [])
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is True
+    assert stored["licensed_usage"] == [f"alarm:{alarm.id}"]
+
+    alarm_record = repo.get_record(alarm.id)
+    service.delete_graph({alarm.id: alarm_record["version"]})
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is False
+    assert stored["licensed_usage"] == []
