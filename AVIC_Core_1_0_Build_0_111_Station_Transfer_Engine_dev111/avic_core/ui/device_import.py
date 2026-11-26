@@ -111,8 +111,9 @@ class DeviceImportService:
             direction = PointDirection.OUTPUT if "output" in object_type else PointDirection.INPUT
             point = Point(name=str(obj.get("object_name") or f"{object_type} {obj.get('instance', '')}"),
                 device_id=device.id, data_type=object_type, direction=direction, source_ref=native,
-                native_identity=native, object_type=object_type, quality=PointQuality.UNCERTAIN)
-            self.core.repository.save(point)
+                native_identity=native, object_type=object_type, quality=PointQuality.UNCERTAIN,
+                licensed_active=False)
+            self.core.objects.save_graph([point])
             added.append(point.id)
         return {"device_id": device.id, "device_created": created_device, "points_added": added,
                 "points_skipped_existing": skipped, "selected_count": len(chosen),
