@@ -136,6 +136,14 @@ class CoreObjectService:
             point, version = self.repository.get(point_id, Point, connection=connection)
             had_tracked_usage = bool(point.licensed_usage)
             if point_id in desired:
+                if not had_tracked_usage:
+                    # Preserve legacy/manual activation separately from the
+                    # activation contributed by this set of engineering references.
+                    point.licensed_base_active = (
+                        bool(point.licensed_active)
+                        if point.licensed_active is not None
+                        else point.point_type == "physical"
+                    )
                 usages.add(source_key)
             else:
                 usages.discard(source_key)
@@ -143,7 +151,8 @@ class CoreObjectService:
             if point.licensed_usage:
                 point.licensed_active = True
             elif had_tracked_usage:
-                point.licensed_active = False
+                point.licensed_active = bool(point.licensed_base_active)
+                point.licensed_base_active = None
             changed.append((point, version))
         self.assert_point_usage_transition(records, [point for point, _ in changed])
         versions = {}
