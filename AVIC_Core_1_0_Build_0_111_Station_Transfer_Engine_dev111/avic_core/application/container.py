@@ -79,7 +79,7 @@ class CoreApplication:
         self._shutdown_in_progress = False
         self._shutdown_blocked = False
         self.events = EventService(self.paths.databases / "events.sqlite3")
-        self.history = HistoryService(self.paths.databases / "history.sqlite3")
+        self.history = HistoryService(self.paths.databases / "history.sqlite3", repository=self.repository, point_usage_service=self.objects)
         self.dependencies = DependencyService(self.paths.databases / "dependencies.sqlite3")
         self.analytics = AnalyticsService(self.paths.databases / "analytics.sqlite3")
         self.notifications = NotificationService(self.paths.databases / "notifications.sqlite3")
