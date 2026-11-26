@@ -188,3 +188,75 @@ def test_workbench_can_require_license_for_commercial_installation(tmp_path, mon
     monkeypatch.delenv("AVIC_LICENSE_FILE", raising=False)
     with pytest.raises(RuntimeError, match="Коммерческий режим требует"):
         create_ui_app(data_dir=str(tmp_path / "commercial"))
+
+
+
+def test_inactive_discovered_points_do_not_consume_license_capacity(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from types import SimpleNamespace
+
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    repo = SQLiteRepository(tmp_path / "draft-points.db")
+    service = CoreObjectService(repo, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("P")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    discovered = Point("Discovered", device_id=device.id, licensed_active=False)
+    service.save_graph([platform, project, station, device, discovered])
+    active = Point("Active", device_id=device.id)
+    service.save_graph([active])
+    assert len(repo.list_records(entity_type="Point")) == 2
+
+
+def test_activating_existing_draft_point_consumes_capacity_atomically(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from types import SimpleNamespace
+
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    repo = SQLiteRepository(tmp_path / "activate-point.db")
+    service = CoreObjectService(repo, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("P")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    draft = Point("Draft", device_id=device.id, licensed_active=False)
+    service.save_graph([platform, project, station, device, draft])
+    active = Point("Active", device_id=device.id)
+    service.save_graph([active])
+    draft.licensed_active = True
+    with pytest.raises(LicenseLimitExceeded):
+        service.save_graph([draft], expected_versions={draft.id: 1})
+    stored = next(r for r in repo.list_records(entity_type="Point") if r["entity_id"] == draft.id)
+    assert stored["payload"]["licensed_active"] is False
+
+
+def test_calculated_point_requires_publication_and_activation_to_be_licensed():
+    from avic_core.licensing import summarize_point_usage
+    records = [
+        {"entity_type": "Point", "entity_id": "calc-draft",
+         "payload": {"point_type": "calculated", "published": False, "licensed_active": True}},
+        {"entity_type": "Point", "entity_id": "calc-live",
+         "payload": {"point_type": "calculated", "published": True, "licensed_active": True}},
+        {"entity_type": "Point", "entity_id": "discovered",
+         "payload": {"point_type": "physical", "licensed_active": False}},
+    ]
+    result = summarize_point_usage(records, point_limit=1)
+    assert result["licensed_active_points"] == 1
+    assert result["licensed_active_point_ids"] == ["calc-live"]
