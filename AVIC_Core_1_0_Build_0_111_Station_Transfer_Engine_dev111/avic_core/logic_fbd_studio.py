@@ -487,7 +487,10 @@ class FBDStudioService:
                 if set(ins) != set(expected_inputs) or len(ins) != len(expected_inputs):
                     issues.append(f"Блок «{module.get('name') or typ}»: входы редактора {ins} не совпадают с контрактом {expected_inputs}")
                 if set(outs) != set(spec["outputs"]) or len(outs) != len(spec["outputs"]):
-                    issues.append(f"Блок «{module.get('name') or typ}»: выходы редактора {outs} не совпадают с контрактом Core {list(spec['outputs'])}")
+                    if typ == "TIME" and set(outs) == {"OCC"}:
+                        issues.append(f"Блок «{module.get('name') or typ}»: старый TIME.OCC placeholder больше не поддерживается; удалите блок и создайте новый TIME с 21 именованным выходом")
+                    else:
+                        issues.append(f"Блок «{module.get('name') or typ}»: выходы редактора {outs} не совпадают с контрактом Core {list(spec['outputs'])}")
                 params = module.get("params") or {}
                 if typ == "BOOL_INPUT":
                     value = params.get("value", False)
