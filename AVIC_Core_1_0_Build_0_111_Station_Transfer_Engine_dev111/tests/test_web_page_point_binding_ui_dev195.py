@@ -30,6 +30,10 @@ def test_page_builder_selects_station_points_and_publishes_live_value_and_link(t
         catalog = client.get(f"/api/engineering/points?station_id={station['id']}&limit=5000")
         assert catalog.status_code == 200
         assert any(item["id"] == point.id for item in catalog.json()["points"])
+        runtime = client.get(f"/api/engineering/points/runtime?station_id={station['id']}")
+        assert runtime.status_code == 200
+        sample = next(item for item in runtime.json()["points"] if item["point_id"] == point.id)
+        assert sample["value"] == 22.5 and sample["quality"] == "GOOD"
 
         saved = client.put(f"/api/web-pages/{page['id']}", json={
             "expected_revision": page["revision"],
@@ -49,6 +53,7 @@ def test_page_builder_selects_station_points_and_publishes_live_value_and_link(t
         rendered = client.get(f"/published/{station['id']}/ahu-overview")
         assert rendered.status_code == 200
         assert f'data-point-id="{point.id}"' in rendered.text
+        assert "22.5" in rendered.text
         assert 'href="/alarms"' in rendered.text
         assert "Аварии" in rendered.text
 
