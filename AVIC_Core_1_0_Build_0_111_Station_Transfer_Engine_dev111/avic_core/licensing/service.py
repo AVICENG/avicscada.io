@@ -94,4 +94,5 @@ def summarize_point_usage(point_records: Iterable[dict], point_limit: int | None
         "by_type": by_type,
         "warning": warning,
         "unique_point_ids": sorted(unique),
+        "licensed_active_point_ids": sorted(licensed_ids),
     }
