@@ -20,7 +20,7 @@ def _source_graph(value="valid"):
             "code": "P1",
             "modules": [
                 {"id": "knob", "type": "KNOB", "name": "Уставка оператора",
-                 "x": 30, "y": 40, "params": {"value": 50.0},
+                 "x": 30, "y": 40, "params": {"value": 50.0, "bottom_range": 10.0, "top_range": 90.0, "cov_increment": 2.5, "units": "°C", "user_level": 7},
                  "ins": [], "outs": [{"id": "knob-out", "name": "OUT", "type": "num"}]},
                 {"id": "constant", "type": "CONSTANT", "name": "Поправка",
                  "x": 30, "y": 180, "params": {"value": constant_value},
@@ -70,6 +70,12 @@ def test_knob_and_constant_compile_and_execute_in_core(tmp_path):
     assert compiled.status_code == 200, compiled.text
     core_document = compiled.json()["core_document"]
     assert {node["type"] for node in core_document["nodes"]} >= {"KNOB", "CONSTANT"}
+    knob = next(node for node in core_document["nodes"] if node["type"] == "KNOB")
+    assert knob["params"]["bottom_range"] == 10.0
+    assert knob["params"]["top_range"] == 90.0
+    assert knob["params"]["cov_increment"] == 2.5
+    assert knob["params"]["units"] == "°C"
+    assert knob["params"]["user_level"] == 7
 
     simulation = client.post(f"/api/fbd/{core_document['id']}/simulate", json={})
     assert simulation.status_code == 200, simulation.text
