@@ -182,13 +182,19 @@ class FBDService:
         if not isinstance(nodes,list) or not isinstance(links,list) or len(nodes)>1000 or len(links)>5000: raise ValueError("Недопустимый размер FBD-графа")
         old_nodes={r["entity_id"]:r for r in self.core.repository.list_records(entity_type="LogicNode") if r["payload"].get("document_id")==document_id}
         old_links={r["entity_id"]:r for r in self.core.repository.list_records(entity_type="LogicLink") if r["payload"].get("document_id")==document_id}
+        # Snapshot repository-wide IDs and this document's pages once. Re-querying
+        # these tables for every node made large strategy saves quadratic.
+        all_node_ids={r["entity_id"] for r in self.core.repository.list_records(entity_type="LogicNode")}
+        pages_for_doc=[r for r in self.core.repository.list_records(entity_type="StrategyPage") if r["payload"].get("document_id")==document_id]
+        page_ids={r["entity_id"] for r in pages_for_doc}
+        default_page=sorted(pages_for_doc,key=lambda r:r["payload"].get("order",0))[0]["entity_id"] if pages_for_doc else None
         prepared=[]; seen=set(); port_types={}; node_types={}
         for i,raw in enumerate(nodes):
             if not isinstance(raw,dict): raise ValueError(f"Узел {i}: ожидался объект")
             nid=str(raw.get("id") or uuid4()); UUID(nid)
             if nid in seen: raise ValueError("Повторный идентификатор FBD-блока")
             seen.add(nid)
-            if nid in {r["entity_id"] for r in self.core.repository.list_records(entity_type="LogicNode")} and nid not in old_nodes: raise ValueError("FBD-блок принадлежит другой схеме")
+            if nid in all_node_ids and nid not in old_nodes: raise ValueError("FBD-блок принадлежит другой схеме")
             typ=str(raw.get("type") or raw.get("block_type") or ""); spec=self.BLOCKS.get(typ)
             if not spec: raise ValueError(f"Неизвестный тип FBD-блока: {typ}")
             def coord(k):
@@ -214,10 +220,8 @@ class FBDService:
                 params={"schedule_id":schedule_id}
             name=str(raw.get("name") or spec["label"]).strip()
             if not name or len(name)>120: raise ValueError("Имя FBD-блока должно содержать 1–120 символов")
-            pages_for_doc=[r for r in self.core.repository.list_records(entity_type="StrategyPage") if r["payload"].get("document_id")==document_id]
-            default_page=sorted(pages_for_doc,key=lambda r:r["payload"].get("order",0))[0]["entity_id"] if pages_for_doc else None
             page_id=raw.get("page_id") or default_page
-            if page_id and not any(r["entity_id"]==page_id and r["payload"].get("document_id")==document_id for r in pages_for_doc):
+            if page_id and page_id not in page_ids:
                 raise ValueError("FBD-блок ссылается на страницу другой стратегии или отсутствующую страницу")
             prepared.append({"id":nid,"type":typ,"name":name,"x":coord("x"),"y":coord("y"),"params":params,"page_id":page_id})
             node_types[nid]=typ
@@ -419,14 +423,20 @@ class FBDService:
         for l in graph["links"]: adjacency[l["source_node_id"]].add(l["target_node_id"])
         for c0 in existing_connectives: adjacency[c0["source_node_id"]].add(c0["target_node_id"])
         adjacency[sn].add(tn)
-        visiting=set(); visited=set()
-        def visit_connective(node_id):
-            if node_id in visiting: raise ValueError("Connective создаёт циклическую зависимость стратегии")
-            if node_id in visited: return
-            visiting.add(node_id)
-            for nxt in adjacency[node_id]: visit_connective(nxt)
-            visiting.remove(node_id); visited.add(node_id)
-        for node_id in adjacency: visit_connective(node_id)
+        from collections import deque
+        indegree={node_id:0 for node_id in adjacency}
+        for source_id,targets in adjacency.items():
+            for target_id in targets:
+                indegree[target_id]+=1
+        ready=deque(node_id for node_id,degree in indegree.items() if degree==0)
+        visited_count=0
+        while ready:
+            node_id=ready.popleft(); visited_count+=1
+            for target_id in adjacency[node_id]:
+                indegree[target_id]-=1
+                if indegree[target_id]==0: ready.append(target_id)
+        if visited_count!=len(adjacency):
+            raise ValueError("Connective создаёт циклическую зависимость стратегии")
         c=StrategyConnective(document_id,str(payload.get("name") or "Connective").strip(),sp,sn,sport,tp,tn,tport,st)
         self.core.repository.save(c)
         self._touch_document(document_id)
