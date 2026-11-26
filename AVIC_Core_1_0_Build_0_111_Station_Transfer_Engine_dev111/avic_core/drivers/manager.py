@@ -233,6 +233,7 @@ class DriverManagerService:
         self._reject_secrets(safe_config)
         with self._lock:
             item, version = self._load(instance_id)
+            self._assert_driver_entitlement(item.driver_id)
             if version != expected_version:
                 from avic_core.repository.sqlite_repository import ConcurrencyConflict
                 raise ConcurrencyConflict(
