@@ -775,7 +775,16 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             style += f"color:{block.get('color', '#243746')};background:{block.get('background', 'transparent')};text-align:{block.get('align', 'left')};font-size:{int(block.get('font_size', 16))}px;padding:8px;"
             content = ""
             if kind == "heading": content = f"<h2>{html_escape.escape(str(block.get('text') or block.get('label') or 'Заголовок'))}</h2>"
-            elif kind in {"text", "card", "button"}: content = html_escape.escape(str(block.get("text") or block.get("label") or block.get("title") or "Текст"))
+            elif kind in {"text", "card"}: content = html_escape.escape(str(block.get("text") or block.get("label") or block.get("title") or "Текст"))
+            elif kind == "button":
+                button_text = html_escape.escape(str(block.get("text") or block.get("label") or block.get("title") or "Открыть"))
+                href = str(block.get("href") or "")
+                if href:
+                    # href has already passed WebPagesService URL validation; escape again at the HTML boundary.
+                    safe_href = html_escape.escape(href, quote=True)
+                    content = f'<a href="{safe_href}" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 14px;border:1px solid #8da7bd;border-radius:6px;background:#eef4fa;color:#245a9b;text-decoration:none">{button_text}</a>'
+                else:
+                    content = button_text
             elif kind == "image":
                 src = str(block.get("src") or "")
                 content = f'<img src="{html_escape.escape(src, quote=True)}" alt="{html_escape.escape(str(block.get("alt") or ""), quote=True)}" style="width:100%;height:100%;object-fit:contain">'
