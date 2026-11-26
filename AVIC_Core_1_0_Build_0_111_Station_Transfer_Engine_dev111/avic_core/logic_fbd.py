@@ -108,7 +108,7 @@ class FBDService:
     BLOCKS = {
       "BOOL_INPUT":{"category":"Digital","label":"Булевый вход","inputs":{},"outputs":{"OUT":"bool"},"defaults":{"value":False}},
       "FLOAT_INPUT":{"category":"Analog","label":"Аналоговый вход","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":0.0}},
-      "KNOB":{"category":"Analog","label":"Ручной источник (KNOB)","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":50.0}},
+      "KNOB":{"category":"Analog","label":"Ручной источник (KNOB)","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":50.0,"user_level":0,"top_range":100.0,"bottom_range":0.0,"cov_increment":0.0,"units":""}},
       "CONSTANT":{"category":"Math","label":"Константа","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":1.0}},
       "ANALOG_INPUT":{"category":"Analog","label":"Аналоговый источник/датчик","inputs":{},"outputs":{"OUT":"float"},"defaults":{"rawValue":0.0}},
       "EXTERNAL_SENSOR":{"category":"Analog","label":"Внешний датчик","inputs":{},"outputs":{"OUT":"float"},"defaults":{"rawValue":0.0}},
@@ -149,6 +149,36 @@ class FBDService:
         return row
     def library(self):
         return [{"type":k,**v} for k,v in self.BLOCKS.items()]
+
+    @classmethod
+    def _normalize_knob_config(cls, raw):
+        if raw is None: raw = {}
+        if not isinstance(raw, dict): raise ValueError("KNOB parameters должен быть объектом")
+        defaults = cls.BLOCKS["KNOB"]["defaults"]
+        cfg = {**defaults, **raw}
+        aliases = {"topRange":"top_range","bottomRange":"bottom_range","covIncrement":"cov_increment","userLevel":"user_level"}
+        for old, new in aliases.items():
+            if old in raw and new not in raw: cfg[new] = raw[old]
+        for key in ("value", "top_range", "bottom_range", "cov_increment"):
+            value = cfg.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"KNOB.{key} должен быть числом")
+            import math
+            if not math.isfinite(float(value)): raise ValueError(f"KNOB.{key} должен быть конечным числом")
+            cfg[key] = float(value)
+        if cfg["top_range"] < cfg["bottom_range"]:
+            raise ValueError("KNOB.top_range должен быть не меньше bottom_range")
+        if not cfg["bottom_range"] <= cfg["value"] <= cfg["top_range"]:
+            raise ValueError("KNOB.value должен находиться внутри bottom_range..top_range")
+        if cfg["cov_increment"] < 0: raise ValueError("KNOB.cov_increment не может быть отрицательным")
+        level = cfg.get("user_level", 0)
+        if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 99:
+            raise ValueError("KNOB.user_level должен быть целым числом 0..99")
+        units = cfg.get("units", "")
+        if not isinstance(units, str) or len(units) > 64:
+            raise ValueError("KNOB.units должен быть строкой длиной до 64 символов")
+        cfg["user_level"] = level; cfg["units"] = units
+        return cfg
 
     @classmethod
     def _normalize_pid_config(cls, raw):
@@ -243,11 +273,13 @@ class FBDService:
             params=raw.get("params") or {}
             if not isinstance(params,dict): raise ValueError("Параметры FBD-блока должны быть объектом")
             if typ=="BOOL_INPUT" and not isinstance(params.get("value",False),bool): raise ValueError("BOOL_INPUT.value должен быть bool")
-            if typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
+            if typ in {"FLOAT_INPUT", "CONSTANT"}:
                 val=params.get("value",spec["defaults"].get("value",0.0))
                 if isinstance(val,bool) or not isinstance(val,(int,float)) or not math.isfinite(float(val)):
                     raise ValueError(f"{typ}.value должен быть конечным числом")
                 params={**params,"value":float(val)}
+            if typ == "KNOB":
+                params={**params,**self._normalize_knob_config(params)}
             if typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                 raw_value=params.get("rawValue",params.get("value",0.0))
                 if isinstance(raw_value,bool) or not isinstance(raw_value,(int,float)) or not math.isfinite(float(raw_value)):
@@ -691,11 +723,18 @@ class FBDService:
                     out = raw
                 source_meta = {"kind": "virtual_sensor_input", "sensor_type": params.get("sensorType"),
                                "raw_value": raw, "scaled": bool(points), "overridden": node_id in inputs}
-            elif typ in {"KNOB", "CONSTANT"}:
+            elif typ == "KNOB":
+                cfg = self._normalize_knob_config(params)
+                raw = self._validate_simulation_value("float", inputs.get(node_id, cfg["value"]), node_name=node["name"])
+                if not cfg["bottom_range"] <= raw <= cfg["top_range"]:
+                    raise ValueError(f"Блок «{node['name']}»: KNOB value вне диапазона")
+                out = raw
+                source_meta = {"kind": "manual_knob", "user_level": cfg["user_level"],
+                               "units": cfg["units"], "overridden": node_id in inputs}
+            elif typ == "CONSTANT":
                 raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value", 0.0)))
                 out = self._validate_simulation_value("float", raw, node_name=node["name"])
-                source_meta = {"kind": "manual_knob" if typ == "KNOB" else "constant",
-                               "overridden": node_id in inputs}
+                source_meta = {"kind": "constant", "overridden": node_id in inputs}
             elif typ == "SCHEDULE":
                 schedule_id = str(params.get("schedule_id") or "")
                 schedule = self.core.schedules.get(schedule_id)
