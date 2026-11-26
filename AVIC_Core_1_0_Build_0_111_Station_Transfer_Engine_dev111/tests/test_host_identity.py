@@ -91,10 +91,12 @@ def test_installation_identity_is_uuid_and_private(tmp_path):
             sddl = read_sddl(path)
             assert "D:P" in sddl, f"ACL is not protected from inheritance: {sddl}"
             aces = [part.split(";") for part in re.findall(r"\((A;[^)]*)\)", sddl)]
-            all_sids = {parts[5] for parts in aces if len(parts) == 6}
+            sid_aliases = {"SY": "S-1-5-18", "BA": "S-1-5-32-544"}
+            normalize_sid = lambda sid: sid_aliases.get(sid, sid)
+            all_sids = {normalize_sid(parts[5]) for parts in aces if len(parts) == 6}
             allowed = {current_sid, "S-1-5-18", "S-1-5-32-544"}
             full_control = {
-                parts[5] for parts in aces
+                normalize_sid(parts[5]) for parts in aces
                 if len(parts) == 6 and parts[0] == "A" and parts[2] == "FA"
                 and (not directory or "OICI" in parts[1])
             }
