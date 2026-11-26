@@ -148,3 +148,87 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 Провести инвентаризацию текущего кода и тестов по всем направлениям. Для каждого критерия присвоить статус только после проверки конкретной реализации и доказательства. Сначала заполнить карту фактическими данными, затем выбрать задачи первого полного прохода.
 
 До завершения инвентаризации все проценты остаются «Не оценено». Не переносить старые предположительные оценки в новую карту.
+
+---
+## 9. Обязательное сравнение с Niagara — контрольный стандарт
+
+### 9.1 Какой Niagara берём за эталон
+
+Для подтверждённого промышленного baseline сравниваем AVIC прежде всего с **Niagara 4.15** и зрелыми возможностями Niagara 4, которые Tridium публично описывает. Niagara 5 учитываем отдельно как направление развития, но не выдаём его новые функции за многолетне проверенную эксплуатационную базу Niagara 4.
+
+Сравнение функциональное и независимое: повторяем пользовательские сценарии и наблюдаемое поведение, а не закрытый исходный код, бинарные модули или внутренние форматы Tridium.
+
+Каждый пункт получает один из трёх классов:
+- **NIAGARA_PARITY** — AVIC должен обеспечить сопоставимую законченную возможность и надёжность.
+- **AVIC_IMPROVEMENT** — AVIC обеспечивает тот же результат лучше по безопасности, скорости, удобству, диагностике или восстановлению.
+- **AVIC_INNOVATION** — дополнительная возможность AVIC; она не заменяет обязательную Niagara parity.
+
+Для каждого критерия фиксируются: Niagara baseline, сценарий инженера/оператора, ожидаемое поведение, реализация AVIC, автоматический тест, UI/API проверка, аппаратная проверка, ограничения и решение о готовности. «Есть класс/файл/API» не означает parity.
+
+### 9.2 Полный круг сравнения
+
+| № | Направление AVIC | Что проверяем относительно Niagara | Что уже подтверждено в AVIC по текущей ветке | Открытая проверка / разрыв |
+|---:|---|---|---|---|
+| 1 | Platform / Core Runtime | Platform, Station lifecycle, services, module lifecycle, watchdog, restart, diagnostics | CoreApplication, Station Runtime и сервисная архитектура присутствуют в кодовой базе | Полный parity-аудит Platform/Supervisor, fault isolation, watchdog, upgrade и нагрузка |
+| 2 | Object / Component Model | component tree, slots/properties, references, facets, types, tags, object identity | В AVIC есть Repository/узлы объектов и стабильные ID в ряде подсистем | Единая модель свойств/ссылок/типов/фасетов и совместимость между всеми сервисами |
+| 3 | Workbench / Navigation | Nav tree, views, property sheets, search, palettes, context actions, online/offline engineering | Есть инженерное дерево, Repository и отдельные Workbench UI | Полный пользовательский проход, горячие клавиши, контекстные команды, производительность больших проектов |
+| 4 | Driver Manager | Добавление, конфигурация, запуск/остановка, состояние, диагностика, provisioning, driver lifecycle | Есть Driver Manager, contracts, catalog, polling lifecycle | Crash recovery, watchdog/retry, массовое управление, SDK и реальная установка/удаление модулей |
+| 5 | Protocol Drivers | Vendor-neutral connectivity, device discovery, point import, polling, COV/events, commands, diagnostics | BACnet/IP и Modbus TCP имеют ограниченный read-only путь; KNX имеет частичную read-only реализацию; Trend IP и MQTT не готовы как production drivers | Не выдавать read-only адаптер за полный драйвер. Trend vCNC, BACnet advanced services, Modbus polling/map import, KNX commissioning и hardware acceptance |
+| 6 | Network Manager | IP tools, network inventory, discovery, topology, device identity, safe commissioning | Есть network contracts, diagnostics, topology, discovery history и identity resolver | Полный UI/API сценарий, безопасные лимиты, vendor confidence, IPv6, VLAN/routed networks, network change audit |
+| 7 | Point Manager | Point discovery/import, folders, proxy points, facets, writable flags, bulk edit, references, point status | Общий Point Runtime и лицензируемые Point records существуют | Полный Point Manager parity, пакетный импорт/экспорт, единый источник истины, массовая проверка зависимостей |
+| 8 | FBD / Wiresheet | Wire Sheet, typed blocks, ports, connect/disconnect, palette, compile, online changes, diagnostics | Есть FBD Studio, compiler, runtime; отдельные документы DEV176/185/191/192 фиксируют parity и пробелы | Полный Trend/Niagara block-by-block matrix, multi-page copy/delete/import, online apply/rollback, browser acceptance |
+| 9 | Graphics / PX-equivalent | Graphic editor, SVG, symbols, bindings, dynamic colors/rotation, reusable templates, responsive display | Есть Graphics service, binding engine, SVG libraries, Graphics Workbench | Полный editor acceptance, анимации по quality, symbol library completeness, reusable templates, performance |
+| 10 | Web Pages / UX Builder | HTML5 views, page composition, navigation, live values, responsive views, safe rendering | Есть Web Application/Page Builder, pages, assets, point and graphics bindings | Customer login/RBAC, full browser acceptance, mobile/responsive, page protection and command integration |
+| 11 | Publication / Operator UI | Deploy/publish, immutable versions, live runtime values, role-scoped operation, rollback | Есть publication snapshots, versions, unpublish/rollback и read-only live values | Server-side operator authorization, secure deployment profile, command workflows, end-to-end acceptance |
+| 12 | Alarm Service | Alarm classes, states, priorities, ack, return-to-normal, routing, escalation, archive | Есть Alarm/Events services и описанный lifecycle | Niagara-like alarm extensions: shelving/suppression, alarm classes, routing/escalation, console UX, alarm archive integration |
+| 13 | Event Journal / Audit | Event history, operator actions, configuration audit, security history | Есть Event/Audit services и hash-chain подход | Durable external checkpoint, retention/export, concurrency/disk-full behavior, complete audit coverage |
+| 14 | Historian / Trends | History extensions, sampling, interval/COV, archive providers, charting, export, retention | Есть History service и запросы по Station/Point | Sampling policies, buffering, archive rotation, deadband, interpolation, chart UX, export and high-load acceptance |
+| 15 | Scheduler / Calendar | Boolean/numeric/enum schedules, weekly schemes, special events, calendars, overrides, import/export | Core Scheduler поддерживает типы значений, weekly/special events, timezone/DST, overrides | По DEV194: master/calendar sharing, import/export manager, BACnet schedule manager/export, Trend Schedule H не эквивалентен Core SCHEDULE |
+| 16 | Time / Synchronization | Station time, NTP, timezone, DST, device clock sync | Есть TimeManagementService и явное разрешение синхронизации на устройство | Реальный NTP runtime/status, drift monitoring, device write acceptance, DST boundary tests |
+| 17 | Licensing / Capacity | License activation, host binding, capacity count, feature entitlements, renewal/upgrade, audit | Есть Ed25519 offline signature verification, Host ID, point-limit guard and usage summary | Revocation/transfer workflow, issuer tooling/key rotation, tier/feature enforcement across all entry points, customer-visible license UX |
+| 18 | Security / Identity | Users, roles, permissions, TLS, certificates, sessions, MFA, security dashboard, audit | Есть auth/RBAC/Gateway/SecretStore modules | Production login/session enforcement across every API/UI route, object scopes, MFA, certificate lifecycle, security dashboard, penetration tests |
+| 19 | Backup / Restore / Provisioning | Station backup, platform backup, restore, provisioning, cloning, upgrade recovery | Есть encrypted System Backup, SQLite snapshots, inspect/restore; Station Transfer отдельный | Cross-database consistency barrier, scheduled/offsite backups, tested restore drills, deployment/provisioning UI, migration orchestration |
+| 20 | Notifications | Alarm routing, email, acknowledgement links, delivery retries, escalation | Есть durable notification routes/outbox | Транспортные адаптеры и подтверждённая доставка отсутствуют в текущем NotificationService; retry/escalation/quiet hours требуют проверки |
+| 21 | Asset / Maintenance / Analytics | Asset manager, tagging, equipment relationships, analytics, work orders, reports | Есть отдельные модули Asset/Analytics в кодовой базе | Сквозной эксплуатационный сценарий, интеграция alarms/history/asset, CMMS/work order lifecycle |
+| 22 | Distributed Niagara Network / Supervisor | Station-to-station links, global indexing, central supervision, remote engineering, failover | В AVIC заложены контракты/направление distributed SCADA | Рабочие station links, global point/alarm/history indexing, remote operations, outage autonomy, failover/fencing |
+| 23 | API / SDK / Extensibility | Public APIs, module SDK, driver ecosystem, versioning, signing, compatibility | Есть API/adapters/contracts в нескольких областях | Стабильный публичный SDK, compatibility policy, module signing/trust, third-party developer acceptance |
+| 24 | Commissioning / Deployment | Provisioning, templates, bulk device onboarding, certificates, commissioning workflows | Есть Network Planning, Engineering Lifecycle и Station Transfer foundations | Полный guided commissioning, templates, bulk provisioning, rollback, field acceptance |
+| 25 | AI Engineering Assistant | Не является обязательной Niagara parity; сравниваем как AVIC innovation | В проекте определён advisory-only принцип | Безопасный экспорт, explainable recommendations, no secrets, no autonomous control, evidence-based validation |
+| 26 | Documentation / Localization / Release | Online help, module docs, training, upgrade notes, release management | В репозитории есть русские build logs, docs и audit specs | Полнота пользовательской документации по каждой функции, versioned help, reproducible installation and upgrade |
+
+### 9.3 Первые фактические выводы по просмотренным исходникам
+
+**Driver Manager и драйверы**
+- Каталог различает PROFILE_AVAILABLE, READ_ONLY_INTEGRATION, READ_ONLY_TRANSPORT и PLANNED. Это правильнее, чем рекламировать каждый протокол как готовый.
+- BACnet/IP и Modbus TCP в каталоге имеют ограниченный read-only transport; это не полная Niagara-equivalent driver capability.
+- Trend IP / IQ Network остаётся PLANNED: TCP vCNC codec и hardware acceptance не завершены. Подменять его BACnet нельзя.
+- KNXnet/IP имеет отдельную частичную read-only реализацию; MQTT не следует считать готовым runtime без factory, SecretStore, TLS policy и broker acceptance.
+- Следующий драйверный этап сравнивать по lifecycle, discovery, import, polling, quality, reconnect, diagnostics, commands, security, performance и hardware acceptance, а не по названию протокола.
+
+**Licensing**
+- Подтверждены Ed25519 signature verification, обязательная привязка к Host ID, expiry check, point limit, защита от повторного подсчёта UUID и отдельное preservation существующего runtime.
+- Текущий manager не доказывает законченный issuer/revocation/transfer workflow. Поле key_id в payload само по себе не является механизмом ротации ключей или отзывом лицензии.
+- Нужно проверить применение feature entitlements на каждом API/UI/driver entry point, гонки при одновременном создании точек, установочный лимит и пользовательский экран лицензии.
+- Runtime preservation при недействительной лицензии — осознанное безопасное поведение; при этом новые лицензируемые изменения должны блокироваться предсказуемо и с понятным статусом.
+
+**Малые системные службы**
+- NotificationService на текущем коде — маршруты и durable outbox; он сам не отправляет сообщения без транспортного адаптера.
+- TimeManagementService хранит timezone/NTP policy и per-device sync permission; наличие настроек не доказывает работающий NTP daemon/clock sync worker.
+- System Backup шифрует и проверяет архив, но документация DEV145 честно фиксирует отсутствие общей атомарной точки между несколькими SQLite DB, автоматического расписания/offsite storage и плановых restore drills.
+
+**Безопасность и интерфейс**
+- Наличие RBAC/Gateway/Auth модулей не доказывает, что каждая изменяющая UI/API операция проходит production authorization. В документации Page Builder прямо отмечено отсутствие customer-grade login/session/RBAC/MFA в описанном acceptance scope.
+- Страница оператора, публикация, FBD, Graphics, команды и лицензирование должны тестироваться как единый путь с разными ролями, а не отдельно в своих тестах.
+
+Эти выводы — первичный code/document audit по текущей ветке, а не итоговые проценты готовности. Все направления остаются «не оценено» до полного критериального аудита с проверкой тестов и запускаемых сценариев.
+
+### 9.4 Правило следующего шага по кругу
+
+Каждый следующий рабочий пакет должен включать:
+1. Один критерий из текущего сектора круга (сейчас: Driver Manager/driver lifecycle).
+2. Один критерий из лицензирования/безопасности или другой системной службы.
+3. Один смежный пользовательский сценарий (Point Manager → FBD → Graphics → Page → Operator).
+4. Регрессию ранее закрытых критериев.
+5. Обновление этого документа, журнала сборки и ссылок на тестовые доказательства.
+
+Не начинать следующий сектор, если предыдущий имеет критический дефект безопасности/потери данных. Не задерживать весь круг из-за некритичного косметического дефекта: пометить блокер и продолжать остальные сектора.
