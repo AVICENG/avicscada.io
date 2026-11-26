@@ -544,7 +544,8 @@ function copyActivePage(){
  const invalidIncoming=incomingRefs.find(r=>{
   const sourcePage=state.pages.find(p=>p.id===r.sourcePageId);
   const source=sourcePage?.modules.find(m=>m.id===r.sourceModuleId);
-  return !source?.outs?.[Number(r.sourcePort||0)];
+  const proxy=pg.modules.find(m=>m.id===r.proxyModuleId);
+  return !source?.outs?.[Number(r.sourcePort||0)]||proxy?.type!=='CONNECTIVE'||proxy?.params?.referenceId!==r.id;
  });
  if(invalidIncoming){toast('Копирование отменено: исходный блок одного из Connective не найден');return}
  const performCopy=()=>{
