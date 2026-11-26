@@ -172,9 +172,12 @@ class SQLiteRepository:
                 cm.__exit__(type(exc), exc, exc.__traceback__)
             raise
 
-    def get_record(self, entity_id: str) -> dict[str, Any]:
+    def get_record(self, entity_id: str, *, connection: sqlite3.Connection | None = None) -> dict[str, Any]:
         UUID(entity_id)
-        with closing(self._connect()) as connection:
+        if connection is None:
+            with closing(self._connect()) as own_connection:
+                row = own_connection.execute("SELECT * FROM entities WHERE entity_id=?", (entity_id,)).fetchone()
+        else:
             row = connection.execute("SELECT * FROM entities WHERE entity_id=?", (entity_id,)).fetchone()
         if row is None:
             raise EntityNotFound(entity_id)
@@ -182,8 +185,8 @@ class SQLiteRepository:
         result["payload"] = json.loads(result["payload"])
         return result
 
-    def get(self, entity_id: str, model_type: type):
-        record = self.get_record(entity_id)
+    def get(self, entity_id: str, model_type: type, *, connection: sqlite3.Connection | None = None):
+        record = self.get_record(entity_id, connection=connection)
         if record["entity_type"] != model_type.__name__:
             raise TypeError(f"Stored entity is {record['entity_type']}, not {model_type.__name__}")
         return _hydrate(record["payload"], model_type), int(record["version"])
