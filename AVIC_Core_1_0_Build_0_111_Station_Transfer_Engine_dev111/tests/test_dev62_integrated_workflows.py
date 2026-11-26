@@ -233,7 +233,7 @@ def test_platform_status_reports_safe_default_posture(tmp_path):
     response = TestClient(app).get("/api/platform/status")
     assert response.status_code == 200
     payload = response.json()
-    assert payload["version"] == "1.0.0.dev77"
+    assert payload["version"] == "1.0.0.dev196"
     assert payload["safety"]["field_writes_enabled"] is False
     assert payload["safety"]["driver_autostart"] is False
     assert payload["safety"]["trend_integration_required"] is False
