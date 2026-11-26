@@ -119,6 +119,8 @@ class Point(BaseObject):
     licensed_active: bool | None = None
     published: bool = False
     licensed_usage: list[str] = field(default_factory=list)
+    # Baseline activity is preserved while engineering usage references are added/removed.
+    licensed_base_active: bool | None = None
 
     def update_value(self, value: Any, quality: PointQuality, timestamp: datetime | None = None):
         self.value = value
