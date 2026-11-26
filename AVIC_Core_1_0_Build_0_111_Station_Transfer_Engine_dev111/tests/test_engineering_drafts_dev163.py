@@ -193,12 +193,16 @@ def test_application_exit_flow_is_available_on_all_workspaces(tmp_path):
     assert "Выйти с потерей изменений" in script.text
     assert "noActiveEditor" in script.text
     assert "Открытых инженерных редакторов" in script.text
+    assert "STOP AVIC CORE" in script.text
+    assert "/api/core/shutdown-preview" in script.text
+    assert "/api/core/shutdown" in script.text
     assert "Core и работающий Runtime не останавливаются" in script.text
 
     for path in ("/", "/graphics", "/logic", "/repository?section=WebApplication"):
         page = client.get(path)
         assert page.status_code == 200
         assert 'id="avicApplicationExit"' in page.text
+        assert 'id="avicCoreStop"' in page.text
         assert "/avic-static/application-lifecycle.js" in page.text
 
     graphics = client.get("/graphics").text
@@ -219,3 +223,60 @@ def test_application_lifecycle_javascript_syntax_with_node_when_available():
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+
+def test_core_shutdown_api_requires_explicit_confirmation_and_requests_process_exit(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui import create_ui_app
+
+    app = create_ui_app(data_dir=str(tmp_path / "core-shutdown"))
+    client = TestClient(app)
+    preview = client.get("/api/core/shutdown-preview")
+    assert preview.status_code == 200
+    assert preview.json()["core_state"] == "RUNNING"
+    assert preview.json()["confirmation_required"] == "STOP AVIC CORE"
+
+    invalid = client.post("/api/core/shutdown", json={"confirmation": "STOP"})
+    assert invalid.status_code == 422
+    assert app.state.core.closed is False
+
+    requested = []
+    app.state.process_shutdown_callback = lambda: requested.append(True)
+    stopped = client.post("/api/core/shutdown", json={"confirmation": "STOP AVIC CORE"})
+    assert stopped.status_code == 200
+    assert stopped.json()["status"] == "SHUTTING_DOWN"
+    assert app.state.core.closed is True
+    assert requested == [True]
+
+
+def test_core_shutdown_api_does_not_exit_when_worker_shutdown_is_not_confirmed(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui import create_ui_app
+
+    app = create_ui_app(data_dir=str(tmp_path / "core-shutdown-blocked"))
+    client = TestClient(app)
+    def fail_shutdown():
+        raise RuntimeError("simulated worker did not stop")
+    app.state.core.fbd_execution.close = fail_shutdown
+
+    stopped = client.post("/api/core/shutdown", json={"confirmation": "STOP AVIC CORE"})
+    assert stopped.status_code == 409
+    assert "Безопасная остановка отменена" in stopped.json()["detail"]
+    assert app.state.core.closed is False
+    assert app.state.core.shutdown_preview()["core_state"] == "SHUTDOWN_BLOCKED"
+    app.state.process_shutdown_callback = None
+
+
+
+def test_asgi_shutdown_event_closes_core_services(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui import create_ui_app
+
+    app = create_ui_app(data_dir=str(tmp_path / "asgi-shutdown"))
+    with TestClient(app) as client:
+        assert client.get("/api/core/shutdown-preview").status_code == 200
+        core = app.state.core
+        assert core.closed is False
+    assert core.closed is True
+    assert core.fbd_execution._closed is True

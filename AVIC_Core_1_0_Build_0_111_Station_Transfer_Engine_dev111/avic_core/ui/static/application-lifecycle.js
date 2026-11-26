@@ -79,11 +79,13 @@
         ? await manager.prepareForExit(8000)
         : { safeToClose: true, noActiveEditor: true };
       if (result.safeToClose) {
-        message.textContent = result.coreSaved
-          ? "Все изменения текущего редактора сохранены как черновик в Core. Можно закрыть AVIC."
-          : result.localSaved
-            ? "Последние изменения сохранены в локальном хранилище браузера. Core пока недоступен или обнаружен конфликт; локальный черновик сохранён и может быть восстановлен."
-            : "Активных несохранённых изменений нет. Можно закрыть AVIC.";
+        message.textContent = result.noActiveEditor
+          ? "Открытых инженерных редакторов с несохранёнными изменениями нет."
+          : result.coreSaved
+            ? "Все изменения текущего редактора сохранены как черновик в Core. Можно закрыть Workbench."
+            : result.localSaved
+              ? "Последние изменения сохранены в локальном хранилище браузера. Core пока недоступен или обнаружен конфликт; локальный черновик сохранён и может быть восстановлен."
+              : "Активных несохранённых изменений нет. Можно закрыть Workbench.";
         prepareButton.hidden = true;
         closeButton.hidden = false;
       } else {
@@ -125,6 +127,43 @@
     }, 250);
   }
 
+  async function stopCore() {
+    if (!window.confirm("Остановить AVIC Core? Будут остановлены все работающие FBD-стратегии, драйверы и Runtime всех станций. Управление оборудованием прекратится. Workbench также завершит работу.")) return;
+    try {
+      const previewResponse = await fetch("/api/core/shutdown-preview", { credentials: "same-origin" });
+      if (!previewResponse.ok) throw new Error((await previewResponse.json()).detail || "Не удалось проверить состояние Core");
+      const preview = await previewResponse.json();
+      if (!["RUNNING", "SHUTDOWN_BLOCKED"].includes(preview.core_state) || !preview.can_shutdown) {
+        throw new Error("Core уже остановлен или остановка ещё выполняется.");
+      }
+      const stations = (preview.active_stations || []).map(x => x.station_id + " [" + x.state + "]");
+      const drivers = (preview.active_drivers || []).map(x => x.driver_id + " [" + x.state + "]");
+      const strategies = (preview.active_fbd_strategies || []).map(x => x.document_id + " [" + x.state + "]");
+      const driverIssues = (preview.driver_issues || []).map(x => x.driver_id + " [" + x.state + "]");
+      const details = [
+        "Состояние Core: " + preview.core_state,
+        "Активные станции: " + (stations.length ? stations.join(", ") : "нет"),
+        "Активные драйверы: " + (drivers.length ? drivers.join(", ") : "нет"),
+        "Драйверы с диагностическими проблемами: " + (driverIssues.length ? driverIssues.join(", ") : "нет"),
+        "Активные FBD: " + (strategies.length ? strategies.join(", ") : "нет"),
+        "Ошибки FBD: " + ((preview.fbd_errors || []).length)
+      ].join("\\n");
+      if (!window.confirm("Состояние перед остановкой:\\n" + details + "\\n\\nОстановить все перечисленные службы?")) return;
+      const typed = window.prompt("Для подтверждения введите точно: STOP AVIC CORE");
+      if (typed !== "STOP AVIC CORE") return;
+      const response = await fetch("/api/core/shutdown", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: typed })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "Безопасная остановка не подтверждена");
+      window.alert(result.message || "AVIC Core остановлен.");
+    } catch (error) {
+      window.alert("AVIC Core не остановлен: " + error.message);
+    }
+  }
+
   window.addEventListener("beforeunload", event => {
     if (window.__avicExitConfirmed) return;
     const manager = window.__avicDraftManager;
@@ -138,6 +177,10 @@
     if (event.target.closest("#avicApplicationExit")) {
       event.preventDefault();
       show();
+    }
+    if (event.target.closest("#avicCoreStop")) {
+      event.preventDefault();
+      stopCore();
     }
   });
   window.AVICApplicationExit = { show };

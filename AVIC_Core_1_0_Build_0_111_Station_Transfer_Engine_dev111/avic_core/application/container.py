@@ -16,6 +16,7 @@ from avic_core.domain.service import CoreObjectService
 from avic_core.engineering.lifecycle import EngineeringLifecycleService
 from avic_core.repository.sqlite_repository import SQLiteRepository
 from avic_core.runtime.manager import RuntimeManager, RuntimeState
+from avic_core.runtime.fbd_execution import FBDExecutionService
 from avic_core.scheduling import ScheduleService
 from avic_core.events import EventService
 from avic_core.history import HistoryService
@@ -69,6 +70,9 @@ class CoreApplication:
         self.audit = AuditService(self.paths.databases / "audit.sqlite3")
         self.custom_svg = CustomSvgLibrary(self.paths.databases / "custom_svg_library.sqlite3")
         self.runtime = RuntimeManager()
+        self.fbd_execution = FBDExecutionService(self)
+        self._shutdown_in_progress = False
+        self._shutdown_blocked = False
         self.events = EventService(self.paths.databases / "events.sqlite3")
         self.history = HistoryService(self.paths.databases / "history.sqlite3")
         self.dependencies = DependencyService(self.paths.databases / "dependencies.sqlite3")
@@ -101,6 +105,50 @@ class CoreApplication:
     def _ensure_open(self) -> None:
         if self._closed:
             raise CoreClosedError("AVIC Core application is closed")
+        if self._shutdown_in_progress or self._shutdown_blocked:
+            raise CoreClosedError("AVIC Core shutdown is in progress or blocked; new operations are rejected")
+
+    def shutdown_preview(self) -> dict:
+        """Return an operational snapshot; this method never stops services."""
+        with self._lock:
+            core_state = ("STOPPED" if self._closed else
+                          "STOPPING" if self._shutdown_in_progress else
+                          "SHUTDOWN_BLOCKED" if self._shutdown_blocked else "RUNNING")
+        stations = [
+            {"station_id": item.station_id, "state": item.state.value}
+            for item in self.runtime.all()
+        ]
+        drivers = []
+        driver_issues = []
+        for row in self.repository.list_records(entity_type="DriverInstance"):
+            try:
+                item = self.driver_manager.diagnostics(row["entity_id"])
+                summary = {"instance_id": item["instance_id"], "driver_id": item["driver_id"],
+                           "state": item["state"], "field_write_enabled": False}
+                if item["state"] in {"STARTING", "RUNNING", "DEGRADED", "STOPPING"}:
+                    drivers.append(summary)
+                elif item["state"] in {"ORPHANED", "ERROR"}:
+                    driver_issues.append(summary)
+            except Exception as exc:
+                driver_issues.append({"instance_id": row["entity_id"], "state": "INSPECTION_ERROR",
+                                      "error": f"{type(exc).__name__}: {exc}"})
+        strategies = self.fbd_execution.all_status()
+        active_strategies = [
+            item for item in strategies
+            if item.get("state") in {"RUNNING", "STARTING", "STOPPING"} or item.get("in_flight")
+        ]
+        return {
+            "core_state": core_state,
+            "stations": stations,
+            "active_stations": [item for item in stations if item["state"] != RuntimeState.STOPPED.value],
+            "active_drivers": drivers,
+            "driver_issues": driver_issues,
+            "active_fbd_strategies": active_strategies,
+            "fbd_errors": [item for item in strategies if item.get("state") == "ERROR"],
+            "can_shutdown": core_state in {"RUNNING", "SHUTDOWN_BLOCKED"},
+            "confirmation_required": "STOP AVIC CORE",
+            "field_writes_enabled": False,
+        }
 
     def register_station(self, station_id: str):
         with self._lock:
@@ -110,7 +158,7 @@ class CoreApplication:
     def start_station(self, station_id: str, start_hook=None):
         with self._lock:
             self._ensure_open()
-        result = self.runtime.start(station_id, start_hook=start_hook)
+            result = self.runtime.start(station_id, start_hook=start_hook)
         self.events.record("runtime.station_started", f"Station {station_id} started", station_id=station_id, severity="INFO", details={"state": result.state.value})
         self.audit.append(actor_id="system", action="runtime.station_started", resource_type="station",
                           resource_id=station_id, details={"state": result.state.value})
@@ -223,25 +271,57 @@ class CoreApplication:
         with self._lock:
             if self._closed:
                 return
-            failures: list[tuple[str, Exception]] = []
-            try:
-                self.driver_manager.stop_all()
-            except Exception as exc:
-                failures.append(("drivers", exc))
-            for status in self.runtime.all():
-                if status.state != RuntimeState.STOPPED:
-                    try:
-                        self.runtime.stop(status.station_id)
-                    except Exception as exc:  # attempt orderly stop for every station
-                        failures.append((status.station_id, exc))
-            self.events.record("core.shutdown", "AVIC Core shutdown", severity="INFO", details={"failed_stations": [name for name, _ in failures]})
-            self.audit.append(actor_id="system", action="core.shutdown", resource_type="core",
-                              resource_id="local", outcome="error" if failures else "success",
-                              details={"failed_stations": [name for name, _ in failures]})
+            if self._shutdown_in_progress:
+                raise RuntimeError("AVIC Core shutdown is already in progress")
+            self._shutdown_in_progress = True
+
+        failures: list[tuple[str, Exception]] = []
+        # Stop cyclic logic first so no new virtual-point publications occur while
+        # field drivers and station runtimes are being taken offline.
+        try:
+            self.fbd_execution.close()
+        except Exception as exc:
+            failures.append(("fbd_runtime", exc))
+        try:
+            self.driver_manager.stop_all()
+        except Exception as exc:
+            failures.append(("drivers", exc))
+        for status in self.runtime.all():
+            if status.state != RuntimeState.STOPPED:
+                try:
+                    self.runtime.stop(status.station_id)
+                except Exception as exc:
+                    failures.append((status.station_id, exc))
+
+        # Do not report a clean shutdown or terminate the host process while any
+        # FBD worker, driver worker or station runtime remains active.
+        for item in self.fbd_execution.all_status():
+            if item.get("in_flight") or item.get("state") in {"RUNNING", "STARTING", "STOPPING"}:
+                failures.append((f"fbd:{item.get('document_id')}",
+                                 RuntimeError("FBD worker remains active")))
+        for status in self.runtime.all():
+            if status.state != RuntimeState.STOPPED:
+                failures.append((status.station_id, RuntimeError(f"Runtime state is {status.state.value}")))
+
+        details = {"failures": [{"component": name, "error": f"{type(exc).__name__}: {exc}"}
+                                for name, exc in failures]}
+        if failures:
+            self.events.record("core.shutdown_blocked", "AVIC Core shutdown blocked; active workers may remain",
+                               severity="ERROR", details=details)
+            self.audit.append(actor_id="system", action="core.shutdown_blocked", resource_type="core",
+                              resource_id="local", outcome="error", details=details)
+            with self._lock:
+                self._shutdown_in_progress = False
+                self._shutdown_blocked = True
+            names = ", ".join(name for name, _ in failures)
+            raise RuntimeError(f"AVIC Core shutdown was not confirmed: {names}") from failures[0][1]
+
+        self.events.record("core.shutdown", "AVIC Core shutdown", severity="INFO", details=details)
+        self.audit.append(actor_id="system", action="core.shutdown", resource_type="core",
+                          resource_id="local", outcome="success", details=details)
+        with self._lock:
             self._closed = True
-            if failures:
-                names = ", ".join(name for name, _ in failures)
-                raise RuntimeError(f"Core closed with station shutdown failures: {names}") from failures[0][1]
+            self._shutdown_in_progress = False
 
     def __enter__(self) -> "CoreApplication":
         self._ensure_open()

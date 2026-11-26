@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import logging
 import ipaddress
 import re
 from fastapi import FastAPI, HTTPException, Request
@@ -27,7 +28,6 @@ from avic_core.graphics.svg_library import SVG_SYMBOLS, list_symbols, read_symbo
 from avic_core.graphics.custom_svg_library import SvgImportError
 from avic_core.drivers import DriverManagerService
 from avic_core.logic_fbd import FBDService
-from avic_core.runtime.fbd_execution import FBDExecutionService
 from avic_core.logic_fbd_studio import FBDStudioService
 from avic_core.engineering.workflow import EngineeringWorkflowService
 from avic_core.web_pages import WebPagesService
@@ -188,6 +188,9 @@ class EngineeringDraftInput(BaseModel):
     base_revision: int = Field(default=0, ge=0)
     expected_draft_revision: int = Field(default=0, ge=0)
     content: dict
+
+class CoreShutdownInput(BaseModel):
+    confirmation: str = Field(pattern="^STOP AVIC CORE$")
 
 
 class GraphicCreateInput(BaseModel):
@@ -396,8 +399,8 @@ class ObjectPatch(BaseModel):
 
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
-    """Create the DEV148 local-only Workbench host. Drivers and OT commands remain stopped."""
-    app = FastAPI(title=title, version="1.0.0.dev148")
+    """Create the DEV175 local-only Workbench host. Drivers and OT commands remain stopped."""
+    app = FastAPI(title=title, version="1.0.0.dev175")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
     app.state.core = CoreApplication(root)
     app.state.project_station = ProjectStationService(app.state.core)
@@ -407,7 +410,8 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     app.state.graphics = GraphicsService(app.state.core)
     app.state.driver_manager = app.state.core.driver_manager
     app.state.fbd = FBDService(app.state.core)
-    app.state.fbd_execution = FBDExecutionService(app.state.core)
+    app.state.fbd_execution = app.state.core.fbd_execution
+    app.state.process_shutdown_callback = None
     app.state.fbd_studio = FBDStudioService(app.state.core)
     app.state.engineering_workflow = EngineeringWorkflowService(app.state.core)
     app.state.web_pages = WebPagesService(app.state.core)
@@ -421,6 +425,15 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         if stale_dir.exists():
             shutil.rmtree(stale_dir, ignore_errors=True)
         stale_dir.mkdir(parents=True, exist_ok=True)
+
+    @app.on_event("shutdown")
+    def close_core_on_asgi_shutdown() -> None:
+        try:
+            app.state.core.close()
+        except Exception:
+            # Do not hide the shutdown failure: retain a full diagnostic in the
+            # host log. The API-triggered path refuses process exit before this.
+            logging.getLogger("avic_core.ui").exception("AVIC Core graceful shutdown failed")
 
     def require_local_operator(request: Request) -> None:
         # DEV25 mutations are intentionally restricted to loopback until session/RBAC
@@ -436,6 +449,33 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                     or parsed_origin.username is not None or parsed_origin.password is not None
                     or parsed_origin.path not in {"", "/"} or parsed_origin.query or parsed_origin.fragment):
                 raise HTTPException(status_code=403, detail="Недопустимый Origin")
+
+    @app.get("/api/core/shutdown-preview")
+    def core_shutdown_preview(request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            return app.state.core.shutdown_preview()
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"Не удалось проверить состояние Core: {exc}") from exc
+
+    @app.post("/api/core/shutdown")
+    def core_shutdown(payload: CoreShutdownInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            app.state.core.close()
+        except Exception as exc:
+            raise HTTPException(status_code=409, detail=f"Безопасная остановка отменена: {exc}") from exc
+        callback = getattr(app.state, "process_shutdown_callback", None)
+        if callable(callback):
+            try:
+                callback()
+                return {"status": "SHUTTING_DOWN", "core_state": "STOPPED",
+                        "message": "Службы Core остановлены; Workbench завершает работу."}
+            except Exception as exc:
+                return {"status": "CORE_STOPPED_WORKBENCH_OPEN", "core_state": "STOPPED",
+                        "message": f"Core остановлен, но сервер Workbench не смог завершить процесс: {exc}"}
+        return {"status": "CORE_STOPPED_WORKBENCH_OPEN", "core_state": "STOPPED",
+                "message": "Службы Core остановлены. Этот способ запуска не предоставляет управление завершением HTTP-процесса; закройте Workbench отдельно."}
 
     def expire_station_transfer_tokens() -> None:
         now = monotonic()
@@ -470,8 +510,9 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             for href, icon, label, key in nav_items
         )
         tree_toggle = '<button class="rail-btn avic-global-rail-link" id="avicSharedTreeToggle" type="button" title="Общее инженерное дерево" aria-label="Общее инженерное дерево" aria-expanded="false">☷</button>'
-        exit_button = '<button class="rail-btn avic-global-rail-link" id="avicApplicationExit" type="button" title="Выход из AVIC" aria-label="Выход из AVIC">⏻</button>'
-        shared_rail = f'<nav class="avic-global-rail avic-shared-rail" aria-label="Общая навигация AVIC">{tree_toggle}{rail_links}{exit_button}</nav>'
+        core_stop_button = '<button class="rail-btn avic-global-rail-link" id="avicCoreStop" type="button" title="Остановить AVIC Core" aria-label="Остановить AVIC Core">■</button>'
+        exit_button = '<button class="rail-btn avic-global-rail-link" id="avicApplicationExit" type="button" title="Выход из Workbench" aria-label="Выход из Workbench">⏻</button>'
+        shared_rail = f'<nav class="avic-global-rail avic-shared-rail" aria-label="Общая навигация AVIC">{tree_toggle}{rail_links}{core_stop_button}{exit_button}</nav>'
         shared_tree = """<aside id="avic-shared-tree" aria-label="Общее инженерное дерево" hidden>
           <header><strong>Инженерное дерево</strong><button type="button" id="avicSharedTreeRefresh" title="Обновить">↻</button><button type="button" id="avicSharedTreeClose" title="Закрыть">×</button></header>
           <input id="avicSharedTreeSearch" type="search" placeholder="Поиск проектов, устройств и точек">
@@ -567,8 +608,10 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
           color:#526779;font:19px/1 "Segoe UI",Arial,sans-serif;cursor:pointer}
         .avic-global-rail .rail-btn:hover,.avic-global-rail-link:hover{background:#f0f5f6;color:#203b50}
         .avic-global-rail .rail-btn.active,.avic-global-rail-link.active{background:#eaf1f8;color:#145d83;box-shadow:inset 3px 0 #2563b8}
-        #avicApplicationExit{margin-top:auto;border:1px solid #e4e9ed;color:#71808b}
-        #avicApplicationExit:hover{background:#fff2f1;color:#b64242;border-color:#efd1cf}
+        #avicCoreStop{margin-top:auto;border:1px solid #ead2d2;color:#a34848}
+        #avicCoreStop:hover{background:#fff2f1;color:#a52f2f;border-color:#e5baba}
+        #avicApplicationExit{border:1px solid #e4e9ed;color:#71808b}
+        #avicApplicationExit:hover{background:#f0f5f6;color:#344e61;border-color:#d5e0e6}
         .avic-workspace-logic,.avic-workspace-pages{margin-left:54px!important;width:calc(100% - 54px)!important}
         .avic-workspace-logic .layout{height:calc(100vh - 105px)!important}
         .avic-workspace-home .app{margin-left:54px!important;width:calc(100% - 54px)!important}

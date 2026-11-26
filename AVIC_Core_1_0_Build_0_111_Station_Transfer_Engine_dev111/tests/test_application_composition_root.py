@@ -61,3 +61,20 @@ def test_project_backup_requires_preview_id_and_restores(tmp_path):
     with pytest.raises(ValueError):
         core.restore_backup(backup, target, expected_backup_id="wrong")
     core.close()
+
+
+
+def test_core_shutdown_preview_is_read_only_and_close_stops_owned_fbd_service(tmp_path):
+    core = CoreApplication(tmp_path / "data")
+    core.start_station("station-active")
+    preview = core.shutdown_preview()
+    assert preview["core_state"] == "RUNNING"
+    assert [item["station_id"] for item in preview["active_stations"]] == ["station-active"]
+    assert preview["field_writes_enabled"] is False
+    assert core.closed is False
+
+    core.close()
+    assert core.closed is True
+    assert core.runtime.get("station-active").state == RuntimeState.STOPPED
+    assert core.fbd_execution._closed is True
+    core.close()  # shutdown is idempotent

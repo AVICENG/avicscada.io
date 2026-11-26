@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from threading import Timer
 
 
 def main() -> None:
@@ -24,7 +25,16 @@ def main() -> None:
     from .app import create_ui_app
 
     app = create_ui_app(data_dir=args.data_dir)
-    uvicorn.run(app, host=args.host, port=args.port, reload=args.reload)
+    config = uvicorn.Config(app, host=args.host, port=args.port, reload=args.reload)
+    server = uvicorn.Server(config)
+
+    def request_process_shutdown() -> None:
+        # Let the HTTP response leave the socket before asking Uvicorn to perform
+        # its normal graceful shutdown and run the ASGI lifespan cleanup.
+        Timer(0.5, lambda: setattr(server, "should_exit", True)).start()
+
+    app.state.process_shutdown_callback = request_process_shutdown
+    server.run()
 
 
 if __name__ == "__main__":

@@ -100,10 +100,23 @@ class FBDExecutionService:
                     "last_tick_at_monotonic": item.last_tick_at,
                     "last_duration_ms": item.last_duration_ms, "last_error": item.last_error,
                     "last_result": item.last_result, "runtime_published": bool((item.last_result or {}).get("runtime_published")),
-                    "field_writes_performed": False}
+                    "in_flight": item.in_flight, "field_writes_performed": False}
 
     def start(self, document_id: str, *, interval_ms: int | None = None,
               background: bool = True) -> dict[str, Any]:
+        # Serialize starts against Core shutdown so a just-created scheduler cannot
+        # escape the shutdown snapshot.
+        core_lock = getattr(self.core, "_lock", None)
+        if core_lock is None:
+            return self._start_unlocked(document_id, interval_ms=interval_ms, background=background)
+        with core_lock:
+            ensure_open = getattr(self.core, "_ensure_open", None)
+            if callable(ensure_open):
+                ensure_open()
+            return self._start_unlocked(document_id, interval_ms=interval_ms, background=background)
+
+    def _start_unlocked(self, document_id: str, *, interval_ms: int | None = None,
+                        background: bool = True) -> dict[str, Any]:
         if interval_ms is not None:
             self.configure(document_id, interval_ms=interval_ms)
         elif document_id not in self._items:
@@ -289,6 +302,7 @@ class FBDExecutionService:
                 "tick_count": item.tick_count,
                 "last_error": item.last_error,
                 "runtime_published": bool((item.last_result or {}).get("runtime_published")),
+                "in_flight": True,
                 "field_writes_performed": False,
             }
 
@@ -328,6 +342,11 @@ class FBDExecutionService:
                         pass
         return self.status(document_id)
 
+    def all_status(self) -> list[dict[str, Any]]:
+        with self._lock:
+            ids = tuple(self._items)
+        return [self.status(document_id) for document_id in ids]
+
     def events(self, document_id: str) -> tuple[dict[str, Any], ...]:
         with self._lock:
             item = self._items.get(document_id)
@@ -341,13 +360,26 @@ class FBDExecutionService:
             if self._closed:
                 return
             ids = tuple(self._items)
+        failures = []
         for document_id in ids:
-            self.stop(document_id)
+            try:
+                status = self.stop(document_id, timeout=2.0)
+                # ERROR with no in-flight worker is quiescent: retain the diagnostic,
+                # but it is safe to stop the scheduler and its executor.
+                if status.get("in_flight") or status.get("state") in {"RUNNING", "STARTING", "STOPPING"}:
+                    failures.append(document_id)
+            except Exception:
+                failures.append(document_id)
+        if failures:
+            raise RuntimeError("Не удалось подтвердить остановку FBD worker: " + ", ".join(failures))
+
         self._scheduler_stop.set()
         self._scheduler_wake.set()
         scheduler = self._scheduler_thread
         if scheduler and scheduler.is_alive():
             scheduler.join(timeout=2.0)
-        self._executor.shutdown(wait=False, cancel_futures=True)
+        if scheduler and scheduler.is_alive():
+            raise RuntimeError("FBD scheduler не завершился за отведённое время")
+        self._executor.shutdown(wait=True, cancel_futures=True)
         with self._lock:
             self._closed = True

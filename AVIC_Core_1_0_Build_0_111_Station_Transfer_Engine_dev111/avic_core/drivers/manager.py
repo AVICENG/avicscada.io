@@ -248,6 +248,15 @@ class DriverManagerService:
         self.core.repository.save(item, expected_version=version)
 
     def start_instance(self, instance_id: str, *, poll_interval_seconds: float | None = None) -> dict:
+        # Serialize start against CoreApplication.close() so shutdown cannot miss a
+        # worker that passed its open-state check but has not registered yet.
+        with self.core._lock:
+            self.core._ensure_open()
+            return self._start_instance_unlocked(
+                instance_id, poll_interval_seconds=poll_interval_seconds
+            )
+
+    def _start_instance_unlocked(self, instance_id: str, *, poll_interval_seconds: float | None = None) -> dict:
         with self._lock:
             if instance_id in self._sessions:
                 return self.diagnostics(instance_id)
