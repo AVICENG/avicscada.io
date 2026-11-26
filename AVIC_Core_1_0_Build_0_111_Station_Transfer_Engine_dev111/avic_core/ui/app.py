@@ -1628,12 +1628,44 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         """Unified navigator: Project → Station → Physical Network → Protocol → Device → Point."""
         return app.state.engineering_tree.build(include_archived=include_archived)
 
+    @app.get("/api/licensing/status")
+    def licensing_status() -> dict:
+        """Safe license status for the local engineering UI; never exposes key or file paths."""
+        from avic_core.licensing import summarize_point_usage
+        core = app.state.core
+        service = core.installation_license_service
+        records = core.repository.list_records(entity_type="Point")
+        if service is None or core.license_file is None:
+            usage = summarize_point_usage(records, point_limit=None)
+            return {
+                "configured": False, "valid": None, "reason": "LICENSE_NOT_CONFIGURED",
+                "customer": None, "license_id": None, "host_id": None,
+                "point_limit": None, "licensed_active_points": usage["licensed_active_points"],
+                "remaining_points": None, "features": [],
+            }
+        state = service.inspect(core.license_file)
+        status = state.status
+        usage = summarize_point_usage(records, point_limit=status.point_limit if status.valid else 0)
+        return {
+            "configured": True, "valid": bool(status.valid), "reason": status.reason,
+            "customer": status.customer, "license_id": status.license_id,
+            "host_id": state.host_id, "point_limit": status.point_limit,
+            "licensed_active_points": usage["licensed_active_points"],
+            "remaining_points": usage["remaining_points"],
+            "features": list(status.features),
+        }
+
     @app.get("/api/licensing/point-usage")
     def licensing_point_usage() -> dict:
-        """Project/installation point counters; no license activation is implied."""
+        """Project/installation point counters, including signed license capacity when configured."""
         from avic_core.licensing import summarize_point_usage
-        records = app.state.core.repository.list_records(entity_type="Point")
-        return summarize_point_usage(records, point_limit=None)
+        core = app.state.core
+        records = core.repository.list_records(entity_type="Point")
+        limit = None
+        if core.installation_license_service is not None and core.license_file is not None:
+            status = core.installation_license_service.inspect(core.license_file).status
+            limit = status.point_limit if status.valid else 0
+        return summarize_point_usage(records, point_limit=limit)
 
     @app.post("/api/engineering/devices/{device_id}/read-values")
     def read_device_point_values(device_id: str, request: Request) -> dict:
