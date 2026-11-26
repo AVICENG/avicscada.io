@@ -94,3 +94,25 @@ def test_compiler_rejects_non_finite_constant_value(tmp_path):
     assert preview.status_code == 200, preview.text
     assert preview.json()["compilable"] is False
     assert any("CONSTANT" in issue for issue in preview.json()["issues"])
+
+
+def test_knob_rejects_value_outside_range_and_invalid_pin_level(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _source_graph()
+    data["pages"][0]["modules"][0]["params"].update({
+        "bottom_range": 0.0, "top_range": 40.0, "user_level": 100,
+    })
+    created = client.post(
+        f"/api/stations/{station['id']}/fbd-studio",
+        json={"name": "Invalid KNOB", "data": data},
+    )
+    assert created.status_code == 201, created.text
+    source = created.json()
+    preview = client.post(
+        f"/api/fbd-studio/{source['id']}/compile-preview",
+        json={"expected_revision": source["revision"]},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["compilable"] is False
+    assert any("KNOB" in issue for issue in preview.json()["issues"])
