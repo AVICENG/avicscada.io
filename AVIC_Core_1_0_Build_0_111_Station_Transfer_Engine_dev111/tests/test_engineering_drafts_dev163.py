@@ -117,6 +117,12 @@ def test_save_manager_script_is_served_only_as_editor_support_and_injected(tmp_p
         response = client.get(path)
         assert response.status_code == 200
         assert "/avic-static/save-manager.js" in response.text
+    graphics = client.get("/graphics").text
+    assert "Элемент удалён из текущей редакции" in graphics
+    assert "saveDraft?.schedule()" in graphics
+    repository = client.get("/repository?section=WebApplication").text
+    assert "Изображение загружено в Repository станции." in repository
+    assert "saveDraft?.schedule()" in repository
 
 
 
