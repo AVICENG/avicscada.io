@@ -491,7 +491,14 @@ class FBDStudioService:
                         issues.append(f"Блок «{module.get('name') or typ}»: старый TIME.OCC placeholder больше не поддерживается; удалите блок и создайте новый TIME с 21 именованным выходом")
                     else:
                         issues.append(f"Блок «{module.get('name') or typ}»: выходы редактора {outs} не совпадают с контрактом Core {list(spec['outputs'])}")
-                params = module.get("params") or {}
+                raw_params = module.get("params")
+                if raw_params is None:
+                    params = {}
+                elif not isinstance(raw_params, dict):
+                    issues.append(f"Блок «{module.get('name') or typ}»: params должен быть объектом")
+                    params = {}
+                else:
+                    params = raw_params
                 if typ == "BOOL_INPUT":
                     value = params.get("value", False)
                     if not isinstance(value, bool) and str(value).strip().casefold() not in {"true", "false", "да", "нет", "1", "0"}:
@@ -534,6 +541,9 @@ class FBDStudioService:
                         issues.append(f"Блок «{module.get('name') or typ}»: {typ} требует конечный rawValue и корректную таблицу scalingPoints")
                 if typ == "DELAY":
                     cfg = params.get("delay") or {}
+                    if not isinstance(cfg, dict):
+                        issues.append(f"Блок «{module.get('name') or typ}»: delay должен быть объектом")
+                        cfg = {}
                     try:
                         import math
                         on_delay, off_delay = float(cfg.get("onDelay", 5.0)), float(cfg.get("offDelay", 0.0))
@@ -555,6 +565,9 @@ class FBDStudioService:
                         issues.append(f"Блок «{module.get('name') or typ}»: {exc}")
                 if typ == "LATCH":
                     cfg = params.get("latch") or {}
+                    if not isinstance(cfg, dict):
+                        issues.append(f"Блок «{module.get('name') or typ}»: latch должен быть объектом")
+                        cfg = {}
                     if not isinstance(cfg.get("resetPriority", True), bool):
                         issues.append(f"Блок «{module.get('name') or typ}»: LATCH.resetPriority должен быть bool")
                     initial = cfg.get("initial", 0)
@@ -573,6 +586,9 @@ class FBDStudioService:
                         issues.append(f"Блок «{module.get('name') or typ}»: COMBINATION должен содержать четыре корректные строки условий E/F/G/H")
                 if typ == "SCALE":
                     scale = params.get("scale") or {}
+                    if not isinstance(scale, dict):
+                        issues.append(f"Блок «{module.get('name') or typ}»: scale должен быть объектом")
+                        scale = {}
                     try:
                         import math
                         values = [float(scale.get("inputLow", 0.0)), float(scale.get("inputHigh", 100.0)),
@@ -587,6 +603,9 @@ class FBDStudioService:
                         issues.append(f"Блок «{module.get('name') or typ}»: SCALE в Studio должен иметь вход IN и выход OUT")
                 elif typ == "HYSTERESIS":
                     cfg = params.get("hysteresis") or {}
+                    if not isinstance(cfg, dict):
+                        issues.append(f"Блок «{module.get('name') or typ}»: hysteresis должен быть объектом")
+                        cfg = {}
                     try:
                         import math
                         low, high = float(cfg.get("low", 18.0)), float(cfg.get("high", 22.0))
