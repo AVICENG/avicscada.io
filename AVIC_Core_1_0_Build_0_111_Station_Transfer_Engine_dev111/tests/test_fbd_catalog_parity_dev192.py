@@ -31,5 +31,7 @@ def test_all_editor_blocks_have_matching_core_and_compiler_contracts():
             }
     assert set(definitions) == expected
     for block_type in sorted(expected):
-        assert set(definitions[block_type]["inputs"]) == set(FBDService.BLOCKS[block_type]["inputs"]), block_type
+        # Studio SCALE exposes only IN; the compiler materializes the four bounds as Core inputs.
+        expected_inputs = {"IN"} if block_type == "SCALE" else set(FBDService.BLOCKS[block_type]["inputs"])
+        assert set(definitions[block_type]["inputs"]) == expected_inputs, block_type
         assert set(definitions[block_type]["outputs"]) == set(FBDService.BLOCKS[block_type]["outputs"]), block_type
