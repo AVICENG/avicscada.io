@@ -75,6 +75,13 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
     app = create_ui_app(data_dir=str(tmp_path / "dev196"))
     controller = FakeTrendBacnetController()
     with TestClient(app) as client:
+        manifest = client.get("/api/ui/manifest").json()
+        health = client.get("/api/ui/health").json()
+        assert manifest["version"] == "1.0.0.dev196"
+        assert manifest["capabilities"]["driver_manager"] is True
+        assert manifest["capabilities"]["bacnet_ip_polling"] == "managed-read-only-present-value"
+        assert manifest["capabilities"]["field_writes_enabled"] is False
+        assert health["version"] == "1.0.0.dev196"
         project = client.post("/api/projects", json={"name": "DEV196 BACnet AHU"}).json()
         station = client.post("/api/stations", json={
             "project_id": project["id"], "name": "AHU-01",
