@@ -171,82 +171,81 @@ def test_managed_bacnet_point_flows_through_fbd_to_published_fan_page(tmp_path):
             "interval_ms": 100, "background": False,
         })
         assert started.status_code == 200, started.text
-        tick = client.post(f"/api/fbd-runtime/{core_document_id}/tick", json={})
-        assert tick.status_code == 200, tick.text
-        assert tick.json()["runtime_published"] is True
-        assert app.state.core.point_runtime.read(exposed_id).value is True
-        assert app.state.core.point_runtime.read(exposed_id).quality == "GOOD"
-        # The point sample is persisted in Point Runtime; stop the strategy before
-        # page rendering so a failed assertion cannot leave an active FBD strategy.
-        client.post(f"/api/fbd-runtime/{core_document_id}/stop")
+        try:
+            tick = client.post(f"/api/fbd-runtime/{core_document_id}/tick", json={})
+            assert tick.status_code == 200, tick.text
+            assert tick.json()["runtime_published"] is True
+            assert app.state.core.point_runtime.read(exposed_id).value is True
+            assert app.state.core.point_runtime.read(exposed_id).quality == "GOOD"
+            # Bind the published fan animation to the FBD virtual point, not to a copied value.
+            graphic = client.post(f"/api/stations/{station['id']}/graphics", json={
+                "name": "AHU-01 Fan Mimic",
+            }).json()
+            saved_graphic = client.put(f"/api/graphics/{graphic['id']}", json={
+                "expected_revision": graphic["revision"],
+                "elements": [{
+                    "id": "f1a10000-0000-4000-8000-000000000001", "name": "Вентилятор SF-01", "symbol_key": "fan",
+                    "x": 120, "y": 100, "width": 180, "height": 140,
+                    "rotation": 0, "layer": 1,
+                    "bindings": [
+                        {"point_id": exposed_id, "role": "feedback", "binding_type": "status",
+                         "target_property": "animation", "settings": {"converter": "boolean"}},
+                        {"point_id": exposed_id, "role": "quality", "binding_type": "status",
+                         "target_property": "status", "settings": {}},
+                    ],
+                }],
+            })
+            assert saved_graphic.status_code == 200, saved_graphic.text
 
-        # Bind the published fan animation to the FBD virtual point, not to a copied value.
-        graphic = client.post(f"/api/stations/{station['id']}/graphics", json={
-            "name": "AHU-01 Fan Mimic",
-        }).json()
-        saved_graphic = client.put(f"/api/graphics/{graphic['id']}", json={
-            "expected_revision": graphic["revision"],
-            "elements": [{
-                "id": "f1a10000-0000-4000-8000-000000000001", "name": "Вентилятор SF-01", "symbol_key": "fan",
-                "x": 120, "y": 100, "width": 180, "height": 140,
-                "rotation": 0, "layer": 1,
-                "bindings": [
-                    {"point_id": exposed_id, "role": "feedback", "binding_type": "status",
-                     "target_property": "animation", "settings": {"converter": "boolean"}},
-                    {"point_id": exposed_id, "role": "quality", "binding_type": "status",
-                     "target_property": "status", "settings": {}},
+            site = client.post("/api/web-pages", json={
+                "station_id": station["id"], "name": "Здание", "kind": "site",
+            }).json()
+            page = client.post("/api/web-pages", json={
+                "station_id": station["id"], "name": "AHU-01", "kind": "page",
+                "parent_id": site["id"], "slug": "ahu-01",
+            }).json()
+            assigned = client.post(f"/api/web-pages/{page['id']}/graphics", json={
+                "expected_revision": page["revision"], "graphic_id": graphic["id"],
+            })
+            assert assigned.status_code == 200, assigned.text
+            saved_page = client.put(f"/api/web-pages/{page['id']}", json={
+                "expected_revision": assigned.json()["revision"],
+                "layout": [
+                    {"type": "heading", "text": "Приточная установка AHU-01",
+                     "x": 24, "y": 20, "width": 600, "height": 58},
+                    {"type": "value", "label": "Состояние BACnet-контроллера",
+                     "point_id": physical_id, "x": 24, "y": 100, "width": 260, "height": 90},
+                    {"type": "value", "label": "Состояние FAN_RUN по FBD",
+                     "point_id": exposed_id, "x": 24, "y": 210, "width": 260, "height": 90},
+                    {"type": "graphic", "graphic_id": graphic["id"],
+                     "label": "Вентилятор SF-01", "x": 320, "y": 90, "width": 700, "height": 520},
                 ],
-            }],
-        })
-        assert saved_graphic.status_code == 200, saved_graphic.text
+            })
+            assert saved_page.status_code == 200, saved_page.text
+            published = client.post(f"/api/web-pages/{page['id']}/publish", json={
+                "expected_revision": saved_page.json()["revision"],
+            })
+            assert published.status_code == 200, published.text
 
-        site = client.post("/api/web-pages", json={
-            "station_id": station["id"], "name": "Здание", "kind": "site",
-        }).json()
-        page = client.post("/api/web-pages", json={
-            "station_id": station["id"], "name": "AHU-01", "kind": "page",
-            "parent_id": site["id"], "slug": "ahu-01",
-        }).json()
-        assigned = client.post(f"/api/web-pages/{page['id']}/graphics", json={
-            "expected_revision": page["revision"], "graphic_id": graphic["id"],
-        })
-        assert assigned.status_code == 200, assigned.text
-        saved_page = client.put(f"/api/web-pages/{page['id']}", json={
-            "expected_revision": assigned.json()["revision"],
-            "layout": [
-                {"type": "heading", "text": "Приточная установка AHU-01",
-                 "x": 24, "y": 20, "width": 600, "height": 58},
-                {"type": "value", "label": "Состояние BACnet-контроллера",
-                 "point_id": physical_id, "x": 24, "y": 100, "width": 260, "height": 90},
-                {"type": "value", "label": "Состояние FAN_RUN по FBD",
-                 "point_id": exposed_id, "x": 24, "y": 210, "width": 260, "height": 90},
-                {"type": "graphic", "graphic_id": graphic["id"],
-                 "label": "Вентилятор SF-01", "x": 320, "y": 90, "width": 700, "height": 520},
-            ],
-        })
-        assert saved_page.status_code == 200, saved_page.text
-        published = client.post(f"/api/web-pages/{page['id']}/publish", json={
-            "expected_revision": saved_page.json()["revision"],
-        })
-        assert published.status_code == 200, published.text
+            rendered = client.get(f"/published/{station['id']}/ahu-01")
+            assert rendered.status_code == 200, rendered.text
+            assert "Приточная установка AHU-01" in rendered.text
+            assert physical_id in rendered.text and exposed_id in rendered.text
+            assert f"/published-graphics/{station['id']}/{graphic['id']}" in rendered.text
 
-        rendered = client.get(f"/published/{station['id']}/ahu-01")
-        assert rendered.status_code == 200, rendered.text
-        assert "Приточная установка AHU-01" in rendered.text
-        assert physical_id in rendered.text and exposed_id in rendered.text
-        assert f"/published-graphics/{station['id']}/{graphic['id']}" in rendered.text
+            fan_runtime = client.get(
+                f"/published-graphics/{station['id']}/{graphic['id']}/bindings?page_id={page['id']}"
+            )
+            assert fan_runtime.status_code == 200, fan_runtime.text
+            assert any(item["value"] is True and item["quality"] == "GOOD"
+                       for item in fan_runtime.json()["bindings"].values())
 
-        fan_runtime = client.get(
-            f"/published-graphics/{station['id']}/{graphic['id']}/bindings?page_id={page['id']}"
-        )
-        assert fan_runtime.status_code == 200, fan_runtime.text
-        assert any(item["value"] is True and item["quality"] == "GOOD"
-                   for item in fan_runtime.json()["bindings"].values())
-
-        # Loss of the physical controller link degrades the source; it must not
-        # continue to look like a healthy running fan on the operator page.
-        app.state.driver_manager.stop_instance(driver_id)
-        app.state.core.close()
+            # Loss of the physical controller link degrades the source; it must not
+            # continue to look like a healthy running fan on the operator page.
+        finally:
+            client.post(f"/api/fbd-runtime/{core_document_id}/stop")
+            app.state.driver_manager.stop_instance(driver_id)
+            app.state.core.close()
 
 
 def test_dev196_bacnet_discovery_import_and_driver_manager_ui_are_wired_and_parse(tmp_path):
