@@ -17,10 +17,11 @@ permissions:
   contents: read
 
 # One workflow run at a time across this repository.
-# Keep only the newest pending run so superseded commits do not consume CI time.
+# A newer commit cancels obsolete validation and starts the latest full matrix.
 # Matrix jobs inside the active run are capped at 20.
 concurrency:
   group: avic-core-ci-global
+  cancel-in-progress: true
 
 jobs:
   test-matrix:
