@@ -555,6 +555,10 @@ function copyActivePage(){
   const base=pg.name+' (Copy)';let candidate=base,k=2;
   while(state.pages.some(x=>x.name.trim().toLocaleLowerCase()===candidate.toLocaleLowerCase()))candidate=base+' '+(k++);
   c.name=candidate;
+  const usedPageCodes=new Set(state.pages.map(x=>String(x.code||'').trim().toLocaleLowerCase()).filter(Boolean));
+  let pageNumber=1;
+  while(usedPageCodes.has(('P'+pageNumber).toLocaleLowerCase()))pageNumber++;
+  c.code='P'+pageNumber;
   const incomingByProxy=new Map(incomingRefs.map(r=>[String(r.proxyModuleId),r]));
   const remap=new Map(),newReferences=[];
   const clonedModules=[];

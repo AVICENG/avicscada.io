@@ -363,3 +363,15 @@ def test_fbd_studio_compiler_rejects_cycle_created_by_cross_page_connectives(tmp
     assert preview.status_code == 200, preview.text
     assert preview.json()["compilable"] is False
     assert any("циклическую зависимость" in issue for issue in preview.json()["issues"])
+
+
+def test_fbd_studio_page_copy_assigns_unique_page_code():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    copy_start = html.index("function copyActivePage(){")
+    copy_end = html.index("\nfunction deleteActivePage(){", copy_start)
+    copy_function = html[copy_start:copy_end]
+    assert "const usedPageCodes=new Set(state.pages.map" in copy_function
+    assert "c.code='P'+pageNumber" in copy_function
