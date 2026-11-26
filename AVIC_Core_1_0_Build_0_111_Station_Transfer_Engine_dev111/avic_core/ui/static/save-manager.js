@@ -87,6 +87,9 @@
     let recovered = false;
     let recoveryPending = false;
     let recoveryReady = Promise.resolve();
+    let dirty = false;
+    let localDurable = false;
+    let coreSynced = false;
     const bar = document.createElement("div");
     bar.id = "avic-save-manager";
     bar.setAttribute("role", "status");
@@ -213,9 +216,14 @@
           draftRevision = saved.draft_revision;
           remoteContent = snapshot;
           conflict = false;
+          if (encode(config.getContent()) === encode(snapshot)) {
+            coreSynced = true;
+            dirty = false;
+          }
           state("Черновик сохранён в Core · ревизия " + draftRevision);
           return true;
         } catch (error) {
+          coreSynced = false;
           if (error.status === 409) {
             conflict = true;
             state("Конфликт черновиков · локальная копия сохранена, Core не перезаписан");
@@ -241,6 +249,9 @@
     function schedule() {
       if (timer) clearTimeout(timer);
       if (localTimer) clearTimeout(localTimer);
+      dirty = true;
+      localDurable = false;
+      coreSynced = false;
       state("Есть изменения · сохранение черновика…");
       const snapshot = config.getContent();
       const baseRevision = Number(config.getBaseRevision() || 0);
@@ -248,9 +259,13 @@
         localTimer = null;
         localWrite = persistLocal(snapshot, baseRevision).then(() => {
           if (encode(config.getContent()) === encode(snapshot)) {
+            localDurable = true;
             state("Локальный черновик надёжно сохранён · синхронизация с Core…");
           }
-        }).catch(error => state("Не удалось сохранить локальный черновик: " + error.message));
+        }).catch(error => {
+          localDurable = false;
+          state("Не удалось сохранить локальный черновик: " + error.message);
+        });
       }, 80);
       timer = setTimeout(() => { timer = null; flush(); }, 350);
     }
@@ -290,8 +305,55 @@
       }
       if (local) await localDelete(key);
       if (preserved) await localDelete(recoveryKey);
+      dirty = false;
+      localDurable = true;
+      coreSynced = true;
       state("Основная конфигурация сохранена");
       return true;
+    }
+
+    async function prepareForExit(timeoutMs = 8000) {
+      await recoveryReady.catch(() => {});
+      if (!dirty && !timer && !localTimer && !busy && !pending) {
+        return { safeToClose: true, localSaved: localDurable, coreSaved: coreSynced, conflict };
+      }
+      const started = Date.now();
+      const target = config.getContent();
+      const targetEncoded = encode(target);
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (localTimer) { clearTimeout(localTimer); localTimer = null; }
+      const operation = flush(target, Number(config.getBaseRevision() || 0));
+      await Promise.race([
+        operation.catch(() => false),
+        new Promise(resolve => setTimeout(resolve, timeoutMs))
+      ]);
+      while ((busy || pending) && Date.now() - started < timeoutMs) {
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
+      await localWrite.catch(() => {});
+      let record = null;
+      try { record = await localGet(key); } catch (_) {}
+      const localSaved = Boolean(record && encode(record.content) === targetEncoded);
+      const currentMatches = encode(config.getContent()) === targetEncoded;
+      if (localSaved && currentMatches) localDurable = true;
+      const coreSaved = Boolean(coreSynced && currentMatches && !conflict);
+      const safeToClose = currentMatches && (localSaved || coreSaved);
+      if (safeToClose) {
+        state(coreSaved
+          ? "Черновик синхронизирован с Core · можно закрыть AVIC"
+          : "Черновик сохранён локально · Core недоступен или есть конфликт; можно закрыть без потери локальной копии");
+      } else {
+        state("Не удалось подтвердить сохранение последних изменений · оставайтесь в AVIC и повторите попытку");
+      }
+      return { safeToClose, localSaved, coreSaved, conflict, currentMatches };
+    }
+
+    function getExitStatus() {
+      return {
+        dirty, localDurable, coreSynced, conflict,
+        pending: Boolean(timer || localTimer || busy || pending),
+        safeToClose: !dirty || localDurable || coreSynced
+      };
     }
 
     const handleOnline = () => { if (!conflict) flush(); };
@@ -307,7 +369,8 @@
       state("Не удалось проверить черновики: " + error.message);
     });
     const manager = {
-      schedule, flush, clear,
+      schedule, flush, clear, prepareForExit, getExitStatus,
+      shouldWarnBeforeUnload() { return dirty && !localDurable && !coreSynced; },
       dispose() {
         if (timer) { clearTimeout(timer); timer = null; flush(); }
         else if (localTimer) {

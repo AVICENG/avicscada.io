@@ -470,7 +470,8 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             for href, icon, label, key in nav_items
         )
         tree_toggle = '<button class="rail-btn avic-global-rail-link" id="avicSharedTreeToggle" type="button" title="Общее инженерное дерево" aria-label="Общее инженерное дерево" aria-expanded="false">☷</button>'
-        shared_rail = f'<nav class="avic-global-rail avic-shared-rail" aria-label="Общая навигация AVIC">{tree_toggle}{rail_links}</nav>'
+        exit_button = '<button class="rail-btn avic-global-rail-link" id="avicApplicationExit" type="button" title="Выход из AVIC" aria-label="Выход из AVIC">⏻</button>'
+        shared_rail = f'<nav class="avic-global-rail avic-shared-rail" aria-label="Общая навигация AVIC">{tree_toggle}{rail_links}{exit_button}</nav>'
         shared_tree = """<aside id="avic-shared-tree" aria-label="Общее инженерное дерево" hidden>
           <header><strong>Инженерное дерево</strong><button type="button" id="avicSharedTreeRefresh" title="Обновить">↻</button><button type="button" id="avicSharedTreeClose" title="Закрыть">×</button></header>
           <input id="avicSharedTreeSearch" type="search" placeholder="Поиск проектов, устройств и точек">
@@ -566,6 +567,8 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
           color:#526779;font:19px/1 "Segoe UI",Arial,sans-serif;cursor:pointer}
         .avic-global-rail .rail-btn:hover,.avic-global-rail-link:hover{background:#f0f5f6;color:#203b50}
         .avic-global-rail .rail-btn.active,.avic-global-rail-link.active{background:#eaf1f8;color:#145d83;box-shadow:inset 3px 0 #2563b8}
+        #avicApplicationExit{margin-top:auto;border:1px solid #e4e9ed;color:#71808b}
+        #avicApplicationExit:hover{background:#fff2f1;color:#b64242;border-color:#efd1cf}
         .avic-workspace-logic,.avic-workspace-pages{margin-left:54px!important;width:calc(100% - 54px)!important}
         .avic-workspace-logic .layout{height:calc(100vh - 105px)!important}
         .avic-workspace-home .app{margin-left:54px!important;width:calc(100% - 54px)!important}
@@ -597,11 +600,19 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         if active in {"graphics", "logic", "repository"}:
             html = html.replace("</head>",
                 '<script src="/avic-static/save-manager.js" defer></script></head>', 1)
+        html = html.replace("</head>",
+            '<script src="/avic-static/application-lifecycle.js" defer></script></head>', 1)
         return html
 
     @app.get("/avic-static/save-manager.js", include_in_schema=False)
     def engineering_save_manager_script() -> Response:
         source = (_UI_DIR / "save-manager.js").read_text(encoding="utf-8")
+        return Response(content=source, media_type="application/javascript",
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+    @app.get("/avic-static/application-lifecycle.js", include_in_schema=False)
+    def application_lifecycle_script() -> Response:
+        source = (_UI_DIR / "application-lifecycle.js").read_text(encoding="utf-8")
         return Response(content=source, media_type="application/javascript",
                         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
