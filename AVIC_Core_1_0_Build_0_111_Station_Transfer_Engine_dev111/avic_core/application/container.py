@@ -275,9 +275,41 @@ class CoreApplication:
                 raise RuntimeError("AVIC Core shutdown is already in progress")
             self._shutdown_in_progress = True
 
+        # Until FBD execution is hosted by the independent Field Runtime process,
+        # an active strategy is a hard shutdown interlock. Closing this Core process
+        # would otherwise terminate the only execution owner.
+        active_field_strategies = [
+            item for item in self.fbd_execution.all_status()
+            if item.get("state") in {"RUNNING", "STARTING", "STOPPING"} or item.get("in_flight")
+        ]
+        if active_field_strategies:
+            details = {"active_field_strategies": [
+                {"document_id": item.get("document_id"), "station_id": item.get("station_id"),
+                 "state": item.get("state"), "in_flight": bool(item.get("in_flight"))}
+                for item in active_field_strategies
+            ], "reason": "Field Runtime is not yet process-isolated from Core"}
+            self.events.record(
+                "core.shutdown_blocked_field_runtime",
+                "Core shutdown refused: active FBD strategies still belong to this process",
+                severity="ERROR", details=details,
+            )
+            self.audit.append(
+                actor_id="system", action="core.shutdown_blocked_field_runtime",
+                resource_type="core", resource_id="local", outcome="error", details=details,
+            )
+            with self._lock:
+                self._shutdown_in_progress = False
+                self._shutdown_blocked = True
+            ids = ", ".join(str(item.get("document_id")) for item in active_field_strategies)
+            raise RuntimeError(
+                "Остановка AVIC Core заблокирована: активные FBD-стратегии ещё выполняются "
+                "в процессе Core. Это временная защитная блокировка до выделения отдельного "
+                f"Field Runtime. Стратегии: {ids}"
+            )
+
         failures: list[tuple[str, Exception]] = []
-        # Stop cyclic logic first so no new virtual-point publications occur while
-        # field drivers and station runtimes are being taken offline.
+        # No active Field Runtime strategy remains, so the local FBD service can
+        # now be closed as part of the Core process teardown.
         try:
             self.fbd_execution.close()
         except Exception as exc:

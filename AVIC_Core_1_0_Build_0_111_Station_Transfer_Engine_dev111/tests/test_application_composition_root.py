@@ -78,3 +78,35 @@ def test_core_shutdown_preview_is_read_only_and_close_stops_owned_fbd_service(tm
     assert core.runtime.get("station-active").state == RuntimeState.STOPPED
     assert core.fbd_execution._closed is True
     core.close()  # shutdown is idempotent
+
+
+def test_core_shutdown_is_blocked_while_fbd_strategy_is_active(tmp_path, monkeypatch):
+    core = CoreApplication(tmp_path / "data")
+    core.start_station("station-field")
+    active = [{
+        "document_id": "ahu-supply",
+        "station_id": "station-field",
+        "state": "RUNNING",
+        "in_flight": False,
+    }]
+    monkeypatch.setattr(core.fbd_execution, "all_status", lambda: active)
+    stopped = {"drivers": False, "fbd": False}
+    monkeypatch.setattr(core.driver_manager, "stop_all",
+                        lambda: stopped.__setitem__("drivers", True))
+    monkeypatch.setattr(core.fbd_execution, "close",
+                        lambda: stopped.__setitem__("fbd", True))
+
+    with pytest.raises(RuntimeError, match="Остановка AVIC Core заблокирована"):
+        core.close()
+
+    assert core.closed is False
+    assert core._shutdown_blocked is True
+    assert core._shutdown_in_progress is False
+    assert core.runtime.get("station-field").state == RuntimeState.RUNNING
+    assert stopped == {"drivers": False, "fbd": False}
+
+    # This verifies only the shutdown interlock, not process-level autonomy.
+    monkeypatch.setattr(core.fbd_execution, "all_status", lambda: [])
+    monkeypatch.setattr(core.fbd_execution, "close", lambda: None)
+    core.close()
+    assert core.closed is True
