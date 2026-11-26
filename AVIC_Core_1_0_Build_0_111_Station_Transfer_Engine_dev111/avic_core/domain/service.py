@@ -213,5 +213,13 @@ class CoreObjectService:
             for entity_id in deleting:
                 if records_by_id[entity_id]["entity_type"] == "Alarm":
                     self.set_point_usage(f"alarm:{entity_id}", [], connection=connection)
+            for entity_id in deleting:
+                if records_by_id[entity_id]["entity_type"] == "Point":
+                    current = self.repository.get_record(entity_id, connection=connection)
+                    usages = current.get("payload", {}).get("licensed_usage") or []
+                    if usages:
+                        raise DomainIntegrityError(
+                            f"Cannot delete licensed Point {entity_id}; remove active usages first: {', '.join(sorted(usages))}"
+                        )
             for entity_id, expected_version in entity_versions.items():
                 self.repository.delete(entity_id, expected_version=expected_version, connection=connection)
