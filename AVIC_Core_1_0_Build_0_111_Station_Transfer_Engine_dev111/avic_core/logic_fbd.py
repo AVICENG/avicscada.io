@@ -108,6 +108,8 @@ class FBDService:
     BLOCKS = {
       "BOOL_INPUT":{"category":"Digital","label":"Булевый вход","inputs":{},"outputs":{"OUT":"bool"},"defaults":{"value":False}},
       "FLOAT_INPUT":{"category":"Analog","label":"Аналоговый вход","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":0.0}},
+      "KNOB":{"category":"Analog","label":"Ручной источник (KNOB)","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":50.0}},
+      "CONSTANT":{"category":"Math","label":"Константа","inputs":{},"outputs":{"OUT":"float"},"defaults":{"value":1.0}},
       "POINT_INPUT":{"category":"Points","label":"Точка станции","inputs":{},"outputs":{"OUT":"any"},"defaults":{}},
       "SCHEDULE":{"category":"Schedule","label":"Расписание станции","inputs":{},"outputs":{"OUT":"any"},"defaults":{"schedule_id":""}},
       "AND":{"category":"Logic","label":"И (AND)","inputs":{"A":"bool","B":"bool"},"outputs":{"OUT":"bool"},"defaults":{}},
@@ -204,10 +206,11 @@ class FBDService:
             params=raw.get("params") or {}
             if not isinstance(params,dict): raise ValueError("Параметры FBD-блока должны быть объектом")
             if typ=="BOOL_INPUT" and not isinstance(params.get("value",False),bool): raise ValueError("BOOL_INPUT.value должен быть bool")
-            if typ=="FLOAT_INPUT":
-                val=params.get("value",0.0)
-                if isinstance(val,bool) or not isinstance(val,(int,float)) or not math.isfinite(float(val)): raise ValueError("FLOAT_INPUT.value должен быть конечным числом")
-                params={"value":float(val)}
+            if typ in {"FLOAT_INPUT", "KNOB", "CONSTANT"}:
+                val=params.get("value",spec["defaults"].get("value",0.0))
+                if isinstance(val,bool) or not isinstance(val,(int,float)) or not math.isfinite(float(val)):
+                    raise ValueError(f"{typ}.value должен быть конечным числом")
+                params={**params,"value":float(val)}
             studio_module_id = (raw.get("params") or {}).get("_studio_module_id")
             if studio_module_id:
                 params["_studio_module_id"] = str(studio_module_id)
@@ -482,7 +485,8 @@ class FBDService:
             raise ValueError("Параметры симуляции должны быть объектом node_id → value")
         nodes = {n["id"]: n for n in graph["nodes"]}
         overridable = {nid for nid, node in nodes.items()
-                       if node["type"].endswith("_INPUT") and node["type"] != "POINT_INPUT"}
+                       if (node["type"].endswith("_INPUT") and node["type"] != "POINT_INPUT")
+                       or node["type"] == "KNOB"}
         unknown = set(inputs) - overridable
         if unknown:
             raise ValueError("Переопределять можно только виртуальные входы; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
@@ -548,6 +552,11 @@ class FBDService:
                 raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value")))
                 out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), raw, node_name=node["name"])
                 source_meta = {"kind": "virtual_simulation_input", "overridden": node_id in inputs}
+            elif typ in {"KNOB", "CONSTANT"}:
+                raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value", 0.0)))
+                out = self._validate_simulation_value("float", raw, node_name=node["name"])
+                source_meta = {"kind": "manual_knob" if typ == "KNOB" else "constant",
+                               "overridden": node_id in inputs}
             elif typ == "SCHEDULE":
                 schedule_id = str(params.get("schedule_id") or "")
                 schedule = self.core.schedules.get(schedule_id)
