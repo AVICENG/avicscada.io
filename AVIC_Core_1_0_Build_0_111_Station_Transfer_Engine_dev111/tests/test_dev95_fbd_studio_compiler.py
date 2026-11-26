@@ -408,3 +408,30 @@ def test_fbd_studio_page_copy_generates_unique_module_tags_within_the_copy():
     assert "const usedTags=new Set(allModules().map" in copy_function
     assert "const nextCopyTag=type=>" in copy_function
     assert "m.tag=nextCopyTag(m.type)" in copy_function
+
+
+def test_fbd_studio_delete_block_cleans_connectives_links_and_exposed_points():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    start = html.index("function deleteSelected(){")
+    end = html.index("\nfunction interpolateSensor", start)
+    function = html[start:end]
+    assert "const deadModuleIds=new Set" in function
+    assert "state.links=state.links.filter" in function
+    assert "state.fbdPoints=state.fbdPoints.filter" in function
+    assert "Удалить блок и связанные объекты?" in function
+
+
+def test_fbd_studio_delete_page_cleans_exposed_points_and_confirms_dependencies():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    start = html.index("function deleteActivePage(){")
+    end = html.index("\nconst sensorCatalog", start)
+    function = html[start:end]
+    assert "const deadPoints=state.fbdPoints.filter" in function
+    assert "state.fbdPoints=state.fbdPoints.filter(pt=>!deadPoints.includes(pt))" in function
+    assert "deadRefs.length||deadPoints.length" in function

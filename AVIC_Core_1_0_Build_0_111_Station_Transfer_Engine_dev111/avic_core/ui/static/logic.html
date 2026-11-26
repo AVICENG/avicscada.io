@@ -618,6 +618,7 @@ function copyActivePage(){
 function deleteActivePage(){
  if(state.pages.length<2){toast('Нельзя удалить последнюю страницу');return}
  const id=state.active,deadRefs=state.references.filter(r=>r.sourcePageId===id||r.targetPageId===id);
+ const deadPoints=state.fbdPoints.filter(pt=>String(pt.source?.pageId||'')===String(id));
  const performDelete=()=>{
   snapshot();
   const deadModuleIds=new Set(deadRefs.flatMap(r=>[String(r.proxyModuleId||''),String(r.toModuleId||'')]).filter(Boolean));
@@ -629,16 +630,17 @@ function deleteActivePage(){
    return !deadModuleIds.has(sourceId)&&!deadModuleIds.has(targetId);
   });
   state.references=state.references.filter(r=>r.sourcePageId!==id&&r.targetPageId!==id);
+  state.fbdPoints=state.fbdPoints.filter(pt=>!deadPoints.includes(pt));
   state.active=state.pages[0].id;state.selected=null;render();saveSoon();
-  if(deadRefs.length)toast('Страница удалена; связанные Connective и их связи очищены.');
+  if(deadRefs.length||deadPoints.length)toast('Страница удалена; связанные Connective, FBD-точки и линии очищены.');
  };
- if(deadRefs.length){
+ if(deadRefs.length||deadPoints.length){
   const details=deadRefs.map(r=>{
    const sourcePage=state.pages.find(p=>p.id===r.sourcePageId),targetPage=state.pages.find(p=>p.id===r.targetPageId);
    const source=sourcePage?.modules.find(m=>m.id===r.sourceModuleId);
    return '<li>'+esc(sourcePage?.name||r.sourcePageId)+' / '+esc(source?.name||r.sourceModuleId)+' → '+esc(targetPage?.name||r.targetPageId)+'</li>';
-  }).join('');
-  showModal('Удалить страницу с зависимостями?', '<p>Удаление также удалит связанные Connective proxy/маркеры и все связи от этих proxy:</p><ul>'+details+'</ul><p>Продолжить?</p>',()=>{performDelete()});
+  }).join('')+deadPoints.map(pt=>'<li>FBD-точка '+esc(pt.tag||pt.name||pt.id)+'</li>').join('');
+  showModal('Удалить страницу с зависимостями?', '<p>Вместе со страницей будут удалены связанные Connective, линии и точки:</p><ul>'+details+'</ul><p>Продолжить?</p>',()=>{performDelete()});
  }else performDelete();
 }
 const sensorCatalog=[{number:4,name:'Thermistor TBTS',part:'T/TS',range:'0 to +40C Type 5',input:'Thermistor Volts',mode:'Characterise',upper:50,lower:-5,exponent:0,points:[[0.48,110],[0.549,105],[0.63,100],[0.724,95],[0.833,90],[0.961,85],[1.11,80],[1.484,70],[1.985,60],[2.641,50],[3.47,40],[4.46,30],[5.2,20],[6.663,10],[7.668,0],[8.102,-5],[8.482,-10],[8.807,-15],[9.078,-20],[9.299,-25]]},{number:1,name:'Linear 0–10V',part:'Generic',range:'0 to 100',input:'Volts',mode:'Linear',upper:100,lower:0,exponent:1},{number:2,name:'Thermistor Ohms',part:'T/TS',range:'-30 to +110C',input:'Thermistor Ohms',mode:'Characterise',upper:110,lower:-30,exponent:0}];
@@ -980,7 +982,36 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function renderTracker(){let rows=activePage().modules.map(m=>`<tr><td>${m.name}</td><td>${m.type}</td><td>${m.no}</td><td>${state.running?'RUN':'OFFLINE'}</td><td>${state.running?(typeof m.value==='boolean'?digital(m.value):(m.value??'—')):'—'}</td><td>${m.quality||'GOOD'}</td></tr>`).join('');$('#trackerRows').innerHTML=rows||'<tr><td colspan="6" style="color:#8997a5">No modules on this page</td></tr>'}
 function render(){renderTree();renderPageTree();renderPoints();renderTabs();renderLibrary();renderBlocks();renderProperties();$('#crumb').textContent=`FBD Project: ${state.project}　›　${activePage().name}`;$('#paperProject').textContent=state.project.toUpperCase();$('#paperDescription').textContent=state.description||'';$('#paperPage').textContent=activePage().name;$('#paperFooterProject').textContent=state.project;$('#paperFooterPage').textContent=activePage().name;$('#zoomlabel').textContent=Math.round(state.zoom*100)+'%';applyTransform()}
 function applyTransform(){$('#canvas').style.transform=`translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;$('#zoomlabel').textContent=Math.round(state.zoom*100)+'%'}
-function deleteSelected(){if(!state.selected)return;snapshot();let id=state.selected,p=activePage();if((p.notes||[]).some(n=>n.id===id)){p.notes=p.notes.filter(n=>n.id!==id)}else if(p.modules.some(m=>m.id===id)){p.modules=p.modules.filter(m=>m.id!==id);state.links=state.links.filter(l=>!l.from.includes(':'+id+':')&&!l.to.includes(':'+id+':'));let dead=state.references.filter(r=>r.sourceModuleId===id||r.proxyModuleId===id);state.references.filter(r=>r.toModuleId===id).forEach(r=>r.toModuleId=null);dead.forEach(r=>{state.pages.forEach(pg=>pg.modules=pg.modules.filter(x=>x.id!==r.proxyModuleId&&x.id!==r.toModuleId))});state.references=state.references.filter(r=>!dead.includes(r))}else state.links=state.links.filter(l=>l.id!==id);state.selected=null;saveSoon();render()}
+function deleteSelected(){
+ if(!state.selected)return;
+ const id=state.selected,p=activePage(),note=(p.notes||[]).find(n=>n.id===id),module=p.modules.find(m=>m.id===id);
+ const deadRefs=module?state.references.filter(r=>r.sourceModuleId===id||r.proxyModuleId===id):[];
+ const pointRefs=module?state.fbdPoints.filter(pt=>String(pt.source?.moduleId||'')===String(id)):[];
+ const performDelete=()=>{
+  snapshot();
+  if(note)p.notes=p.notes.filter(n=>n.id!==id);
+  else if(module){
+   const deadModuleIds=new Set([String(id),...deadRefs.flatMap(r=>[String(r.proxyModuleId||''),String(r.toModuleId||'')])].filter(Boolean));
+   state.pages.forEach(pg=>pg.modules=pg.modules.filter(x=>!deadModuleIds.has(String(x.id))));
+   state.references.forEach(r=>{if(String(r.toModuleId||'')===String(id)&&!deadRefs.includes(r))r.toModuleId=null});
+   state.references=state.references.filter(r=>!deadRefs.includes(r));
+   state.links=state.links.filter(l=>{
+    const sourceId=String(l.from||'').split(':')[1],targetId=String(l.to||'').split(':')[1];
+    return !deadModuleIds.has(sourceId)&&!deadModuleIds.has(targetId);
+   });
+   state.fbdPoints=state.fbdPoints.filter(pt=>!pointRefs.includes(pt));
+  }else state.links=state.links.filter(l=>l.id!==id);
+  state.selected=null;saveSoon();render();
+ };
+ if(deadRefs.length||pointRefs.length){
+  const refRows=deadRefs.map(r=>{
+   const sourcePage=state.pages.find(pg=>pg.id===r.sourcePageId),targetPage=state.pages.find(pg=>pg.id===r.targetPageId);
+   return '<li>Connective: '+esc(sourcePage?.name||r.sourcePageId)+' → '+esc(targetPage?.name||r.targetPageId)+'</li>';
+  }).join('');
+  const pointRowsHtml=pointRefs.map(pt=>'<li>FBD-точка '+esc(pt.tag||pt.name||pt.id)+'</li>').join('');
+  showModal('Удалить блок и связанные объекты?', '<p>Вместе с блоком будут удалены следующие зависимости:</p><ul>'+refRows+pointRowsHtml+'</ul><p>Продолжить?</p>',()=>{performDelete()});
+ }else performDelete();
+}
 function interpolateSensor(raw,points){let pts=[...(points||[])].map(p=>[Number(p[0]),Number(p[1])]).filter(p=>p.every(Number.isFinite)).sort((a,b)=>a[0]-b[0]);if(pts.length<2)return raw;if(raw<=pts[0][0])return pts[0][1];if(raw>=pts.at(-1)[0])return pts.at(-1)[1];for(let i=1;i<pts.length;i++){if(raw<=pts[i][0]){let [x1,y1]=pts[i-1],[x2,y2]=pts[i];return y1+(raw-x1)*(y2-y1)/(x2-x1)}}return raw}
 function digital(v){return AVICFBDLogic.digital(v)}
 function evaluateCombination(rows,inputs){return AVICFBDLogic.evaluateCombination(rows,inputs)}
