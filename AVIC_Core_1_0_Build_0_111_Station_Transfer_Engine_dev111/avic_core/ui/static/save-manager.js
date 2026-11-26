@@ -182,7 +182,7 @@
     }
 
     async function flush(snapshotOverride = null, baseRevisionOverride = null) {
-      const snapshot = snapshotOverride === null ? config.getContent() : snapshotOverride;
+      const snapshot = JSON.parse(encode(snapshotOverride === null ? config.getContent() : snapshotOverride));
       const baseRevision = baseRevisionOverride === null
         ? Number(config.getBaseRevision() || 0) : baseRevisionOverride;
       if (timer) { clearTimeout(timer); timer = null; }
@@ -253,7 +253,7 @@
       localDurable = false;
       coreSynced = false;
       state("Есть изменения · сохранение черновика…");
-      const snapshot = config.getContent();
+      const snapshot = JSON.parse(encode(config.getContent()));
       const baseRevision = Number(config.getBaseRevision() || 0);
       localTimer = setTimeout(() => {
         localTimer = null;
@@ -318,7 +318,7 @@
         return { safeToClose: true, localSaved: localDurable, coreSaved: coreSynced, conflict };
       }
       const started = Date.now();
-      const target = config.getContent();
+      const target = JSON.parse(encode(config.getContent()));
       const targetEncoded = encode(target);
       if (timer) { clearTimeout(timer); timer = null; }
       if (localTimer) { clearTimeout(localTimer); localTimer = null; }
