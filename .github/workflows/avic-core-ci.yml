@@ -29,16 +29,11 @@ concurrency:
 
 jobs:
   windows-tests:
-    name: Python ${{ matrix.python-version }} / Windows self-hosted
+    name: Python system / Windows self-hosted
     # Never execute fork-controlled pull request code on the persistent private runner.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
 
     defaults:
       run:
@@ -48,12 +43,10 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/pyproject.toml
+      - name: Verify installed Python
+        run: |
+          python --version
+          python -c "import sys; assert sys.version_info >= (3, 11), f'AVIC requires Python >=3.11; found {sys.version}'"
 
       - name: Install AVIC Core and development dependencies
         run: |
@@ -75,7 +68,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: avic-test-report-windows-self-hosted-py${{ matrix.python-version }}
+          name: avic-test-report-windows-self-hosted
           path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
           if-no-files-found: ignore
           retention-days: 14
