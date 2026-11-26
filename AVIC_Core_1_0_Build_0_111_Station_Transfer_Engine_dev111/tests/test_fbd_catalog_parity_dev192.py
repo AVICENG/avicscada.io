@@ -20,7 +20,7 @@ def test_all_editor_blocks_have_matching_core_and_compiler_contracts():
     html = html_path.read_text(encoding="utf-8")
     definitions = {}
     pattern = re.compile(
-        r"([A-Z_]+):\\{label:'[^']*',ins:\\[([^\\]]*)\\],outs:\\[([^\\]]*)\\]"
+        r"([A-Z_]+):\{label:'[^']*',ins:\[([^\]]*)\],outs:\[([^\]]*)\]"
     )
     for match in pattern.finditer(html):
         block_type, inputs, outputs = match.groups()
