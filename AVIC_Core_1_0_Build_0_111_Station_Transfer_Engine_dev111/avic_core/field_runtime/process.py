@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import hmac
-import multiprocessing
-from multiprocessing.connection import Connection
-from multiprocessing.process import BaseProcess
+import json
+import os
+import socket
+import subprocess
+import sys
 from secrets import token_urlsafe
 from threading import RLock
 from time import monotonic
@@ -15,75 +16,25 @@ class FieldRuntimeProcessError(RuntimeError):
     """Field Runtime process or IPC protocol failure."""
 
 
-def _agent_main(connection: Connection, maintenance_token: str, heartbeat_interval: float) -> None:
-    started = monotonic()
-    sequence = 0
-    state = "RUNNING"
-    last_heartbeat = started
+def _recv_json(connection: socket.socket, reader) -> dict[str, Any]:
+    raw = reader.readline(65537)
+    if not raw:
+        raise FieldRuntimeProcessError("Field Runtime IPC connection closed")
+    if len(raw) > 65536:
+        raise FieldRuntimeProcessError("Field Runtime IPC message exceeds 64 KiB")
     try:
-        connection.send({"ok": True, "event": "READY", "pid": __import__("os").getpid(),
-                        "execution_engine_attached": False})
-        while state == "RUNNING":
-            if connection.poll(heartbeat_interval):
-                try:
-                    request = connection.recv()
-                except EOFError:
-                    # Supervisor/Workbench disconnection is NOT a stop request.
-                    # The field process remains alive and continues its own service loop.
-                    connection = None
-                    while state == "RUNNING":
-                        import time
-                        time.sleep(heartbeat_interval)
-                    break
-                if not isinstance(request, dict) or request.get("protocol") != 1:
-                    continue
-                command = request.get("command")
-                request_id = request.get("request_id")
-                sequence = max(sequence, int(request.get("sequence", sequence)))
-                last_heartbeat = monotonic()
-                if command in {"ping", "status"}:
-                    response = {"ok": True, "request_id": request_id, "protocol": 1,
-                                "state": state, "pid": __import__("os").getpid(),
-                                "uptime_seconds": max(0.0, monotonic() - started),
-                                "last_command_sequence": sequence,
-                                "last_heartbeat_monotonic": last_heartbeat,
-                                "active_strategies": 0,
-                                "execution_engine_attached": False,
-                                "capability_state": "PROCESS_HOST_ONLY"}
-                    if connection is not None:
-                        connection.send(response)
-                elif command == "maintenance_stop":
-                    supplied = str(request.get("maintenance_token", ""))
-                    confirmed = request.get("confirmation") == "STOP FIELD RUNTIME"
-                    if not confirmed or not hmac.compare_digest(supplied, maintenance_token):
-                        if connection is not None:
-                            connection.send({"ok": False, "request_id": request_id,
-                                             "error": "maintenance authorization rejected"})
-                    else:
-                        state = "STOPPED"
-                        if connection is not None:
-                            connection.send({"ok": True, "request_id": request_id,
-                                             "state": state, "event": "MAINTENANCE_STOPPED"})
-                else:
-                    if connection is not None:
-                        connection.send({"ok": False, "request_id": request_id,
-                                         "error": "unsupported command"})
-            else:
-                # A heartbeat tick is deliberately independent of the supervisor link.
-                last_heartbeat = monotonic()
-    finally:
-        if connection is not None:
-            try:
-                connection.close()
-            except Exception:
-                pass
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise FieldRuntimeProcessError("Invalid Field Runtime IPC JSON") from exc
+    if not isinstance(value, dict):
+        raise FieldRuntimeProcessError("Field Runtime IPC message must be an object")
+    return value
 
 
 class FieldRuntimeProcess:
-    """Owns a separate OS process for the Field Runtime service boundary.
+    """Supervises a detached OS process; IPC disconnect never means field stop.
 
-    DEV178 intentionally hosts only the process/IPC/watchdog boundary. The FBD
-    execution engine is not attached yet; status reports this explicitly.
+    DEV179 still hosts the process/IPC boundary only. FBD execution is not attached.
     """
 
     def __init__(self, *, heartbeat_interval: float = 0.25, startup_timeout: float = 5.0):
@@ -93,12 +44,14 @@ class FieldRuntimeProcess:
             raise ValueError("startup_timeout должен быть от 0.5 до 30 секунд")
         self.heartbeat_interval = float(heartbeat_interval)
         self.startup_timeout = float(startup_timeout)
-        self._context = multiprocessing.get_context("spawn")
-        self._process: BaseProcess | None = None
-        self._connection: Connection | None = None
         self._maintenance_token = token_urlsafe(32)
+        self._process: subprocess.Popen | None = None
+        self._listener: socket.socket | None = None
+        self._connection: socket.socket | None = None
+        self._reader = None
         self._sequence = 0
         self._lock = RLock()
+        self._started_at: float | None = None
 
     @property
     def pid(self) -> int | None:
@@ -106,48 +59,96 @@ class FieldRuntimeProcess:
 
     def start(self) -> dict[str, Any]:
         with self._lock:
-            if self._process is not None and self._process.is_alive():
+            if self._process is not None and self._process.poll() is None:
                 return self.status()
-            parent, child = self._context.Pipe(duplex=True)
-            process = self._context.Process(
-                target=_agent_main, args=(child, self._maintenance_token, self.heartbeat_interval),
-                name="AVIC-FieldRuntime", daemon=False,
+            listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(2)
+            listener.settimeout(self.startup_timeout)
+            host, port = listener.getsockname()
+            kwargs: dict[str, Any] = {"stdin": subprocess.PIPE, "stdout": subprocess.DEVNULL,
+                                      "stderr": subprocess.DEVNULL, "close_fds": True}
+            if os.name == "nt":
+                kwargs["creationflags"] = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            else:
+                kwargs["start_new_session"] = True
+            process = subprocess.Popen(
+                [sys.executable, "-m", "avic_core.field_runtime.agent",
+                 "--host", str(host), "--port", str(port),
+                 "--heartbeat", str(self.heartbeat_interval)], **kwargs,
             )
-            process.start()
-            child.close()
+            assert process.stdin is not None
+            process.stdin.write((self._maintenance_token + "\n").encode("utf-8"))
+            process.stdin.flush()
+            process.stdin.close()
+            self._listener = listener
             self._process = process
-            self._connection = parent
-            if not parent.poll(self.startup_timeout):
+            self._started_at = monotonic()
+            try:
+                self._accept_agent(timeout=self.startup_timeout)
+                ready = self._request("status", timeout=self.startup_timeout)
+            except Exception:
                 process.terminate()
-                process.join(timeout=2.0)
-                parent.close()
-                self._connection = None
-                raise FieldRuntimeProcessError("Field Runtime не подтвердил запуск")
-            ready = parent.recv()
-            if not isinstance(ready, dict) or not ready.get("ok") or ready.get("event") != "READY":
-                process.terminate()
-                process.join(timeout=2.0)
-                parent.close()
-                self._connection = None
-                raise FieldRuntimeProcessError("Некорректное подтверждение запуска Field Runtime")
-            return {**ready, "state": "RUNNING", "capability_state": "PROCESS_HOST_ONLY"}
+                process.wait(timeout=2.0)
+                self._close_sockets()
+                raise
+            return ready
+
+    def _accept_agent(self, *, timeout: float) -> None:
+        if self._listener is None:
+            raise FieldRuntimeProcessError("Field Runtime IPC listener is unavailable")
+        self._listener.settimeout(timeout)
+        deadline = monotonic() + timeout
+        while monotonic() < deadline:
+            if self._process is not None and self._process.poll() is not None:
+                raise FieldRuntimeProcessError(f"Field Runtime process exited: {self._process.returncode}")
+            try:
+                connection, _ = self._listener.accept()
+            except socket.timeout:
+                continue
+            connection.settimeout(max(0.1, deadline - monotonic()))
+            reader = connection.makefile("rb")
+            try:
+                hello = _recv_json(connection, reader)
+                import hmac
+                if hello.get("kind") != "hello" or not hmac.compare_digest(str(hello.get("token", "")), self._maintenance_token):
+                    connection.close()
+                    continue
+                self._connection, self._reader = connection, reader
+                return
+            except Exception:
+                connection.close()
+                continue
+        raise FieldRuntimeProcessError("Field Runtime agent did not connect before timeout")
+
+    def _ensure_connection(self, timeout: float) -> None:
+        if self._connection is not None:
+            return
+        self._accept_agent(timeout=timeout)
 
     def _request(self, command: str, *, timeout: float = 2.0, **payload: Any) -> dict[str, Any]:
         with self._lock:
-            process, connection = self._process, self._connection
-            if process is None or not process.is_alive() or connection is None:
-                raise FieldRuntimeProcessError("Field Runtime process или IPC недоступен")
+            process = self._process
+            if process is None or process.poll() is not None:
+                raise FieldRuntimeProcessError("Field Runtime process is not running")
+            self._ensure_connection(timeout)
+            assert self._connection is not None and self._reader is not None
             self._sequence += 1
             request_id = str(uuid4())
-            connection.send({"protocol": 1, "command": command, "request_id": request_id,
-                             "sequence": self._sequence, **payload})
-            if not connection.poll(timeout):
-                raise FieldRuntimeProcessError(f"Тайм-аут ответа Field Runtime: {command}")
-            response = connection.recv()
-            if not isinstance(response, dict) or response.get("request_id") != request_id:
-                raise FieldRuntimeProcessError("Нарушена корреляция IPC-ответа Field Runtime")
+            request = {"protocol": 1, "command": command, "request_id": request_id,
+                       "sequence": self._sequence, **payload}
+            try:
+                self._connection.sendall((json.dumps(request, separators=(",", ":")) + "\n").encode("utf-8"))
+                self._connection.settimeout(timeout)
+                response = _recv_json(self._connection, self._reader)
+            except (OSError, TimeoutError, FieldRuntimeProcessError) as exc:
+                self._drop_connection()
+                raise FieldRuntimeProcessError(f"Field Runtime IPC failed for {command}: {exc}") from exc
+            if response.get("request_id") != request_id:
+                raise FieldRuntimeProcessError("Field Runtime IPC response correlation failed")
             if not response.get("ok"):
-                raise FieldRuntimeProcessError(str(response.get("error", "Field Runtime command failed")))
+                raise FieldRuntimeProcessError(str(response.get("error", "Field Runtime command rejected")))
             return response
 
     def status(self) -> dict[str, Any]:
@@ -156,12 +157,19 @@ class FieldRuntimeProcess:
     def ping(self) -> dict[str, Any]:
         return self._request("ping")
 
+    def _drop_connection(self) -> None:
+        if self._reader is not None:
+            try: self._reader.close()
+            except Exception: pass
+        if self._connection is not None:
+            try: self._connection.close()
+            except Exception: pass
+        self._reader = self._connection = None
+
     def disconnect_supervisor(self) -> None:
-        """Close only this IPC endpoint; never send a Field Runtime stop command."""
+        """Drop only the control connection; the detached agent keeps running."""
         with self._lock:
-            if self._connection is not None:
-                self._connection.close()
-                self._connection = None
+            self._drop_connection()
 
     def stop_for_maintenance(self, *, confirmation: str, maintenance_token: str) -> dict[str, Any]:
         if confirmation != "STOP FIELD RUNTIME":
@@ -170,16 +178,20 @@ class FieldRuntimeProcess:
                                  maintenance_token=maintenance_token)
         process = self._process
         if process is not None:
-            process.join(timeout=2.0)
-            if process.is_alive():
-                raise FieldRuntimeProcessError("Field Runtime не завершился после maintenance stop")
+            try:
+                process.wait(timeout=2.0)
+            except subprocess.TimeoutExpired as exc:
+                raise FieldRuntimeProcessError("Field Runtime не завершился после maintenance stop") from exc
+        self._close_sockets()
         return response
 
-    def close_ipc(self) -> None:
-        """Release supervisor IPC resources without stopping the field process."""
-        self.disconnect_supervisor()
+    def _close_sockets(self) -> None:
+        self._drop_connection()
+        if self._listener is not None:
+            try: self._listener.close()
+            except Exception: pass
+            self._listener = None
 
-    def _test_only_process_handle(self) -> BaseProcess | None:
-        """Private test seam; production callers must use maintenance lifecycle."""
+    def _test_only_process_handle(self) -> subprocess.Popen | None:
         return self._process
 
