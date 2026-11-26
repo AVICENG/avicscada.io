@@ -84,3 +84,11 @@ def test_fbd_schedule_editor_uses_core_scheduler_and_live_core_evaluation():
     assert "/api/schedules/' + encodeURIComponent(id) + '/evaluate" in html or "'/api/schedules/'+encodeURIComponent(id)+'/evaluate'" in html
     assert "'Расписания':['SCHEDULE']" in html
     assert "AVICFBDLogic.evaluateSchedule(m.params.schedule" not in html
+
+
+def test_fbd_time_simulation_uses_core_station_timezone_and_offset():
+    path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = path.read_text(encoding="utf-8")
+    assert "coreTime" in html
+    assert "/api/stations/'+encodeURIComponent(studioStationId)+'/time" in html
+    assert "UTC_OFFSET:offset" in html
