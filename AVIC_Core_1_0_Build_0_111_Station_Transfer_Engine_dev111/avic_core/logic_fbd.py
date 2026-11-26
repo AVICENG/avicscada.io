@@ -565,6 +565,7 @@ class FBDService:
             raise ValueError("Не удалось вычислить FBD-граф: цикл или незамкнутая зависимость")
         for node_id in execution_order:
             node = nodes[node_id]; spec = self.BLOCKS[node["type"]]
+            typ, params, source_meta = node["type"], node["params"], None
             deps = [incoming.get((node_id, port)) for port in spec["inputs"]]
             if any(dep and (dep[0], dep[1]) not in values for dep in deps):
                 raise ValueError("FBD-связь ссылается на отсутствующий выходной порт")
@@ -576,7 +577,6 @@ class FBDService:
                     default_value = params.get("on_delay", 5.0)
                 raw = values.get(dep) if dep else default_value
                 args[port] = self._validate_simulation_value(signal_type, raw, node_name=node["name"])
-            typ, params, source_meta = node["type"], node["params"], None
             if typ == "POINT_INPUT":
                 from avic_core.domain.models import Point
                 point, _ = self.core.repository.get(str(params.get("point_id") or ""), Point)
