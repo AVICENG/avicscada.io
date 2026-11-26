@@ -191,9 +191,11 @@
       }
       busy = true;
       try {
-        await recoveryReady.catch(() => {});
+        // Persist this exact editor snapshot locally before waiting for any network
+        // recovery lookup. pagehide must not wait on Core availability.
         await localWrite.catch(() => {});
         const local = await persistLocal(snapshot, baseRevision);
+        await recoveryReady.catch(() => {});
         if (recoveryPending && !recovered) {
           state("Найден существующий черновик · выберите восстановление или отклонение; новые изменения сохранены локально");
           return false;

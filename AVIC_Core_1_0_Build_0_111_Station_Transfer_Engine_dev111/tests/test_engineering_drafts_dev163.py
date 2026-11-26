@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+from pathlib import Path
+
 import pytest
 
 from avic_core.ui.drafts import DraftConflict, DraftError, DraftNotFound, EngineeringDraftStore
@@ -110,6 +114,7 @@ def test_save_manager_script_is_served_only_as_editor_support_and_injected(tmp_p
     assert "preservedMatches" in script.text
     assert "localWrite = Promise.resolve()" in script.text
     assert "await localWrite.catch" in script.text
+    assert script.text.index("const local = await persistLocal(snapshot, baseRevision)") < script.text.index("await recoveryReady.catch")
     assert "pendingSnapshot = { snapshot, baseRevision }" in script.text
     assert "flush(next?.snapshot" in script.text
     assert "другой черновик" in script.text
@@ -150,3 +155,18 @@ def test_engineering_draft_reads_reject_untrusted_cross_origin_requests(tmp_path
         headers={"Origin": "https://untrusted.example"},
     )
     assert blocked_list.status_code == 403
+
+
+
+def test_save_manager_javascript_syntax_with_node_when_available():
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is not installed; browser asset syntax check is optional")
+    script = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "save-manager.js"
+    result = subprocess.run(
+        [node, "--check", str(script)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
