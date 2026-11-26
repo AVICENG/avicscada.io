@@ -379,5 +379,8 @@ def test_alarm_and_source_point_can_be_deleted_in_one_optimistic_batch(tmp_path)
 
     # Both original optimistic versions must remain valid through the atomic delete.
     service.delete_graph({alarm.id: versions[alarm.id], point.id: versions[point.id]})
-    assert repo.get_record(alarm.id) is None
-    assert repo.get_record(point.id) is None
+    from avic_core.repository.sqlite_repository import EntityNotFound
+    with pytest.raises(EntityNotFound):
+        repo.get_record(alarm.id)
+    with pytest.raises(EntityNotFound):
+        repo.get_record(point.id)
