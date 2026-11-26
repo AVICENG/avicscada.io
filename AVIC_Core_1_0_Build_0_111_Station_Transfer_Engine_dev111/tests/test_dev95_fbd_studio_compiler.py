@@ -386,3 +386,12 @@ def test_fbd_studio_page_check_ignores_to_connective_navigation_marker():
     check_end = html.index("\nfunction undo(){", check_start)
     check_function = html[check_start:check_end]
     assert "if(m.type==='TO_CONNECTIVE')return" in check_function
+
+
+def test_fbd_studio_navigation_proxies_cannot_be_copied_as_orphan_modules():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    assert "if(!['CONNECTIVE','TO_CONNECTIVE'].includes(m.type))items.push({id:'copy'" in html
+    assert "Connective и To Connective нельзя копировать отдельно" in html
