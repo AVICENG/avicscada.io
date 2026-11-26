@@ -56,12 +56,17 @@ class CoreApplication:
     start network listeners, drivers or control loops implicitly.
     """
 
-    def __init__(self, data_dir: str | Path):
+    def __init__(self, data_dir: str | Path, *, license_service=None, license_file: str | Path | None = None):
         self.paths = CorePaths.under(data_dir)
         for directory in (self.paths.root, self.paths.databases, self.paths.configuration, self.paths.backups):
             directory.mkdir(parents=True, exist_ok=True)
         self._lock = RLock()
         self._closed = False
+
+        if (license_service is None) != (license_file is None):
+            raise ValueError("license_service и license_file должны передаваться вместе")
+        self.installation_license_service = license_service
+        self.license_file = Path(license_file) if license_file is not None else None
 
         self.repository = SQLiteRepository(self.paths.databases / "objects.sqlite3")
         self.point_views = PointViewService(self.paths.databases / "point_views.sqlite3")
@@ -85,7 +90,10 @@ class CoreApplication:
         self.system_backups = SystemBackupManager()
         self.deployment = DeploymentManager()  # Legacy generic project-package API; Station transfer is separate.
         self.station_transfer = StationTransferManager()
-        self.objects = CoreObjectService(self.repository)
+        self.objects = CoreObjectService(
+            self.repository, license_service=self.installation_license_service,
+            license_file=self.license_file,
+        )
         self.engineering_lifecycle = EngineeringLifecycleService(self.paths.databases / "engineering_lifecycle.sqlite3")
         self.alarms = AlarmService(self.paths.databases / "alarms.sqlite3", audit_service=self.audit, event_publisher=lambda e: self.events.record("alarm." + e.event_type.lower(), e.message, station_id=e.station_id, severity="WARNING" if e.to_state in {"ACTIVE", "RETURNED_TO_NORMAL"} else "NOTICE", source_id=e.alarm_id, actor_id=e.actor_id, details={"from_state":e.from_state,"to_state":e.to_state,"alarm_id":e.alarm_id}))
         self.schedules = ScheduleService(self.paths.databases / "schedules.sqlite3", repository=self.repository, audit_service=self.audit)
