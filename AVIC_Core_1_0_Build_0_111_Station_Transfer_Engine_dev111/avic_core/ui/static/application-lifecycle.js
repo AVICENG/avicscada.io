@@ -77,7 +77,7 @@
       const manager = window.__avicDraftManager;
       const result = manager && typeof manager.prepareForExit === "function"
         ? await manager.prepareForExit(8000)
-        : { safeToClose: true, localSaved: true, coreSaved: true };
+        : { safeToClose: true, noActiveEditor: true };
       if (result.safeToClose) {
         message.textContent = result.coreSaved
           ? "Все изменения текущего редактора сохранены как черновик в Core. Можно закрыть AVIC."

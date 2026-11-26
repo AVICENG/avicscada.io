@@ -174,3 +174,43 @@ def test_save_manager_javascript_syntax_with_node_when_available():
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+
+def test_application_exit_flow_is_available_on_all_workspaces(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui import create_ui_app
+
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    script = client.get("/avic-static/application-lifecycle.js")
+    assert script.status_code == 200
+    assert "beforeunload" in script.text
+    assert "prepareForExit" in script.text
+    assert "Выйти с потерей изменений" in script.text
+    assert "noActiveEditor" in script.text
+    assert "Открытых инженерных редакторов" in script.text
+
+    for path in ("/", "/graphics", "/logic", "/repository?section=WebApplication"):
+        page = client.get(path)
+        assert page.status_code == 200
+        assert 'id="avicApplicationExit"' in page.text
+        assert "/avic-static/application-lifecycle.js" in page.text
+
+    graphics = client.get("/graphics").text
+    assert "/avic-static/save-manager.js" in graphics
+    home = client.get("/").text
+    assert "/avic-static/save-manager.js" not in home
+
+
+def test_application_lifecycle_javascript_syntax_with_node_when_available():
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is not installed; browser asset syntax check is optional")
+    script = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "application-lifecycle.js"
+    result = subprocess.run(
+        [node, "--check", str(script)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
