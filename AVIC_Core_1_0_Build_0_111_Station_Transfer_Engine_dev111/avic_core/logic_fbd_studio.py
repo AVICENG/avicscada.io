@@ -410,7 +410,7 @@ class FBDStudioService:
         "SUB": "SUB", "MUL": "MUL", "DIV": "DIV", "SELECT": "SELECT",
         "COMPARE_GT": "COMPARE_GT", "COMPARE_LT": "COMPARE_LT",
         "LIMIT": "LIMIT", "SCALE": "SCALE", "HYSTERESIS": "HYSTERESIS",
-        "DELAY": "DELAY", "LATCH": "LATCH", "BOOL_OUTPUT": "BOOL_OUTPUT",
+        "DELAY": "DELAY", "LATCH": "LATCH", "PID_LOOP": "PID_LOOP", "BOOL_OUTPUT": "BOOL_OUTPUT",
         "FLOAT_OUTPUT": "FLOAT_OUTPUT",
     }
 
@@ -532,6 +532,11 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: DELAY требует конечные неотрицательные onDelay/offDelay")
+                if typ == "PID_LOOP":
+                    try:
+                        core._normalize_pid_config(params.get("pid"))
+                    except ValueError as exc:
+                        issues.append(f"Блок «{module.get('name') or typ}»: {exc}")
                 if typ == "LATCH":
                     cfg = params.get("latch") or {}
                     if not isinstance(cfg.get("resetPriority", True), bool):
@@ -830,6 +835,8 @@ class FBDStudioService:
                     elif typ in {"ANALOG_INPUT", "EXTERNAL_SENSOR"}:
                         params = {key: params[key] for key in ("rawValue", "value", "sensorType", "sensorPart",
                                   "scalingRange", "scalingMode", "scalingInput", "scalingPoints") if key in params}
+                    elif typ == "PID_LOOP":
+                        params = {"pid": core_fbd._normalize_pid_config(params.get("pid"))}
                     elif typ == "DELAY":
                         cfg = params.get("delay") or {}
                         params = {"on_delay": float(cfg.get("onDelay", 5.0)),
