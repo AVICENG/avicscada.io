@@ -27,7 +27,7 @@ def test_fbd_import_validates_before_replacing_and_supports_legacy_json():
 def test_schedule_block_binds_to_core_scheduler_and_uses_station_runtime():
     # The editor no longer owns a second, local schedule implementation.
     assert "SCHEDULE:{label:'Core Schedule'" in SOURCE
-    assert "if(type==='SCHEDULE'){params.schedule_id='';params.schedule_value_type='BOOLEAN';params.schedule_name='';}" in SOURCE
+    assert "if(type==='SCHEDULE'){params.schedule_id='';params.schedule_value_type='BOOLEAN';params.schedule_name=''};" in SOURCE
     assert "fetch(`/api/stations/${encodeURIComponent(studioStationId)}/schedules`)" in SOURCE
     assert "m.params={...(m.params||{}),schedule_id:schedule.id,schedule_value_type:schedule.value_type,schedule_name:schedule.name}" in SOURCE
     assert "fetch('/api/schedules/'+encodeURIComponent(id)+'/evaluate')" in SOURCE
