@@ -302,3 +302,64 @@ def test_fbd_studio_page_copy_and_delete_are_reference_aware():
     assert "const outgoingRefs=state.references.filter(r=>r.sourcePageId===pg.id)" in html
     assert "deadModuleIds" in html
     assert "state.links.filter(l=>" in html
+
+
+def test_fbd_studio_compiler_rejects_cycle_created_by_cross_page_connectives(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph()
+    data["pages"].append({
+        "id": "page-fan", "name": "Вентилятор", "code": "P2", "modules": [
+            {"id": "fan-and", "type": "AND", "name": "Межстраничный цикл",
+             "params": {}, "ins": [
+                 {"id": "fan-a", "name": "A", "type": "bool"},
+                 {"id": "fan-b", "name": "B", "type": "bool"}],
+             "outs": [{"id": "fan-out", "name": "OUT", "type": "bool"}]},
+            {"id": "proxy-main-and", "type": "CONNECTIVE", "name": "Из основной страницы",
+             "params": {"referenceId": "ref-main-fan", "label": "Разрешение",
+                        "sourcePageId": "page-main", "sourceModuleId": "and",
+                        "sourcePort": 0, "targetPageId": "page-fan"},
+             "ins": [], "outs": [{"id": "proxy-main-out", "name": "OUT", "type": "bool"}]},
+        ],
+    })
+    data["pages"][0]["modules"].append({
+        "id": "proxy-fan-main", "type": "CONNECTIVE", "name": "Из вентилятора",
+        "params": {"referenceId": "ref-fan-main", "label": "Межстраничный цикл",
+                   "sourcePageId": "page-fan", "sourceModuleId": "fan-and",
+                   "sourcePort": 0, "targetPageId": "page-main"},
+        "ins": [], "outs": [{"id": "proxy-fan-out", "name": "OUT", "type": "bool"}],
+    })
+    data["pages"][0]["modules"].append({
+        "id": "marker-main-fan", "type": "TO_CONNECTIVE", "name": "To fan",
+        "params": {"referenceId": "ref-main-fan", "targetPageId": "page-fan"},
+        "ins": [{"id": "marker-main-in", "name": "OUT", "type": "bool"}], "outs": [],
+    })
+    data["pages"][1]["modules"].append({
+        "id": "marker-fan-main", "type": "TO_CONNECTIVE", "name": "To main",
+        "params": {"referenceId": "ref-fan-main", "targetPageId": "page-main"},
+        "ins": [{"id": "marker-fan-in", "name": "OUT", "type": "bool"}], "outs": [],
+    })
+    data["links"] = [
+        link for link in data["links"] if link["id"] != "l2"
+    ] + [
+        {"id": "cycle-a", "pageId": "page-fan",
+         "from": "out:proxy-main-and:0", "to": "in:fan-and:0", "signalType": "bool"},
+        {"id": "cycle-b", "pageId": "page-main",
+         "from": "out:proxy-fan-main:0", "to": "in:and:1", "signalType": "bool"},
+    ]
+    data["references"] = [
+        {"id": "ref-main-fan", "sourcePageId": "page-main", "sourceModuleId": "and",
+         "sourcePort": 0, "targetPageId": "page-fan",
+         "proxyModuleId": "proxy-main-and", "toModuleId": "marker-main-fan"},
+        {"id": "ref-fan-main", "sourcePageId": "page-fan", "sourceModuleId": "fan-and",
+         "sourcePort": 0, "targetPageId": "page-main",
+         "proxyModuleId": "proxy-fan-main", "toModuleId": "marker-fan-main"},
+    ]
+    created = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                          json={"name": "Cross-page cycle", "data": data})
+    assert created.status_code == 201, created.text
+    preview = client.post(f"/api/fbd-studio/{created.json()['id']}/compile-preview",
+                          json={"expected_revision": created.json()["revision"]})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["compilable"] is False
+    assert any("циклическую зависимость" in issue for issue in preview.json()["issues"])
