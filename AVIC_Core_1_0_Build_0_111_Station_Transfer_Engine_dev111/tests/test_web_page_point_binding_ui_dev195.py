@@ -75,6 +75,7 @@ def test_page_builder_selects_station_points_and_publishes_live_value_and_link(t
     assert 'id="blockPoint"' in source
     assert "loadPointCatalog()" in source
     assert "/api/engineering/points?station_id=" in source
+    assert "/api/engineering/points/runtime?station_id=" in source
     assert "b.point_id=$('blockPoint').value" in source
     assert "bindDroppedPagePoint(pointId,index)" in source
     assert "getData('point')||e.dataTransfer.getData('fbd-point')" in source
