@@ -2,11 +2,11 @@
 
 ## Что демонстрирует сценарий
 
-Физическая BACnet/IP-точка контроллера читается драйвером и публикуется в общий Point Runtime. Блок \`POINT_INPUT\` FBD читает ту же точку по стабильному Core ID. Результат логики экспортируется как виртуальная \`FBDExposedPoint\`, к которой привязывается анимация вентилятора в Graphics. Затем Graphics включается в страницу Web Application, которая публикуется оператору.
+Физическая BACnet/IP-точка контроллера читается драйвером и публикуется в общий Point Runtime. Блок `POINT_INPUT` FBD читает ту же точку по стабильному Core ID. Результат логики экспортируется как виртуальная `FBDExposedPoint`, к которой привязывается анимация вентилятора в Graphics. Затем Graphics включается в страницу Web Application, которая публикуется оператору.
 
 Цепочка данных:
 
-\`Trend BACnet/IP controller → BACnet ReadProperty(Present_Value) → Physical Point → Point Runtime → FBD POINT_INPUT → AND / safety logic → FBDExposedPoint → Fan animation → Published Web Page\`
+`Trend BACnet/IP controller → BACnet ReadProperty(Present_Value) → Physical Point → Point Runtime → FBD POINT_INPUT → AND / safety logic → FBDExposedPoint → Fan animation → Published Web Page`
 
 **Важно:** встроенный BACnet/IP transport сейчас работает в режиме READ-ONLY. Он читает Present_Value и не отправляет WriteProperty. Поэтому демонстрация показывает достоверную индикацию по обратной связи и результат FBD, но не является командой пуска вентилятора.
 
@@ -15,7 +15,7 @@
 1. В Network Manager выберите физический сетевой интерфейс станции.
 2. Запустите явное read-only BACnet/IP Discovery.
 3. Проверьте Device Instance, IP/UDP endpoint, Object Type, Object Instance и Present_Value.
-4. Через Point Import импортируйте нужный объект, например \`binary-input, instance 1\`, как физическую точку станции.
+4. Через Point Import импортируйте нужный объект, например `binary-input, instance 1`, как физическую точку станции.
 5. Проверьте, что точка принадлежит нужному Device и имеет входное направление.
 
 Для бинарной обратной связи обычно используется объект Binary Input (BACnet Object Type 3), свойство Present_Value (Property ID 85). Не подставляйте номера объектов по догадке: используйте результат Discovery/контроллера.
@@ -24,17 +24,17 @@
 
 Экземпляр драйвера создаётся для станции через Driver Manager. Конфигурация BACnet/IP включает:
 
-- \`network_id\` — ID выбранной физической сети;
-- \`interface_name\` — имя интерфейса ОС;
-- \`local_address\` и \`subnet_cidr\` — адрес и подсеть локального интерфейса;
-- \`udp_port\` — обычно 47808, если контроллер не настроен иначе;
-- \`device_instance\` — BACnet Device Instance контроллера;
-- \`poll_interval_seconds\` — период опроса;
-- \`bindings\` — явная таблица Point ID → BACnet object/property.
+- `network_id` — ID выбранной физической сети;
+- `interface_name` — имя интерфейса ОС;
+- `local_address` и `subnet_cidr` — адрес и подсеть локального интерфейса;
+- `udp_port` — обычно 47808, если контроллер не настроен иначе;
+- `device_instance` — BACnet Device Instance контроллера;
+- `poll_interval_seconds` — период опроса;
+- `bindings` — явная таблица Point ID → BACnet object/property.
 
 Пример одной записи binding (значения адреса и идентификаторов заменяются данными реального контроллера):
 
-\`\`\`json
+```json
 {
   "point_id": "<CORE_POINT_UUID>",
   "address": ["192.168.1.70", 47808],
@@ -45,18 +45,18 @@
   "scale": 1.0,
   "offset": 0.0
 }
-\`\`\`
+```
 
 После запуска экземпляра драйвера проверьте состояние RUNNING/DEGRADED, диагностику опроса и Point Runtime. Для продолжения сценария точка должна иметь актуальное значение и качество GOOD. При тайм-ауте значение не должно маскироваться как исправное: качество переходит в BAD_COMMUNICATION.
 
 ## 3. Привязать физическую точку к FBD
 
 1. Откройте FBD Studio нужной станции.
-2. Добавьте блок \`POINT_INPUT\`.
+2. Добавьте блок `POINT_INPUT`.
 3. Выберите физическую BACnet-точку из каталога/инженерного дерева либо перетащите её в редактор.
 4. Проверьте имя, устройство, тип сигнала и качество точки.
-5. Соедините выход \`POINT_INPUT.OUT\` с логикой. В демонстрационном примере он соединён с \`AND\` вместе с входом состояния тепловой защиты.
-6. Подключите результат к \`BOOL_OUTPUT\` и экспортируйте выход через FBD Point с уникальным tag/path.
+5. Соедините выход `POINT_INPUT.OUT` с логикой. В демонстрационном примере он соединён с `AND` вместе с входом состояния тепловой защиты.
+6. Подключите результат к `BOOL_OUTPUT` и экспортируйте выход через FBD Point с уникальным tag/path.
 7. Выполните Compile Preview, исправьте все ошибки и только затем Compile.
 8. Запустите FBD Runtime и проверьте, что виртуальная FBD-точка получает значение и качество GOOD.
 
@@ -79,7 +79,7 @@ FBD использует тот же Core Point ID, а не копию знач�
 3. Добавьте два виджета Value: физическая BACnet-точка и виртуальная FBD-точка.
 4. Назначьте странице Graphics-документ с вентилятором.
 5. Сохраните черновик и нажмите Publish.
-6. Откройте URL вида \`/published/<station-id>/ahu-01\`.
+6. Откройте URL вида `/published/<station-id>/ahu-01`.
 7. Проверьте отображение значений, качества и live-анимацию вентилятора.
 
 Публикация использует immutable snapshot страницы и назначенной графики. Значения читаются из Point Runtime; опубликованная страница не исполняет произвольный JavaScript и не обходит Command Manager.
