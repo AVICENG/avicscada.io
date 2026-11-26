@@ -126,6 +126,8 @@ class FBDService:
       "LIMIT":{"category":"Analog","label":"Ограничитель диапазона","inputs":{"IN":"float","LOW":"float","HIGH":"float"},"outputs":{"OUT":"float"},"defaults":{}},
       "SCALE":{"category":"Analog","label":"Масштабирование","inputs":{"IN":"float","IN_MIN":"float","IN_MAX":"float","OUT_MIN":"float","OUT_MAX":"float"},"outputs":{"OUT":"float"},"defaults":{}},
       "HYSTERESIS":{"category":"Logic","label":"Гистерезис","inputs":{"IN":"float","LOW":"float","HIGH":"float"},"outputs":{"OUT":"bool"},"defaults":{"initial_state":False}},
+      "DELAY":{"category":"Logic","label":"Задержка включения/выключения","inputs":{"IN":"bool","TIME":"float"},"outputs":{"OUT":"bool"},"defaults":{"on_delay":5.0,"off_delay":0.0,"initial_state":False}},
+      "LATCH":{"category":"Logic","label":"RS-защёлка","inputs":{"SET":"bool","RESET":"bool"},"outputs":{"OUT":"bool"},"defaults":{"initial_state":False,"reset_priority":True}},
       "BOOL_OUTPUT":{"category":"Data","label":"Булевый выход","inputs":{"IN":"bool"},"outputs":{},"defaults":{}},
       "FLOAT_OUTPUT":{"category":"Data","label":"Аналоговый выход","inputs":{"IN":"float"},"outputs":{},"defaults":{}},
     }
@@ -212,6 +214,21 @@ class FBDService:
                 if isinstance(val,bool) or not isinstance(val,(int,float)) or not math.isfinite(float(val)):
                     raise ValueError(f"{typ}.value должен быть конечным числом")
                 params={**params,"value":float(val)}
+            if typ == "DELAY":
+                on_delay=params.get("on_delay", params.get("onDelay", 5.0))
+                off_delay=params.get("off_delay", params.get("offDelay", 0.0))
+                if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(float(v)) or float(v)<0
+                       for v in (on_delay,off_delay)):
+                    raise ValueError("DELAY: on_delay/off_delay должны быть конечными неотрицательными числами")
+                initial=params.get("initial_state",False)
+                if not isinstance(initial,bool): raise ValueError("DELAY.initial_state должен быть bool")
+                params={**params,"on_delay":float(on_delay),"off_delay":float(off_delay),"initial_state":initial}
+            if typ == "LATCH":
+                initial=params.get("initial_state",False)
+                priority=params.get("reset_priority",True)
+                if not isinstance(initial,bool) or not isinstance(priority,bool):
+                    raise ValueError("LATCH: initial_state и reset_priority должны быть bool")
+                params={**params,"initial_state":initial,"reset_priority":priority}
             if typ == "COMBINATION":
                 rows=params.get("comboRows", spec["defaults"]["comboRows"])
                 if not isinstance(rows,list) or len(rows)!=4:
@@ -493,8 +510,12 @@ class FBDService:
             raise ValueError(f"Блок «{node_name}»: составное значение не поддерживается")
         return value
 
-    def simulate(self, document_id, inputs=None, runtime_state=None):
+    def simulate(self, document_id, inputs=None, runtime_state=None, *, dt_seconds: float = 1.0):
         """Run an isolated FBD pass. Optional mutable state is committed only after a successful pass."""
+        import math
+        if isinstance(dt_seconds, bool) or not isinstance(dt_seconds, (int, float)) or not math.isfinite(float(dt_seconds)) or not 0 < float(dt_seconds) <= 3600:
+            raise ValueError("dt_seconds должен быть конечным числом в диапазоне (0, 3600]")
+        dt_seconds = float(dt_seconds)
         graph = self.get(document_id)
         if inputs is None:
             inputs = {}
@@ -550,7 +571,10 @@ class FBDService:
             args = {}
             for port, signal_type in spec["inputs"].items():
                 dep = incoming.get((node_id, port))
-                raw = values.get(dep) if dep else (False if signal_type == "bool" else "" if signal_type == "string" else 0)
+                default_value = False if signal_type == "bool" else "" if signal_type == "string" else 0
+                if node["type"] == "DELAY" and port == "TIME":
+                    default_value = params.get("on_delay", 5.0)
+                raw = values.get(dep) if dep else default_value
                 args[port] = self._validate_simulation_value(signal_type, raw, node_name=node["name"])
             typ, params, source_meta = node["type"], node["params"], None
             if typ == "POINT_INPUT":
@@ -629,6 +653,37 @@ class FBDService:
                 out = out_low + ((float(args["IN"]) - low) / (high - low)) * (out_high - out_low)
                 if params.get("clamp_output", False):
                     out = max(min(out_low, out_high), min(max(out_low, out_high), out))
+            elif typ == "DELAY":
+                state = state_work.get(node_id, {})
+                if not isinstance(state, dict):
+                    raise ValueError(f"Блок «{node['name']}»: повреждено сохранённое состояние DELAY")
+                active = bool(args["IN"])
+                on_delay, off_delay = float(args["TIME"]), float(params.get("off_delay", 0.0))
+                if on_delay < 0 or off_delay < 0:
+                    raise ValueError(f"Блок «{node['name']}»: задержки DELAY не могут быть отрицательными")
+                previous = state.get("value", params.get("initial_state", False))
+                if not isinstance(previous, bool):
+                    raise ValueError(f"Блок «{node['name']}»: повреждено выходное состояние DELAY")
+                on_elapsed = float(state.get("on", 0.0))
+                off_elapsed = float(state.get("off", 0.0))
+                if not math.isfinite(on_elapsed) or not math.isfinite(off_elapsed) or on_elapsed < 0 or off_elapsed < 0:
+                    raise ValueError(f"Блок «{node['name']}»: повреждены таймеры DELAY")
+                if active:
+                    on_elapsed += dt_seconds; off_elapsed = 0.0
+                    out = True if on_elapsed >= on_delay else previous
+                else:
+                    off_elapsed += dt_seconds; on_elapsed = 0.0
+                    out = False if off_elapsed >= off_delay else previous
+                state_work[node_id] = {"value": out, "on": on_elapsed, "off": off_elapsed}
+            elif typ == "LATCH":
+                previous = state_work.get(node_id, params.get("initial_state", False))
+                if not isinstance(previous, bool):
+                    raise ValueError(f"Блок «{node['name']}»: повреждено сохранённое состояние LATCH")
+                if params.get("reset_priority", True):
+                    out = False if args["RESET"] else True if args["SET"] else previous
+                else:
+                    out = True if args["SET"] else False if args["RESET"] else previous
+                state_work[node_id] = out
             elif typ == "HYSTERESIS":
                 low, high, value = float(args["LOW"]), float(args["HIGH"]), float(args["IN"])
                 if low >= high:
