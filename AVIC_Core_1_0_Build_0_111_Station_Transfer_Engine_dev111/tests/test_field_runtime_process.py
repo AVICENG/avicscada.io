@@ -1,6 +1,10 @@
+import json
 import os
+import subprocess
+import sys
 import time
 
+import psutil
 import pytest
 
 from avic_core.field_runtime import FieldRuntimeProcess, FieldRuntimeProcessError
@@ -60,7 +64,6 @@ def test_field_runtime_maintenance_stop_requires_confirmation_and_token():
         _cleanup(runtime)
 
 
-
 def test_field_runtime_heartbeat_advances_without_supervisor_commands():
     runtime = FieldRuntimeProcess(heartbeat_interval=0.05)
     try:
@@ -71,3 +74,43 @@ def test_field_runtime_heartbeat_advances_without_supervisor_commands():
         assert after > before
     finally:
         _cleanup(runtime)
+
+
+def test_field_runtime_agent_survives_supervisor_process_exit():
+    # Run the Supervisor in a short-lived parent process. Its detached agent
+    # must remain alive after the parent exits and closes its IPC listener.
+    script = """
+import json
+from avic_core.field_runtime import FieldRuntimeProcess
+
+runtime = FieldRuntimeProcess(heartbeat_interval=0.05)
+ready = runtime.start()
+print(json.dumps({"pid": runtime.pid, "state": ready["state"]}), flush=True)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=os.getcwd(),
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    agent_pid = int(payload["pid"])
+    assert payload["state"] == "RUNNING"
+
+    try:
+        agent = psutil.Process(agent_pid)
+        assert agent.is_running()
+        time.sleep(0.2)
+        assert agent.is_running()
+        # This proves only OS-process survival, not FBD execution or control continuity.
+    finally:
+        try:
+            agent = psutil.Process(agent_pid)
+            agent.terminate()
+            agent.wait(timeout=3)
+        except psutil.NoSuchProcess:
+            pass
+        except psutil.TimeoutExpired:
+            agent.kill()

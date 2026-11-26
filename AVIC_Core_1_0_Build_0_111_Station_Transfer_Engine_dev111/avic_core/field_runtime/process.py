@@ -34,7 +34,7 @@ def _recv_json(connection: socket.socket, reader) -> dict[str, Any]:
 class FieldRuntimeProcess:
     """Supervises a detached OS process; IPC disconnect never means field stop.
 
-    DEV179 still hosts the process/IPC boundary only. FBD execution is not attached.
+    DEV181 still hosts the process/IPC boundary only. FBD execution is not attached.
     """
 
     def __init__(self, *, heartbeat_interval: float = 0.25, startup_timeout: float = 5.0):
