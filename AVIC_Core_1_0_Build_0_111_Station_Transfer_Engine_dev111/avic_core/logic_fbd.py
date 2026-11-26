@@ -130,6 +130,7 @@ class FBDService:
       "HYSTERESIS":{"category":"Logic","label":"Гистерезис","inputs":{"IN":"float","LOW":"float","HIGH":"float"},"outputs":{"OUT":"bool"},"defaults":{"initial_state":False}},
       "DELAY":{"category":"Logic","label":"Задержка включения/выключения","inputs":{"IN":"bool","TIME":"float"},"outputs":{"OUT":"bool"},"defaults":{"on_delay":5.0,"off_delay":0.0,"initial_state":False}},
       "LATCH":{"category":"Logic","label":"RS-защёлка","inputs":{"SET":"bool","RESET":"bool"},"outputs":{"OUT":"bool"},"defaults":{"initial_state":False,"reset_priority":True}},
+      "PID_LOOP":{"category":"Control","label":"PID-регулятор","inputs":{"PV":"float","SP":"float","ENABLE":"bool","MANUAL":"bool","MANUAL_OUT":"float","RESET":"bool"},"outputs":{"OUT":"float","P":"float","I":"float","D":"float"},"defaults":{"pid":{"kp":1.0,"ti":60.0,"td":0.0,"action":"direct","mode":"auto","outputMin":0.0,"outputMax":100.0,"disabledOutput":0.0,"manualOutput":0.0,"bias":0.0,"deadband":0.0,"derivativeFilter":0.0,"outputRateLimit":0.0,"sampleTime":1.0,"integralMin":-100.0,"integralMax":100.0}}},
       "BOOL_OUTPUT":{"category":"Data","label":"Булевый выход","inputs":{"IN":"bool"},"outputs":{},"defaults":{}},
       "FLOAT_OUTPUT":{"category":"Data","label":"Аналоговый выход","inputs":{"IN":"float"},"outputs":{},"defaults":{}},
     }
@@ -146,6 +147,35 @@ class FBDService:
         return row
     def library(self):
         return [{"type":k,**v} for k,v in self.BLOCKS.items()]
+
+    @classmethod
+    def _normalize_pid_config(cls, raw):
+        if raw is None:
+            raw = {}
+        if not isinstance(raw, dict):
+            raise ValueError("PID_LOOP.pid должен быть объектом параметров")
+        cfg = {**cls.BLOCKS["PID_LOOP"]["defaults"]["pid"], **raw}
+        numeric = ("kp", "ti", "td", "outputMin", "outputMax", "disabledOutput", "manualOutput",
+                   "bias", "deadband", "derivativeFilter", "outputRateLimit", "sampleTime",
+                   "integralMin", "integralMax")
+        for key in numeric:
+            value = cfg.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"PID_LOOP.{key} должен быть числом")
+            import math
+            if not math.isfinite(float(value)):
+                raise ValueError(f"PID_LOOP.{key} должен быть конечным числом")
+            cfg[key] = float(value)
+        for key in ("kp", "ti", "td", "deadband", "derivativeFilter", "outputRateLimit"):
+            if cfg[key] < 0:
+                raise ValueError(f"PID_LOOP.{key} не может быть отрицательным")
+        if cfg["sampleTime"] <= 0:
+            raise ValueError("PID_LOOP.sampleTime должен быть больше нуля")
+        if cfg.get("action") not in {"direct", "reverse"}:
+            raise ValueError("PID_LOOP.action должен быть direct или reverse")
+        if cfg.get("mode") not in {"auto", "manual"}:
+            raise ValueError("PID_LOOP.mode должен быть auto или manual")
+        return cfg
     def create(self, station_id, name, description=""):
         self._station(station_id); doc=LogicDocument(name,station_id,description=description)
         self.core.repository.save(doc)
@@ -252,6 +282,8 @@ class FBDService:
                 if not isinstance(initial,bool) or not isinstance(priority,bool):
                     raise ValueError("LATCH: initial_state и reset_priority должны быть bool")
                 params={**params,"initial_state":initial,"reset_priority":priority}
+            if typ == "PID_LOOP":
+                params={**params,"pid":self._normalize_pid_config(params.get("pid"))}
             if typ == "COMBINATION":
                 rows=params.get("comboRows", spec["defaults"]["comboRows"])
                 if not isinstance(rows,list) or len(rows)!=4:
@@ -598,8 +630,15 @@ class FBDService:
                 default_value = False if signal_type == "bool" else "" if signal_type == "string" else 0
                 if node["type"] == "DELAY" and port == "TIME":
                     default_value = params.get("on_delay", 5.0)
+                if node["type"] == "PID_LOOP":
+                    pid_cfg = params.get("pid", {})
+                    default_value = {"PV": 0.0, "SP": 20.0, "ENABLE": True,
+                                     "MANUAL": pid_cfg.get("mode") == "manual",
+                                     "MANUAL_OUT": pid_cfg.get("manualOutput", 0.0),
+                                     "RESET": False}.get(port, default_value)
                 raw = values.get(dep) if dep else default_value
                 args[port] = self._validate_simulation_value(signal_type, raw, node_name=node["name"])
+            output_values = None
             if typ == "POINT_INPUT":
                 from avic_core.domain.models import Point
                 point, _ = self.core.repository.get(str(params.get("point_id") or ""), Point)
@@ -729,6 +768,82 @@ class FBDService:
                 else:
                     out = True if args["SET"] else False if args["RESET"] else previous
                 state_work[node_id] = out
+            elif typ == "PID_LOOP":
+                cfg = params.get("pid") or self._normalize_pid_config(None)
+                state = state_work.get(node_id, {})
+                if not isinstance(state, dict):
+                    raise ValueError(f"Блок «{node['name']}»: повреждено состояние PID")
+                state = {**state}
+                def finite(value, fallback=0.0):
+                    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)) else float(fallback)
+                def clamp(value, low, high):
+                    return max(low, min(high, value))
+                dt = max(0.001, min(3600.0, float(cfg.get("sampleTime") or dt_seconds)))
+                pv, sp = float(args["PV"]), float(args["SP"])
+                kp, ti, td = float(cfg["kp"]), float(cfg["ti"]), float(cfg["td"])
+                bias = float(cfg["bias"]); minimum = float(cfg["outputMin"]); maximum = float(cfg["outputMax"])
+                low, high = min(minimum, maximum), max(minimum, maximum)
+                integral_low = min(float(cfg["integralMin"]), float(cfg["integralMax"]))
+                integral_high = max(float(cfg["integralMin"]), float(cfg["integralMax"]))
+                action = -1.0 if cfg["action"] == "direct" else 1.0
+                error_raw = sp - pv
+                error = 0.0 if abs(error_raw) <= float(cfg["deadband"]) else error_raw
+                p_term = action * kp * error
+                enabled = bool(args["ENABLE"])
+                manual = bool(args["MANUAL"]) or cfg["mode"] == "manual"
+                reset = bool(args["RESET"])
+                if not enabled:
+                    output = clamp(finite(cfg.get("disabledOutput", state.get("lastOutput", bias))), low, high)
+                    state["lastOutput"] = output; state["wasAuto"] = False
+                    state["previousPV"] = pv; state["derivative"] = 0.0; state["initialized"] = True
+                    output_values = {"OUT": output, "P": 0.0, "I": finite(state.get("integral")), "D": 0.0}
+                    source_meta = {"kind": "pid_controller", "mode": "DISABLED", "error": error, "saturated": False}
+                else:
+                    if reset:
+                        state["integral"] = 0.0; state["derivative"] = 0.0; state["initialized"] = False
+                        state["lastOutput"] = clamp(bias, low, high)
+                    initialized = bool(state.get("initialized", False))
+                    previous_pv = finite(state.get("previousPV", pv), pv)
+                    derivative_raw = -(pv - previous_pv) / dt if initialized else 0.0
+                    tau = max(0.0, float(cfg["derivativeFilter"]))
+                    alpha = 1.0 if tau <= 0 else dt / (tau + dt)
+                    derivative = finite(state.get("derivative")) + alpha * (derivative_raw - finite(state.get("derivative")))
+                    d_term = action * kp * td * derivative
+                    integral = finite(state.get("integral"))
+                    manual_output = clamp(float(args["MANUAL_OUT"]), low, high)
+                    if manual:
+                        integral = clamp(manual_output - bias - p_term - d_term, integral_low, integral_high)
+                        output = manual_output
+                        state.update({"integral": integral, "lastOutput": output, "previousPV": pv,
+                                      "derivative": derivative, "initialized": True, "wasAuto": False})
+                        mode = "MANUAL"
+                    else:
+                        from_manual = initialized and not bool(state.get("wasAuto", False))
+                        if from_manual:
+                            integral = clamp(finite(state.get("lastOutput", bias)) - bias - p_term - d_term,
+                                             integral_low, integral_high)
+                        ki = kp / ti if ti > 0 else 0.0
+                        candidate_i = integral + (0.0 if from_manual else action * ki * error * dt)
+                        raw = bias + p_term + candidate_i + d_term
+                        drives_further = (raw > high and action * error > 0) or (raw < low and action * error < 0)
+                        if not drives_further:
+                            integral = clamp(candidate_i, integral_low, integral_high)
+                        unsaturated = bias + p_term + integral + d_term
+                        output = clamp(unsaturated, low, high)
+                        max_rate = float(cfg["outputRateLimit"])
+                        if max_rate > 0 and initialized:
+                            delta = max_rate * dt
+                            last_output = finite(state.get("lastOutput", output), output)
+                            output = clamp(output, last_output - delta, last_output + delta)
+                            output = clamp(output, low, high)
+                        state.update({"integral": integral, "previousPV": pv, "derivative": derivative,
+                                      "initialized": True, "wasAuto": True, "lastOutput": output})
+                        mode = "AUTO"
+                    output_values = {"OUT": output, "P": p_term, "I": integral, "D": d_term}
+                    source_meta = {"kind": "pid_controller", "mode": mode, "error": error,
+                                   "saturated": output != bias + p_term + integral + d_term}
+                state_work[node_id] = state
+                out = output_values["OUT"]
             elif typ == "HYSTERESIS":
                 low, high, value = float(args["LOW"]), float(args["HIGH"]), float(args["IN"])
                 if low >= high:
@@ -741,12 +856,22 @@ class FBDService:
             elif typ in {"BOOL_OUTPUT", "FLOAT_OUTPUT"}: out = args["IN"]
             else: raise ValueError(f"Нет симулятора для блока {typ}")
             if spec["outputs"]:
-                out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), out, node_name=node["name"])
-                values[(node_id, "OUT")] = out; port = "OUT"
+                raw_outputs = output_values or {next(iter(spec["outputs"])): out}
+                validated_outputs = {}
+                for output_port, signal_type in spec["outputs"].items():
+                    if output_port not in raw_outputs:
+                        raise ValueError(f"Блок «{node['name']}»: не сформирован выход {output_port}")
+                    validated = self._validate_simulation_value(signal_type, raw_outputs[output_port], node_name=node["name"])
+                    values[(node_id, output_port)] = validated
+                    validated_outputs[output_port] = validated
+                out = validated_outputs.get("OUT", next(iter(validated_outputs.values())))
+                port = "OUT" if len(validated_outputs) == 1 else None
             else:
                 values[(node_id, "IN")] = out; port = "IN"
+                validated_outputs = {"IN": out}
             diagnostics[node_id] = {"name": node["name"], "block_type": typ, "status": "GOOD",
-                                    "output_port": port, "value": out, "source": source_meta}
+                                    "output_port": port, "output_ports": validated_outputs,
+                                    "value": out, "source": source_meta}
         outputs = {n["name"]: values.get((n["id"], "IN")) for n in graph["nodes"] if n["type"].endswith("_OUTPUT")}
         if runtime_state is not None:
             runtime_state.clear()
