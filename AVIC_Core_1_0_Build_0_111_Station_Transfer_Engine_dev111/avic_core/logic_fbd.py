@@ -489,7 +489,7 @@ class FBDService:
                        or node["type"] == "KNOB"}
         unknown = set(inputs) - overridable
         if unknown:
-            raise ValueError("Переопределять можно только виртуальные входы; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
+            raise ValueError("Переопределять можно только виртуальные входы и KNOB; POINT_INPUT недоступен: " + ", ".join(sorted(unknown)))
         incoming = {}
         for link in graph["links"]:
             incoming[(link["target_node_id"], link["target_port"])] = (link["source_node_id"], link["source_port"])
