@@ -92,6 +92,28 @@ class CoreObjectService:
             elif kind == "RuntimeInstance":
                 require(payload.get("station_id"), {"Station"}, f"RuntimeInstance {entity_id}.station_id")
 
+    def assert_point_usage_transition(self, existing_records: Iterable[dict], point_items: Iterable[Point]) -> None:
+        """Check newly activated unique points against the signed installation capacity."""
+        candidates = [item for item in point_items if isinstance(item, Point)]
+        if self.license_service is None or not candidates:
+            return
+        status = self.license_service.inspect(self.license_file).status
+        existing_point_records = [
+            {"entity_type": record["entity_type"], "entity_id": record["entity_id"],
+             "payload": record["payload"]}
+            for record in existing_records if record["entity_type"] == "Point"
+        ]
+        resulting_points = {record["entity_id"]: record for record in existing_point_records}
+        for item in candidates:
+            resulting_points[str(item.id)] = {
+                "entity_type": "Point", "entity_id": str(item.id), "payload": asdict(item)
+            }
+        existing_active = set(summarize_point_usage(existing_point_records)["licensed_active_point_ids"])
+        resulting_active = set(summarize_point_usage(resulting_points.values())["licensed_active_point_ids"])
+        for point_id in sorted(resulting_active - existing_active):
+            self.license_service.assert_can_create_point(status, existing_active, point_id)
+            existing_active.add(point_id)
+
     def save_graph(self, entities: Iterable[Any], *, expected_versions: dict[str, int] | None = None) -> dict[str, int]:
         items = list(entities)
         if not items:
@@ -112,27 +134,7 @@ class CoreObjectService:
                 seen.add(entity_id)
                 by_id[entity_id] = (item.__class__.__name__, asdict(item))
 
-            # License only unique points that are actually active in the Core catalogue.
-            # Discovered/imported drafts do not consume capacity until activated/published.
-            # This check also covers updates that activate an existing draft point.
-            if self.license_service is not None and any(isinstance(item, Point) for item in items):
-                status = self.license_service.inspect(self.license_file).status
-                existing_point_records = [
-                    {"entity_type": record["entity_type"], "entity_id": record["entity_id"],
-                     "payload": record["payload"]}
-                    for record in existing if record["entity_type"] == "Point"
-                ]
-                resulting_points = {record["entity_id"]: record for record in existing_point_records}
-                for item in items:
-                    if isinstance(item, Point):
-                        resulting_points[str(item.id)] = {
-                            "entity_type": "Point", "entity_id": str(item.id), "payload": asdict(item)
-                        }
-                existing_active = set(summarize_point_usage(existing_point_records)["licensed_active_point_ids"])
-                resulting_active = set(summarize_point_usage(resulting_points.values())["licensed_active_point_ids"])
-                for point_id in sorted(resulting_active - existing_active):
-                    self.license_service.assert_can_create_point(status, existing_active, point_id)
-                    existing_active.add(point_id)
+            self.assert_point_usage_transition(existing, items)
 
             self._validate_graph(by_id)
             versions = {}
