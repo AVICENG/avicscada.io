@@ -612,7 +612,7 @@ class FBDService:
                 source_meta = {"kind": "station_point", "point_id": point.id, "source": live.source,
                                "quality": live.quality, "timestamp": live.timestamp.isoformat() if live.timestamp else None,
                                "unit": live.unit, "revision": live.revision}
-            elif typ.endswith("_INPUT"):
+            elif typ.endswith("_INPUT") and typ != "ANALOG_INPUT":
                 raw = inputs.get(node_id, params.get("value", spec["defaults"].get("value")))
                 out = self._validate_simulation_value(spec["outputs"].get("OUT", "any"), raw, node_name=node["name"])
                 source_meta = {"kind": "virtual_simulation_input", "overridden": node_id in inputs}
