@@ -264,6 +264,7 @@ class ProtocolDeviceImportService:
                 existing_rows = self.repository.list_records(entity_type="Point", connection=connection)
                 existing_native = {r["payload"].get("native_identity") for r in existing_rows
                                    if r["payload"].get("device_id") == device.id}
+                pending_points = []
                 for item in points:
                     native = item["native_identity"]
                     if native not in chosen:
@@ -276,8 +277,11 @@ class ProtocolDeviceImportService:
                         unit=item["unit"], direction=PointDirection(item["direction"]),
                         source_ref=native, native_identity=native, object_type=item["object_type"],
                         engineering_description=item["engineering_description"],
-                        quality=PointQuality.UNCERTAIN,
+                        quality=PointQuality.UNCERTAIN, licensed_active=False,
                     )
+                    pending_points.append((native, point))
+                self.core.objects.assert_point_usage_transition(existing_rows, [point for _, point in pending_points])
+                for native, point in pending_points:
                     self.repository.save(point, connection=connection)
                     added.append(point.id)
                     existing_native.add(native)
