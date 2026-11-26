@@ -58,6 +58,7 @@ class FBDStudioService:
         page_names: set[str] = set()
         page_codes: set[str] = set()
         project_module_tags: set[str] = set()
+        project_module_ids: set[str] = set()
         for page in pages:
             if not isinstance(page, dict):
                 raise ValueError("FBD Studio pages must be objects")
@@ -83,9 +84,10 @@ class FBDStudioService:
                 if not isinstance(module, dict):
                     raise ValueError("FBD modules must be objects")
                 module_id = str(module.get("id") or "").strip()
-                if not module_id or module_id in module_ids:
-                    raise ValueError("FBD module IDs must be present and unique within a page")
+                if not module_id or module_id in module_ids or module_id in project_module_ids:
+                    raise ValueError("FBD module IDs must be present and unique across the entire project")
                 module_ids.add(module_id)
+                project_module_ids.add(module_id)
                 tag = str(module.get("tag") or "").strip().casefold()
                 if tag:
                     if tag in project_module_tags:
