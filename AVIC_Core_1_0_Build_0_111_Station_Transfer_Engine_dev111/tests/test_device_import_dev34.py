@@ -27,6 +27,9 @@ def test_device_and_selected_points_import_is_idempotent(tmp_path):
     assert len(tree["devices"]) == 1
     assert len(tree["devices"][0]["points"]) == 1
     assert tree["devices"][0]["points"][0]["native_identity"] == "bacnet:object:3:1"
+    point_id = tree["devices"][0]["points"][0]["id"]
+    stored = app.state.core.repository.get_record(point_id)
+    assert stored["payload"]["licensed_active"] is False
 
 
 def test_workbench_exposes_device_tree_endpoint(tmp_path):
