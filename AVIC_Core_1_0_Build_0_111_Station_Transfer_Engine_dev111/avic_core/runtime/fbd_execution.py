@@ -213,7 +213,8 @@ class FBDExecutionService:
                 graph = self._document(document_id)
                 if graph["station_id"] != item.station_id:
                     raise ValueError("Нарушена изоляция станции: стратегия сменила станцию")
-                result = self.fbd.simulate(document_id, inputs=inputs, runtime_state=item.runtime_state)
+                result = self.fbd.simulate(document_id, inputs=inputs, runtime_state=item.runtime_state,
+                                           dt_seconds=item.interval_ms / 1000.0)
                 # A stop request may arrive while simulate() is running. Never publish
                 # outputs from a cycle that was cancelled before its publication phase.
                 if item.stop_event.is_set():
