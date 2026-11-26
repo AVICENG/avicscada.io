@@ -405,7 +405,7 @@ class FBDStudioService:
         "BOOL_INPUT": "BOOL_INPUT", "FLOAT_INPUT": "FLOAT_INPUT",
         "KNOB": "KNOB", "CONSTANT": "CONSTANT",
         "POINT_INPUT": "POINT_INPUT", "SCHEDULE": "SCHEDULE",
-        "AND": "AND", "OR": "OR", "NOT": "NOT", "ADD": "ADD",
+        "AND": "AND", "OR": "OR", "NOT": "NOT", "COMBINATION": "COMBINATION", "ADD": "ADD",
         "SUB": "SUB", "MUL": "MUL", "DIV": "DIV", "SELECT": "SELECT",
         "COMPARE_GT": "COMPARE_GT", "COMPARE_LT": "COMPARE_LT",
         "LIMIT": "LIMIT", "SCALE": "SCALE", "HYSTERESIS": "HYSTERESIS", "BOOL_OUTPUT": "BOOL_OUTPUT",
@@ -498,6 +498,17 @@ class FBDStudioService:
                             raise ValueError
                     except (TypeError, ValueError, OverflowError):
                         issues.append(f"Блок «{module.get('name') or typ}»: {typ} должен содержать конечное число")
+                if typ == "COMBINATION":
+                    rows = params.get("comboRows", core.BLOCKS[mapped]["defaults"]["comboRows"])
+                    valid = isinstance(rows, list) and len(rows) == 4
+                    if valid:
+                        allowed = {"", "E", "e", "F", "f", "G", "g", "H", "h"}
+                        valid = all(isinstance(row, dict) and isinstance(row.get("enabled"), bool)
+                                    and isinstance(row.get("cells"), list) and len(row["cells"]) == 4
+                                    and all(isinstance(cell, str) and cell in allowed for cell in row["cells"])
+                                    for row in rows)
+                    if not valid:
+                        issues.append(f"Блок «{module.get('name') or typ}»: COMBINATION должен содержать четыре корректные строки условий E/F/G/H")
                 if typ == "SCALE":
                     scale = params.get("scale") or {}
                     try:
