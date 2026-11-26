@@ -116,6 +116,7 @@ class GraphicsService:
                     if r["payload"].get("document_id") == document_id}
         all_elements = {r["entity_id"]: r for r in self.core.repository.list_records(entity_type="GraphicElement")}
         prepared = []
+        licensed_point_ids = set()
         seen = set()
         for index, raw in enumerate(elements):
             if not isinstance(raw, dict):
@@ -172,6 +173,7 @@ class GraphicsService:
                 binding_targets.add(binding_target)
                 point_row = self.core.repository.get_record(pid)
                 if point_row["entity_type"] == "Point":
+                    licensed_point_ids.add(pid)
                     point, _ = self.core.repository.get(pid, Point)
                     device = self.core.repository.get_record(point.device_id)
                     point_station = device["payload"].get("station_id")
@@ -188,6 +190,7 @@ class GraphicsService:
 
         # The transaction starts only after every element and binding has passed validation.
         with self.core.repository.transaction() as conn:
+            self.core.objects.set_point_usage(f"graphics:{document_id}", licensed_point_ids, connection=conn)
             for item in prepared:
                 eid=item["id"]
                 if eid in existing:
