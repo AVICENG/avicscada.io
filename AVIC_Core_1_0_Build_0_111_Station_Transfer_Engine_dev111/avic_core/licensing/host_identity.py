@@ -17,7 +17,7 @@ from typing import Callable
 
 def _set_windows_identity_acl(path: Path, user_sid: str, *, is_directory: bool) -> None:
     """Apply a protected DACL using explicit numeric SIDs; never grant Local Account."""
-    if not re.fullmatch(r"S-1-5-21-(?:\\d+-){2,}\\d+", user_sid):
+    if not re.fullmatch(r"S-1-5-21-(?:\d+-){2,}\d+", user_sid):
         raise HostIdentityError("Некорректный Windows user SID для ACL installation identity")
 
     inheritance = "(OI)(CI)" if is_directory else ""
