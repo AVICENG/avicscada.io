@@ -100,10 +100,3 @@
 В AUTO используется ошибка SP−PV, D вычисляется по измерению PV, интегратор ограничивается и защищён conditional anti-windup. MANUAL отслеживает интегратор для безударного возврата в AUTO. Одновременный RESET сбрасывает интегральную/дифференциальную память. ENABLE=FALSE переводит блок в DISABLED и удерживает настроенный disabledOutput/последний выход. OUT/P/I/D доступны как отдельные именованные порты Core и могут использоваться в связях.
 
 
-## PID_LOOP (DEV190)
-
-Порты входа: `PV`, `SP`, `ENABLE`, `MANUAL`, `MANUAL_OUT`, `RESET`. Выходы: `OUT`, `P`, `I`, `D` — все FLOAT.
-
-Параметры находятся в `params.pid`: Kp/Ti/Td, direct/reverse action, auto/manual, outputMin/outputMax, disabledOutput, manualOutput, bias, deadband, derivativeFilter, outputRateLimit, sampleTime, integralMin/integralMax. Core выполняет валидацию конечных значений и ограничений до сохранения/компиляции.
-
-В AUTO используется ошибка SP−PV, D вычисляется по измерению PV, интегратор ограничивается и защищён conditional anti-windup. MANUAL отслеживает интегратор для безударного возврата в AUTO. Одновременный RESET сбрасывает интегральную/дифференциальную память. ENABLE=FALSE переводит блок в DISABLED и удерживает настроенный disabledOutput/последний выход. OUT/P/I/D доступны как отдельные именованные порты Core и могут использоваться в связях.
