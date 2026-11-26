@@ -774,7 +774,7 @@ class FBDService:
                     out = False if off_elapsed >= off_delay else previous
                 state_work[node_id] = {"value": out, "on": on_elapsed, "off": off_elapsed}
             elif typ == "SWITCH":
-                out = bool(args["IN"])
+                out = bool(inputs.get(node_id, args["IN"]))
                 source_meta = {"kind": "operator_switch", "status": out,
                                "user_level": params.get("user_level", 0), "physical_write": False}
             elif typ == "TIME":
