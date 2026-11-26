@@ -96,7 +96,7 @@ class CoreApplication:
         )
         self.engineering_lifecycle = EngineeringLifecycleService(self.paths.databases / "engineering_lifecycle.sqlite3")
         self.alarms = AlarmService(self.paths.databases / "alarms.sqlite3", audit_service=self.audit, event_publisher=lambda e: self.events.record("alarm." + e.event_type.lower(), e.message, station_id=e.station_id, severity="WARNING" if e.to_state in {"ACTIVE", "RETURNED_TO_NORMAL"} else "NOTICE", source_id=e.alarm_id, actor_id=e.actor_id, details={"from_state":e.from_state,"to_state":e.to_state,"alarm_id":e.alarm_id}))
-        self.schedules = ScheduleService(self.paths.databases / "schedules.sqlite3", repository=self.repository, audit_service=self.audit)
+        self.schedules = ScheduleService(self.paths.databases / "schedules.sqlite3", repository=self.repository, audit_service=self.audit, point_usage_service=self.objects)
         self.health = CoreHealthService(self.paths.root, self.runtime, self.audit)
         # Retry durable Station Transfer journal deliveries before normal operation.
         # Crash-interrupted PREPARED operations are deliberately flagged for manual
