@@ -242,6 +242,9 @@ class FBDService:
                     port_types[(nid,"out",p)] = {"BOOLEAN":"bool", "NUMERIC":"float", "STRING":"string", "ENUM":"any"}[schedule_type]
                 else:
                     port_types[(nid,"out",p)] = t
+            # POINT_INPUT resolves its declared signal type after the node draft
+            # was first assembled. Persist the resolved metadata with that draft.
+            prepared[-1]["params"] = params
         links_prepared=[]; link_ids=set(); occupied=set(); adjacency={n:set() for n in node_types}
         connective_rows=[r for r in self.core.repository.list_records(entity_type="StrategyConnective") if r["payload"].get("document_id")==document_id]
         connective_occupied={(r["payload"].get("target_node_id"),r["payload"].get("target_port")) for r in connective_rows}

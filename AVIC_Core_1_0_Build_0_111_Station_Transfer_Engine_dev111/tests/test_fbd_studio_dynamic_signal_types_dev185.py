@@ -62,6 +62,8 @@ def test_studio_compiler_resolves_point_input_type_through_cross_page_connective
     compiled = studio.compile_to_core(created["id"], created["revision"])
     assert compiled["compiled_blocks"] == 2
     assert compiled["compiled_links"] == 1
+    point_node = next(node for node in compiled["core_document"]["nodes"] if node["type"] == "POINT_INPUT")
+    assert point_node["params"]["data_type"] == "bool"
     assert compiled["field_writes_enabled"] is False
     assert compiled["runtime_published"] is False
     core.close()
