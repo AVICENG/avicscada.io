@@ -132,7 +132,7 @@ class FBDService:
       "LATCH":{"category":"Logic","label":"RS-защёлка","inputs":{"SET":"bool","RESET":"bool"},"outputs":{"OUT":"bool"},"defaults":{"initial_state":False,"reset_priority":True}},
       "PID_LOOP":{"category":"Control","label":"PID-регулятор","inputs":{"PV":"float","SP":"float","ENABLE":"bool","MANUAL":"bool","MANUAL_OUT":"float","RESET":"bool"},"outputs":{"OUT":"float","P":"float","I":"float","D":"float"},"defaults":{"pid":{"kp":1.0,"ti":60.0,"td":0.0,"action":"direct","mode":"auto","outputMin":0.0,"outputMax":100.0,"disabledOutput":0.0,"manualOutput":0.0,"bias":0.0,"deadband":0.0,"derivativeFilter":0.0,"outputRateLimit":0.0,"sampleTime":1.0,"integralMin":-100.0,"integralMax":100.0}}},
       "SWITCH":{"category":"Control","label":"Ручной переключатель","inputs":{"IN":"bool"},"outputs":{"OUT":"bool"},"defaults":{"value":False,"user_level":0}},
-      "TIME":{"category":"System","label":"Часы станции","inputs":{},"outputs":{"CURRENT_TIME":"float","MINUTES_PAST_MIDNIGHT":"float","DAY":"float","MONTH":"float","WEEKDAY":"float","DAY_BIT_5":"bool","DAY_BIT_6":"bool","DAY_BIT_7":"bool","SECOND_PULSE":"bool","MINUTE_PULSE":"bool","PULSE_5_MIN":"bool","PULSE_10_MIN":"bool","PULSE_15_MIN":"bool","PULSE_20_MIN":"bool","PULSE_30_MIN":"bool","PULSE_60_MIN":"bool","PULSE_6_HOUR":"bool","PULSE_24_HOUR":"bool","WEEKLY_PULSE":"bool","MONTHLY_PULSE":"bool","YEARLY_PULSE":"bool"},"defaults":{}},
+      "TIME":{"category":"System","label":"Часы станции","inputs":{},"outputs":{"CURRENT_TIME":"float","MINUTES_PAST_MIDNIGHT":"float","DAY":"float","MONTH":"float","WEEKDAY":"float","DAY_BIT_5":"bool","DAY_BIT_6":"bool","DAY_BIT_7":"bool","SECOND_PULSE":"bool","MINUTE_PULSE":"bool","PULSE_5_MIN":"bool","PULSE_10_MIN":"bool","PULSE_15_MIN":"bool","PULSE_20_MIN":"bool","PULSE_30_MIN":"bool","PULSE_60_MIN":"bool","PULSE_6_HOUR":"bool","PULSE_24_HOUR":"bool","WEEKLY_PULSE":"bool","MONTHLY_PULSE":"bool","YEARLY_PULSE":"bool","UTC_OFFSET":"float"},"defaults":{}},
       "BOOL_OUTPUT":{"category":"Data","label":"Булевый выход","inputs":{"IN":"bool"},"outputs":{},"defaults":{}},
       "FLOAT_OUTPUT":{"category":"Data","label":"Аналоговый выход","inputs":{"IN":"float"},"outputs":{},"defaults":{}},
     }
@@ -861,6 +861,7 @@ class FBDService:
                     "WEEKDAY": float(weekday),
                     "DAY_BIT_5": bool(weekday & 1), "DAY_BIT_6": bool(weekday & 2),
                     "DAY_BIT_7": bool(weekday & 4), **pulse_outputs,
+                    "UTC_OFFSET": float(local_now.utcoffset().total_seconds() / 3600.0),
                 }
                 state_work[node_id] = {"last_buckets": last_buckets, "pulse_until": pulse_until}
                 out = output_values["CURRENT_TIME"]
