@@ -63,3 +63,27 @@
 - Исправлено через `pytest.importorskip`: базовая установка Core не обязана включать опциональные S7 библиотеки; dedicated S7 jobs продолжают устанавливать `.[s7]` и выполняют реальные import/version smoke checks.
 - Это исправление тестового контракта, а не ослабление S7 acceptance.
 - Требуется повторный полный CI на актуальном HEAD; зелёный результат пока не получен.
+
+
+## Фокус DEV223 follow-up: Modbus TCP / BACnet/IP / KNXnet/IP
+
+### Modbus TCP
+- Выделение MBAP transaction ID переведено на потокобезопасный allocator. Это устраняет гонку между параллельными запросами одного Modbus client до открытия TCP-соединения.
+- Добавлены regression tests на coalescing смежных диапазонов без чтения через gap, публикацию GOOD, BAD_COMMUNICATION при timeout и параллельное выделение 2 000 transaction IDs.
+- Остаются: RTU/RS-485, fault/reconnect soak, реальное устройство и актуальный CI.
+
+### BACnet/IP
+- Добавлены regression tests для ReadProperty binding, array index, scale/offset и BAD_COMMUNICATION на timeout.
+- Существующий сетевой клиент реализует discovery, ReadProperty, Device.Object_List и чтение Object_Name/identity properties; это пока не заменяет RPM/COV/segmentation/BBMD.
+- Linux CMake fix upstream probe ожидает подтверждения на новом полном CI.
+
+### KNXnet/IP
+- Расширен строгий decoder common DPT: 1.xxx, 5.001/5.003/5.004, 6.001, 7.001, 8.001, 9.001, 12.001, 13.001, 14.000, 16.000 и 17.001.
+- KNX adapter теперь извлекает short APDU для всех разрешённых DPT 1.xxx, а не только DPT 1.001.
+- Добавлены positive/negative DPT tests, adapter short-APDU routing test и binding coverage.
+- Создана инструкция `docs/drivers/MODBUS_BACNET_KNX_DEV223_RU.md`.
+- Остаются ETS import, GroupValueRead polling, Command Gateway write path, routing и физическая приёмка.
+
+### CI status
+- Новые Modbus/BACnet/KNX regression tests добавлены в ветку после предыдущего CI run. Для последующих commits GitHub connector пока не вернул связанный pull_request workflow run; локальный pytest здесь не запускался.
+- Следовательно, новые тесты НЕ объявляются пройденными. Перед следующим статусом требуется проверить фактический workflow run актуального PR HEAD и исправить все найденные падения.
