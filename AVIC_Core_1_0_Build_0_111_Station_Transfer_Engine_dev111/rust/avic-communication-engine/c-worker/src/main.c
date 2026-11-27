@@ -188,6 +188,10 @@ static int connect_modbus(worker_t *w) {
         || modbus_set_response_timeout(w->modbus, sec, usec) == -1) {
         close_modbus(w); return 0;
     }
+    if (modbus_connect(w->modbus) == -1) {
+        close_modbus(w); return 0;
+    }
+    /* libmodbus applies RTS through the already-open serial descriptor. */
     if (strcmp(w->protocol, "modbus-rtu") == 0
         && strcmp(w->rts_mode, "none") != 0) {
         int mode = strcmp(w->rts_mode, "up") == 0
@@ -195,9 +199,6 @@ static int connect_modbus(worker_t *w) {
         if (modbus_rtu_set_rts(w->modbus, mode) == -1) {
             close_modbus(w); return 0;
         }
-    }
-    if (modbus_connect(w->modbus) == -1) {
-        close_modbus(w); return 0;
     }
     return 1;
 }
