@@ -144,3 +144,48 @@ def test_driver_config_api_is_local_and_version_guarded(tmp_path):
         json={"expected_version": view["version"], "config": {"host": "192.0.2.21"}})
     assert stale.status_code == 409
     app.state.core.close()
+
+
+def test_protocol_import_rechecks_driver_entitlement_before_any_mutation(tmp_path):
+    from types import SimpleNamespace
+    from avic_core.licensing import LicenseStatus
+
+    class Entitlements:
+        status = LicenseStatus(True, "OK", features=("driver.modbus-tcp",))
+
+        def inspect(self, license_file):
+            return SimpleNamespace(status=self.status)
+
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid or feature not in status.features:
+                raise PermissionError("driver entitlement denied")
+
+    app, station, driver, inspection = _import_setup(tmp_path, driver_id="modbus-tcp")
+    app.state.core.installation_license_service = Entitlements()
+    app.state.core.license_file = "signed.aviclic"
+
+    # The driver was created while its feature was entitled. Revoke that feature
+    # before import and prove that neither Device, Point nor driver bindings commit.
+    app.state.core.installation_license_service.status = LicenseStatus(
+        True, "OK", features=()
+    )
+    before_devices = app.state.core.repository.list_records(
+        entity_type="Device", station_id=station["id"]
+    )
+    before_points = app.state.core.repository.list_records(entity_type="Point")
+    before_driver = app.state.driver_manager.get_instance(driver["id"])
+
+    with pytest.raises(PermissionError, match="entitlement denied"):
+        app.state.protocol_point_import.import_points(
+            station["id"], driver["id"], inspection,
+            [inspection["points"][0]["native_identity"]],
+        )
+
+    assert app.state.core.repository.list_records(
+        entity_type="Device", station_id=station["id"]
+    ) == before_devices
+    assert app.state.core.repository.list_records(entity_type="Point") == before_points
+    after_driver = app.state.driver_manager.get_instance(driver["id"])
+    assert after_driver["config"] == before_driver["config"]
+    assert after_driver["state"] == "STOPPED"
+    app.state.core.close()
