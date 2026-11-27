@@ -155,9 +155,10 @@ def test_modbus_rtu_point_adapter_polls_through_c_worker_contract(tmp_path, monk
     core.repository.save(platform)
     core.repository.save(project)
     core.repository.save(station)
+    driver = core.driver_manager.create_instance(station.id, "modbus-rtu", "RTU worker")
     device = Device(
         name="RTU device", station_id=station.id, protocol="modbus/rtu",
-        address="/dev/ttyUSB0",
+        address="/dev/ttyUSB0", driver_instance_id=driver["id"],
     )
     point = Point(
         name="Supply temperature", device_id=device.id, data_type="analog-input",
@@ -169,7 +170,7 @@ def test_modbus_rtu_point_adapter_polls_through_c_worker_contract(tmp_path, monk
     from avic_core.drivers.rust_point_adapter import RustDriverPointAdapter
     adapter = RustDriverPointAdapter(
         worker_command=["/opt/avic/avic-modbus-c-worker"], core=core,
-        driver_instance_id="rtu-driver", protocol="modbus-rtu",
+        driver_instance_id=driver["id"], protocol="modbus-rtu",
         config={
             "serial_port": "/dev/ttyUSB0", "baud_rate": 19200,
             "parity": "E", "data_bits": 8, "stop_bits": 1,
