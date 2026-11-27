@@ -122,6 +122,29 @@ static int security_self_test(void) {
     return 0;
 }
 
+static UA_StatusCode validate_numeric_nodeid(const char *identifier) {
+    if(strncmp(identifier, "i=", 2) != 0)
+        return UA_STATUSCODE_GOOD;
+
+    const char *cursor = identifier + 2;
+    if(*cursor < '0' || *cursor > '9')
+        return UA_STATUSCODE_BADINVALIDARGUMENT;
+
+    /* UA_NodeId numeric identifiers are UInt32. Check before open62541 parses
+       the text: some parser paths can narrow an overflowing decimal value. */
+    unsigned long long value = 0;
+    while(*cursor >= '0' && *cursor <= '9') {
+        unsigned long long digit = (unsigned long long)(*cursor - '0');
+        if(value > (4294967295ULL - digit) / 10ULL)
+            return UA_STATUSCODE_BADOUTOFRANGE;
+        value = value * 10ULL + digit;
+        ++cursor;
+    }
+    if(*cursor != '\0')
+        return UA_STATUSCODE_BADINVALIDARGUMENT;
+    return UA_STATUSCODE_GOOD;
+}
+
 static UA_StatusCode parse_nodeid_checked(UA_NodeId *node, const char *text) {
     if(!text || strncmp(text, "ns=", 3) != 0)
         return UA_STATUSCODE_BADINVALIDARGUMENT;
@@ -138,6 +161,9 @@ static UA_StatusCode parse_nodeid_checked(UA_NodeId *node, const char *text) {
     }
     if(*cursor != ';')
         return UA_STATUSCODE_BADINVALIDARGUMENT;
+    UA_StatusCode numeric_status = validate_numeric_nodeid(cursor + 1);
+    if(numeric_status != UA_STATUSCODE_GOOD)
+        return numeric_status;
     UA_String input = UA_STRING_ALLOC(text);
     if(!input.data)
         return UA_STATUSCODE_BADOUTOFMEMORY;
@@ -152,6 +178,7 @@ static int nodeid_self_test(void) {
 
     static const char *const valid[] = {
         "ns=0;i=2258",
+        "ns=1;i=4294967295",
         "ns=2;s=AHU.SupplyAirTemp",
         "ns=2;g=00112233-4455-6677-8899-aabbccddeeff",
         "ns=3;b=YWJj"
@@ -171,6 +198,7 @@ static int nodeid_self_test(void) {
 
     static const char *const invalid[] = {
         "ns=65536;i=1", "ns=1;i=-1", "ns=1;i=4294967296",
+        "ns=1;i=18446744073709551615", "ns=1;i=1x", "ns=1;i=",
         "ns=1;g=not-a-guid", "ns=1;b=***", "i=123", "ns=1;x=1"
     };
     for(size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); ++i) {
@@ -185,7 +213,7 @@ static int nodeid_self_test(void) {
         UA_NodeId_clear(&node);
     }
 
-    puts("opcua_native_probe=self_test_ok nodeid_forms=4 invalid_rejected=7 secure_policies=3 endpoint_validation=ok security_none=forbidden");
+    puts("opcua_native_probe=self_test_ok nodeid_forms=4 invalid_rejected=10 secure_policies=3 endpoint_validation=ok security_none=forbidden");
     return 0;
 }
 
