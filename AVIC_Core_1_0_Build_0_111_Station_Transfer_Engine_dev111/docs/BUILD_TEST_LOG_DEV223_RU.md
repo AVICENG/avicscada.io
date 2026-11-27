@@ -164,3 +164,15 @@
 - Windows workflow path correction уже включена в branch: objdump.exe определяется динамически через Get-Command, а UCRT64 bin добавляется в PATH перед IPC test.
 - Run 46026237032 — старый commit до этих исправлений; его красные C Worker jobs не являются проверкой актуального исправления.
 - Актуальный commit с native OPC UA probe ожидает общей GitHub Actions очереди. Пока нет результата CI на актуальном HEAD, ни DEV227 build, ни DEV225 tests не отмечаются как passed. PR остаётся Draft; merge запрещён до зелёного CI и отдельной hardware acceptance.
+
+
+## DEV228 — secure Browse и исправления нативной сборки (27.11.2026)
+
+- Нативный probe расширен операцией `--browse`: защищённое подключение тем же сертификатным профилем, Browse прямых дочерних узлов, чтение DisplayName/NodeClass, JSON-вывод, лимит 500 узлов. Обратные ссылки пропускаются; рекурсивный обход и continuation points пока не реализованы.
+- Исправлена привязка ApplicationUri к правильному полю API open62541 1.4.21: `UA_ClientConfig.clientDescription.applicationUri`.
+- Исправлены строгие `-Werror=cast-qual` предупреждения NodeId parser: временные UA_String выделяются явно и освобождаются после разбора.
+- Усилена проверка endpoint: обязательный числовой порт 1..65535, поддержка bracketed IPv6, запрет userinfo/query/fragment и управляющих символов. Self-test дополнительно проверяет secure policy allowlist и endpoint cases.
+- Первичный CI run 46029096824: Ubuntu сборка open62541 успешно собрала upstream библиотеку, затем probe не прошёл компиляцию из-за cast-qual и неверного ApplicationUri field. Эти ошибки исправлены в последующих commits; этот run относится к старому SHA 84e3d20 и не подтверждает актуальный код.
+- В том же run C Worker Ubuntu прошёл; BACnet Stack probe прошёл на Ubuntu и Windows; Rust Communication Engine прошёл на Ubuntu и Windows. Windows Python matrix ещё выполнялась.
+- Windows C Worker IPC acceptance в run 46029096824 упал: workflow нашёл objdump в постороннем `C:\\mingw64\\bin`, тогда как компилятор и DLL пакеты были в `$RUNNER_TEMP\\msys64\\ucrt64\\bin`. Из-за неверного PATH дочерний процесс закрывал stdout до IPC handshake. Workflow исправлен: путь к UCRT64 runtime теперь вычисляется от RUNNER_TEMP, проверяется наличие `libmodbus-5.dll` и `libjansson-4.dll`, затем каталог добавляется в PATH перед IPC tests.
+- **Актуальный статус:** commits с исправленным probe/Browse и путём UCRT64 отправлены в ветку; свежий CI должен подтвердить компиляцию и тесты. Ни secure read, ни Browse, ни Windows C Worker acceptance пока не отмечаются как passed до завершения соответствующего run. PR остаётся Draft.
