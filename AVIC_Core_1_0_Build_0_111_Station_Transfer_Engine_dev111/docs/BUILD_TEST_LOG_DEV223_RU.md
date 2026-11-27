@@ -296,3 +296,12 @@
 - Проверки: изменение статически сверено с обеими ветками жизненного цикла Worker; компиляция и полный CI DEV242 ожидаются.
 - Ограничения: реальное подключение к S7 CPU/PLCSIM и аппаратная проверка остаются обязательными; драйвер пока read-only и использует legacy S7comm, не S7CommPlus/TLS.
 - Статус: исправление внесено; CI ещё не подтверждён.
+
+
+## DEV243 — Trend TOPS / BACnet research
+
+- Изучен пользовательский курс Trend IQ-BACnet Module 3 (963v3.01/TOPS) и открытая документация TOPS TA201049 3.21, PICS 963/TOPS TP201011, IQVISION PICS TP201384, IP Tool TE200638 и Trend security guidance.
+- Выделены два независимых направления: нативный AVIC BACnet driver и отдельный Trend IP/vCNC driver. TOPS — gateway/mapping layer: BACnet objects → virtual Trend devices → Trend LAN/vCNC.
+- Документированы mapping AI/AO/AV/BI/BO/BV/MSI/MSO/MSV, Schedule, Trend Log и alarms; отмечено расхождение версий курса 963v3.01 и TOPS 3.21.
+- Зафиксировано, что Trend vCNC wire protocol не раскрывается найденными публичными материалами; нужен лабораторный packet capture/interop, а не реализация по догадкам.
+- Код драйвера в этом этапе не менялся; это исследовательская спецификация и backlog. Аппаратная совместимость не подтверждена.
