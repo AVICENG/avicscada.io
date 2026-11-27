@@ -141,7 +141,11 @@ class RustDriverPointAdapter:
             key = (str(obj.get("object_type_name")), int(obj.get("object_instance", -1)),
                    int(device_instance))
             if obj.get("present_value") is not None:
-                values[key] = obj["present_value"]
+                values[key] = {
+                    "value": obj["present_value"],
+                    "status_flags": obj.get("status_flags"),
+                    "units": obj.get("units"),
+                }
         return values
 
     def _read_knx(self, binding: dict[str, Any]) -> Any:
@@ -196,13 +200,26 @@ class RustDriverPointAdapter:
                     bacnet_values = bacnet_values_by_device.get(device_key, {})
                     if key not in bacnet_values:
                         raise RustDriverConfigurationError(f"BACnet object {name}:{binding['object_instance']} has no Present_Value")
+                    object_data = bacnet_values[key]
                     value = self._scaled(
-                        bacnet_values[key], float(binding.get("scale", 1.0)),
+                        object_data["value"], float(binding.get("scale", 1.0)),
                         float(binding.get("offset", 0.0)))
+                    flags = object_data.get("status_flags")
+                    if not isinstance(flags, list) or len(flags) != 4 or any(not isinstance(flag, bool) for flag in flags):
+                        sample_quality = self._PointQuality.UNCERTAIN
+                    elif flags[1] or flags[3]:  # BACnet fault or out_of_service
+                        sample_quality = self._PointQuality.BAD
+                    elif flags[2]:  # overridden
+                        sample_quality = self._PointQuality.UNCERTAIN
+                    else:
+                        sample_quality = self._PointQuality.GOOD
                 else:
                     value = self._read_knx(binding)
+                    sample_quality = self._PointQuality.GOOD
+                if self.protocol == "modbus-tcp":
+                    sample_quality = self._PointQuality.GOOD
                 sample = self.point_runtime.publish(
-                    point_id, value, quality=self._PointQuality.GOOD,
+                    point_id, value, quality=sample_quality,
                     source_driver_id=self.driver_instance_id)
                 self._last_errors.pop(point_id, None)
                 self._success_count += 1
