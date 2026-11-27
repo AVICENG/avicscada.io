@@ -17,9 +17,9 @@
 |---|---|---|---|
 | Modbus TCP | libmodbus | C Worker, динамическая библиотека | Первый C-порт. Сначала FC01/02/03/04, batching, reconnect и diagnostics; RTU — отдельный этап с serial manager. |
 | Modbus RTU | libmodbus | C Worker | Использовать ту же библиотеку, но отдельные тесты RS-485, таймингов, parity, stop bits, bus contention и recovery. |
-| BACnet/IP | Steve Karg BACnet Stack | C Worker | Кандидат №1; проверить ReadProperty, RPM, Who-Is/I-Am, segmentation, BBMD, vendor/device behavior и совместимость с текущими профилями. |
-| BACnet MS/TP | Steve Karg BACnet Stack | C Worker + serial | Кандидат; требуется полноценный MS/TP token-passing, serial timing и реальные RS-485 тесты. Не считать готовым вслед за BACnet/IP. |
-| BACnet/SC | Отдельная оценка BACnet Stack / коммерческих вариантов | Изолированный C Worker | Не включать в первую поставку без проверки TLS, сертификатов, Hub/Node, failover и лицензии. |
+| BACnet/IP | Steve Karg BACnet Stack | C Worker | Кандидат №1; проверить ReadProperty, RPM, Who-Is/I-Am, segmentation, BBMD, vendor/device behavior и совместимость с текущими профилями. Репозиторий содержит каталог нескольких лицензий: обязательна проверка SPDX/лицензии каждого используемого исходного файла, а не только примеров. |
+| BACnet MS/TP | Steve Karg BACnet Stack | C Worker + serial | Кандидат; требуется полноценный MS/TP token-passing, serial timing и реальные RS-485 тесты. Не считать готовым вслед за BACnet/IP. Лицензии исходных файлов проверять поштучно. |
+| BACnet/SC | Сначала отдельная проверка Steve Karg / CAS BACnet Stack | Изолированный C Worker | Не включать в первую поставку без проверки полноценного TLS, сертификатов, Hub/Node, failover и лицензии. CAS v6 заявляет BACnet/SC, MS/TP и IP в одной C/C++ библиотеке, но это платный/коммерческий кандидат, не обязательная покупка. |
 | KNX | KNX Falcon .NET SDK | .NET Worker | Официальный публичный SDK доступен через NuGet; проверить runtime, redistributable, ETS-интеграцию, лицензирование и Windows deployment. Текущий Rust KNX путь сохраняется до parity. |
 | OPC UA Client/Server | open62541 | C Worker | Основной открытый кандидат; MPL-2.0. Развести client и server профили, security policies, certificates, subscriptions, browse и namespace mapping. |
 | MQTT 3.1.1/5.0 | Eclipse Paho C | C Worker | Основной кандидат; TLS, reconnect, persistent sessions, QoS, retained/LWT, bounded queues и SecretStore credential broker обязательны. |
@@ -73,7 +73,7 @@
 | libmodbus | LGPL-2.1-or-later | Динамическая библиотека; включать LGPL notice и исходники точной версии/изменений. Коммерческая лицензия — только при отдельном бизнес-решении. |
 | open62541 | MPL-2.0 | Сохранять notices; изменения файлов MPL публиковать под MPL при распространении. |
 | Eclipse Paho C | EPL-2.0 (проверить выбранный релиз и файлы) | Проверить применимые условия EPL и комплект notices перед распространением. |
-| KNX Falcon public SDK | Условия публичного SDK/NuGet | Зафиксировать лицензионные условия именно выбранной версии и redistributable. |
+| KNX Falcon public SDK | Публичный SDK бесплатен для загрузки через NuGet; полный текст условий доступен через KNX account | До распространения проверить право redistributable, notices и условия коммерческого продукта по выбранной версии. Бесплатность загрузки не равна отсутствию лицензионных условий. |
 | Steve Karg BACnet Stack | Проверить LICENSE выбранного commit/release | До интеграции зафиксировать точный upstream, commit, лицензию и все third-party файлы. |
 | S7 SDK | Не выбран | Никакой зависимости до проверки лицензии и технической совместимости. |
 
