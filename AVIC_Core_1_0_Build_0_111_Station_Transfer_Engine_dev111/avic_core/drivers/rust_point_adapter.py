@@ -126,6 +126,7 @@ class RustDriverPointAdapter:
         result = self._worker.read({
             "protocol": "bacnet-ip", "address": f"{address[0]}:{int(address[1])}",
             "local_bind": f"{self._config['local_address']}:{int(self._config.get('udp_port', 47808))}",
+            "timeout_ms": int(float(self._config.get("timeout", 3.0)) * 1000),
             "device_instance": int(device_instance),
         }).get("result", {})
         device = result.get("device", {})
