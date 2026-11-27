@@ -37,7 +37,7 @@ CMake получает open62541 по тегу v1.4.21, включает OpenSSL
 
     avic-opcua-native-probe.exe --browse opc.tcp://controller:4840 client.der client-key.der trusted-server.der urn:avic:opcua:client http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256 SignAndEncrypt ns=2;s=Plant.AHU01
 
-Browse читает прямых дочерних узлов указанного NodeId, DisplayName и NodeClass. Максимум — 500 узлов за один вызов; обратные ссылки пропускаются. Ответ выводится как JSON. Полный рекурсивный обход, пагинация BrowseContinuationPoint и сопоставление Namespace URI вместо индекса пока не входят в этот этап.
+Browse использует нативный UA_Client_Service_browse с requestedMaxReferencesPerNode=500, направлением Forward и HierarchicalReferences с подтипами. Возвращаются NodeId, DisplayName, NodeClass, Namespace URI (если сервер передал ExpandedNodeId с URI) и ServerIndex. Если сервер выдал ContinuationPoint, пробник освобождает его через BrowseNext(releaseContinuationPoints=true), возвращает has_more=true и не загружает следующую страницу. Это ограничивает ответ сервера и не оставляет открытый continuation state. Полный рекурсивный обход, пагинация BrowseNext и долговременное сопоставление Namespace URI пока не входят в этот этап.
 
 Сертификаты должны быть DER и соответствовать ApplicationUri/доверенной цепочке сервера. Команда не подменяет сертификаты, не отключает проверку доверия и не переключается на None.
 
@@ -45,4 +45,4 @@ Browse читает прямых дочерних узлов указанног�
 
 **Статус: нативный C-клиент и build/self-test probe; ещё не промышленный OPC UA Driver.**
 
-Не реализованы: AVIC Driver IPC v1 интеграция, namespace URI resolution и устойчивые namespace mappings, BrowseContinuationPoint/рекурсивная пагинация, подписки DataChange/COV, reconnect/session renewal policy AVIC, безопасная передача секрета из SecretStore без временного файла, multi-server нагрузочные тесты, Windows/Linux независимый сервер acceptance. Не включать этот пробник в каталог как готовый драйвер. Чтение — только через отдельный процесс; запись остаётся запрещённой до интеграции с Command Gateway.
+Не реализованы: AVIC Driver IPC v1 интеграция, namespace URI resolution и устойчивые namespace mappings, полная пагинация BrowseContinuationPoint/рекурсивный обход, подписки DataChange/COV, reconnect/session renewal policy AVIC, безопасная передача секрета из SecretStore без временного файла, multi-server нагрузочные тесты, Windows/Linux независимый сервер acceptance. Не включать этот пробник в каталог как готовый драйвер. Чтение — только через отдельный процесс; запись остаётся запрещённой до интеграции с Command Gateway.
