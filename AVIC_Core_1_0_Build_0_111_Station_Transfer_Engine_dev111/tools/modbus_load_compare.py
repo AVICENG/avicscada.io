@@ -65,7 +65,10 @@ class Server(socketserver.ThreadingTCPServer):
 
 
 class RuntimeStub:
+    def __init__(self):
+        self.values = {}
     def publish(self, point_id, value, quality, source_driver_id):
+        self.values[point_id] = value
         return SimpleNamespace(value=value, quality=str(quality.value if hasattr(quality, "value") else quality))
     def mark_quality(self, point_id, quality, source_driver_id):
         return SimpleNamespace(value=None, quality=str(quality.value if hasattr(quality, "value") else quality))
