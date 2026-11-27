@@ -125,6 +125,7 @@ class RustDriverPointAdapter:
     def _read_bacnet_batch(self, address: tuple[str, int], device_instance: int) -> dict[tuple[str, int, int], Any]:
         result = self._worker.read({
             "protocol": "bacnet-ip", "address": f"{address[0]}:{int(address[1])}",
+            "local_bind": f"{self._config['local_address']}:{int(self._config.get('udp_port', 47808))}",
             "device_instance": int(device_instance),
         }).get("result", {})
         device = result.get("device", {})
