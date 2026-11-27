@@ -162,10 +162,21 @@ def test_wrong_driver_cannot_cancel_another_drivers_pending_debounce(tmp_path):
         source_driver_id=DRIVER_ID,
     )
 
+    foreign_driver = "00000000-0000-4000-8000-000000000999"
     with pytest.raises(ValueError, match="does not match"):
         runtime.mark_quality(
             point.id, PointQuality.BAD_COMMUNICATION,
-            source_driver_id="00000000-0000-4000-8000-000000000999",
+            source_driver_id=foreign_driver,
+        )
+    with pytest.raises(ValueError, match="Источник публикации не совпадает"):
+        runtime.publish(
+            point.id, False, timestamp=T0 + timedelta(milliseconds=20),
+            source_driver_id=foreign_driver,
+        )
+    with pytest.raises(ValueError, match="Запоздавшее измерение отклонено"):
+        runtime.publish(
+            point.id, False, timestamp=T0 - timedelta(milliseconds=1),
+            source_driver_id=DRIVER_ID,
         )
 
     committed = runtime.flush_debounce(now=T0 + timedelta(milliseconds=110))
