@@ -268,14 +268,24 @@ class DriverManagerService:
         self.core.repository.save(item, expected_version=version)
 
     def start_instance(self, instance_id: str, *, poll_interval_seconds: float | None = None) -> dict:
-        # Serialize start against CoreApplication.close() so shutdown cannot miss a
-        # worker that passed its open-state check but has not registered yet.
+        # Serialize driver and scheduler lifecycle against stop/close operations.
         with self._scheduler_lifecycle_lock:
             with self.core._lock:
                 self.core._ensure_open()
-                return self._start_instance_unlocked(
+                result = self._start_instance_unlocked(
                     instance_id, poll_interval_seconds=poll_interval_seconds
                 )
+            # Start the shared scheduler only after releasing the driver registry
+            # lock: scheduler callbacks may inspect driver diagnostics.
+            try:
+                self._point_runtime_scheduler.start()
+            except Exception:
+                try:
+                    self.stop_instance(instance_id)
+                except Exception:
+                    pass
+                raise
+            return self.diagnostics(instance_id)
 
     def _start_instance_unlocked(self, instance_id: str, *, poll_interval_seconds: float | None = None) -> dict:
         with self._lock:
@@ -297,7 +307,6 @@ class DriverManagerService:
                                  else item.config.get("poll_interval_seconds", 5.0))
                 session = PollingSession(adapter, interval, name=f"avic-{item.driver_id}-{item.id[:8]}")
                 session.start()
-                self._point_runtime_scheduler.start()
                 self._adapters[instance_id] = adapter
                 self._sessions[instance_id] = session
                 item.state = "RUNNING"
@@ -322,11 +331,6 @@ class DriverManagerService:
                         pass
                 self._sessions.pop(instance_id, None)
                 self._adapters.pop(instance_id, None)
-                if not self._sessions:
-                    try:
-                        self._point_runtime_scheduler.stop(timeout=5.0)
-                    except Exception:
-                        pass
                 try:
                     failed, current_version = self._load(instance_id)
                     self._save_state(failed, current_version, "ERROR", False)
