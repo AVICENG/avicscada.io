@@ -1,0 +1,19 @@
+[package]
+name = "avic-communication-engine"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "AVIC read-only Modbus TCP communication pilot and benchmark kernel"
+
+[lib]
+name = "avic_communication_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "avic-modbus-bench"
+path = "src/bin/avic_modbus_bench.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
