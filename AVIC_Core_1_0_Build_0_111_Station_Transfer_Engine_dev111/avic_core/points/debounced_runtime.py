@@ -105,19 +105,31 @@ class DebouncedPointRuntimeService(PointRuntimeService):
                 self._debounce_sources.pop(point.id, None)
                 return marked
 
-            if not isinstance(value, bool):
-                # Let the authoritative Point Runtime raise its canonical type error.
-                return super().publish(
-                    point_id, value, quality=q, timestamp=timestamp,
-                    source_driver_id=source_driver_id,
-                )
-
+            # Validate ownership, station isolation, type and timestamp BEFORE
+            # mutating debounce state. A foreign adapter or stale packet must not
+            # be able to cancel another driver's pending transition.
+            owner = str(device.get("payload", {}).get("driver_instance_id") or "")
+            if source_driver_id is not None and source_driver_id != owner:
+                raise ValueError("Источник публикации не совпадает с драйвером устройства")
+            if source_driver_id is not None:
+                self._assert_driver_station(source_driver_id, device)
+            checked_value = self._validate_value(point, value)
             sample_time = timestamp or datetime.now(timezone.utc)
+            if sample_time.tzinfo is None or sample_time.utcoffset() is None:
+                raise ValueError("Timestamp должен содержать часовой пояс")
+            if point.timestamp is not None:
+                if point.timestamp.tzinfo is None or point.timestamp.utcoffset() is None:
+                    raise ValueError("Сохранённый timestamp точки не содержит часового пояса")
+                if sample_time < point.timestamp:
+                    raise ValueError(
+                        "Запоздавшее измерение отклонено: timestamp старше последнего принятого значения"
+                    )
+
             if self._debounce.stable_value(point.id) is None and isinstance(point.value, bool):
                 seed_time = point.timestamp or sample_time
                 self._debounce.ingest(point.id, point.value, timestamp=seed_time)
 
-            result = self._debounce.ingest(point.id, value, timestamp=sample_time)
+            result = self._debounce.ingest(point.id, checked_value, timestamp=sample_time)
             if result.pending:
                 self._debounce_sources[point.id] = source_driver_id
                 return super().read(point_id)
@@ -125,7 +137,7 @@ class DebouncedPointRuntimeService(PointRuntimeService):
             self._debounce_sources.pop(point.id, None)
             if result.accepted or result.reason == "stable_or_bounce_cancelled":
                 return super().publish(
-                    point_id, value, quality=q, timestamp=sample_time,
+                    point_id, checked_value, quality=q, timestamp=sample_time,
                     source_driver_id=source_driver_id,
                 )
             return super().read(point_id)
