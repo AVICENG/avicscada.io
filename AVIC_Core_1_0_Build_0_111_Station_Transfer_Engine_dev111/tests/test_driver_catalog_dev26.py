@@ -15,7 +15,7 @@ def test_catalog_has_unique_ids_and_all_entries_have_license_keys():
 def test_requested_open_protocol_families_are_in_catalog():
     expected = {
         "trend-ip", "bacnet-ip", "bacnet-mstp", "modbus-tcp", "modbus-rtu",
-        "lonworks", "knxnet-ip", "mqtt", "s7comm", "opc-ua-client", "opc-ua-server",
+        "lonworks", "mbus", "knxnet-ip", "mqtt", "s7comm", "opc-ua-client", "opc-ua-server",
         "opc-da-gateway", "obix", "snmp", "haystack", "rest-api",
     }
     assert {entry.driver_id for entry in list_builtin_drivers()} == expected
@@ -52,7 +52,6 @@ def test_existing_bacnet_modbus_foundations_remain_honest():
         assert not item.write_supported
 
 
-
 def test_knxnet_ip_is_read_only_runtime_not_write_capable():
     item = get_driver("knxnet-ip")
     assert item is not None
@@ -60,6 +59,19 @@ def test_knxnet_ip_is_read_only_runtime_not_write_capable():
     assert item.read_supported
     assert not item.discovery_supported
     assert not item.write_supported
+
+
+def test_mbus_is_catalogued_as_planned_wired_only_read_only_driver():
+    item = get_driver("mbus")
+    assert item is not None
+    assert item.protocol == "EN 13757-2/-3 wired Meter-Bus"
+    assert item.lifecycle == DriverLifecycle.PLANNED
+    assert item.category == DriverCategory.BUILDING_AUTOMATION
+    assert not item.read_supported
+    assert not item.discovery_supported
+    assert not item.write_supported
+    assert "libmbus" in item.notes
+    assert "Wireless M-Bus" in item.notes
 
 
 def test_category_tree_groups_semantic_layer_separately():
