@@ -35,10 +35,10 @@ class DriverInstance:
     state: str = "STOPPED"
     config: dict = field(default_factory=dict)
     enabled: bool = False
-    runtime_generation: int = 0
     package_trust: str = "BUILTIN"
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
+    runtime_generation: int = 0
 
     def __post_init__(self):
         UUID(self.id)
