@@ -2,6 +2,7 @@
 from __future__ import annotations
 import socket
 import struct
+import threading
 from typing import Literal
 
 class ModbusProtocolError(ValueError):
@@ -41,6 +42,13 @@ class ModbusTcpClient:
             raise ValueError("invalid Modbus TCP port, unit_id or timeout")
         self.host, self.port, self.unit_id, self.timeout = host, port, unit_id, timeout
         self._transaction_id = 0
+        self._transaction_lock = threading.Lock()
+
+    def _next_transaction_id(self) -> int:
+        # Reserve each MBAP transaction identifier atomically when polling groups concurrently.
+        with self._transaction_lock:
+            self._transaction_id = (self._transaction_id + 1) & 0xffff
+            return self._transaction_id
 
     def _read(self, function: int, address: int, count: int) -> list[int]:
         if function not in (1, 2, 3, 4):
@@ -48,8 +56,7 @@ class ModbusTcpClient:
         max_count = 2000 if function in (1, 2) else 125
         if not 0 <= address <= 65535 or not 1 <= count <= max_count or address + count > 65536:
             raise ValueError("invalid Modbus address/count")
-        self._transaction_id = (self._transaction_id + 1) & 0xffff
-        tid = self._transaction_id
+        tid = self._next_transaction_id()
         pdu = struct.pack(">BHH", function, address, count)
         request = struct.pack(">HHHB", tid, 0, len(pdu) + 1, self.unit_id) + pdu
         with socket.create_connection((self.host, self.port), timeout=self.timeout) as sock:
