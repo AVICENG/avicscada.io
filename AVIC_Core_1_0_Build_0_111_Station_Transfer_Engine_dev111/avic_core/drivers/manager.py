@@ -252,22 +252,22 @@ class DriverManagerService:
         if not isinstance(serial_port, str) or not serial_port.strip():
             raise ValueError("Для Modbus RTU требуется serial_port")
         baud_rate = cfg.get("baud_rate", 9600)
-        if isinstance(baud_rate, bool) or baud_rate not in {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200}:
+        if isinstance(baud_rate, bool) or not isinstance(baud_rate, int) or baud_rate not in {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200}:
             raise ValueError("Недопустимая скорость Modbus RTU")
         parity = cfg.get("parity", "N")
-        if parity not in {"N", "E", "O"}:
+        if not isinstance(parity, str) or parity not in {"N", "E", "O"}:
             raise ValueError("parity должна быть N, E или O")
         data_bits = cfg.get("data_bits", 8)
         stop_bits = cfg.get("stop_bits", 1)
-        if isinstance(data_bits, bool) or data_bits not in {5, 6, 7, 8}:
+        if isinstance(data_bits, bool) or not isinstance(data_bits, int) or data_bits not in {5, 6, 7, 8}:
             raise ValueError("data_bits должна быть от 5 до 8")
-        if isinstance(stop_bits, bool) or stop_bits not in {1, 2}:
+        if isinstance(stop_bits, bool) or not isinstance(stop_bits, int) or stop_bits not in {1, 2}:
             raise ValueError("stop_bits должна быть 1 или 2")
         unit_id = cfg.get("unit_id", 1)
         if isinstance(unit_id, bool) or not isinstance(unit_id, int) or not 1 <= unit_id <= 247:
             raise ValueError("Modbus RTU Unit ID должен быть от 1 до 247")
         rts_mode = cfg.get("rts_mode", "none")
-        if rts_mode not in {"none", "up", "down"}:
+        if not isinstance(rts_mode, str) or rts_mode not in {"none", "up", "down"}:
             raise ValueError("rts_mode должна быть none, up или down")
         timeout = cfg.get("timeout", 2.0)
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0.1 <= timeout <= 10.0:
