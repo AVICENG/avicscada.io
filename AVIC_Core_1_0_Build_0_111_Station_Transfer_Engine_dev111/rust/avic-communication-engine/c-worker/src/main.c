@@ -300,13 +300,23 @@ static int process(worker_t *w, json_t *request, int *exit_after) {
                 && get_int(payload, "unit_id", &sequence) && sequence >= 0 && sequence <= 247) {
                 w->port = (int)version; w->unit_id = (int)sequence;
                 w->timeout_ms = 2000;
-                if (get_int(payload, "timeout_ms", &version) && version >= 100 && version <= 10000)
-                    w->timeout_ms = (int)version;
+                json_t *timeout_value = json_object_get(payload, "timeout");
+                if (json_is_number(timeout_value)) {
+                    double timeout_seconds = json_number_value(timeout_value);
+                    if (timeout_seconds < 0.1 || timeout_seconds > 10.0) {
+                        response_payload = error_payload("INVALID_CONFIGURATION", "timeout must be between 0.1 and 10 seconds");
+                        w->configured = 0;
+                        goto configure_done;
+                    }
+                    w->timeout_ms = (int)(timeout_seconds * 1000.0 + 0.5);
+                }
                 strcpy(w->protocol, protocol); w->configured = 1;
                 response_kind = "configured";
                 response_payload = json_pack("{s:b,s:s}", "configured", 1, "protocol", protocol);
             } else response_payload = error_payload("INVALID_CONFIGURATION", "Invalid Modbus TCP configuration");
         }
+configure_done:
+        ;
     } else if (strcmp(kind, "start") == 0) {
         if (!w->configured) response_payload = error_payload("CONFIGURE_REQUIRED", "Configure worker first");
         else { w->started = 1; response_kind = "status";
