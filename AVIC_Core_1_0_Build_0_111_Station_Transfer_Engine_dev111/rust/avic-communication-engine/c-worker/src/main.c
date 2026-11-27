@@ -183,6 +183,10 @@ static int connect_modbus(worker_t *w) {
         return 0;
     }
     if (!w->modbus) return 0;
+    /* Optional wire-level diagnostics are stderr-only; IPC stdout stays framed. */
+    const char *debug_enabled = getenv("AVIC_C_MODBUS_DEBUG");
+    if (debug_enabled && strcmp(debug_enabled, "1") == 0)
+        modbus_set_debug(w->modbus, 1);
     uint32_t sec = (uint32_t)(w->timeout_ms / 1000);
     uint32_t usec = (uint32_t)(w->timeout_ms % 1000) * 1000u;
     if (modbus_set_slave(w->modbus, w->unit_id) == -1
