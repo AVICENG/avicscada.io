@@ -5,6 +5,7 @@ use bacnet_rs::client::BacnetClient;
 use bacnet_rs::property::PropertyValue;
 use serde_json::{json, Value};
 use std::net::SocketAddr;
+use std::time::Duration;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BacnetDeviceSnapshot {
@@ -50,9 +51,16 @@ pub struct BacnetIpReadOnlyClient {
     client: BacnetClient,
 }
 impl BacnetIpReadOnlyClient {
-    pub fn new(local_bind: SocketAddr) -> Result<Self, BacnetDriverError> {
-        if local_bind.port() == 0 { return Err(BacnetDriverError::InvalidAddress); }
-        let client = BacnetClient::new_with_local_addr(local_bind).map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
+    pub fn new(local_bind: SocketAddr, timeout: Duration) -> Result<Self, BacnetDriverError> {
+        if local_bind.port() == 0 || timeout.is_zero() || timeout > Duration::from_secs(30) {
+            return Err(BacnetDriverError::InvalidAddress);
+        }
+        let client = BacnetClient::builder()
+            .local_addr(local_bind.ip().to_string())
+            .port(local_bind.port())
+            .timeout(timeout)
+            .build()
+            .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
         Ok(Self { client })
     }
 
