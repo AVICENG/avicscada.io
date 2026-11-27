@@ -106,6 +106,6 @@ python -m pip check
 |---|---|---|
 | Modbus TCP | Read-only функциональный стек + альтернативные worker engines | Не подтверждена: CI head/hardware/soak ещё нужны |
 | BACnet/IP | Discovery + ReadProperty + bounded RPM + Object_List + read-only adapter | Не подтверждена: COV/segmentation/BBMD и hardware ещё нужны |
-| KNXnet/IP | Tunnelling + passive group monitor + расширенный DPT decoder | Не подтверждена: ETS import, active read polling, command gateway и hardware ещё нужны |
+| KNXnet/IP | Tunnelling + passive group monitor + active single-binding read poll + расширенный DPT decoder | Не подтверждена: ETS import, batch/parallel polling, command gateway, routing и hardware ещё нужны |
 
 Все три драйвера остаются read-only. PR #9 остаётся Draft. Ни один не объявляется промышленно готовым до зелёного CI на актуальном HEAD, fault/reconnect/soak tests и аппаратной приёмки.
