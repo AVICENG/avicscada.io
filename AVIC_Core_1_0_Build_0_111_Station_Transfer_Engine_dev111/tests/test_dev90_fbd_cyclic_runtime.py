@@ -69,3 +69,39 @@ def test_background_scheduler_executes_and_stops(tmp_path):
     assert status['tick_count'] >= 2
     assert status['state'] == 'STOPPED'
     runtime.close(); core.close()
+
+
+def test_fbd_runtime_cannot_publish_or_change_quality_of_foreign_station_virtual_point(tmp_path):
+    from avic_core.points.runtime import FBDExposedPoint
+    from avic_core.ui.project_station import ProjectStationService
+
+    core, station_a, _ = setup(tmp_path)
+    projects = ProjectStationService(core)
+    project_b = projects.create_project("Foreign FBD output")
+    station_b = projects.create_station(project_b["id"], "Foreign station")
+    doc = FBDService(core).create_fan_demo(station_a["id"])
+    foreign = FBDExposedPoint(
+        name="Foreign exposed point", station_id=station_b["id"],
+        fbd_document_id=doc["id"], source_module_id="not-a-module",
+        data_type="bool",
+    )
+    core.repository.save(foreign)
+
+    with pytest.raises(ValueError, match="виртуальная точка принадлежит другой станции"):
+        core.point_runtime.publish_fbd(
+            foreign.id, True, station_id=station_a["id"], quality="GOOD"
+        )
+    with pytest.raises(ValueError, match="виртуальная точка принадлежит другой станции"):
+        core.point_runtime.mark_fbd_quality(
+            foreign.id, "STALE", station_id=station_a["id"]
+        )
+
+    runtime = FBDExecutionService(core)
+    runtime.start(doc["id"], background=False)
+    with pytest.raises(ValueError, match="виртуальная точка принадлежит другой станции"):
+        runtime.tick_once(doc["id"])
+    persisted, _ = core.repository.get(foreign.id, FBDExposedPoint)
+    assert persisted.value is None
+    assert persisted.quality == "UNCERTAIN"
+    runtime.close()
+    core.close()
