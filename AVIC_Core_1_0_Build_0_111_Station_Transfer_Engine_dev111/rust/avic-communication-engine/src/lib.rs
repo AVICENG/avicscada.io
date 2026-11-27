@@ -4,6 +4,7 @@
 pub mod ipc;
 pub mod bacnet;
 pub mod knx;
+pub mod s7;
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
