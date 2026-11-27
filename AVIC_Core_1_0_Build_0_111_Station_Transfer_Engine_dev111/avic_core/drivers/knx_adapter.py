@@ -107,9 +107,9 @@ class KnxPointAdapter:
             return self._result([])
 
         try:
-            if binding.datapoint_type == "1.001":
-                if frame.short_value not in (0, 1):
-                    raise KnxProtocolError("DPT 1.001 requires a one-bit short APDU value")
+            if binding.datapoint_type.startswith("1."):
+                if frame.short_value is None:
+                    raise KnxProtocolError(f"DPT {binding.datapoint_type} requires a short APDU value")
                 raw = bytes((frame.short_value,))
             else:
                 raw = frame.data
