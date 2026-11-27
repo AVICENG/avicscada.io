@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+import ipaddress
 from threading import RLock
 from typing import Callable, Any
 from uuid import UUID, uuid4
@@ -170,12 +171,12 @@ class DriverManagerService:
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
-        if engine == "rust":
-            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         client = ModbusTcpClient(
             cfg["host"], port=int(cfg.get("port", 502)),
             unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
         )
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
