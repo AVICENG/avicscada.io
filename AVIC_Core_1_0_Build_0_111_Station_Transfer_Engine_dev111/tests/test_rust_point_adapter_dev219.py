@@ -179,3 +179,16 @@ def test_rust_knx_formats_ipv6_gateway_and_local_bind(fake_worker):
     adapter.poll_once()
     assert fake_worker.requests[0]["gateway"] == "[2001:db8::20]:3671"
     assert fake_worker.requests[0]["local_bind"] == "[2001:db8::10]:0"
+
+
+def test_rust_adapter_close_marks_owned_points_stale(fake_worker):
+    from avic_core.domain.models import PointQuality
+    core = FakeCore()
+    adapter = make_adapter(core, "modbus-tcp",
+        {"host": "192.0.2.10", "port": 502, "unit_id": 1, "timeout": 2.0},
+        [{"point_id": "point-1", "function": 3, "address": 100,
+          "count": 1, "data_type": "uint16"}],
+    )
+    adapter.close()
+    assert core.point_runtime.bad[0][0:2] == ("point-1", PointQuality.STALE)
+    assert fake_worker.closed is True
