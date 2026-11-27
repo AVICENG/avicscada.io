@@ -564,11 +564,11 @@ class BacnetIpClient:
 
         invoke = self._invoke_id
         self._invoke_id = (self._invoke_id % 255) + 1
-        spec = _context_tag(0, _object_id(object_type, object_instance)) + b"\\x1e"
+        spec = _context_tag(0, _object_id(object_type, object_instance)) + b"\x1e"
         for property_id in requested:
             width = max(1, (property_id.bit_length() + 7) // 8)
             spec += _context_tag(0, property_id.to_bytes(width, "big"))
-        spec += b"\\x1f"
+        spec += b"\x1f"
         request = _bvll(bytes((0x00, 0x05, invoke, 0x0E)) + spec, 0x0A)
         self._socket.sendto(request, address)
         timeout = timeout_seconds or self.policy.request_timeout_seconds
@@ -607,11 +607,11 @@ class BacnetIpClient:
             if data[start:end] != _object_id(object_type, object_instance):
                 raise BacnetProtocolError("ReadPropertyMultiple ACK object identifier does not match request")
             pos = end
-            if data[pos:pos + 1] != b"\\x1e":
+            if data[pos:pos + 1] != b"\x1e":
                 raise BacnetProtocolError("ReadPropertyMultiple ACK missing property-list opening tag")
             pos += 1
             results: dict[int, Any] = {}
-            while pos < len(data) and data[pos:pos + 1] != b"\\x1f":
+            while pos < len(data) and data[pos:pos + 1] != b"\x1f":
                 context, number, length, start, end = _tag(data, pos)
                 if not context or number != 2 or not 1 <= length <= 4:
                     raise BacnetProtocolError("ReadPropertyMultiple ACK has invalid property identifier")
@@ -621,10 +621,10 @@ class BacnetIpClient:
                 pos = end
                 if pos < len(data) and data[pos] >> 4 == 3 and data[pos] & 0x08:
                     raise BacnetProtocolError("ReadPropertyMultiple array-index results are not supported by this profile")
-                if data[pos:pos + 1] == b"\\x4e":
+                if data[pos:pos + 1] == b"\x4e":
                     pos += 1
                     value_start = pos
-                    while pos < len(data) and data[pos:pos + 1] != b"\\x4f":
+                    while pos < len(data) and data[pos:pos + 1] != b"\x4f":
                         _, _, _, _, value_end = _tag(data, pos)
                         if value_end <= pos or value_end > len(data):
                             raise BacnetProtocolError("invalid RPM application value length")
@@ -636,10 +636,10 @@ class BacnetIpClient:
                     if not values:
                         raise BacnetProtocolError("ReadPropertyMultiple ACK contains empty property value")
                     results[property_id] = values[0][1] if len(values) == 1 else [v for _, v in values]
-                elif data[pos:pos + 1] == b"\\x5e":
+                elif data[pos:pos + 1] == b"\x5e":
                     pos += 1
                     error_start = pos
-                    while pos < len(data) and data[pos:pos + 1] != b"\\x5f":
+                    while pos < len(data) and data[pos:pos + 1] != b"\x5f":
                         _, _, _, _, error_end = _tag(data, pos)
                         if error_end <= pos or error_end > len(data):
                             raise BacnetProtocolError("invalid RPM error value length")
@@ -651,7 +651,7 @@ class BacnetIpClient:
                     results[property_id] = {"error": [value for _, value in error_values]}
                 else:
                     raise BacnetProtocolError("ReadPropertyMultiple ACK missing property value or error")
-            if pos >= len(data) or data[pos:pos + 1] != b"\\x1f":
+            if pos >= len(data) or data[pos:pos + 1] != b"\x1f":
                 raise BacnetProtocolError("ReadPropertyMultiple ACK missing property-list closing tag")
             if set(results) != set(requested):
                 missing = sorted(set(requested) - set(results))
