@@ -35,7 +35,8 @@ def test_history_append_rejects_cross_station_point_and_accepts_owner_station(tm
     assert sample.point_id == point.id
     assert sample.quality == "GOOD"
     assert core.history.query(station_a["id"], point.id) == [sample]
-    assert core.history.query(station_b["id"], point.id) == []
+    with pytest.raises(ValueError, match="Точка принадлежит другой станции"):
+        core.history.query(station_b["id"], point.id)
     core.close()
 
 
