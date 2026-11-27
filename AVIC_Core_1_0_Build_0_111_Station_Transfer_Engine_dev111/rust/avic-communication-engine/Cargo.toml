@@ -3,7 +3,7 @@ name = "avic-communication-engine"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "AVIC read-only Modbus TCP communication pilot and benchmark kernel"
+description = "AVIC multi-protocol communication engine and Driver SDK worker kernel"
 
 [lib]
 name = "avic_communication_engine"
@@ -17,3 +17,8 @@ path = "src/bin/avic_modbus_bench.rs"
 lto = true
 codegen-units = 1
 panic = "abort"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["serde"] }
