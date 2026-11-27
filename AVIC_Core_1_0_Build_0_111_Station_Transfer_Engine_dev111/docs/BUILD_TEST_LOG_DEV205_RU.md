@@ -6,7 +6,7 @@
 ## Реализовано
 - При наличии Core repository проверяется, что station ID указывает на Station.
 - Проверяется, что point ID указывает на Point и связан с существующим Device.
-- `Device.station_id` должен точно совпадать с переданным station ID.
+- `Device.station_id` должен точно совпадать с переданным station ID при записи и чтении архива.
 - Автономный режим HistoryService без repository оставлен совместимым.
 
 ## Регрессионные тесты
