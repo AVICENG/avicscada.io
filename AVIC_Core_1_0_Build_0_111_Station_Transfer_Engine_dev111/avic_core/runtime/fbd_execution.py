@@ -233,13 +233,13 @@ class FBDExecutionService:
                     point, _ = self.core.repository.get(row["entity_id"], FBDExposedPoint)
                     node = graph_nodes.get(point.source_module_id)
                     if node is None:
-                        self.core.point_runtime.publish_fbd(point.id, False if point.data_type == "bool" else 0.0, quality="BAD_CONFIGURATION")
+                        self.core.point_runtime.publish_fbd(point.id, False if point.data_type == "bool" else 0.0, station_id=graph["station_id"], quality="BAD_CONFIGURATION")
                         continue
                     key = f"{node['id']}:{point.source_port}"
                     if key not in result.get("node_values", {}):
-                        self.core.point_runtime.publish_fbd(point.id, False if point.data_type == "bool" else 0.0, quality="BAD_CONFIGURATION")
+                        self.core.point_runtime.publish_fbd(point.id, False if point.data_type == "bool" else 0.0, station_id=graph["station_id"], quality="BAD_CONFIGURATION")
                         continue
-                    self.core.point_runtime.publish_fbd(point.id, result["node_values"][key], quality="GOOD")
+                    self.core.point_runtime.publish_fbd(point.id, result["node_values"][key], station_id=graph["station_id"], quality="GOOD")
                     published += 1
                 result["published_fbd_points"] = published
                 result["runtime_published"] = published > 0
@@ -267,7 +267,7 @@ class FBDExecutionService:
                     from avic_core.points.runtime import FBDExposedPoint
                     for row in self.core.repository.list_records(entity_type="FBDExposedPoint"):
                         if row.get("payload", {}).get("fbd_document_id") == document_id:
-                            try: self.core.point_runtime.mark_fbd_quality(row["entity_id"], "BAD_CONFIGURATION")
+                            try: self.core.point_runtime.mark_fbd_quality(row["entity_id"], "BAD_CONFIGURATION", station_id=item.station_id)
                             except Exception: pass
                     item.state = "ERROR"
                     item.last_error = f"{type(exc).__name__}: {exc}"
@@ -338,7 +338,7 @@ class FBDExecutionService:
             for row in self.core.repository.list_records(entity_type="FBDExposedPoint"):
                 if row.get("payload", {}).get("fbd_document_id") == document_id:
                     try:
-                        self.core.point_runtime.mark_fbd_quality(row["entity_id"], "STALE")
+                        self.core.point_runtime.mark_fbd_quality(row["entity_id"], "STALE", station_id=item.station_id)
                     except Exception:
                         pass
         return self.status(document_id)
