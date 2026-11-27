@@ -77,6 +77,7 @@ class DriverManagerService:
         self.core = core
         self._lock = RLock()
         self._rust_worker_command: str | None = None
+        self._c_worker_command: str | None = None
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
@@ -115,6 +116,51 @@ class DriverManagerService:
                 raise RuntimeError("Rust worker executable cannot change while drivers are active")
             self._rust_worker_command = resolved
         return resolved
+
+    def register_c_worker_command(self, executable: str) -> str:
+        """Register an administrator-selected, absolute C Worker executable path."""
+        from pathlib import Path
+        path = Path(executable).expanduser()
+        if not path.is_absolute() or not path.is_file():
+            raise ValueError("C Worker must be an existing absolute executable path")
+        resolved_path = path.resolve(strict=True)
+        import os
+        if os.name != "nt" and not os.access(resolved_path, os.X_OK):
+            raise ValueError("C Worker file is not executable")
+        resolved = str(resolved_path)
+        with self._lock:
+            if self._sessions:
+                raise RuntimeError("C Worker executable cannot change while drivers are active")
+            self._c_worker_command = resolved
+        return resolved
+
+    def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings):
+        if not self._c_worker_command:
+            raise RuntimeError("C libmodbus Worker is not registered by the AVIC administrator")
+        station = core.repository.get_record(instance.station_id)
+        project_id = station["payload"].get("project_id")
+        if not project_id:
+            raise ValueError("Station has no owning Project; C Worker scope cannot be established")
+        project = core.repository.get_record(project_id)
+        platform_id = project["payload"].get("platform_id")
+        installation_id = None
+        if platform_id:
+            platform = core.repository.get_record(platform_id)
+            installation_id = platform["payload"].get("installation_id")
+        if not installation_id:
+            installation_id = str(core.paths.root.resolve())
+        worker_config = dict(cfg)
+        worker_config["project_id"] = project_id
+        worker_config["station_id"] = instance.station_id
+        return RustDriverPointAdapter(
+            worker_command=[self._c_worker_command], core=core,
+            driver_instance_id=instance.id, protocol="modbus-tcp",
+            config=worker_config, bindings=bindings,
+            installation_id=str(installation_id), project_id=str(project_id),
+            station_id=instance.station_id,
+            generation=max(1, int(instance.runtime_generation)),
+            worker_mode="C_LIBMODBUS_READ_ONLY",
+        )
 
     def _build_rust_adapter(self, core, instance: DriverInstance, cfg: dict, protocol: str, bindings):
         if not self._rust_worker_command:
@@ -166,8 +212,8 @@ class DriverManagerService:
         if unknown:
             raise ValueError(f"Неизвестные параметры Modbus TCP: {sorted(unknown)}")
         engine = cfg.get("engine", "python")
-        if engine not in {"python", "rust"}:
-            raise ValueError("engine must be python or rust")
+        if engine not in {"python", "rust", "c"}:
+            raise ValueError("engine must be python, rust or c")
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
@@ -177,6 +223,8 @@ class DriverManagerService:
         )
         if engine == "rust":
             return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
+        if engine == "c":
+            return self._build_c_modbus_adapter(core, instance, cfg, [asdict(item) for item in bindings])
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
@@ -242,8 +290,9 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "supported_engines": ["python", "rust"] if x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"} else ["python"],
+                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python"]),
                  "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
+                 "c_engine_available": self._c_worker_command is not None and x.driver_id == "modbus-tcp",
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
