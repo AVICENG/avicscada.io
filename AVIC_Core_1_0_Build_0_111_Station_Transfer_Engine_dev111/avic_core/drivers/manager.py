@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from avic_core.drivers.catalog import list_builtin_drivers
 from avic_core.drivers.polling import PollingSession
+from avic_core.runtime.point_scheduler import PointRuntimeScheduler
 from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTcpPointBinding
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
@@ -77,6 +78,7 @@ class DriverManagerService:
         }
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
+        self._point_runtime_scheduler = PointRuntimeScheduler(core.point_runtime)
 
     @classmethod
     def _reject_secrets(cls, value: Any, path: str = "config") -> None:
@@ -293,6 +295,7 @@ class DriverManagerService:
                                  else item.config.get("poll_interval_seconds", 5.0))
                 session = PollingSession(adapter, interval, name=f"avic-{item.driver_id}-{item.id[:8]}")
                 session.start()
+                self._point_runtime_scheduler.start()
                 self._adapters[instance_id] = adapter
                 self._sessions[instance_id] = session
                 item.state = "RUNNING"
@@ -349,6 +352,11 @@ class DriverManagerService:
             # manager: it would make later start_instance() report a stale session.
             self._sessions.pop(instance_id, None)
             self._adapters.pop(instance_id, None)
+            if not self._sessions:
+                try:
+                    self._point_runtime_scheduler.stop(timeout=5.0)
+                except Exception as exc:
+                    close_error = close_error or exc
             final_state = "ERROR" if close_error is not None else "STOPPED"
             self._save_state(item, version, final_state, False)
             if close_error is None:
@@ -383,6 +391,7 @@ class DriverManagerService:
             "field_read_enabled": session is not None and effective_state in {"RUNNING", "DEGRADED"},
             "field_write_enabled": False,
             "polling": polling,
+            "point_runtime_scheduler": self._point_runtime_scheduler.diagnostics(),
             "adapter": adapter.diagnostics() if adapter and callable(getattr(adapter, "diagnostics", None)) else None}
 
     def stop_station(self, station_id: str) -> dict:
