@@ -1,7 +1,7 @@
-pub mod ipc;
-
 //! AVIC Communication Engine protocol kernels and Driver SDK primitives.
 //! Network workers and Core IPC supervision are introduced incrementally; do not bypass Core validation.
+
+pub mod ipc;
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
