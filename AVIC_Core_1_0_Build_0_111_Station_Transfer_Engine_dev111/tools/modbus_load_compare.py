@@ -65,6 +65,10 @@ class ModbusHandler(socketserver.BaseRequestHandler):
 class Server(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
+    # The Rust benchmark opens up to 16 device sessions at once. Keep the
+    # accept backlog above that concurrency so the fixture does not create
+    # artificial connection-refused failures unrelated to either driver.
+    request_queue_size = 128
 
 
 class RuntimeStub:
@@ -158,11 +162,17 @@ def main():
         crate = Path(__file__).resolve().parent.parent / "rust" / "avic-communication-engine"
         subprocess.run(["cargo", "build", "--release", "--manifest-path", str(crate / "Cargo.toml")], check=True)
         exe = crate / "target" / "release" / ("avic-modbus-bench.exe" if sys.platform == "win32" else "avic-modbus-bench")
-        rust_run = subprocess.run(
-            [str(exe), host, str(port), str(args.devices), str(args.points_per_device),
-             str(args.cycles), str(args.concurrency)],
-            check=True, capture_output=True, text=True
-        )
+        try:
+            rust_run = subprocess.run(
+                [str(exe), host, str(port), str(args.devices), str(args.points_per_device),
+                 str(args.cycles), str(args.concurrency)],
+                check=True, capture_output=True, text=True
+            )
+        except subprocess.CalledProcessError as exc:
+            raise SystemExit(
+                "Rust benchmark process failed. "
+                f"exit={exc.returncode}; stdout={exc.stdout!r}; stderr={exc.stderr!r}"
+            ) from exc
         rust_line = next(line for line in rust_run.stdout.splitlines() if line.startswith("engine=rust "))
         fields = dict(part.split("=", 1) for part in rust_line.split() if "=" in part)
         rust_result = {
