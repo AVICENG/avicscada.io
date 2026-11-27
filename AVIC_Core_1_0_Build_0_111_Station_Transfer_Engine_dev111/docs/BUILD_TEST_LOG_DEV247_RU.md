@@ -22,7 +22,7 @@
 3. Удалён optional extra `.[s7]` с Python protocol engines.
 4. Предыдущие Python package smoke tests заменены на policy guard, запрещающий рекламировать S7 как работающий драйвер до C Worker acceptance.
 5. Архитектура S7 и license inventory переписаны: Snap7 — C++ core/toolchain, libnodave — pure C, но beta/legacy с явными upstream safety warnings. Ни один пока не принят в промышленную сборку.
-6. Старые реализации не удаляются до готовой замены: они остаются legacy и не должны использоваться как fallback.
+6. Удалён именно протокольный Rust S7 path: src/s7.rs, зависимость tokio-s7, регистрация модуля и ветка s7comm в Rust Worker. Общий Rust Worker/IPC для других протоколов сохранён. Python S7 extra также удалён. До появления C Worker S7 отключён, а не переключается на fallback.
 
 ## Сохранённые результаты CI до DEV247
 
