@@ -26,6 +26,10 @@ _BACNET_OBJECT_TYPE_NAMES = {
 }
 
 
+class RustDriverConfigurationError(ValueError):
+    """Binding/configuration error, not a field communication failure."""
+
+
 class RustDriverPointAdapter:
     """Common Point Runtime adapter for Rust Modbus/BACnet/KNX worker reads."""
 
@@ -183,14 +187,14 @@ class RustDriverPointAdapter:
                     if device_key in bacnet_errors:
                         raise RuntimeError(bacnet_errors[device_key])
                     if int(binding.get("property_id", 85)) != 85 or binding.get("array_index") is not None:
-                        raise ValueError("Rust BACnet adapter currently supports Present_Value (property 85) without array index")
+                        raise RustDriverConfigurationError("Rust BACnet adapter currently supports Present_Value (property 85) without array index")
                     name = _BACNET_OBJECT_TYPE_NAMES.get(int(binding["object_type"]))
                     if name is None:
-                        raise ValueError(f"Unsupported BACnet object type code: {binding['object_type']}")
+                        raise RustDriverConfigurationError(f"Unsupported BACnet object type code: {binding['object_type']}")
                     key = (name, int(binding["object_instance"]), device_instance)
                     bacnet_values = bacnet_values_by_device.get(device_key, {})
                     if key not in bacnet_values:
-                        raise LookupError(f"BACnet object {name}:{binding['object_instance']} has no Present_Value")
+                        raise RustDriverConfigurationError(f"BACnet object {name}:{binding['object_instance']} has no Present_Value")
                     value = self._scaled(
                         bacnet_values[key], float(binding.get("scale", 1.0)),
                         float(binding.get("offset", 0.0)))
@@ -205,7 +209,8 @@ class RustDriverPointAdapter:
                              "value": sample.value, "quality": sample.quality})
             except Exception as exc:
                 message = f"{type(exc).__name__}: {exc}"
-                rows.append(self._mark_failure(point_id, message))
+                quality = self._PointQuality.BAD_CONFIGURATION if isinstance(exc, RustDriverConfigurationError) else self._PointQuality.BAD_COMMUNICATION
+                rows.append(self._mark_failure(point_id, message, quality=quality))
         return self._result(rows)
 
     def _result(self, rows: list[dict]) -> dict:
