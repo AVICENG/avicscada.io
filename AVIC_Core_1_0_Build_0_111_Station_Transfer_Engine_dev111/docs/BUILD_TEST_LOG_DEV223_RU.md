@@ -87,3 +87,22 @@
 ### CI status
 - Новые Modbus/BACnet/KNX regression tests добавлены в ветку после предыдущего CI run. Для последующих commits GitHub connector пока не вернул связанный pull_request workflow run; локальный pytest здесь не запускался.
 - Следовательно, новые тесты НЕ объявляются пройденными. Перед следующим статусом требуется проверить фактический workflow run актуального PR HEAD и исправить все найденные падения.
+
+
+## KNX follow-up: active GroupValueRead and scene datapoints
+
+- Добавлен явный режим `read_mode="poll"` в Python KNX adapter и Driver Manager. В этом режиме за один polling tick отправляется один cEMI L_Data.req / GroupValueRead к следующему групповому адресу; пассивный мониторинг остаётся режимом по умолчанию.
+- Тайм-аут или ошибка отправки активного запроса переводит именно запрошенную точку в BAD_COMMUNICATION; счётчик отказов и last_errors обновляются.
+- Для Rust KNX engine активный режим пока fail-closed: factory отказывает вместо молчаливого игнорирования `read_mode="poll"`.
+- Исправлен DPT 16.000: padding удаляется по реальным NULL-байтам.
+- DPT 17.001 исправлен по KNX wire format: значение 0..63, старшие два бита зарезервированы и должны быть нулевыми. DPT 18.001 добавлен как scene activate/learn + номер сцены 0..63, зарезервированный бит проверяется.
+- Regression tests дополнены реальными бинарными byte literals, активным GroupValueRead и DPT 17/18.
+
+## Дополнительные CI результаты и текущая очередь
+
+- Run `46019312841` (commit до последних KNX изменений): Linux C Worker configure/build/IPC handshake — SUCCESS; BACnet Stack probe — SUCCESS на Ubuntu и Windows; Rust unit tests и synthetic Modbus benchmark — SUCCESS на Ubuntu и Windows; S7 optional library smoke tests — SUCCESS.
+- В том же run Python Linux matrix выявил устаревшее ожидание каталога: MQTT теперь также read-supported. Исправлен тест `test_driver_catalog_dev26.py`; функциональность каталога не откатывалась.
+- Windows UCRT64 C Worker job в run `46019312841` всё ещё завершился ошибкой: процесс C Worker закрывал stdout до IPC handshake. В `main.c` добавлена диагностика результата `_setmode` stdin/stdout; нужно получить вывод нового Windows run, прежде чем менять бинарный IPC ещё раз.
+- Полный Windows Python 3.11 job в run `46019312841` ещё выполнялся при последней проверке.
+- Run `46021185409` (после исправления KNX DPT 17/18 и тестов) был создан как pending; jobs пока не опубликованы, поскольку предыдущий workflow run ещё не освободил общую concurrency group.
+- Никакие новые KNX/Modbus/BACnet regression tests не объявляются пройденными до фактического завершения актуального run.
