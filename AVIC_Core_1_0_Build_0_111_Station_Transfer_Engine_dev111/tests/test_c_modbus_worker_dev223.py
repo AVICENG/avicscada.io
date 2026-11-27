@@ -470,6 +470,7 @@ def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled
     import os as os_module
     import pty
     import select
+    import time
     import tty
     from pathlib import Path
     from avic_core.drivers.rust_worker import RustDriverWorker
@@ -502,6 +503,10 @@ def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled
                 request.extend(os_module.read(master_fd, 8 - len(request)))
             if request[0] != 7 or request[1] != 3 or crc16(request[:-2]) != int.from_bytes(request[-2:], "little"):
                 raise AssertionError(f"invalid Modbus RTU request: {bytes(request).hex()}")
+            # Emulate the turnaround gap of a half-duplex RS-485 responder.
+            # Sending immediately at the final request byte can race the
+            # libmodbus serial write/receive transition on a PTY.
+            time.sleep(0.05)
             body = bytes((7, 3, 2, 0x12, 0x34))
             crc = crc16(body)
             os_module.write(master_fd, body + crc.to_bytes(2, "little"))
