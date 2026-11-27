@@ -104,7 +104,7 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
     _planned(
         "opc-ua-client", "OPC UA Client", "OPC UA",
         DriverCategory.INDUSTRIAL,
-        "DEV225: strict read-only endpoint/security and NodeId contracts are implemented; native open62541 client worker, browse/subscriptions and hardware acceptance remain planned.",
+        "DEV225 contracts plus DEV227/DEV228 secure open62541 read/Browse probe exist; probe is not an AVIC IPC worker. Namespace URI lifecycle, Browse paging, subscriptions, reconnect, SecretStore key handoff and hardware acceptance remain outstanding.",
     ),
     _planned(
         "opc-ua-server", "OPC UA Server", "OPC UA",
