@@ -40,7 +40,7 @@
 
 ### Реализовано
 - Безопасное BACnet/IP discovery через Who-Is/I-Am с BVLC/NPDU/APDU разбором.
-- ReadProperty, включая array index, проверку Invoke ID, object identifier и property identifier в ComplexACK.
+- ReadProperty и ограниченный ReadPropertyMultiple (до 64 свойств одного объекта за запрос), включая проверку Invoke ID и object/property identity в ComplexACK; RPM сохраняет индивидуальные BACnet Error для свойств.
 - Чтение Device.Object_List с ограничением количества объектов; чтение Object_Name и стандартных свойств идентичности.
 - Разделение manufacturer/model/source/confidence; неизвестная модель не угадывается.
 - Read-only политика запрещает WriteProperty, reboot и конфигурационные сервисы.
@@ -51,7 +51,7 @@
 - Timeout переводит качество точки в BAD_COMMUNICATION.
 
 ### Не завершено
-- ReadPropertyMultiple (RPM), COV subscriptions, полноценная обработка segmentation.
+- COV subscriptions, полноценная обработка segmentation; RPM пока ограничен одним объектом на запрос, без array-index результатов и без segmented ComplexACK.
 - BBMD/Foreign Device registration и routed BACnet networks.
 - Полноценный AVIC BACnet C Worker; наличие upstream stack probe само по себе не означает готовность драйвера.
 - Проверка на реальном Trend/BACnet контроллере и длительная проверка сети.
@@ -102,7 +102,7 @@ python -m pip check
 | Протокол | Уровень реализации | Промышленная готовность |
 |---|---|---|
 | Modbus TCP | Read-only функциональный стек + альтернативные worker engines | Не подтверждена: CI head/hardware/soak ещё нужны |
-| BACnet/IP | Discovery + ReadProperty + Object_List + read-only adapter | Не подтверждена: RPM/COV/segmentation/BBMD и hardware ещё нужны |
+| BACnet/IP | Discovery + ReadProperty + bounded RPM + Object_List + read-only adapter | Не подтверждена: COV/segmentation/BBMD и hardware ещё нужны |
 | KNXnet/IP | Tunnelling + passive group monitor + расширенный DPT decoder | Не подтверждена: ETS import, active read polling, command gateway и hardware ещё нужны |
 
 Все три драйвера остаются read-only. PR #9 остаётся Draft. Ни один не объявляется промышленно готовым до зелёного CI на актуальном HEAD, fault/reconnect/soak tests и аппаратной приёмки.
