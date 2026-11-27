@@ -35,3 +35,6 @@ __all__ += ["DiscoveryHistory"]
 from .planning import NetworkPlan, assess_deployment_binding
 from .diagnostics import ping_ipv4
 __all__ += ["NetworkPlan", "assess_deployment_binding", "ping_ipv4"]
+
+from .opc_ua import OpcUaNetworkConfig, OpcUaNodeId, OpcUaNodeBinding, parse_node_id
+__all__ += ["OpcUaNetworkConfig", "OpcUaNodeId", "OpcUaNodeBinding", "parse_node_id"]
