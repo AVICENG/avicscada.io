@@ -144,3 +144,23 @@
 - Добавлены `tests/test_opc_ua_contract_dev225.py` и `docs/drivers/OPC_UA_DEV225_RU.md`.
 - Следующий этап: native open62541 worker с AVIC IPC, GetEndpoints/secure-channel/certificate validation, Browse/Read, status-code mapping, reconnect/subscriptions. Только после этого можно включать OPC UA runtime factory.
 - **Проверка:** код и тесты отправлены в PR; CI на текущем HEAD ещё не дал результата. Ни тесты DEV225, ни native transport, ни аппаратная приёмка не подтверждены.
+
+## DEV226–DEV227 — S7 dependency audit и нативный OPC UA probe (27.11.2026)
+
+### Siemens S7 / DEV226
+- Добавлены optional зависимости python-snap7 и s7commplus, smoke tests, Windows/Linux CI и русская документация по раздельной поддержке классического S7 и S7CommPlus.
+- Это пока dependency/smoke layer: отдельные S7 Worker processes и приёмка на реальных S7-1200/1500 не реализованы. PUT/GET не включается автоматически; TLS certificate validation остаётся обязательным gate.
+
+### OPC UA / DEV227
+- Добавлена отдельная CMake-сборка нативного клиента на open62541 v1.4.21 с обязательным OpenSSL backend, включённым NodeId parser и subscriptions capability.
+- Нативный probe принимает только opc.tcp endpoint без credentials/query/fragment; разрешает только Sign или SignAndEncrypt и три явно перечисленные secure SecurityPolicy. SecurityPolicy None не допускается.
+- Клиент загружает application certificate, private key и доверенный сертификат сервера, устанавливает ApplicationUri и выполняет read-only ReadValueAttribute для указанного NodeId.
+- Добавлен self-test для numeric/string/GUID/ByteString NodeId и некорректных значений. Запись точек не реализована.
+- Добавлены отдельные Linux и Windows UCRT64 build/self-test jobs, а также инструкция docs/drivers/OPC_UA_DEV227_NATIVE_PROBE_RU.md.
+- **Граница готовности:** это нативный secure client probe, а не промышленный AVIC OPC UA Driver. Пока нет AVIC IPC v1 интеграции, Browse/namespace URI mapping, subscriptions/DataChange, supervisor reconnect/session lifecycle, независимого server integration test и безопасной передачи ключа из SecretStore без временного файла. Каталог не должен объявлять OPC UA runtime доступным.
+
+### Modbus CI correction
+- Run 46026237032 показал Linux C Worker compile failure из-за переменной command, использовавшейся только в Windows diagnostics. В commit 4264abe добавлен явный void-cast, чтобы сохранить -Werror и устранить POSIX unused-variable failure.
+- Windows workflow path correction уже включена в branch: objdump.exe определяется динамически через Get-Command, а UCRT64 bin добавляется в PATH перед IPC test.
+- Run 46026237032 — старый commit до этих исправлений; его красные C Worker jobs не являются проверкой актуального исправления.
+- Актуальный commit с native OPC UA probe ожидает общей GitHub Actions очереди. Пока нет результата CI на актуальном HEAD, ни DEV227 build, ни DEV225 tests не отмечаются как passed. PR остаётся Draft; merge запрещён до зелёного CI и отдельной hardware acceptance.
