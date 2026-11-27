@@ -1,4 +1,5 @@
 import socket
+from concurrent.futures import ThreadPoolExecutor
 import struct
 import threading
 import pytest
@@ -48,3 +49,13 @@ def test_modbus_has_no_write_api():
     client = ModbusTcpClient("127.0.0.1")
     assert not hasattr(client, "write_register")
     assert not hasattr(client, "write_coil")
+
+
+
+def test_modbus_transaction_id_allocator_is_unique_under_concurrency():
+    client = ModbusTcpClient("127.0.0.1")
+    with ThreadPoolExecutor(max_workers=32) as pool:
+        identifiers = list(pool.map(lambda _index: client._next_transaction_id(), range(10000)))
+    assert len(set(identifiers)) == 10000
+    assert min(identifiers) == 1
+    assert max(identifiers) == 10000
