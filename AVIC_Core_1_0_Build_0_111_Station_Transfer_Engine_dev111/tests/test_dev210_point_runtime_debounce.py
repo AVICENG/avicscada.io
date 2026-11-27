@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
+import time
 
 import pytest
 
 from avic_core.domain.models import Device, Point, PointDirection, PointQuality
 from avic_core.drivers.manager import DriverInstance
 from avic_core.ui import create_ui_app
+from avic_core.runtime.point_scheduler import PointRuntimeScheduler
 
 
 DRIVER_ID = "00000000-0000-4000-8000-000000000210"
@@ -170,3 +172,25 @@ def test_wrong_driver_cannot_cancel_another_drivers_pending_debounce(tmp_path):
     assert len(committed) == 1
     assert committed[0].value is True
     app.state.core.close()
+
+
+
+def test_explicit_point_runtime_scheduler_commits_due_transition(tmp_path):
+    app, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    runtime.configure_debounce(point.id, on_ms=60, off_ms=60)
+    runtime.publish(point.id, False, source_driver_id=DRIVER_ID)
+    runtime.publish(point.id, True, source_driver_id=DRIVER_ID)
+
+    scheduler = PointRuntimeScheduler(runtime, interval_seconds=0.01)
+    scheduler.start()
+    deadline = time.monotonic() + 1.0
+    try:
+        while time.monotonic() < deadline and runtime.read(point.id).value is not True:
+            time.sleep(0.01)
+        assert runtime.read(point.id).value is True
+        assert scheduler.diagnostics()["tick_count"] > 0
+        assert scheduler.diagnostics()["failure_count"] == 0
+    finally:
+        scheduler.stop()
+        app.state.core.close()
