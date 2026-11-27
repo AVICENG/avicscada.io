@@ -231,6 +231,9 @@ class ProtocolDeviceImportService:
             driver_item, driver_version = self.repository.get(driver_instance_id, DriverInstance)
             if driver_item.state != "STOPPED" or driver_item.enabled:
                 raise RuntimeError("Импорт точек и изменение bindings разрешены только при остановленном драйвере")
+            # Import mutates the driver binding map: enforce the same signed feature
+            # entitlement as create/configure/start, even if the license changed later.
+            self.core.driver_manager.assert_driver_entitlement(driver_item.driver_id)
             created_device = False
             added: list[str] = []
             skipped: list[str] = []
