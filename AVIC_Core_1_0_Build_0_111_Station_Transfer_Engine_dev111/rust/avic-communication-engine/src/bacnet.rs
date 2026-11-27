@@ -47,8 +47,9 @@ pub struct BacnetIpReadOnlyClient {
     client: BacnetClient,
 }
 impl BacnetIpReadOnlyClient {
-    pub fn new() -> Result<Self, BacnetDriverError> {
-        let client = BacnetClient::new().map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
+    pub fn new(local_bind: SocketAddr) -> Result<Self, BacnetDriverError> {
+        if local_bind.port() == 0 { return Err(BacnetDriverError::InvalidAddress); }
+        let client = BacnetClient::new_with_local_addr(local_bind).map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
         Ok(Self { client })
     }
 
