@@ -9,11 +9,12 @@ from typing import Callable, Any
 from uuid import UUID, uuid4
 
 from avic_core.drivers.catalog import list_builtin_drivers
-from avic_core.drivers.polling import PollingSession
+from avic_core.drivers.polling import PollingSession, EventDrivenSession
 from avic_core.runtime.point_scheduler import PointRuntimeScheduler
 from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTcpPointBinding
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
+from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
 from avic_core.network.modbus_tcp import ModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
@@ -82,6 +83,7 @@ class DriverManagerService:
             "modbus-tcp": self._build_modbus_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
             "knxnet-ip": self._build_knx_adapter,
+            "mqtt": self._build_mqtt_adapter,
         }
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
@@ -285,6 +287,46 @@ class DriverManagerService:
         )
         return KnxPointAdapter(session, core.point_runtime, instance.id, bindings)
 
+    def _build_mqtt_adapter(self, core, instance: DriverInstance):
+        """Create a subscribe-only Paho client; credentials never live in driver config."""
+        from pathlib import Path
+        cfg = dict(instance.config)
+        allowed = {"host", "port", "keepalive", "bindings", "protocol", "client_id", "tls_ca_certs"}
+        unknown = set(cfg) - allowed
+        if unknown:
+            raise ValueError(f"Неизвестные параметры MQTT: {sorted(unknown)}")
+        host = str(cfg.get("host", "")).strip()
+        if not host:
+            raise ValueError("Для MQTT требуется host")
+        if not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
+            raise ValueError("Для MQTT требуется непустой bindings")
+        bindings = [MqttPointBinding(**dict(item)) for item in cfg["bindings"]]
+        protocol_name = str(cfg.get("protocol", "3.1.1"))
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise RuntimeError("Для MQTT установите AVIC Core с extra [mqtt]") from exc
+        protocol = {"3.1.1": mqtt.MQTTv311, "5.0": mqtt.MQTTv5}.get(protocol_name)
+        if protocol is None:
+            raise ValueError("MQTT protocol must be 3.1.1 or 5.0")
+        client_id = str(cfg.get("client_id") or f"avic-{instance.id[:12]}")
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=client_id, protocol=protocol,
+        )
+        ca_file = cfg.get("tls_ca_certs")
+        if ca_file:
+            ca_path = Path(str(ca_file)).expanduser()
+            if not ca_path.is_file():
+                raise ValueError("MQTT TLS CA certificate file does not exist")
+            client.tls_set(ca_certs=str(ca_path))
+            client.tls_insecure_set(False)
+        return MqttPointAdapter(
+            client, core.point_runtime, instance.id, bindings,
+            host=host, port=int(cfg.get("port", 8883 if ca_file else 1883)),
+            keepalive=int(cfg.get("keepalive", 60)),
+        )
+
     def catalog(self):
         return [{"driver_id": x.driver_id, "name": x.display_name, "protocol": x.protocol,
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
@@ -425,7 +467,10 @@ class DriverManagerService:
                 adapter = factory(self.core, item)
                 interval = float(poll_interval_seconds if poll_interval_seconds is not None
                                  else item.config.get("poll_interval_seconds", 5.0))
-                session = PollingSession(adapter, interval, name=f"avic-{item.driver_id}-{item.id[:8]}")
+                if callable(getattr(adapter, "poll_once", None)):
+                    session = PollingSession(adapter, interval, name=f"avic-{item.driver_id}-{item.id[:8]}")
+                else:
+                    session = EventDrivenSession(adapter, name=f"avic-{item.driver_id}-{item.id[:8]}")
                 session.start()
                 self._adapters[instance_id] = adapter
                 self._sessions[instance_id] = session
@@ -523,10 +568,12 @@ class DriverManagerService:
             effective_state = "ORPHANED"
         else:
             effective_state = item.state
+        adapter_status = adapter.diagnostics() if adapter and callable(getattr(adapter, "diagnostics", None)) else None
         return {"instance_id": instance_id, "driver_id": item.driver_id,
             "state": effective_state, "persisted_state": item.state,
             "enabled": effective_state in {"STARTING", "RUNNING", "DEGRADED", "STOPPING"},
-            "field_read_enabled": session is not None and effective_state in {"RUNNING", "DEGRADED"},
+            "field_read_enabled": session is not None and effective_state in {"RUNNING", "DEGRADED"}
+                and not (isinstance(adapter_status, dict) and adapter_status.get("connected") is False),
             "field_write_enabled": False,
             "polling": polling,
             "point_runtime_scheduler": self._point_runtime_scheduler.diagnostics(),
