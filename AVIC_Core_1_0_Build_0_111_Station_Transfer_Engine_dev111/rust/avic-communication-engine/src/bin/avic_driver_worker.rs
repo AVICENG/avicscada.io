@@ -127,6 +127,7 @@ impl Worker {
             "shutdown" => {
                 self.started = false;
                 self.modbus_clients.clear();
+                self.s7_clients.clear();
                 ("status".into(), json!({"state":"STOPPED","shutdown":true}), true)
             }
             _ => ("error".into(), json!({"code":"UNSUPPORTED_COMMAND"}), false),
