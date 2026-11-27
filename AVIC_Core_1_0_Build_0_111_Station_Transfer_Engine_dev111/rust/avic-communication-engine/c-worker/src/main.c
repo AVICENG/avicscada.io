@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -353,6 +357,11 @@ configure_done:
 }
 
 int main(void) {
+#ifdef _WIN32
+    /* IPC frames are binary length-prefixed data, never Windows text streams. */
+    if (_setmode(_fileno(stdin), _O_BINARY) == -1
+        || _setmode(_fileno(stdout), _O_BINARY) == -1) return 4;
+#endif
     worker_t worker;
     memset(&worker, 0, sizeof(worker));
     for (;;) {
