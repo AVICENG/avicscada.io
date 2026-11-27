@@ -23,7 +23,10 @@ from avic_core.network.knxnet_ip import KnxProtocolError, decode_datapoint
     ("13.001", b"\xff\xff\xff\xfe", -2),
     ("14.000", struct.pack(">f", 21.5), 21.5),
     ("16.000", b"AVIC".ljust(14, b"\x00"), "AVIC"),
+    ("17.001", b"\x00", 0),
+    ("17.001", b"\x3f", 63),
     ("17.001", b"\x05", 5),
+    ("18.001", b"\x85", {"command": "learn", "scene_number": 5}),
 ])
 def test_common_knx_datapoints_decode_strictly(dpt, payload, expected):
     assert decode_datapoint(payload, dpt) == expected
@@ -34,7 +37,8 @@ def test_common_knx_datapoints_decode_strictly(dpt, payload, expected):
     ("7.001", b"\x01"),
     ("9.001", b"\x7f\xff"),
     ("14.000", struct.pack(">f", float("inf"))),
-    ("17.001", b"\x00"),
+    ("17.001", b"\x40"),
+    ("18.001", b"\x40"),
 ])
 def test_invalid_knx_datapoint_payloads_are_rejected(dpt, payload):
     with pytest.raises(KnxProtocolError):
