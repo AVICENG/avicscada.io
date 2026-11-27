@@ -134,3 +134,68 @@ class PollingSession:
 
     def __exit__(self, *_: object) -> None:
         self.stop()
+
+
+class EventDrivenSession:
+    """Lifecycle supervisor for callback-driven transports such as MQTT.
+
+    Unlike PollingSession this does not invent a polling loop: the adapter owns
+    its network event loop and reports connection health through diagnostics.
+    """
+
+    def __init__(self, adapter: Any, *, name: str = "avic-event-driver") -> None:
+        if not callable(getattr(adapter, "start", None)) or not callable(getattr(adapter, "stop", None)):
+            raise TypeError("event-driven adapter must expose start() and stop()")
+        self.adapter = adapter
+        self.name = name.strip() or "avic-event-driver"
+        self._lock = threading.RLock()
+        self._state = "STOPPED"
+        self._started_at: str | None = None
+        self._last_error: str | None = None
+
+    def start(self) -> None:
+        with self._lock:
+            if self._state in {"STARTING", "RUNNING", "DEGRADED"}:
+                return
+            self._state = "STARTING"
+        try:
+            self.adapter.start()
+        except Exception as exc:
+            with self._lock:
+                self._state = "ERROR"
+                self._last_error = f"{type(exc).__name__}: {exc}"
+            raise
+        with self._lock:
+            self._state = "RUNNING"
+            self._started_at = datetime.now(timezone.utc).isoformat()
+            self._last_error = None
+
+    def stop(self, timeout: float = 5.0) -> None:
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+        with self._lock:
+            if self._state == "STOPPED":
+                return
+            self._state = "STOPPING"
+        try:
+            self.adapter.stop()
+        except Exception as exc:
+            with self._lock:
+                self._state = "ERROR"
+                self._last_error = f"{type(exc).__name__}: {exc}"
+            raise
+        with self._lock:
+            self._state = "STOPPED"
+
+    def diagnostics(self) -> dict:
+        with self._lock:
+            adapter_status = self.adapter.diagnostics() if callable(getattr(self.adapter, "diagnostics", None)) else {}
+            connected = adapter_status.get("connected")
+            state = self._state
+            if state in {"RUNNING", "DEGRADED"} and connected is False:
+                state = "DEGRADED"
+            return {
+                "state": state, "worker_alive": state in {"RUNNING", "DEGRADED"},
+                "event_driven": True, "started_at": self._started_at,
+                "last_error": self._last_error, "adapter": adapter_status,
+            }
