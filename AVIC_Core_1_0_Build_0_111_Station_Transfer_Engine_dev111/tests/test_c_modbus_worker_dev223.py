@@ -282,7 +282,7 @@ def test_compiled_c_worker_reads_all_read_only_modbus_functions_when_enabled():
                 header = recv_exact(self.request, 7)
                 tid, protocol_id = header[:2], header[2:4]
                 length, unit_id = int.from_bytes(header[4:6], "big"), header[6]
-                if protocol_id != b"\\x00\\x00" or not 2 <= length <= 254:
+                if protocol_id != b"\x00\x00" or not 2 <= length <= 254:
                     return
                 pdu = recv_exact(self.request, length - 1)
                 if len(pdu) != 5:
@@ -308,7 +308,7 @@ def test_compiled_c_worker_reads_all_read_only_modbus_functions_when_enabled():
                     values = (0x1234, 0xABCD, 0x0102)
                     data = b"".join(values[i].to_bytes(2, "big") for i in range(count))
                 response_pdu = bytes((function, len(data))) + data
-                response = (tid + b"\\x00\\x00"
+                response = (tid + b"\x00\x00"
                     + (len(response_pdu) + 1).to_bytes(2, "big")
                     + bytes((unit_id,)) + response_pdu)
                 self.request.sendall(response)
