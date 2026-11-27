@@ -86,19 +86,25 @@ class SerialPortLease:
         if not self._held:
             return
         stream = self._stream
+        if stream is None:
+            raise RuntimeError("Serial port lease is marked held without an open lock handle")
+
+        # If the explicit unlock fails, keep the handle open and retain the
+        # in-process registry entry. Closing it in a finally block would release
+        # the kernel lock and allow another process onto a bus still owned by a
+        # Worker whose shutdown/cleanup has not been confirmed.
+        stream.seek(0)
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
         self._held = False
         try:
-            if stream is not None:
-                stream.seek(0)
-                if os.name == "nt":
-                    import msvcrt
-                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
-                else:
-                    import fcntl
-                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+            stream.close()
         finally:
-            if stream is not None:
-                stream.close()
             self._stream = None
             with self._registry_lock:
                 self._registry.discard(self.identity)
