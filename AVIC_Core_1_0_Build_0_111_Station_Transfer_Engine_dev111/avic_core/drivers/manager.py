@@ -278,6 +278,8 @@ class DriverManagerService:
             raise ValueError("Для KNXnet/IP требуются gateway_host, local_host и непустой bindings")
         bindings = [KnxPointBinding(**item) for item in cfg["bindings"]]
         if engine == "rust":
+            if cfg.get("read_mode", "passive") != "passive":
+                raise ValueError("KNX active GroupValueRead polling is currently supported by the Python engine only")
             return self._build_rust_adapter(core, instance, cfg, "knxnet-ip", [asdict(item) for item in bindings])
         session = KnxTunnelingSession(
             cfg["gateway_host"], gateway_port=int(cfg.get("gateway_port", 3671)),
