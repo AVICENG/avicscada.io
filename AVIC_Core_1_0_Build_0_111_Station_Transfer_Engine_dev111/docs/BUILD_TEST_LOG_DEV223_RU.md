@@ -238,3 +238,13 @@
 
 ### DEV236 — KNX readiness matrix correction
 - Уточнена таблица готовности KNX: базовый active GroupValueRead polling для одной привязки уже реализован и протестирован; незавершёнными остаются batch/parallel polling, ETS import, routing, command gateway и hardware acceptance.
+
+
+## DEV237 — исправления по фактическому CI run 46031940885 (27.11.2026)
+
+- **Modbus MEI:** CI показал, что проверка сигнатуры сравнивала с буквальными символами `\\x2b\\x0e`, а не с байтами 0x2B/0x0E. Исправлено на явное сравнение двух байтов. Это объясняло отказ двух MEI тестов; повторное подтверждение ожидает CI.
+- **BACnet RPM:** негативный тест malformed Error также содержал двойное экранирование и не менял пакет. Исправлен на явный массив байтов, тест теперь проверяет наличие исходного фрагмента перед заменой. Тест trailing bytes также переведён на реальный байт 0x00.
+- **OPC UA NodeId:** open62541 parser принял `ns=65536` после сужения namespace index. Добавлена проверка десятичного namespace index до вызова парсера: только `ns=0..65535;...`; тот же путь применяется к runtime NodeId и self-tests.
+- **OPC UA Windows crypto:** upstream open62541 1.4.21 не компилируется с OpenSSL 4 из актуального MSYS2 UCRT64 (opaque ASN1_IA5STRING). Для единого Linux/Windows crypto backend переключено на Mbed TLS; CI ставит `libmbedtls-dev` на Ubuntu и `mingw-w64-ucrt-x86_64-mbedtls` на Windows. Шифрование не отключается.
+- **Подтверждённый прогресс:** run 46031940885 показал C libmodbus Worker build success на Ubuntu и Windows, включая Windows runtime dependency inspection; BACnet Stack и Rust Communication Engine build/test success на обеих ОС. Полный Python suite имел 3 отказа (2 Modbus MEI fixture/signature и 1 BACnet malformed test fixture); исправления выше внесены. OPC UA Linux build прошёл, CTest выявил NodeId namespace overflow; Windows build остановился на OpenSSL 4 incompatibility.
+- **Проверка:** DEV237 исправления ожидают нового CI run. До его результата Modbus остаётся RED по полной регрессии, OPC UA RED по native build+self-test. Не объявлять статусы зелёными заранее.
