@@ -26,6 +26,10 @@ def test_driver_manager_selects_c_libmodbus_worker_for_modbus(tmp_path, monkeypa
             captured.update(kwargs)
 
     monkeypatch.setattr(manager_module, "RustDriverPointAdapter", FakeCAdapter)
+    # Selecting a worker engine must not instantiate the in-process Python client.
+    def unexpected_python_client(*args, **kwargs):
+        raise AssertionError("Python Modbus client must not be constructed for the C worker engine")
+    monkeypatch.setattr(manager_module, "ModbusTcpClient", unexpected_python_client)
 
     with CoreApplication(tmp_path / "data", c_worker_command=executable) as core:
         platform = Platform(name="AVIC Platform")
