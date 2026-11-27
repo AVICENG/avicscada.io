@@ -106,6 +106,16 @@ BACnet Status_Flags order is interpreted as inAlarm, fault, overridden, outOfSer
 
 Rust worker is a child process connected through anonymous stdin/stdout pipes owned by Core; no TCP listener is exposed for IPC. The supervisor uses bounded response queue, handshake, timeout, process termination on a hung pipe, and monotonic per-DriverInstance generation. On orderly stop, owned points transition to STALE.
 
+## DEV221 — Modbus TCP persistent sessions
+
+- Rust worker retains a Modbus TCP client per endpoint + Unit ID + timeout inside the owning DriverInstance process.
+- A client keeps one TCP socket open across sequential FC01/02/03/04 reads. Transaction IDs continue to advance on that session.
+- Any failed exchange (I/O error, timeout, truncated frame or invalid response) invalidates the socket. The next polling read reconnects lazily; no broken stream is reused.
+- Worker stop and shutdown clear all cached sessions. Sessions are never shared between DriverInstance workers or stations.
+- Current IPC read dispatch remains serialized per worker. This stage does not yet provide pipelined transactions or range batching.
+- A valid Modbus exception currently invalidates the socket conservatively; a later optimization may preserve the session after a fully framed exception.
+- Retry is performed by the next polling cycle, not hidden inside the same read operation. This avoids duplicate/ambiguous requests after a timeout.
+
 ## Security and limitations
 
 - Never place passwords, tokens, certificates or private keys in DriverInstance config or IPC payloads.
