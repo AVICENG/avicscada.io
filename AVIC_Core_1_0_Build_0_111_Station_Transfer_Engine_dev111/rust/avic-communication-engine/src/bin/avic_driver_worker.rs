@@ -8,6 +8,7 @@ use avic_communication_engine::{
 };
 use chrono::{SecondsFormat, Utc};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::io::{stdin, stdout, BufReader, BufWriter};
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -31,12 +32,16 @@ struct Worker {
     configured: bool,
     protocol: Option<String>,
     started: bool,
+    // Session key includes endpoint, Unit ID and timeout. Sessions are owned by
+    // this isolated DriverInstance worker and reused across point reads.
+    modbus_clients: HashMap<String, ModbusTcpClient>,
 }
 
 impl Worker {
     fn new() -> Self {
         Self { scope: None, incoming: SequenceGuard::default(), outgoing_sequence: 0,
-               sequence_gaps: 0, configured: false, protocol: None, started: false }
+               sequence_gaps: 0, configured: false, protocol: None, started: false,
+               modbus_clients: HashMap::new() }
     }
 
     fn handle(&mut self, request: DriverEnvelope) -> (String, Value, bool) {
@@ -94,6 +99,7 @@ impl Worker {
             }
             "stop" => {
                 self.started = false;
+                self.modbus_clients.clear();
                 ("status".into(), json!({"state":"STOPPED","write_supported":false}), false)
             }
             "get_status" => ("status".into(), json!({
@@ -109,7 +115,7 @@ impl Worker {
                 if requested_protocol != self.protocol.as_deref() {
                     return ("error".into(), json!({"code":"PROTOCOL_SCOPE_MISMATCH"}), false);
                 }
-                match read_protocol(&request.payload) {
+                match read_protocol(&request.payload, &mut self.modbus_clients) {
                     Ok(value) => ("read_result".into(), json!({"transport_ok":true,"result":value}), false),
                     Err(message) => ("read_error".into(), json!({"transport_ok":false,"message":message}), false),
                 }
@@ -117,6 +123,7 @@ impl Worker {
             "write" | "write_point" => ("error".into(), json!({"code":"WRITE_DISABLED"}), false),
             "shutdown" => {
                 self.started = false;
+                self.modbus_clients.clear();
                 ("status".into(), json!({"state":"STOPPED","shutdown":true}), true)
             }
             _ => ("error".into(), json!({"code":"UNSUPPORTED_COMMAND"}), false),
@@ -165,7 +172,7 @@ fn required_u64(p: &Value, key: &str) -> Result<u64, String> {
     p.get(key).and_then(Value::as_u64).ok_or_else(|| format!("missing/invalid {key}"))
 }
 
-fn read_protocol(p: &Value) -> Result<Value, String> {
+fn read_protocol(p: &Value, modbus_clients: &mut HashMap<String, ModbusTcpClient>) -> Result<Value, String> {
     match required_str(p, "protocol")? {
         "modbus-tcp" => {
             let host = required_str(p, "host")?;
@@ -176,9 +183,13 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             let count = u16::try_from(required_u64(p, "count")?).map_err(|_| "invalid count".to_string())?;
             let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(2000);
             if !(100..=10000).contains(&timeout_ms) { return Err("Modbus timeout_ms must be 100..10000".into()); }
-            let config = ModbusTcpConfig::new(host, port, unit_id, Duration::from_millis(timeout_ms))
-                .map_err(|e| e.to_string())?;
-            let mut client = ModbusTcpClient::new(config);
+            let session_key = format!("{host}:{port}/{unit_id}/{timeout_ms}");
+            if !modbus_clients.contains_key(&session_key) {
+                let config = ModbusTcpConfig::new(host, port, unit_id, Duration::from_millis(timeout_ms))
+                    .map_err(|e| e.to_string())?;
+                modbus_clients.insert(session_key.clone(), ModbusTcpClient::new(config));
+            }
+            let client = modbus_clients.get_mut(&session_key).expect("session inserted");
             match function {
                 1 => Ok(json!({"function":1,"values":client.read_coils(address,count).map_err(|e|e.to_string())?})),
                 2 => Ok(json!({"function":2,"values":client.read_discrete_inputs(address,count).map_err(|e|e.to_string())?})),
