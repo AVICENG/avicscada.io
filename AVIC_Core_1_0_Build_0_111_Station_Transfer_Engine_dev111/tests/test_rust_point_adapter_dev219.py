@@ -85,7 +85,7 @@ def test_rust_modbus_worker_decodes_and_publishes_through_point_runtime(fake_wor
 def test_rust_bacnet_batches_by_device_and_maps_object_identity(fake_worker):
     core = FakeCore()
     adapter = make_adapter(core, "bacnet-ip",
-        {"timeout": 3.0},
+        {"timeout": 3.0, "local_address": "192.0.2.10", "udp_port": 47808},
         [
             {"point_id": "point-1", "address": ("192.0.2.20", 47808),
              "device_instance": 1234, "object_type": 0, "object_instance": 2,
@@ -118,7 +118,7 @@ def test_rust_knx_maps_group_address_and_dpt(fake_worker):
 def test_rust_bacnet_rejects_unsupported_property_before_publish(fake_worker):
     core = FakeCore()
     adapter = make_adapter(core, "bacnet-ip",
-        {"timeout": 3.0},
+        {"timeout": 3.0, "local_address": "192.0.2.10", "udp_port": 47808},
         [{"point_id": "point-1", "address": ("192.0.2.20", 47808),
           "device_instance": 1234, "object_type": 0, "object_instance": 2,
           "property_id": 77, "array_index": None, "scale": 1.0, "offset": 0.0}],
