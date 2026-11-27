@@ -360,3 +360,43 @@ def test_driver_config_update_requires_current_feature_entitlement(tmp_path):
                                           expected_version=version)
     assert core.driver_manager.diagnostics(created["id"])["state"] == "STOPPED"
     core.close()
+
+
+def test_driver_stop_close_failure_does_not_leave_stale_session(tmp_path):
+    from avic_core.drivers.manager import DriverInstance
+
+    class BrokenCloseAdapter:
+        def poll_once(self):
+            return {"results": []}
+        def close(self):
+            raise OSError("socket close failed")
+
+    class GoodAdapter:
+        def poll_once(self):
+            return {"results": []}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    service = core.driver_manager
+    created = service.create_instance(station["id"], "modbus-tcp", "Close failure",
+                                      {"poll_interval_seconds": 0.1})
+    broken = BrokenCloseAdapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _item: broken)
+    service.start_instance(created["id"])
+
+    with pytest.raises(RuntimeError, match="не освободил ресурсы"):
+        service.stop_instance(created["id"])
+
+    assert created["id"] not in service._sessions
+    assert created["id"] not in service._adapters
+    assert service.diagnostics(created["id"])["state"] == "ERROR"
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "ERROR" and persisted.enabled is False
+
+    replacement = GoodAdapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _item: replacement)
+    assert service.start_instance(created["id"])["state"] in {"RUNNING", "DEGRADED"}
+    service.stop_instance(created["id"])
+    assert replacement.closed is True
+    core.close()
