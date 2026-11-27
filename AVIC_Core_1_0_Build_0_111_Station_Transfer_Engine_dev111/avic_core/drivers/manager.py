@@ -337,7 +337,7 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python"]),
+                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python"] if x.driver_id == "mqtt" else []),
                  "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
                  "c_engine_available": self._c_worker_command is not None and x.driver_id == "modbus-tcp",
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
