@@ -11,19 +11,19 @@ from avic_core.network.knxnet_ip import KnxProtocolError, decode_datapoint
 
 
 @pytest.mark.parametrize(("dpt", "payload", "expected"), [
-    ("1.001", b"\\x01", True),
-    ("1.017", b"\\x00", False),
-    ("5.001", b"\\xff", 100.0),
-    ("5.003", b"\\xff", 360.0),
-    ("5.004", b"\\xff", 255),
-    ("6.001", b"\\xff", -1),
-    ("7.001", b"\\x12\\x34", 0x1234),
-    ("8.001", b"\\xff\\xfe", -2),
-    ("12.001", b"\\x00\\x00\\x01\\x00", 256),
-    ("13.001", b"\\xff\\xff\\xff\\xfe", -2),
+    ("1.001", b"\x01", True),
+    ("1.017", b"\x00", False),
+    ("5.001", b"\xff", 100.0),
+    ("5.003", b"\xff", 360.0),
+    ("5.004", b"\xff", 255),
+    ("6.001", b"\xff", -1),
+    ("7.001", b"\x12\x34", 0x1234),
+    ("8.001", b"\xff\xfe", -2),
+    ("12.001", b"\x00\x00\x01\x00", 256),
+    ("13.001", b"\xff\xff\xff\xfe", -2),
     ("14.000", struct.pack(">f", 21.5), 21.5),
-    ("16.000", b"AVIC".ljust(14, b"\\x00"), "AVIC"),
-    ("17.001", b"\\x05", 5),
+    ("16.000", b"AVIC".ljust(14, b"\x00"), "AVIC"),
+    ("17.001", b"\x05", 5),
 ])
 def test_common_knx_datapoints_decode_strictly(dpt, payload, expected):
     assert decode_datapoint(payload, dpt) == expected
@@ -31,10 +31,10 @@ def test_common_knx_datapoints_decode_strictly(dpt, payload, expected):
 
 @pytest.mark.parametrize(("dpt", "payload"), [
     ("5.001", b""),
-    ("7.001", b"\\x01"),
-    ("9.001", b"\\x7f\\xff"),
+    ("7.001", b"\x01"),
+    ("9.001", b"\x7f\xff"),
     ("14.000", struct.pack(">f", float("inf"))),
-    ("17.001", b"\\x00"),
+    ("17.001", b"\x00"),
 ])
 def test_invalid_knx_datapoint_payloads_are_rejected(dpt, payload):
     with pytest.raises(KnxProtocolError):
