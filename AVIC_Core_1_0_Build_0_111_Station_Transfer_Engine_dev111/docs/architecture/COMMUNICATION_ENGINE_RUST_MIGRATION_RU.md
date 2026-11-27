@@ -215,9 +215,9 @@ Rust worker не становится production default, если:
 
 ### Следующий обязательный план
 1. Довести FC03 protocol tests (normal response, exception response, wrong TID/unit/protocol, truncated/oversized payload, timeout, peer disconnect).
-2. Реализовать FC01/FC02/FC04 read-only с parity и группировкой.
-3. Зафиксировать Driver SDK v1 wire schema и local IPC handshake/version/epoch/sequence/TTL.
-4. Реализовать Rust worker process + Python supervisor, station/shard isolation, bounded queues/backpressure и restart semantics.
+2. Добавить Modbus MEI 0x2B/0x0E Device Identification, а также parity по typed decode/scaling, byte/word order и grouped bindings Python adapter.
+3. Ввести production transport lifecycle: persistent TCP sessions, reconnect/backoff, request correlation и bounded per-device scheduling; не переносить benchmark connection-per-request модель в production без измерений.
+4. Зафиксировать Driver SDK v1 wire schema и local IPC handshake/version/epoch/sequence/TTL, затем реализовать Rust worker process + Python supervisor, station/shard isolation, bounded queues/backpressure и restart semantics.
 5. Интегрировать samples только через Core Point Runtime validation; Rust worker не имеет DB/RBAC/licensing authority.
 6. Провести 10k/50k/100k point load/fault/soak suites, затем Modbus hardware acceptance.
 7. Только после этого начать BACnet Rust: protocol stack review, segmentation, RPM, COV, BBMD/Foreign Device и multi-vendor hardware tests.
@@ -231,3 +231,8 @@ During review of the Rust FC03 transport pilot, the response parser was found to
 ### DEV213 — Modbus read-only function parity
 
 Rust transport дополнен чтением Coils (FC01), Discrete Inputs (FC02), Holding Registers (FC03) и Input Registers (FC04). Для битовых функций реализовано LSB-first unpacking согласно Modbus PDU; для регистров — big-endian uint16 transport decode. Проверяются пределы 2000 bits / 125 registers, адресное переполнение, response function, byte count и размер PDU. Добавлены loopback TCP tests на все четыре функции, FC03 exception response и transaction ID mismatch. Это transport-level parity по базовым read functions, не parity всего Python adapter: grouped binding planner, typed decoding/scaling, retries, rate scheduling, IPC и Point Runtime integration ещё не подключены. Cargo CI confirmation pending.
+
+
+### DEV214 — parity backlog после FC01–FC04
+
+Сверка с действующим Python Modbus client выявила оставшийся протокольный разрыв: Python уже поддерживает Modbus Encapsulated Interface Transport / MEI 0x2B/0x0E Device Identification (read-only), включая continuation object list. Rust pilot пока не реализует эту операцию. Для AVIC это важно не только для чтения значений, но и для подтверждённой идентификации производителя/модели при сетевом обнаружении. Следующий Modbus parity шаг — MEI 0x0E с ограничениями числа объектов, проверкой continuation и сохранением источника/достоверности идентификационных данных в Core. Никаких manufacturer/model значений нельзя угадывать по одному адресу или неизвестному vendor ID.
