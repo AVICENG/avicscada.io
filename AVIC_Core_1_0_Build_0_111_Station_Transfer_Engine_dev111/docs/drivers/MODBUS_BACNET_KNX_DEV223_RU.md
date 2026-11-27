@@ -23,6 +23,7 @@
 - Чтение Device Identification MEI 0x0E для производителя/модели и других доступных стандартных идентификаторов; MEI использует общий атомарный allocator MBAP transaction ID с обычными чтениями.
 - MEI parser проверяет read-code, conformity level, more-follows flag, длину exception response, усечённые/повторные object ID и лишние trailing bytes; malformed response не принимается как идентичность устройства.
 - Python, Rust и C libmodbus Worker выбираются явно; автоматического fallback нет.
+- Исправлено создание адаптера: для `engine=rust` и `engine=c` менеджер сначала выбирает worker и не создаёт лишний in-process `ModbusTcpClient`; Python-клиент создаётся только для `engine=python`. Регрессионный тест запрещает случайное создание Python-клиента при выборе C-worker.
 - Идентификатор MBAP теперь резервируется потокобезопасно при параллельном опросе групп.
 - Windows C Worker собирается со статическими runtime dependencies (MinGW `-static`), чтобы не зависеть от MSYS2/UCRT DLL search path при запуске из изолированного DriverManager process environment. В stderr добавлена диагностика ошибок бинарного IPC.
 
