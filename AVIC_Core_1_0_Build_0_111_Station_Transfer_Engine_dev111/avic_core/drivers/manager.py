@@ -79,6 +79,7 @@ class DriverManagerService:
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
         self._point_runtime_scheduler = PointRuntimeScheduler(core.point_runtime)
+        self._scheduler_lifecycle_lock = RLock()
 
     @classmethod
     def _reject_secrets(cls, value: Any, path: str = "config") -> None:
@@ -269,11 +270,12 @@ class DriverManagerService:
     def start_instance(self, instance_id: str, *, poll_interval_seconds: float | None = None) -> dict:
         # Serialize start against CoreApplication.close() so shutdown cannot miss a
         # worker that passed its open-state check but has not registered yet.
-        with self.core._lock:
-            self.core._ensure_open()
-            return self._start_instance_unlocked(
-                instance_id, poll_interval_seconds=poll_interval_seconds
-            )
+        with self._scheduler_lifecycle_lock:
+            with self.core._lock:
+                self.core._ensure_open()
+                return self._start_instance_unlocked(
+                    instance_id, poll_interval_seconds=poll_interval_seconds
+                )
 
     def _start_instance_unlocked(self, instance_id: str, *, poll_interval_seconds: float | None = None) -> dict:
         with self._lock:
@@ -336,47 +338,54 @@ class DriverManagerService:
                 raise
 
     def stop_instance(self, instance_id: str, *, timeout: float = 5.0) -> dict:
-        with self._lock:
-            session = self._sessions.get(instance_id)
-            adapter = self._adapters.get(instance_id)
-            item, version = self._load(instance_id)
-            # A timeout means the worker may still be inside field I/O. Keep its
-            # adapter and registry entries intact; closing underneath it is unsafe.
-            if session is not None:
-                session.stop(timeout=timeout)
+        with self._scheduler_lifecycle_lock:
+            with self._lock:
+                session = self._sessions.get(instance_id)
+                adapter = self._adapters.get(instance_id)
+                item, version = self._load(instance_id)
+                # A timeout means the worker may still be inside field I/O. Keep its
+                # adapter and registry entries intact; closing underneath it is unsafe.
+                if session is not None:
+                    session.stop(timeout=timeout)
 
-            close_error = None
-            close = getattr(adapter, "close", None)
-            if callable(close):
-                try:
-                    close()
-                except Exception as exc:
-                    close_error = exc
+                close_error = None
+                close = getattr(adapter, "close", None)
+                if callable(close):
+                    try:
+                        close()
+                    except Exception as exc:
+                        close_error = exc
 
-            # Once the worker has stopped, never retain a dead session in the
-            # manager: it would make later start_instance() report a stale session.
-            self._sessions.pop(instance_id, None)
-            self._adapters.pop(instance_id, None)
-            if not self._sessions:
+                # Once the worker has stopped, never retain a dead session in the
+                # manager: it would make later start_instance() report a stale session.
+                self._sessions.pop(instance_id, None)
+                self._adapters.pop(instance_id, None)
+                stop_scheduler = not self._sessions
+
+            # Do not join the scheduler while holding DriverManager's registry lock:
+            # subscriber callbacks may inspect driver diagnostics during a final tick.
+            if stop_scheduler:
                 try:
                     self._point_runtime_scheduler.stop(timeout=5.0)
                 except Exception as exc:
                     close_error = close_error or exc
-            final_state = "ERROR" if close_error is not None else "STOPPED"
-            self._save_state(item, version, final_state, False)
-            if close_error is None:
-                self.core.audit.append(actor_id="local-engineer", action="driver.instance_stopped",
-                    resource_type="driver_instance", resource_id=instance_id,
-                    details={"driver_id": item.driver_id})
-            else:
-                self.core.audit.append(actor_id="local-engineer", action="driver.instance_stop_failed",
-                    resource_type="driver_instance", resource_id=instance_id, outcome="error",
-                    details={"driver_id": item.driver_id,
-                             "error": f"{type(close_error).__name__}: {close_error}"})
-                raise RuntimeError(
-                    f"Драйвер {instance_id} остановлен, но адаптер не освободил ресурсы"
-                ) from close_error
-            return self.diagnostics(instance_id)
+
+            with self._lock:
+                final_state = "ERROR" if close_error is not None else "STOPPED"
+                self._save_state(item, version, final_state, False)
+                if close_error is None:
+                    self.core.audit.append(actor_id="local-engineer", action="driver.instance_stopped",
+                        resource_type="driver_instance", resource_id=instance_id,
+                        details={"driver_id": item.driver_id})
+                else:
+                    self.core.audit.append(actor_id="local-engineer", action="driver.instance_stop_failed",
+                        resource_type="driver_instance", resource_id=instance_id, outcome="error",
+                        details={"driver_id": item.driver_id,
+                                 "error": f"{type(close_error).__name__}: {close_error}"})
+                    raise RuntimeError(
+                        f"Драйвер {instance_id} остановлен, но адаптер/планировщик не освободил ресурсы"
+                    ) from close_error
+                return self.diagnostics(instance_id)
 
     def diagnostics(self, instance_id: str) -> dict:
         item, _ = self._load(instance_id)
