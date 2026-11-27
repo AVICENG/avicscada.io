@@ -6,6 +6,7 @@ type conversion, quality transitions and publication into the shared Point Runti
 from __future__ import annotations
 
 from math import isfinite
+import ipaddress
 from typing import Any
 
 from avic_core.drivers.rust_worker import RustDriverWorker
@@ -152,8 +153,12 @@ class RustDriverPointAdapter:
     def _read_knx(self, binding: dict[str, Any]) -> Any:
         raw = int(binding["group_address"])
         group_address = f"{(raw >> 11) & 0x1f}/{(raw >> 8) & 0x07}/{raw & 0xff}"
-        gateway = f"{self._config['gateway_host']}:{int(self._config.get('gateway_port', 3671))}"
-        local_bind = f"{self._config['local_host']}:{int(self._config.get('local_port', 0))}"
+        gateway_ip = ipaddress.ip_address(self._config["gateway_host"])
+        local_ip = ipaddress.ip_address(self._config["local_host"])
+        gateway_port = int(self._config.get("gateway_port", 3671))
+        local_port = int(self._config.get("local_port", 0))
+        gateway = f"[{gateway_ip}]:{gateway_port}" if gateway_ip.version == 6 else f"{gateway_ip}:{gateway_port}"
+        local_bind = f"[{local_ip}]:{local_port}" if local_ip.version == 6 else f"{local_ip}:{local_port}"
         result = self._worker.read({
             "protocol": "knxnet-ip", "gateway": gateway, "local_bind": local_bind,
             "group_address": group_address, "dpt": binding["datapoint_type"],
