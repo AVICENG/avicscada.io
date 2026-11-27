@@ -382,3 +382,77 @@ def test_compiled_c_worker_rejects_oversized_modbus_read_when_enabled():
             })
     finally:
         worker.close()
+
+
+def test_compiled_c_worker_accepts_modbus_rtu_configuration_and_rejects_read_scope_mismatch():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from pathlib import Path
+    from avic_core.drivers.rust_worker import RustDriverWorker, RustWorkerError
+
+    worker = RustDriverWorker(
+        [str(Path(worker_path).resolve())],
+        installation_id="install-c-modbus-rtu", project_id="project-c-modbus-rtu",
+        station_id="station-c-modbus-rtu", driver_instance_id="driver-c-modbus-rtu",
+        generation=1, timeout_seconds=5.0,
+    )
+    worker.start({
+        "protocol": "modbus-rtu",
+        "serial_port": "/dev/avic-test-serial",
+        "baud_rate": 9600,
+        "parity": "E",
+        "data_bits": 8,
+        "stop_bits": 1,
+        "unit_id": 7,
+        "timeout": 1.5,
+        "rts_mode": "none",
+    })
+    try:
+        with __import__("pytest").raises(RustWorkerError, match="serial settings"):
+            worker.read({
+                "protocol": "modbus-rtu",
+                "serial_port": "/dev/avic-test-serial",
+                "baud_rate": 19200,
+                "parity": "E",
+                "data_bits": 8,
+                "stop_bits": 1,
+                "unit_id": 7,
+                "timeout_ms": 1500,
+                "function": 3,
+                "address": 0,
+                "count": 1,
+            })
+    finally:
+        worker.close()
+
+
+def test_compiled_c_worker_rejects_invalid_modbus_rtu_configuration_when_enabled():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from pathlib import Path
+    from avic_core.drivers.rust_worker import RustDriverWorker, RustWorkerError
+
+    worker = RustDriverWorker(
+        [str(Path(worker_path).resolve())],
+        installation_id="install-c-modbus-rtu-invalid", project_id="project-c-modbus-rtu-invalid",
+        station_id="station-c-modbus-rtu-invalid", driver_instance_id="driver-c-modbus-rtu-invalid",
+        generation=1, timeout_seconds=5.0,
+    )
+    with __import__("pytest").raises(RustWorkerError, match="Invalid Modbus TCP/RTU configuration"):
+        worker.start({
+            "protocol": "modbus-rtu",
+            "serial_port": "/dev/avic-test-serial",
+            "baud_rate": 9600,
+            "parity": "X",
+            "data_bits": 8,
+            "stop_bits": 1,
+            "unit_id": 7,
+            "timeout": 1.5,
+        })
+    worker.close()
