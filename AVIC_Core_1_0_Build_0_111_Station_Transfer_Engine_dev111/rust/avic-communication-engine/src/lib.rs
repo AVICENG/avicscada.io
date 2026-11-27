@@ -88,10 +88,10 @@ impl ModbusTcpClient {
 
             let mut header = [0u8; 7];
             stream.read_exact(&mut header)?;
-        let response_tid = u16::from_be_bytes([header[0], header[1]]);
-        let protocol = u16::from_be_bytes([header[2], header[3]]);
-        let length = u16::from_be_bytes([header[4], header[5]]);
-        let unit = header[6];
+            let response_tid = u16::from_be_bytes([header[0], header[1]]);
+            let protocol = u16::from_be_bytes([header[2], header[3]]);
+            let length = u16::from_be_bytes([header[4], header[5]]);
+            let unit = header[6];
             if response_tid != tid || protocol != 0 || unit != self.config.unit_id || !(2..=254).contains(&length) {
                 return Err(ModbusError::Protocol("invalid MBAP header"));
             }
