@@ -213,3 +213,31 @@ def test_driver_manager_owns_shared_scheduler_lifecycle(tmp_path):
     stopped = app.state.core.driver_manager.stop_instance(DRIVER_ID)
     assert stopped["point_runtime_scheduler"]["state"] == "STOPPED"
     app.state.core.close()
+
+
+def test_new_sample_replaces_due_edge_before_scheduler_commit(tmp_path, monkeypatch):
+    app, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    runtime.configure_debounce(point.id, on_ms=100, off_ms=100)
+    runtime.publish(point.id, False, timestamp=T0, source_driver_id=DRIVER_ID)
+    runtime.publish(
+        point.id, True, timestamp=T0 + timedelta(milliseconds=10),
+        source_driver_id=DRIVER_ID,
+    )
+
+    engine = runtime._debounce
+    original_pending_points = engine.pending_points
+
+    def inject_newer_bounce():
+        pending = original_pending_points()
+        runtime.publish(
+            point.id, False, timestamp=T0 + timedelta(milliseconds=40),
+            source_driver_id=DRIVER_ID,
+        )
+        return pending
+
+    monkeypatch.setattr(engine, "pending_points", inject_newer_bounce)
+    assert runtime.flush_debounce(now=T0 + timedelta(milliseconds=110)) == ()
+    assert runtime.read(point.id).value is False
+    assert engine.pending_points() == ()
+    app.state.core.close()
