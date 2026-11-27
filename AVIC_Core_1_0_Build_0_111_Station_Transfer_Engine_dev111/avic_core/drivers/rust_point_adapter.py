@@ -60,7 +60,7 @@ class RustDriverPointAdapter:
             station_id=station_id,
             driver_instance_id=driver_instance_id,
             generation=generation,
-            timeout_seconds=max(float(timeout_seconds), float(config.get("timeout", 2.0)) * 2.0 + 2.0),
+            timeout_seconds=max(8.0, float(timeout_seconds), float(config.get("timeout") or 2.0) * 2.0 + 2.0),
         )
         worker_config = {k: v for k, v in config.items()
                          if k not in {"bindings", "poll_interval_seconds", "project_id", "station_id", "engine"}}
