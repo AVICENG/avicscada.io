@@ -76,3 +76,37 @@ jobs:
           path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
           if-no-files-found: ignore
           retention-days: 14
+
+  rust-communication-pilot:
+    name: Rust Communication Engine / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python for comparative benchmark
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install AVIC Core
+        run: python -m pip install -e .
+
+      - name: Run Rust unit tests
+        run: cargo test --manifest-path rust/avic-communication-engine/Cargo.toml
+
+      - name: Run same-simulator Python vs Rust Modbus benchmark smoke test
+        run: python tools/modbus_load_compare.py --devices 4 --points-per-device 20 --cycles 2 --concurrency 2
