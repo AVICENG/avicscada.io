@@ -101,7 +101,11 @@ class DriverManagerService:
         path = Path(executable).expanduser()
         if not path.is_absolute() or not path.is_file():
             raise ValueError("Rust worker must be an existing absolute executable path")
-        resolved = str(path.resolve(strict=True))
+        resolved_path = path.resolve(strict=True)
+        import os
+        if os.name != "nt" and not os.access(resolved_path, os.X_OK):
+            raise ValueError("Rust worker file is not executable")
+        resolved = str(resolved_path)
         with self._lock:
             if self._sessions:
                 raise RuntimeError("Rust worker executable cannot change while drivers are active")
@@ -233,6 +237,7 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
+                 "rust_engine_available": self._rust_worker_command is not None,
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
