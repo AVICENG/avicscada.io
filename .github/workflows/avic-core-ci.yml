@@ -76,3 +76,26 @@ jobs:
           path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
           if-no-files-found: ignore
           retention-days: 14
+
+  rust-communication-engine:
+    name: Rust Communication Engine / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/rust/communication-engine
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cargo test
+        run: cargo test --locked
+      - name: Cargo release build
+        run: cargo build --release --locked

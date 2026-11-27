@@ -152,5 +152,6 @@ class ModbusTcpPointAdapter:
 
     def diagnostics(self) -> dict:
         return {"driver_id": "modbus-tcp", "mode": "READ_ONLY", "write_supported": False,
+                "engine_backend": getattr(self.client, "engine_backend", "python"),
                 "configured_points": len(self.bindings), "success_count": self._success_count,
                 "failure_count": self._failure_count, "last_errors": dict(self._last_errors)}

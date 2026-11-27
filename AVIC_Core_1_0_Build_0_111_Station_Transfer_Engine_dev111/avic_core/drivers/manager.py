@@ -13,6 +13,7 @@ from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTc
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
 from avic_core.network.modbus_tcp import ModbusTcpClient
+from avic_core.drivers.rust_communication_engine import RustModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
 from avic_core.network.knx_tunneling import KnxTunnelingSession
@@ -106,16 +107,30 @@ class DriverManagerService:
 
     def _build_modbus_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
-        allowed = {"host", "port", "unit_id", "timeout", "poll_interval_seconds", "bindings"}
+        allowed = {"host", "port", "unit_id", "timeout", "poll_interval_seconds", "bindings", "engine_backend", "engine_binary"}
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры Modbus TCP: {sorted(unknown)}")
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
-        client = ModbusTcpClient(
-            cfg["host"], port=int(cfg.get("port", 502)),
-            unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
-        )
+        backend = str(cfg.get("engine_backend", "python")).lower()
+        if backend == "python":
+            if cfg.get("engine_binary"):
+                raise ValueError("engine_binary допустим только при engine_backend='rust'")
+            client = ModbusTcpClient(
+                cfg["host"], port=int(cfg.get("port", 502)),
+                unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
+            )
+        elif backend == "rust":
+            if not cfg.get("engine_binary"):
+                raise ValueError("Для Rust Modbus TCP требуется engine_binary")
+            client = RustModbusTcpClient(
+                cfg["host"], port=int(cfg.get("port", 502)),
+                unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
+                engine_binary=cfg["engine_binary"],
+            )
+        else:
+            raise ValueError("engine_backend должен быть 'python' или 'rust'")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
