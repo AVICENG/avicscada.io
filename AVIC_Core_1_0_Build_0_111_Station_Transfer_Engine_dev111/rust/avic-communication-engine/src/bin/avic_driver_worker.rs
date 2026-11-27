@@ -27,6 +27,7 @@ struct Worker {
     scope: Option<Scope>,
     incoming: SequenceGuard,
     outgoing_sequence: u64,
+    sequence_gaps: u64,
     configured: bool,
     protocol: Option<String>,
     started: bool,
@@ -35,7 +36,7 @@ struct Worker {
 impl Worker {
     fn new() -> Self {
         Self { scope: None, incoming: SequenceGuard::default(), outgoing_sequence: 0,
-               configured: false, protocol: None, started: false }
+               sequence_gaps: 0, configured: false, protocol: None, started: false }
     }
 
     fn handle(&mut self, request: DriverEnvelope) -> (String, Value, bool) {
@@ -65,7 +66,7 @@ impl Worker {
             });
         }
         match self.incoming.accept(request.generation, request.sequence) {
-            Ok(_) => {},
+            Ok(gap) => { if gap { self.sequence_gaps = self.sequence_gaps.saturating_add(1); } },
             Err(e) => return ("error".into(), json!({"code":"SEQUENCE_REJECTED","message":e.to_string()}), false),
         }
 
@@ -97,7 +98,7 @@ impl Worker {
             }
             "get_status" => ("status".into(), json!({
                 "state": if self.started {"RUNNING"} else {"STOPPED"},
-                "configured":self.configured, "protocol":self.protocol, "write_supported":false
+                "configured":self.configured, "protocol":self.protocol, "sequence_gaps":self.sequence_gaps, "write_supported":false
             }), false),
             "read" => {
                 if !self.started { return ("error".into(), json!({"code":"DRIVER_NOT_RUNNING"}), false); }
