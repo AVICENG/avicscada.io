@@ -109,6 +109,24 @@ class DebounceEngine:
                 return DebounceResult(point_id, value, True, False, None, "debounce_elapsed")
             return DebounceResult(point_id, stable, False, True, pending.deadline, "transition_pending")
 
+    def pending_points(self) -> tuple[str, ...]:
+        """Return a stable snapshot of point IDs with a pending transition."""
+        with self._lock:
+            return tuple(self._pending)
+
+    def flush_point_due(self, point_id: str, *, now: datetime | None = None) -> DebounceResult | None:
+        """Atomically commit one point's due transition under the engine lock."""
+        current = self._timestamp(now)
+        with self._lock:
+            pending = self._pending.get(point_id)
+            if pending is None or current < pending.deadline:
+                return None
+            self._stable[point_id] = pending.value
+            self._pending.pop(point_id, None)
+            return DebounceResult(
+                point_id, pending.value, True, False, None, "debounce_elapsed"
+            )
+
     def flush_due(self, *, now: datetime | None = None) -> tuple[DebounceResult, ...]:
         """Commit transitions whose debounce deadline elapsed, even without a new sample."""
         current = self._timestamp(now)
