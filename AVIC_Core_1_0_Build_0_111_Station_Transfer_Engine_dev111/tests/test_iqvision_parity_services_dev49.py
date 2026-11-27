@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from avic_core.ui import create_ui_app
+from avic_core.domain.models import Device, Point, PointQuality
 from avic_core.events import EventService
 from avic_core.history import HistoryService
 from avic_core.dependencies import DependencyService
@@ -45,7 +46,14 @@ def test_analytics_tag_search_and_missing_data_strategies(tmp_path):
 
 
 def test_dev49_platform_service_apis_are_persistent_and_separate(tmp_path):
-    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    app = create_ui_app(data_dir=str(tmp_path))
+    client = TestClient(app)
+    project = app.state.project_station.create_project("DEV49 history API")
+    station = app.state.project_station.create_station(project["id"], "History station")
+    device = Device(name="History device", station_id=station["id"], protocol="test", address="local")
+    app.state.core.repository.save(device)
+    point = Point(name="History point", device_id=device.id, data_type="analog-input", quality=PointQuality.UNCERTAIN)
+    app.state.core.repository.save(point)
     catalog = client.get("/api/platform/catalog").json()
     assert catalog["total"] >= 35
     assert any(x["id"] == "scheduler" for x in catalog["modules"])
@@ -55,21 +63,21 @@ def test_dev49_platform_service_apis_are_persistent_and_separate(tmp_path):
     assert event.status_code == 201
     assert client.get("/api/events?severity=NOTICE").json()["events"][0]["message"] == "Test event"
 
-    sample = client.post("/api/history/samples", json={"station_id": "s1", "point_id": "p1", "value": 23.5, "quality": "GOOD"})
+    sample = client.post("/api/history/samples", json={"station_id": station["id"], "point_id": point.id, "value": 23.5, "quality": "GOOD"})
     assert sample.status_code == 201
-    assert len(client.get("/api/stations/s1/points/p1/history").json()["samples"]) == 1
+    assert len(client.get("/api/stations/" + station["id"] + "/points/" + point.id + "/history").json()["samples"]) == 1
 
-    dep = client.post("/api/dependencies", json={"dependent_id": "graphic-1", "dependency_id": "p1", "relation_type": "binding"})
+    dep = client.post("/api/dependencies", json={"dependent_id": "graphic-1", "dependency_id": point.id, "relation_type": "binding"})
     assert dep.status_code == 201
-    assert client.get("/api/engineering/objects/p1/cleanup-preview").json()["safe_to_delete"] is False
+    assert client.get("/api/engineering/objects/" + point.id + "/cleanup-preview").json()["safe_to_delete"] is False
 
     route = client.post("/api/notifications/routes", json={"name": "Duty engineer", "channel": "EMAIL", "recipient": "ops@example.invalid"})
     assert route.status_code == 201
     assert client.get("/api/notifications/routes").json()["routes"][0]["name"] == "Duty engineer"
 
-    time_cfg = client.put("/api/stations/s1/time", json={"timezone": "Europe/Moscow", "ntp_enabled": False, "ntp_servers": []})
+    time_cfg = client.put("/api/stations/" + station["id"] + "/time", json={"timezone": "Europe/Moscow", "ntp_enabled": False, "ntp_servers": []})
     assert time_cfg.status_code == 200
-    assert client.get("/api/stations/s1/time").json()["timezone"] == "Europe/Moscow"
+    assert client.get("/api/stations/" + station["id"] + "/time").json()["timezone"] == "Europe/Moscow"
 
 
 def test_alarm_console_api_acknowledgement_and_event_journal(tmp_path):
