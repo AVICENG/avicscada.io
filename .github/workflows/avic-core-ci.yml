@@ -226,3 +226,35 @@ jobs:
 
       - name: Run BACnet Stack version probe test
         run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
+
+  siemens-s7-dependencies:
+    name: Siemens S7 optional libraries / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+        python-version: ["3.11", "3.13"]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install AVIC Core and optional S7 dependencies
+        run: python -m pip install -e ".[dev,s7]"
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run Siemens S7 library smoke tests
+        run: python -m pytest -q tests/test_s7_dependencies_dev226.py
