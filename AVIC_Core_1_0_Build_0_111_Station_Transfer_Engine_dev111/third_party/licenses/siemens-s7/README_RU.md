@@ -1,27 +1,32 @@
-# Siemens S7 — third-party license inventory
+# Siemens S7 — исторический license inventory
 
-Дата аудита: 27.11.2026
+Дата пересмотра: 27.11.2026
 
-## Pinned upstreams
+## Важное изменение политики
 
-- python-snap7 3.6.0 — https://github.com/gijzelaerr/python-snap7
-  - audited commit: `2aca5459cba0ce21d65f255882bcd562d86392f1`
-  - license: MIT; source file: `python-snap7-MIT.txt`
-- s7commplus 0.7.0 — https://github.com/gijzelaerr/s7commplus
-  - audited commit: `5295810835095d90b103430e809a47b63a0b3438`
-  - package license: MIT; source file: `s7commplus-MIT.txt`
-  - bundled preset dictionaries: LGPL-3.0-or-later, notice: `S7CommPlusDriver-zlib-dictionaries-NOTICE.txt`; full LGPL-3 text preserved in `S7CommPlusDriver-LICENSE.txt`
-  - V1 SessionKey helper: MIT notice in `HarpoS7-MIT.txt`
-- S7.Net Plus — https://github.com/S7NetPlus/s7netplus
-  - audited commit: `ab6308eacd553f571e4792c6ca31bbbfde5c133c`
-  - license: MIT; source file: `S7NetPlus-MIT.txt`
+Ранее исследованные Python packages (python-snap7, s7commplus) **не являются выбранными runtime-зависимостями AVIC**. Их license files и notices оставлены в репозитории как исторический материал аудита; они не разрешают добавлять Python S7 engine в продукт.
 
-## AVIC dependency policy
+S7NetPlus (.NET) также не является выбранным движком.
 
-The Core default installation does not install these protocol libraries. They are exposed as an optional extra `.[s7]` with bounded version ranges. The actual worker implementation must pin a release, generate an SBOM, preserve notices and run the license audit before packaging.
+## Исторически проверенные материалы
 
-Do not silently upgrade `s7commplus`: it is classified Beta upstream and hardware compatibility depends on CPU model, firmware, protection settings and TIA project configuration. Upstream explicitly disclaims Siemens affiliation/support.
+- python-snap7 — MIT; upstream: https://github.com/gijzelaerr/python-snap7
+- s7commplus — package MIT; upstream: https://github.com/gijzelaerr/s7commplus
+- S7CommPlusDriver zlib preset dictionaries — отдельный LGPL-3.0-or-later notice.
+- HarpoS7 V1 SessionKey helper — отдельный MIT notice.
+- S7.Net Plus — MIT; .NET implementation, не соответствует C-only runtime policy.
 
-Classic PUT/GET access on S7-1200/1500 is disabled by default and unauthenticated. AVIC must not enable it or weaken PLC protection automatically.
+## Кандидаты C
 
-This inventory is a software engineering audit, not legal advice. Recheck upstream licenses and dependency metadata for every release.
+- Snap7: https://github.com/davenardella/snap7 — C++ core/toolchain, LGPL-3.0 licensing materials. Требует точного file-level audit; не маркировать pure C.
+- libnodave: https://github.com/netdata-be/libnodave — C, LGPL-2.0-or-later library sources; upstream beta warning, historical compatibility and safety review required. GPL tools must be excluded or separately inventoried.
+
+## Правило поставки
+
+До выбора конкретного C engine:
+- S7 optional dependencies отсутствуют в pyproject;
+- никакой Python/Rust S7 fallback не запускается;
+- S7 остаётся PLANNED;
+- все сохранённые license texts считаются архивными аудит-материалами, а не разрешением на включение соответствующего runtime.
+
+Для любого будущего релиза требуется закрепить upstream commit, выполнить file-level license scan, SBOM, dependency audit и проверить способ динамической/статической линковки. Этот документ не является юридическим заключением.

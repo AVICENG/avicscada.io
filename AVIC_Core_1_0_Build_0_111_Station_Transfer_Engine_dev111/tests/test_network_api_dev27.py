@@ -61,7 +61,8 @@ def test_driver_catalog_api_exposes_runtime_integration_without_overstating_read
     payload = response.json()
     assert payload["field_io_enabled"] is False
     drivers = {item["driver_id"]: item for item in payload["drivers"]}
-    assert len(drivers) == 16
+    assert len(drivers) == 17
+    assert drivers["mbus"]["runtime_start_supported"] is False
     assert drivers["modbus-tcp"]["runtime_start_supported"] is True
     assert drivers["bacnet-ip"]["runtime_start_supported"] is True
     assert drivers["knxnet-ip"]["runtime_start_supported"] is True

@@ -106,11 +106,10 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         notes="Subscribe-only Paho runtime with JSON/raw topic bindings and optional CA-validated TLS; broker credentials/SecretStore integration and live broker acceptance remain outstanding.",
         category=DriverCategory.INTEGRATION, license_feature="driver.mqtt",
     ),
-    DriverCatalogEntry(
-        "s7comm", "Siemens S7comm", "S7comm over ISO-on-TCP",
-        DriverLifecycle.READ_ONLY_TRANSPORT, True,
-        notes="DEV239 Rust worker: bounded read-only standard DB byte reads for S7-200/200 SMART/300/400/1200/1500. CI and hardware acceptance pending; no S7CommPlus/TLS or optimized DB symbolic access.",
-        category=DriverCategory.INDUSTRIAL, license_feature="driver.s7comm",
+    _planned(
+        "s7comm", "Siemens S7", "S7comm / S7CommPlus over ISO-on-TCP",
+        DriverCategory.INDUSTRIAL,
+        "C-only AVIC policy. Previous Rust/Python paths are not accepted as the target implementation. No selected mature pure-C engine is approved yet: Snap7 is a C++ codebase/toolchain, while libnodave is pure C but upstream explicitly labels it beta and warns about operational risk. Keep disabled until a C engine passes source/license/API audit and read-only simulator/hardware acceptance.",
     ),
     _planned(
         "opc-ua-client", "OPC UA Client", "OPC UA",

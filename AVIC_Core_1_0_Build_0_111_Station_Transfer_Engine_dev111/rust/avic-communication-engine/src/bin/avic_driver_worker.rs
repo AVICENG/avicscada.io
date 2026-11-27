@@ -4,7 +4,6 @@ use avic_communication_engine::ipc::{
 use avic_communication_engine::{
     bacnet::BacnetIpReadOnlyClient,
     knx::KnxIpReadOnlyClient,
-    s7::S7IpReadOnlyClient,
     ModbusTcpClient, ModbusTcpConfig,
 };
 use chrono::{SecondsFormat, Utc};
@@ -25,6 +24,10 @@ struct Scope {
     generation: u64,
 }
 
+fn is_supported_protocol(protocol: &str) -> bool {
+    matches!(protocol, "modbus-tcp" | "bacnet-ip" | "knxnet-ip")
+}
+
 struct Worker {
     scope: Option<Scope>,
     incoming: SequenceGuard,
@@ -36,14 +39,13 @@ struct Worker {
     // Session key includes endpoint, Unit ID and timeout. Sessions are owned by
     // this isolated DriverInstance worker and reused across point reads.
     modbus_clients: HashMap<String, ModbusTcpClient>,
-    s7_clients: HashMap<String, S7IpReadOnlyClient>,
 }
 
 impl Worker {
     fn new() -> Self {
         Self { scope: None, incoming: SequenceGuard::default(), outgoing_sequence: 0,
                sequence_gaps: 0, configured: false, protocol: None, started: false,
-               modbus_clients: HashMap::new(), s7_clients: HashMap::new() }
+               modbus_clients: HashMap::new() }
     }
 
     fn handle(&mut self, request: DriverEnvelope) -> (String, Value, bool) {
@@ -87,7 +89,7 @@ impl Worker {
                     return ("error".into(), json!({"code":"SECRET_IN_CONFIG"}), false);
                 }
                 let protocol = match request.payload.get("protocol").and_then(Value::as_str) {
-                    Some(v) if ["modbus-tcp", "bacnet-ip", "knxnet-ip", "s7comm"].contains(&v) => v.to_string(),
+                    Some(v) if is_supported_protocol(v) => v.to_string(),
                     _ => return ("error".into(), json!({"code":"UNSUPPORTED_PROTOCOL"}), false),
                 };
                 self.protocol = Some(protocol.clone());
@@ -102,7 +104,6 @@ impl Worker {
             "stop" => {
                 self.started = false;
                 self.modbus_clients.clear();
-                self.s7_clients.clear();
                 ("status".into(), json!({"state":"STOPPED","write_supported":false}), false)
             }
             "get_status" => ("status".into(), json!({
@@ -118,7 +119,7 @@ impl Worker {
                 if requested_protocol != self.protocol.as_deref() {
                     return ("error".into(), json!({"code":"PROTOCOL_SCOPE_MISMATCH"}), false);
                 }
-                match read_protocol(&request.payload, &mut self.modbus_clients, &mut self.s7_clients) {
+                match read_protocol(&request.payload, &mut self.modbus_clients) {
                     Ok(value) => ("read_result".into(), json!({"transport_ok":true,"result":value}), false),
                     Err(message) => ("read_error".into(), json!({"transport_ok":false,"message":message}), false),
                 }
@@ -176,7 +177,7 @@ fn required_u64(p: &Value, key: &str) -> Result<u64, String> {
     p.get(key).and_then(Value::as_u64).ok_or_else(|| format!("missing/invalid {key}"))
 }
 
-fn read_protocol(p: &Value, modbus_clients: &mut HashMap<String, ModbusTcpClient>, s7_clients: &mut HashMap<String, S7IpReadOnlyClient>) -> Result<Value, String> {
+fn read_protocol(p: &Value, modbus_clients: &mut HashMap<String, ModbusTcpClient>) -> Result<Value, String> {
     match required_str(p, "protocol")? {
         "modbus-tcp" => {
             let host = required_str(p, "host")?;
@@ -201,38 +202,6 @@ fn read_protocol(p: &Value, modbus_clients: &mut HashMap<String, ModbusTcpClient
                 4 => Ok(json!({"function":4,"values":client.read_input_registers(address,count).map_err(|e|e.to_string())?})),
                 _ => Err("only Modbus FC01/02/03/04 reads are enabled".into()),
             }
-        }
-        "s7comm" => {
-            let host = required_str(p, "host")?;
-            let port = u16::try_from(p.get("port").and_then(Value::as_u64).unwrap_or(102))
-                .map_err(|_| "invalid S7 port".to_string())?;
-            let plc_type = required_str(p, "plc_type")?;
-            let rack = p.get("rack").and_then(Value::as_u64)
-                .map(u8::try_from).transpose().map_err(|_| "invalid S7 rack".to_string())?;
-            let slot = p.get("slot").and_then(Value::as_u64)
-                .map(u8::try_from).transpose().map_err(|_| "invalid S7 slot".to_string())?;
-            let (rack, slot) = avic_communication_engine::s7::resolve_rack_slot(plc_type, rack, slot)
-                .map_err(|e| e.to_string())?;
-            let db_number = u16::try_from(required_u64(p, "db_number")?)
-                .map_err(|_| "invalid S7 DB number".to_string())?;
-            let offset = u16::try_from(p.get("offset").and_then(Value::as_u64).unwrap_or(0))
-                .map_err(|_| "invalid S7 DB offset".to_string())?;
-            let count = u16::try_from(required_u64(p, "count")?)
-                .map_err(|_| "invalid S7 byte count".to_string())?;
-            let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(3000);
-            if port == 0 || !(100..=30000).contains(&timeout_ms) || count == 0 || count > 200 {
-                return Err("S7 port, timeout or byte count out of range".into());
-            }
-            let key = format!("{host}:{port}/{plc_type}/{rack}/{slot}/{timeout_ms}");
-            if !s7_clients.contains_key(&key) {
-                let client = S7IpReadOnlyClient::connect(host, port, plc_type, rack, slot, timeout_ms)
-                    .map_err(|e| e.to_string())?;
-                s7_clients.insert(key.clone(), client);
-            }
-            let client = s7_clients.get_mut(&key).expect("S7 session inserted");
-            let bytes = client.read_db_bytes(db_number, offset, count).map_err(|e| e.to_string())?;
-            Ok(json!({"plc_type":plc_type,"db_number":db_number,"offset":offset,
-                "count":bytes.len(),"bytes":bytes}))
         }
         "bacnet-ip" => {
             let address: SocketAddr = required_str(p, "address")?.parse().map_err(|_| "invalid BACnet address".to_string())?;
@@ -288,5 +257,23 @@ fn main() {
         let response = worker.response(&request, kind, payload);
         if write_frame(&mut output, &response).is_err() { break; }
         if should_exit { break; }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_supported_protocol;
+
+    #[test]
+    fn rust_worker_does_not_advertise_siemens_s7() {
+        assert!(!is_supported_protocol("s7comm"));
+        assert!(!is_supported_protocol("s7commplus"));
+    }
+
+    #[test]
+    fn rust_worker_keeps_non_s7_protocols_available() {
+        assert!(is_supported_protocol("modbus-tcp"));
+        assert!(is_supported_protocol("bacnet-ip"));
+        assert!(is_supported_protocol("knxnet-ip"));
     }
 }
