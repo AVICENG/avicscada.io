@@ -151,7 +151,29 @@ class HistoryService:
         return {"station_id": station_id, "point_id": point_id, "enabled": bool(enabled),
                 "configured_point_ids": desired}
 
+    def _assert_point_station(self, station_id: str, point_id: str) -> None:
+        """Prevent history writes that label a point with another station's identity."""
+        if self.repository is None:
+            return  # Standalone history-store mode has no engineering repository to validate.
+        try:
+            station = self.repository.get_record(station_id)
+            point = self.repository.get_record(point_id)
+            if station.get("entity_type") != "Station":
+                raise ValueError("Целевой объект архива не является станцией")
+            if point.get("entity_type") != "Point":
+                raise ValueError("В архив можно записывать только инженерные точки")
+            device = self.repository.get_record(point.get("payload", {}).get("device_id"))
+            if device.get("entity_type") != "Device":
+                raise ValueError("У точки отсутствует корректное устройство")
+        except Exception as exc:
+            if isinstance(exc, ValueError):
+                raise
+            raise ValueError("Станция или точка архива не найдена") from exc
+        if device.get("payload", {}).get("station_id") != station_id:
+            raise ValueError("Точка принадлежит другой станции; межстанционная запись в архив запрещена")
+
     def append(self,station_id:str,point_id:str,value:Any,*,quality:str='GOOD',recorded_at:str|None=None,source:str='runtime') -> HistorySample:
+        self._assert_point_station(station_id, point_id)
         q=quality.upper()
         if q not in self.QUALITIES: raise ValueError(f'Unsupported quality: {q}')
         ts=recorded_at or datetime.now(timezone.utc).isoformat()
