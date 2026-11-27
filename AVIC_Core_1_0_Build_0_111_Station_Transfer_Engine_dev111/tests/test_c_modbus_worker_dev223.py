@@ -278,43 +278,43 @@ def test_compiled_c_worker_reads_all_read_only_modbus_functions_when_enabled():
 
     class ModbusReadFunctionSimulator(socketserver.BaseRequestHandler):
         def handle(self):
-            try:
-                header = recv_exact(self.request, 7)
-                tid, protocol_id = header[:2], header[2:4]
-                length, unit_id = int.from_bytes(header[4:6], "big"), header[6]
-                if protocol_id != b"\x00\x00" or not 2 <= length <= 254:
+            while True:
+                try:
+                    header = recv_exact(self.request, 7)
+                    tid, protocol_id = header[:2], header[2:4]
+                    length, unit_id = int.from_bytes(header[4:6], "big"), header[6]
+                    if protocol_id != b"\\x00\\x00" or not 2 <= length <= 254:
+                        return
+                    pdu = recv_exact(self.request, length - 1)
+                    if len(pdu) != 5:
+                        return
+                    function = pdu[0]
+                    address = int.from_bytes(pdu[1:3], "big")
+                    count = int.from_bytes(pdu[3:5], "big")
+                    if function == 1 and (count < 1 or count > 2000):
+                        return
+                    if function == 2 and (count < 1 or count > 2000):
+                        return
+                    if function in (3, 4) and (count < 1 or count > 125):
+                        return
+                    if function not in (1, 2, 3, 4) or address + count > 65536:
+                        return
+                    if function == 1:
+                        data = bytes((0x55, 0x01))[:(count + 7) // 8]
+                    elif function == 2:
+                        data = bytes((0x02,))[:(count + 7) // 8]
+                    elif function == 3:
+                        data = b"".join((address + i).to_bytes(2, "big") for i in range(count))
+                    else:
+                        values = (0x1234, 0xABCD, 0x0102)
+                        data = b"".join(values[i].to_bytes(2, "big") for i in range(count))
+                    response_pdu = bytes((function, len(data))) + data
+                    response = (tid + b"\\x00\\x00"
+                        + (len(response_pdu) + 1).to_bytes(2, "big")
+                        + bytes((unit_id,)) + response_pdu)
+                    self.request.sendall(response)
+                except (OSError, ConnectionError, IndexError):
                     return
-                pdu = recv_exact(self.request, length - 1)
-                if len(pdu) != 5:
-                    return
-                function = pdu[0]
-                address = int.from_bytes(pdu[1:3], "big")
-                count = int.from_bytes(pdu[3:5], "big")
-                if function == 1 and (count < 1 or count > 2000):
-                    return
-                if function == 2 and (count < 1 or count > 2000):
-                    return
-                if function in (3, 4) and (count < 1 or count > 125):
-                    return
-                if function not in (1, 2, 3, 4) or address + count > 65536:
-                    return
-                if function == 1:
-                    data = bytes((0x55, 0x01))[:(count + 7) // 8]
-                elif function == 2:
-                    data = bytes((0x02,))[:(count + 7) // 8]
-                elif function == 3:
-                    data = b"".join((address + i).to_bytes(2, "big") for i in range(count))
-                else:
-                    values = (0x1234, 0xABCD, 0x0102)
-                    data = b"".join(values[i].to_bytes(2, "big") for i in range(count))
-                response_pdu = bytes((function, len(data))) + data
-                response = (tid + b"\x00\x00"
-                    + (len(response_pdu) + 1).to_bytes(2, "big")
-                    + bytes((unit_id,)) + response_pdu)
-                self.request.sendall(response)
-            except (OSError, ConnectionError, IndexError):
-                return
-
     class ModbusSimulator(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
         daemon_threads = True
