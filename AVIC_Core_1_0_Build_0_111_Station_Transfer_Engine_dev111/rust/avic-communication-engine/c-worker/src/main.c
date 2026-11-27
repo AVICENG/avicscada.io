@@ -171,7 +171,7 @@ static int connect_modbus(worker_t *w) {
         /* libmodbus requires the Win32 device namespace for COM ports > 9. */
         if (strncmp(port_name, "COM", 3) == 0 && port_name[3] >= '1' && port_name[3] <= '9'
             && port_name[4] >= '0' && port_name[4] <= '9' && port_name[5] == '\\0') {
-            if (snprintf(device, sizeof(device), "\\\\.\\\\%s", port_name) >= (int)sizeof(device))
+            if (snprintf(device, sizeof(device), "\\\\.\\%s", port_name) >= (int)sizeof(device))
                 return 0;
             port_name = device;
         }
@@ -227,7 +227,7 @@ static json_t *handle_read(worker_t *w, json_t *payload, const char **kind) {
         if (!rts_mode) rts_mode = "none";
         if (!serial_port || strcmp(serial_port, w->serial_port) != 0
             || !get_int(payload, "baud_rate", &port) || port != w->baud_rate
-            || !parity || parity[0] != w->parity || parity[1] != '\\0'
+            || !parity || parity[0] != w->parity || parity[1] != '\0'
             || !get_int(payload, "data_bits", &port) || port != w->data_bits
             || !get_int(payload, "stop_bits", &port) || port != w->stop_bits
             || !rts_mode || strcmp(rts_mode, w->rts_mode) != 0)
