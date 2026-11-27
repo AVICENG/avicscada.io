@@ -80,3 +80,23 @@ Upstream — переносимая C-библиотека для Windows, Linux
 - strict compiler warnings для собственного C probe: `-Wall -Wextra -Wpedantic -Werror` или MSVC `/W4 /WX`.
 
 Это повышает проверку native BACnet dependency, но **не является BACnet/IP Worker и не подтверждает сетевой обмен**. Текущий статус остаётся 🟧. Следующий этап — C Worker с BACnet/IP datalink, Who-Is/I-Am discovery, transaction correlation и ReadProperty; затем ReadPropertyMultiple, IPC contract, simulator и Windows/Linux acceptance.
+
+
+## DEV253 — расширение negative-тестов I-Am и Windows CI
+
+Добавлены отрицательные проверки:
+- Segmentation enum за пределами `MAX_BACNET_SEGMENTATION`;
+- Vendor ID больше 65535;
+- ранее добавленные усечённые payload и неверный тип объекта.
+
+CI run `46057725369` выявил:
+- Linux BACnet Stack POC — passed;
+- Windows BACnet Stack POC — failed только при компиляции AVIC probe: MSVC C4996 на upstream `getenv()` из `platform.h`; upstream static library собралась.
+- Исправление в CMake: `_CRT_SECURE_NO_WARNINGS` определён только для AVIC probe target на MSVC, строгие `/W4 /WX` сохранены. Требуется подтверждение следующим CI run после изменения.
+
+## Сводка регрессии DEV253
+
+- Modbus C Worker: native Linux и Windows jobs в run `46057725369` — passed. Это подтверждает сборку и тесты конкретного CI набора, но не аппаратную приёмку RTU.
+- Python full-suite на Linux: 31513 passed, 8 skipped, 1 failed (повторяется на Python 3.11/3.12/3.13). Единственный failure: `tests/test_driver_manager_dev57.py::test_stop_instance_close_failure_keeps_session`; assertion ожидает удаление session, фактически session остаётся в `_sessions`. Это не BACnet/Modbus C Worker test; выделено как отдельная регрессия менеджера драйверов.
+- Windows Python jobs ещё выполнялись на момент проверки.
+- BACnet статус остаётся 🟧 до подтверждения Windows/Linux POC, реализации AVIC BACnet/IP Worker, IPC и сетевого симулятора.
