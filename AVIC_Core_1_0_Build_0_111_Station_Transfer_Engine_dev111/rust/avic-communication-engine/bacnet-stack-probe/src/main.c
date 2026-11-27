@@ -2,11 +2,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <stdlib.h>
+
 #include "bacnet/bacdef.h"
 #include "bacnet/bacdcode.h"
 #include "bacnet/bactext.h"
 #include "bacnet/iam.h"
 #include "bacnet/version.h"
+#include "bacnet/apdu.h"
+#include "bacnet/basic/binding/address.h"
+#include "bacnet/basic/object/device.h"
+#include "bacnet/basic/service/h_iam.h"
+#include "bacnet/basic/service/h_apdu.h"
+#include "bacnet/basic/service/s_whois.h"
+#include "bacnet/basic/sys/mstimer.h"
+#include "bacnet/basic/npdu/h_npdu.h"
+#include "bacnet/datalink/datalink.h"
+#include "bacnet/datalink/dlenv.h"
 
 #define BACNET_TEST_BUFFER 64u
 
@@ -98,7 +110,7 @@ static int iam_codec_self_test(void)
     return 0;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     const char *device_object = bactext_object_type_name(OBJECT_DEVICE);
     if (device_object == NULL) {
@@ -107,7 +119,63 @@ int main(void)
     if (iam_codec_self_test() != 0) {
         return 3;
     }
-    printf("AVIC BACnet Stack C probe: %s; object=%s; codec=self-test-passed\n",
+    printf("AVIC BACnet Stack C probe: %s; object=%s; codec=self-test-passed\\n",
            BACNET_VERSION_TEXT, device_object);
+
+    if (argc == 1) {
+        return 0;
+    }
+    if (argc != 3 || strcmp(argv[1], "--discover-ms") != 0) {
+        fprintf(stderr, "Usage: %s [--discover-ms 100..30000]\\n", argv[0]);
+        return 64;
+    }
+    char *end = NULL;
+    unsigned long timeout_ms = strtoul(argv[2], &end, 10);
+    if (!end || *end != '\\0' || timeout_ms < 100 || timeout_ms > 30000) {
+        fprintf(stderr, "Discovery timeout must be 100..30000 ms\\n");
+        return 64;
+    }
+
+    uint8_t rx_buffer[MAX_MPDU] = { 0 };
+    BACNET_ADDRESS source = { 0 };
+    BACNET_ADDRESS destination = { 0 };
+    struct mstimer deadline = { 0 };
+    struct mstimer maintenance = { 0 };
+
+    Device_Set_Object_Instance_Number(BACNET_MAX_INSTANCE);
+    Device_Init(NULL);
+    address_init();
+    apdu_set_unconfirmed_handler(SERVICE_UNCONFIRMED_I_AM, handler_i_am_add);
+    dlenv_init();
+    mstimer_set(&deadline, timeout_ms);
+    mstimer_set(&maintenance, 1000);
+    Send_WhoIs_To_Network(&destination, -1, -1);
+
+    while (!mstimer_expired(&deadline)) {
+        uint16_t received = datalink_receive(
+            &source, rx_buffer, MAX_MPDU, 100u);
+        if (received > 0) {
+            npdu_handler(&source, rx_buffer, received);
+        }
+        if (mstimer_expired(&maintenance)) {
+            datalink_maintenance_timer(1u);
+            mstimer_reset(&maintenance);
+        }
+    }
+
+    unsigned count = address_count();
+    printf("bacnet_discovery=complete timeout_ms=%lu devices=%u\\n",
+           timeout_ms, count);
+    for (unsigned index = 0; index < count; ++index) {
+        uint32_t device_id = 0;
+        unsigned max_apdu = 0;
+        BACNET_ADDRESS address = { 0 };
+        if (address_get_by_index(index, &device_id, &max_apdu, &address)) {
+            printf("device_id=%u max_apdu=%u mac_len=%u network=%u\\n",
+                   (unsigned)device_id, max_apdu,
+                   (unsigned)address.mac_len, (unsigned)address.net);
+        }
+    }
+    datalink_cleanup();
     return 0;
 }
