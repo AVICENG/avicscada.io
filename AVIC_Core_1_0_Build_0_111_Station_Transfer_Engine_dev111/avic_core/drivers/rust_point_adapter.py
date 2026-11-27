@@ -207,8 +207,10 @@ class RustDriverPointAdapter:
                     flags = object_data.get("status_flags")
                     if not isinstance(flags, list) or len(flags) != 4 or any(not isinstance(flag, bool) for flag in flags):
                         sample_quality = self._PointQuality.UNCERTAIN
-                    elif flags[1] or flags[3]:  # BACnet fault or out_of_service
-                        sample_quality = self._PointQuality.BAD
+                    elif flags[3]:  # BACnet out_of_service
+                        sample_quality = self._PointQuality.DISABLED
+                    elif flags[1]:  # BACnet fault
+                        sample_quality = self._PointQuality.BAD_COMMUNICATION
                     elif flags[2]:  # overridden
                         sample_quality = self._PointQuality.UNCERTAIN
                     else:
