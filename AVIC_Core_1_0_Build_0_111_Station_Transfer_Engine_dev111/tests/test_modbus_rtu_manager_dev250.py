@@ -22,7 +22,8 @@ def _core_with_project(tmp_path, monkeypatch):
         def __init__(self, **kwargs):
             captured.update(kwargs)
 
-    monkeypatch.setattr(manager_module, "RustDriverPointAdapter", FakeCAdapter)
+    if monkeypatch is not None:
+        monkeypatch.setattr(manager_module, "RustDriverPointAdapter", FakeCAdapter)
     core = CoreApplication(tmp_path / "data", c_worker_command=executable)
     platform = Platform(name="AVIC Platform")
     project = Project(name="RTU Project", platform_id=platform.id)
