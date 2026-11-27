@@ -320,6 +320,11 @@ class DriverManagerService:
                         pass
                 self._sessions.pop(instance_id, None)
                 self._adapters.pop(instance_id, None)
+                if not self._sessions:
+                    try:
+                        self._point_runtime_scheduler.stop(timeout=5.0)
+                    except Exception:
+                        pass
                 try:
                     failed, current_version = self._load(instance_id)
                     self._save_state(failed, current_version, "ERROR", False)
