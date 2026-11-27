@@ -186,3 +186,9 @@
 - **Проверка:** изменения и тесты отправлены в ветку. Локальный запуск тестов в этой среде недоступен; CI актуального commit ещё ожидает запуска. Не объявлять DEV229 passed до результата GitHub Actions.
 - **Уточнение по Windows C Worker:** старый run 46029096824 использовал SHA до последнего изменения Windows workflow и завершился тремя IPC failures (initialize handshake, Modbus read, replay rejection). Процесс закрыл stdout до ответа; stderr в диагностике Python оказался пуст. Предположение о DLL/PATH не доказано как первопричина. В актуальном workflow теперь используется точный UCRT64 runtime directory и проверяются DLL, но подтверждение исправления ожидается от нового CI. Следующий диагностический шаг при повторе: вывести полный objdump imports, проверить все не-системные DLL, захватить exit code и stderr до очистки процесса, добавить smoke запуска C Worker до Python IPC.
 - PR #9 остаётся Draft. Modbus остаётся RED до зелёного Windows IPC+simulator acceptance и hardware/soak проверки.
+
+
+### Дополнительная диагностика Windows C Worker / DEV229
+- Python supervisor теперь при EOF stdout кратко ожидает завершения процесса и drain stderr, после чего включает exit code и последние stderr строки в RustWorkerError. Это устраняет race, при котором Windows test получал пустой stderr до того, как reader thread успевал прочитать диагностику.
+- C libmodbus Worker теперь пишет причины invalid/truncated IPC frame и rejected IPC command в stderr на всех платформах, а не только Windows. В stdout по-прежнему передаются только length-prefixed IPC frames.
+- Это диагностическое усиление, а не исправление предполагаемой первопричины. До повторного CI нельзя утверждать, что Windows handshake исправлен.
