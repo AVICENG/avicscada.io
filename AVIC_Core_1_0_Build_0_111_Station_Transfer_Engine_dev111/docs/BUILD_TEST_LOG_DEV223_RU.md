@@ -217,3 +217,9 @@
 - Это устраняет прежнюю проблему: callback limit ограничивал только локальную обработку после того, как библиотека могла получить полный Browse response. Теперь лимит передаётся серверу в запросе, а continuation state не оставляется висеть.
 - Driver catalog note обновлён: secure native probe read/Browse существует, но OPC UA остаётся PLANNED, поскольку AVIC IPC worker, namespace URI lifecycle, Browse paging, subscriptions, reconnect и безопасная SecretStore key handoff не готовы.
 - **Проверка:** source/docs/catalog отправлены в ветку. Текущая компиляция open62541 1.4.21 на Linux/Windows и C self-test не подтверждены CI; не считать DEV232 passed до green CI. Независимый OPC UA server test пока отсутствует.
+
+
+### DEV233 — Modbus Device Identification conformity validation
+- MEI 0x0E response теперь проверяет conformity level и допускает только стандартные значения 0x01/0x02/0x03 и stream-варианты 0x81/0x82/0x83. Добавлен негативный тест на нулевой/неизвестный уровень.
+- Диагностика Windows C Worker в тесте replay-sequence улучшена: если stdout закрывается раньше ответа, тест ждёт exit process и выводит точный exit code + stderr вместо вторичной ошибки AttributeError на None.
+- **Проверка:** код/тест/документация в ветке; актуальный CI ещё не завершён. Причина Windows IPC отказа остаётся неустановленной до результата повторного запуска с расширенной диагностикой.
