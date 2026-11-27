@@ -4,7 +4,6 @@ project(avic_bacnet_stack_probe VERSION 0.1.0 LANGUAGES C)
 include(FetchContent)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
 
 # Build only the protocol library needed by AVIC. Keep optional data links
 # disabled until their own worker/serial/security acceptance plans are ready.
