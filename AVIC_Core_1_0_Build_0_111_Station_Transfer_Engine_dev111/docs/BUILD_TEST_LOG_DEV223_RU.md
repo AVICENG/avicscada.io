@@ -115,3 +115,11 @@
 - RustWorker теперь включает exit code процесса в диагностическое сообщение при EOF IPC stdout.
 - KNX active polling теперь не принимает первый попавшийся GroupValueResponse: после GroupValueRead он ждёт ответ именно для запрошенного group address, пропуская посторонние телеграммы до тайм-аута. Добавлен regression test «посторонняя группа перед ожидаемым ответом».
 - Новые тесты и статическая линковка пока не объявляются пройденными. CI runs, созданные для промежуточных commits, отменялись concurrency-механизмом GitHub при новых push. Последний commit документации: `e87759d8326a92962740af0e76676b2e8486804a`; требуется дождаться прогона на HEAD ветки.
+
+
+## Дополнительный CI разбор (run 46021295444)
+
+- Linux full-suite на Python 3.11/3.12/3.13: по 31 449 passed и 1 failed. Единственное падение — устаревший `test_driver_manager_requires_registered_runtime_for_mqtt`: тест ожидал отсутствие MQTT factory после того, как MQTT runtime уже был зарегистрирован. Тест заменён проверкой регистрации factory и сохранения read-only capability.
+- BACnet Stack POC, Rust communication engine и C Worker Ubuntu прошли; Windows BACnet Stack POC и Rust engine прошли. S7 optional dependency smoke tests прошли.
+- Windows C Worker UCRT64 всё ещё падал до IPC handshake. Добавлена статическая линковка Windows binary и диагностика раннего завершения процесса; новая сборка должна подтвердить или опровергнуть гипотезу о DLL search path.
+- Текущий следующий gate: новый полный run после последнего тестового исправления и завершение Windows Python matrix. Не сливать PR до зелёного результата.
