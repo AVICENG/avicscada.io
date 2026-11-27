@@ -99,3 +99,17 @@ def test_modbus_adapter_coalesces_adjacent_register_bindings(tmp_path):
     assert client.calls == [(3, 0, 2)]
     assert [app.state.core.point_runtime.read(point.id).value for point in pts] == [100, 200]
     app.state.core.close()
+
+
+def test_modbus_adapter_closes_persistent_transport():
+    class ClosableClient(FakeModbusClient):
+        def __init__(self):
+            super().__init__()
+            self.closed = False
+        def close(self):
+            self.closed = True
+
+    client = ClosableClient()
+    adapter = ModbusTcpPointAdapter(client, object(), "driver-id", [])
+    adapter.close()
+    assert client.closed is True

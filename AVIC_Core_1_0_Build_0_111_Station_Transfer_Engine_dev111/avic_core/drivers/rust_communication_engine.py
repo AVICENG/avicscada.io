@@ -85,7 +85,7 @@ class RustModbusTcpClient:
                 if pipe is not None:
                     try:
                         pipe.close()
-                    except OSError:
+                    except Exception:
                         pass
 
     def _exchange_locked(self, payload: dict[str, Any]) -> dict[str, Any]:
