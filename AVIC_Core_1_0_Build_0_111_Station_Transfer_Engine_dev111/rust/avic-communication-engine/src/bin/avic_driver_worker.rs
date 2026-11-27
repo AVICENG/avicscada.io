@@ -70,7 +70,7 @@ impl Worker {
         }
 
         match request.kind.as_str() {
-            "initialize" => ("initialized".into(), json!({"protocol":"avic.driver.ipc","version":1}), false),
+            "initialize" => ("initialized".into(), json!({"protocol":"avic.driver.ipc","version":1,"worker_version":env!("CARGO_PKG_VERSION")}), false),
             "configure" => {
                 if self.started {
                     return ("error".into(), json!({"code":"STOP_REQUIRED_BEFORE_CONFIGURE"}), false);
