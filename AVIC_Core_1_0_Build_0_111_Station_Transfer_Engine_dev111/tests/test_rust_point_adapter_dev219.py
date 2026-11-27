@@ -147,3 +147,35 @@ def test_rust_bacnet_status_fault_is_published_with_bad_quality(fake_worker):
     )
     adapter.poll_once()
     assert core.point_runtime.published[0][2] == PointQuality.BAD_COMMUNICATION
+
+
+def test_rust_bacnet_out_of_service_maps_to_disabled_quality(fake_worker):
+    from avic_core.domain.models import PointQuality
+    fake_worker.read = lambda request: {"result": {
+        "device": {"device_instance": request["device_instance"]},
+        "objects": [{
+            "object_type_name": "AnalogInput", "object_instance": 2,
+            "present_value": 21.5, "status_flags": [False, False, False, True],
+        }],
+    }}
+    core = FakeCore()
+    adapter = make_adapter(core, "bacnet-ip",
+        {"timeout": 3.0, "local_address": "192.0.2.10", "udp_port": 47808},
+        [{"point_id": "point-1", "address": ("192.0.2.20", 47808),
+          "device_instance": 1234, "object_type": 0, "object_instance": 2,
+          "property_id": 85, "array_index": None, "scale": 1.0, "offset": 0.0}],
+    )
+    adapter.poll_once()
+    assert core.point_runtime.published[0][2] == PointQuality.DISABLED
+
+
+def test_rust_knx_formats_ipv6_gateway_and_local_bind(fake_worker):
+    core = FakeCore()
+    adapter = make_adapter(core, "knxnet-ip",
+        {"gateway_host": "2001:db8::20", "gateway_port": 3671,
+         "local_host": "2001:db8::10", "local_port": 0, "timeout": 1.0},
+        [{"point_id": "point-1", "group_address": 0x0A03, "datapoint_type": "9.001"}],
+    )
+    adapter.poll_once()
+    assert fake_worker.requests[0]["gateway"] == "[2001:db8::20]:3671"
+    assert fake_worker.requests[0]["local_bind"] == "[2001:db8::10]:0"
