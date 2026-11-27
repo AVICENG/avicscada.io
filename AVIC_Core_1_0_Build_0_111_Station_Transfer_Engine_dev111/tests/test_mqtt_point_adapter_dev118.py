@@ -36,7 +36,7 @@ def _setup(tmp_path, count=1):
                             driver_id="mqtt", protocol="mqtt")
     app.state.core.repository.save(driver)
     device = Device(name="MQTT device", station_id=station["id"], protocol="mqtt",
-                    address="mqtt://broker.example:1883", driver_instance_id=driver["id"])
+                    address="mqtt://broker.example:1883", driver_instance_id=driver.id)
     app.state.core.repository.save(device)
     points = []
     for i in range(count):
@@ -45,7 +45,7 @@ def _setup(tmp_path, count=1):
                   value=None, quality=PointQuality.UNCERTAIN)
         app.state.core.repository.save(p)
         points.append(p)
-    return app, points, driver["id"]
+    return app, points, driver.id
 
 
 def test_mqtt_subscribes_and_publishes_json_value_to_point_runtime(tmp_path):
