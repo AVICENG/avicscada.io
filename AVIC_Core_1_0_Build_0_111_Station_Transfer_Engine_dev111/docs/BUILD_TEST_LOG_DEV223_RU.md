@@ -234,3 +234,7 @@
 - Linux CI run 46031677089 (SHA 90918684) собрал upstream open62541, но probe не прошёл строгую компиляцию: `memchr` требует явного const pointer cast при `-Wc++-compat`; в `UA_ConnectionConfig` поля называются `localMaxMessageSize` и `localMaxChunkCount`.
 - Исправлены оба cast и оба имени поля согласно compiler diagnostics open62541 1.4.21. Это подтверждённое исправление по конкретным ошибкам run 46031677089; повторная сборка на актуальном HEAD ещё ожидает CI.
 - **Статус OPC UA:** RED на этапе native build до повторного Linux/Windows build+self-test. Нельзя объявлять probe собранным на актуальном HEAD.
+
+
+### DEV236 — KNX readiness matrix correction
+- Уточнена таблица готовности KNX: базовый active GroupValueRead polling для одной привязки уже реализован и протестирован; незавершёнными остаются batch/parallel polling, ETS import, routing, command gateway и hardware acceptance.
