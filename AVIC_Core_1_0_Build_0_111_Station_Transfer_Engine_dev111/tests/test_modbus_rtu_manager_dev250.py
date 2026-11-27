@@ -330,14 +330,16 @@ def test_serial_port_lease_keeps_kernel_lock_when_unlock_fails(tmp_path, monkeyp
     assert lease._stream is not None
     assert not lease._stream.closed
 
-    code = (
-        "import sys; "
-        "from avic_core.drivers.serial_port_lease import SerialPortLease, SerialPortBusyError; "
-        "p=sys.argv[1]; "
-        "\\ntry:\\n SerialPortLease(p).acquire()\\n"
-        "except SerialPortBusyError:\\n sys.exit(0)\\n"
-        "sys.exit(5)\\n"
-    )
+    code = "\\n".join([
+        "import sys",
+        "from avic_core.drivers.serial_port_lease import SerialPortLease, SerialPortBusyError",
+        "p = sys.argv[1]",
+        "try:",
+        "    SerialPortLease(p).acquire()",
+        "except SerialPortBusyError:",
+        "    sys.exit(0)",
+        "sys.exit(5)",
+    ])
     result = subprocess.run(
         [sys.executable, "-c", code, port],
         capture_output=True, text=True, timeout=10,
