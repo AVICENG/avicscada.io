@@ -212,8 +212,9 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             let dpt = required_str(p, "dpt")?;
             let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(2000);
             let client = KnxIpReadOnlyClient::connect(gateway, local_bind).map_err(|e| e.to_string())?;
-            let sample = client.read_group(group_address, dpt, Duration::from_millis(timeout_ms))
-                .map_err(|e| e.to_string())?;
+            let read_result = client.read_group(group_address, dpt, Duration::from_millis(timeout_ms));
+            client.close();
+            let sample = read_result.map_err(|e| e.to_string())?;
             Ok(json!({"group_address":sample.group_address,"dpt":sample.dpt,
                 "value":sample.value,"display_value":sample.display_value}))
         }
