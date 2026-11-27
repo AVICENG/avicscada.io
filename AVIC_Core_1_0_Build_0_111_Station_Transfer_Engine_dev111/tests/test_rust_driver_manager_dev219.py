@@ -56,6 +56,7 @@ def test_core_configures_rust_worker_and_driver_manager_selects_rust_backend(tmp
         assert captured["project_id"] == project.id
         assert captured["station_id"] == station.id
         assert captured["protocol"] == "modbus-tcp"
+        assert captured["generation"] == 1
         assert captured["bindings"][0]["point_id"] == "point-1"
 
 
