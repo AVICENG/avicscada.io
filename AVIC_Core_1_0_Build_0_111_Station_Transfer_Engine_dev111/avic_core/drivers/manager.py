@@ -161,13 +161,13 @@ class DriverManagerService:
             raise ValueError("engine must be python or rust")
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
+        bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         client = ModbusTcpClient(
             cfg["host"], port=int(cfg.get("port", 502)),
             unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
         )
-        bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
-        if engine == "rust":
-            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
@@ -189,9 +189,6 @@ class DriverManagerService:
             udp_port=int(cfg.get("udp_port", 47808)),
             device_instance=cfg.get("device_instance"),
         )
-        client = BacnetIpClient(network, DiscoveryPolicy(
-            request_timeout_seconds=float(cfg.get("timeout", 3.0)),
-        ))
         bindings = []
         for raw in cfg["bindings"]:
             item = dict(raw)
@@ -200,6 +197,9 @@ class DriverManagerService:
             bindings.append(BacnetIpPointBinding(**item))
         if engine == "rust":
             return self._build_rust_adapter(core, instance, cfg, "bacnet-ip", [asdict(item) for item in bindings])
+        client = BacnetIpClient(network, DiscoveryPolicy(
+            request_timeout_seconds=float(cfg.get("timeout", 3.0)),
+        ))
         return BacnetIpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_knx_adapter(self, core, instance: DriverInstance):
@@ -217,15 +217,15 @@ class DriverManagerService:
         required = ("gateway_host", "local_host")
         if any(not cfg.get(key) for key in required) or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для KNXnet/IP требуются gateway_host, local_host и непустой bindings")
+        bindings = [KnxPointBinding(**item) for item in cfg["bindings"]]
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "knxnet-ip", [asdict(item) for item in bindings])
         session = KnxTunnelingSession(
             cfg["gateway_host"], gateway_port=int(cfg.get("gateway_port", 3671)),
             local_host=cfg["local_host"], local_port=int(cfg.get("local_port", 0)),
             timeout_seconds=float(cfg.get("timeout", 1.0)), retries=int(cfg.get("retries", 2)),
             heartbeat_interval_seconds=float(cfg.get("heartbeat_interval_seconds", 60.0)),
         )
-        bindings = [KnxPointBinding(**item) for item in cfg["bindings"]]
-        if engine == "rust":
-            return self._build_rust_adapter(core, instance, cfg, "knxnet-ip", [asdict(item) for item in bindings])
         return KnxPointAdapter(session, core.point_runtime, instance.id, bindings)
 
     def catalog(self):
