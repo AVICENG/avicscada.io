@@ -30,6 +30,12 @@ pub fn parse_plc_type(value: &str) -> Result<PlcType, S7DriverError> {
     }
 }
 
+pub fn resolve_rack_slot(plc_type: &str, rack: Option<u8>, slot: Option<u8>) -> Result<(u8, u8), S7DriverError> {
+    let plc = parse_plc_type(plc_type)?;
+    let (default_rack, default_slot) = plc.default_rack_slot();
+    Ok((rack.unwrap_or(default_rack), slot.unwrap_or(default_slot)))
+}
+
 pub fn validate_db_read(db_number: u16, offset: u16, count: u16) -> Result<String, S7DriverError> {
     if db_number == 0 || count == 0 || count > 200
         || (offset as u32 + count as u32) > 65536 {
@@ -75,6 +81,11 @@ mod tests {
         assert!(matches!(parse_plc_type("S7-1500"), Ok(PlcType::S1500)));
         assert!(matches!(parse_plc_type("S7-1200"), Ok(PlcType::S1200)));
         assert!(parse_plc_type("S7-999").is_err());
+    }
+    #[test] fn rack_slot_defaults_follow_plc_family_and_allow_overrides() {
+        let (rack, slot) = resolve_rack_slot("S7-300", None, None).unwrap();
+        assert_eq!((rack, slot), PlcType::S300.default_rack_slot());
+        assert_eq!(resolve_rack_slot("S7-1200", Some(1), Some(2)).unwrap(), (1, 2));
     }
     #[test] fn validates_absolute_db_byte_address_and_bounds() {
         assert_eq!(validate_db_read(1, 0, 4).unwrap(), "DB1.0");

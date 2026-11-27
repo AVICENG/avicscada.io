@@ -206,10 +206,12 @@ fn read_protocol(p: &Value, modbus_clients: &mut HashMap<String, ModbusTcpClient
             let port = u16::try_from(p.get("port").and_then(Value::as_u64).unwrap_or(102))
                 .map_err(|_| "invalid S7 port".to_string())?;
             let plc_type = required_str(p, "plc_type")?;
-            let rack = u8::try_from(p.get("rack").and_then(Value::as_u64).unwrap_or(0))
-                .map_err(|_| "invalid S7 rack".to_string())?;
-            let slot = u8::try_from(p.get("slot").and_then(Value::as_u64).unwrap_or(1))
-                .map_err(|_| "invalid S7 slot".to_string())?;
+            let rack = p.get("rack").and_then(Value::as_u64)
+                .map(u8::try_from).transpose().map_err(|_| "invalid S7 rack".to_string())?;
+            let slot = p.get("slot").and_then(Value::as_u64)
+                .map(u8::try_from).transpose().map_err(|_| "invalid S7 slot".to_string())?;
+            let (rack, slot) = avic_communication_engine::s7::resolve_rack_slot(plc_type, rack, slot)
+                .map_err(|e| e.to_string())?;
             let db_number = u16::try_from(required_u64(p, "db_number")?)
                 .map_err(|_| "invalid S7 DB number".to_string())?;
             let offset = u16::try_from(p.get("offset").and_then(Value::as_u64).unwrap_or(0))
