@@ -228,3 +228,9 @@
 ### DEV234 — Modbus transaction ID concurrency regression
 - Добавлен стресс-тест общего MBAP allocator: 10 000 параллельных резервирований через 32 worker threads должны дать 10 000 уникальных последовательных идентификаторов без коллизий.
 - Тест дополняет проверку того, что MEI Device Identification использует общий allocator. Результат ожидает CI; локальный запуск не подтверждён.
+
+
+### DEV235 — OPC UA open62541 1.4.21 compile correction
+- Linux CI run 46031677089 (SHA 90918684) собрал upstream open62541, но probe не прошёл строгую компиляцию: `memchr` требует явного const pointer cast при `-Wc++-compat`; в `UA_ConnectionConfig` поля называются `localMaxMessageSize` и `localMaxChunkCount`.
+- Исправлены оба cast и оба имени поля согласно compiler diagnostics open62541 1.4.21. Это подтверждённое исправление по конкретным ошибкам run 46031677089; повторная сборка на актуальном HEAD ещё ожидает CI.
+- **Статус OPC UA:** RED на этапе native build до повторного Linux/Windows build+self-test. Нельзя объявлять probe собранным на актуальном HEAD.
