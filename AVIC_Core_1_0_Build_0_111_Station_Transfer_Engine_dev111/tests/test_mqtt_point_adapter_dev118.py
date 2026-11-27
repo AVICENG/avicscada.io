@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from avic_core.domain.models import Device, Point, PointQuality
+from avic_core.drivers.manager import DriverInstance
 from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
 from avic_core.ui import create_ui_app
 
@@ -31,8 +32,13 @@ def _setup(tmp_path, count=1):
     app = create_ui_app(data_dir=str(tmp_path))
     project = app.state.project_station.create_project("MQTT adapter tests")
     station = app.state.project_station.create_station(project["id"], "MQTT station")
+    # MQTT remains planned for production Driver Manager lifecycle. This adapter-level
+    # test persists an explicit station-owned identity without claiming production start.
+    driver = DriverInstance(name="MQTT adapter test", station_id=station["id"],
+                            driver_id="mqtt", protocol="MQTT")
+    app.state.core.repository.save(driver)
     device = Device(name="MQTT device", station_id=station["id"], protocol="mqtt",
-                    address="mqtt://broker.example:1883", driver_instance_id="driver-mqtt-test")
+                    address="mqtt://broker.example:1883", driver_instance_id=driver.id)
     app.state.core.repository.save(device)
     points = []
     for i in range(count):
@@ -47,7 +53,7 @@ def _setup(tmp_path, count=1):
 def test_mqtt_subscribes_and_publishes_json_value_to_point_runtime(tmp_path):
     app, points = _setup(tmp_path)
     client = FakeMqttClient()
-    adapter = MqttPointAdapter(client, app.state.core.point_runtime, "driver-mqtt-test",
+    adapter = MqttPointAdapter(client, app.state.core.point_runtime, driver.id,
         [MqttPointBinding(points[0].id, "site/ahu1/supply", qos=1, value_path="telemetry.temp", scale=1.8, offset=32)],
         host="broker.example", port=8883)
     adapter.start()

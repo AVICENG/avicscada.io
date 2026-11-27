@@ -21,8 +21,10 @@ def _setup(tmp_path, count=2):
     app = create_ui_app(data_dir=str(tmp_path))
     project = app.state.project_station.create_project("DEV115")
     station = app.state.project_station.create_station(project["id"], "Modbus tests")
+    driver = app.state.core.driver_manager.create_instance(
+        station["id"], "modbus-tcp", "Modbus adapter test", {})
     device = Device(name="Modbus device", station_id=station["id"], protocol="modbus/tcp",
-                    address="192.0.2.20", driver_instance_id="driver-modbus-test")
+                    address="192.0.2.20", driver_instance_id=driver["id"])
     app.state.core.repository.save(device)
     points = []
     for i in range(count):
@@ -36,7 +38,7 @@ def _setup(tmp_path, count=2):
 def test_modbus_adapter_publishes_scaled_values_into_runtime(tmp_path):
     app, pts = _setup(tmp_path)
     client = FakeModbusClient({0: [2345], 1: [1987]})
-    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test", [
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, driver["id"], [
         ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16", scale=0.1),
         ModbusTcpPointBinding(pts[1].id, 4, 1, data_type="uint16", offset=1.0)])
     result = adapter.poll_once()

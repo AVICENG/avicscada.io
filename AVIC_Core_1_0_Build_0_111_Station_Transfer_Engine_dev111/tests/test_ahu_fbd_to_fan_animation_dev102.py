@@ -48,6 +48,7 @@ def _make_ahu_chain(tmp_path):
 def test_real_point_to_fbd_bool_output_drives_ahu_fan_binding_and_persists(tmp_path):
     app, station, point, graphic, fan, fbd, binding, and_id = _make_ahu_chain(tmp_path)
     try:
+        device, _ = app.state.core.repository.get(point.device_id, Device)
         assert binding["graphic_element_id"] == fan["id"]
         # Saving the drawing must not delete the FBD link on the modular AHU fan symbol.
         saved = app.state.graphics.save(graphic["id"], graphic["revision"], graphic["elements"])

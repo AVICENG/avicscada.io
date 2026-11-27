@@ -186,6 +186,6 @@ def test_fbd_point_input_rejects_point_from_another_station(tmp_path):
 
     doc = app.state.fbd.create(station_a["id"], "Cross-station input must fail")
     app.state.fbd.add_point_node(doc["id"], foreign_point.id)
-    with pytest.raises(ValueError, match="принадлежит другой станции"):
+    with pytest.raises(ValueError, match="не принадлежит станции этой FBD-стратегии"):
         app.state.fbd.simulate(doc["id"])
     app.state.core.close()

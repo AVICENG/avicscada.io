@@ -16,8 +16,10 @@ def _setup(tmp_path, count=2):
     app = create_ui_app(data_dir=str(tmp_path))
     project = app.state.project_station.create_project("BACnet adapter tests")
     station = app.state.project_station.create_station(project["id"], "BACnet station")
+    driver = app.state.core.driver_manager.create_instance(
+        station["id"], "bacnet-ip", "BACnet adapter test", {})
     device = Device(name="BACnet device", station_id=station["id"], protocol="bacnet/ip",
-                    address="192.0.2.40:47808", driver_instance_id="driver-bacnet-test")
+                    address="192.0.2.40:47808", driver_instance_id=driver["id"])
     app.state.core.repository.save(device)
     points = []
     for i in range(count):
@@ -31,7 +33,7 @@ def _setup(tmp_path, count=2):
 def test_bacnet_adapter_reads_present_value_into_shared_runtime(tmp_path):
     app, pts = _setup(tmp_path)
     client = FakeBacnetClient({1: 21.75, 2: 22.5})
-    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, "driver-bacnet-test", [
+    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, driver["id"], [
         BacnetIpPointBinding(pts[0].id, ("192.0.2.40", 47808), 1234, 0, 1, scale=0.1),
         BacnetIpPointBinding(pts[1].id, ("192.0.2.40", 47808), 1234, 0, 2, offset=1.0)])
     result = adapter.poll_once()

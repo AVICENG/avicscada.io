@@ -196,6 +196,9 @@ def test_point_becomes_licensed_when_used_in_fbd_and_graphics_and_releases_after
     class Gate:
         def inspect(self, license_file):
             return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid:
+                raise PermissionError("driver entitlement denied")
         def assert_can_create_point(self, status, existing_ids, new_id):
             if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
                 raise LicenseLimitExceeded("point limit")
