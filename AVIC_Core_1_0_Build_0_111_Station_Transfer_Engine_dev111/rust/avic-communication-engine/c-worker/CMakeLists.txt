@@ -39,6 +39,11 @@ add_executable(avic-modbus-c-worker src/main.c)
 target_link_libraries(avic-modbus-c-worker PRIVATE ${LIBMODBUS_TARGET} ${JANSSON_TARGET})
 if(WIN32)
   target_link_libraries(avic-modbus-c-worker PRIVATE Rpcrt4)
+  # Ship a self-contained worker: DriverManager intentionally launches workers
+  # with a restricted environment, so do not depend on MSYS2/UCRT DLL search paths.
+  if(MINGW)
+    target_link_options(avic-modbus-c-worker PRIVATE -static -static-libgcc)
+  endif()
 else()
   find_library(UUID_LIBRARY NAMES uuid REQUIRED)
   target_link_libraries(avic-modbus-c-worker PRIVATE ${UUID_LIBRARY})
