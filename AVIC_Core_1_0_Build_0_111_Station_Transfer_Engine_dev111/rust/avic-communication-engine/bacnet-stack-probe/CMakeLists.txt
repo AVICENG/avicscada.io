@@ -34,3 +34,9 @@ target_link_libraries(avic-bacnet-stack-probe PRIVATE bacnet-stack)
 
 enable_testing()
 add_test(NAME avic_bacnet_stack_version_probe COMMAND avic-bacnet-stack-probe)
+
+if(MSVC)
+  target_compile_options(avic-bacnet-stack-probe PRIVATE /W4 /WX)
+else()
+  target_compile_options(avic-bacnet-stack-probe PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
