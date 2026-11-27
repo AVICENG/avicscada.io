@@ -70,3 +70,43 @@ def test_rust_worker_requires_absolute_existing_executable():
             ["python"], installation_id="i", project_id="p", station_id="s",
             driver_instance_id="d", generation=1,
         )
+
+
+def test_rust_worker_timeout_terminates_unresponsive_process():
+    import pytest
+    slow_worker = textwrap.dedent(r"""
+        import sys, time
+        from datetime import datetime, timezone
+        from uuid import uuid4
+        from avic_core.drivers.ipc import DriverEnvelope, read_frame, write_frame
+        seq = 0
+        for request in iter(lambda: read_frame(sys.stdin.buffer), None):
+            seq += 1
+            if request.kind == "read":
+                time.sleep(3)
+                continue
+            if request.kind == "initialize":
+                kind, payload = "initialized", {"protocol": "avic.driver.ipc", "version": 1, "worker_version": "test"}
+            elif request.kind == "configure":
+                kind, payload = "configured", {"configured": True}
+            else:
+                kind, payload = "status", {"state": "RUNNING"}
+            response = DriverEnvelope(
+                contract=request.contract, version=request.version, message_id=str(uuid4()),
+                kind=kind, installation_id=request.installation_id, project_id=request.project_id,
+                station_id=request.station_id, driver_instance_id=request.driver_instance_id,
+                worker_id=request.worker_id, generation=request.generation, sequence=seq,
+                sent_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+                correlation_id=request.message_id, payload=payload,
+            )
+            write_frame(sys.stdout.buffer, response)
+    """)
+    worker = RustDriverWorker(
+        [sys.executable, "-u", "-c", slow_worker],
+        installation_id="i", project_id="p", station_id="s",
+        driver_instance_id="d", generation=1, timeout_seconds=0.2,
+    )
+    worker.start({"protocol": "modbus-tcp"})
+    with pytest.raises(Exception, match="timed out"):
+        worker.read({"protocol": "modbus-tcp"})
+    assert worker.diagnostics()["process_alive"] is False
