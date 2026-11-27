@@ -122,6 +122,30 @@ static int security_self_test(void) {
     return 0;
 }
 
+static UA_StatusCode parse_nodeid_checked(UA_NodeId *node, const char *text) {
+    if(!text || strncmp(text, "ns=", 3) != 0)
+        return UA_STATUSCODE_BADINVALIDARGUMENT;
+    const char *cursor = text + 3;
+    if(*cursor < '0' || *cursor > '9')
+        return UA_STATUSCODE_BADINVALIDARGUMENT;
+    unsigned int namespace_index = 0;
+    while(*cursor >= '0' && *cursor <= '9') {
+        unsigned int digit = (unsigned int)(*cursor - '0');
+        if(namespace_index > (65535u - digit) / 10u)
+            return UA_STATUSCODE_BADOUTOFRANGE;
+        namespace_index = namespace_index * 10u + digit;
+        ++cursor;
+    }
+    if(*cursor != ';')
+        return UA_STATUSCODE_BADINVALIDARGUMENT;
+    UA_String input = UA_STRING_ALLOC(text);
+    if(!input.data)
+        return UA_STATUSCODE_BADOUTOFMEMORY;
+    UA_StatusCode status = UA_NodeId_parse(node, input);
+    UA_String_clear(&input);
+    return status;
+}
+
 static int nodeid_self_test(void) {
     if(security_self_test() != 0)
         return 1;
@@ -135,9 +159,7 @@ static int nodeid_self_test(void) {
     for(size_t i = 0; i < sizeof(valid) / sizeof(valid[0]); ++i) {
         UA_NodeId node;
         UA_NodeId_init(&node);
-        UA_String input = UA_STRING_ALLOC(valid[i]);
-        UA_StatusCode status = UA_NodeId_parse(&node, input);
-        UA_String_clear(&input);
+        UA_StatusCode status = parse_nodeid_checked(&node, valid[i]);
         if(status != UA_STATUSCODE_GOOD) {
             fprintf(stderr, "NodeId self-test failed: %s (%s)\n",
                     valid[i], UA_StatusCode_name(status));
@@ -154,9 +176,7 @@ static int nodeid_self_test(void) {
     for(size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); ++i) {
         UA_NodeId node;
         UA_NodeId_init(&node);
-        UA_String input = UA_STRING_ALLOC(invalid[i]);
-        UA_StatusCode status = UA_NodeId_parse(&node, input);
-        UA_String_clear(&input);
+        UA_StatusCode status = parse_nodeid_checked(&node, invalid[i]);
         if(status == UA_STATUSCODE_GOOD) {
             fprintf(stderr, "Invalid NodeId unexpectedly accepted: %s\n", invalid[i]);
             UA_NodeId_clear(&node);
@@ -351,9 +371,7 @@ static int connect_and_execute(int argc, char **argv, int browse) {
 
     UA_NodeId node;
     UA_NodeId_init(&node);
-    UA_String nodeid_input = UA_STRING_ALLOC(nodeid_text);
-    status = UA_NodeId_parse(&node, nodeid_input);
-    UA_String_clear(&nodeid_input);
+    status = parse_nodeid_checked(&node, nodeid_text);
     if(status != UA_STATUSCODE_GOOD) {
         fprintf(stderr, "NodeId rejected: %s\n", UA_StatusCode_name(status));
         UA_NodeId_clear(&node);
