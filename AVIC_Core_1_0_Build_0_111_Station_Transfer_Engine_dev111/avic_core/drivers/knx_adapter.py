@@ -106,6 +106,8 @@ class KnxPointAdapter:
             if requested_binding is None:
                 results = self._mark_all_bad(message)
             else:
+                self._last_errors[requested_binding.point_id] = message
+                self._failure_count += 1
                 try:
                     sample = self.point_runtime.mark_quality(
                         requested_binding.point_id, PointQuality.BAD_COMMUNICATION,
