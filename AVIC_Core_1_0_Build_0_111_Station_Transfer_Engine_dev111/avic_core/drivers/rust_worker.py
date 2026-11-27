@@ -10,6 +10,7 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 import queue
+import os
 import subprocess
 import threading
 from typing import Any, Sequence
@@ -78,9 +79,16 @@ class RustDriverWorker:
                 raise RustWorkerError("worker process has already been created")
             if not isinstance(config, dict):
                 raise TypeError("worker config must be an object")
+            inherited = os.environ
+            safe_env = {
+                key: inherited[key] for key in (
+                    "PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL",
+                ) if key in inherited
+            }
             self._process = subprocess.Popen(
                 self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, bufsize=0, shell=False,
+                stderr=subprocess.PIPE, bufsize=0, shell=False, env=safe_env,
+                close_fds=True,
             )
             self._reader = threading.Thread(target=self._read_stdout, name="avic-rust-worker-stdout", daemon=True)
             self._stderr_reader = threading.Thread(target=self._read_stderr, name="avic-rust-worker-stderr", daemon=True)
