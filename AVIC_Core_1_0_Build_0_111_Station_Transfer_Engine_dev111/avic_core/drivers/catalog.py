@@ -82,7 +82,7 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
     DriverCatalogEntry(
         "modbus-rtu", "Modbus RTU", "Modbus RTU over RS-485",
         DriverLifecycle.READ_ONLY_TRANSPORT, True,
-        notes="libmodbus C Worker supports read-only FC01/02/03/04 over RTU; AVIC Driver Manager now exposes serial configuration. Serial-port exclusive ownership, extended negative tests and physical hardware acceptance remain outstanding.",
+        notes="libmodbus C Worker supports read-only FC01/02/03/04 over RTU; AVIC Driver Manager, shared Point Runtime adapter and cross-process serial-port lease are integrated. Extended protocol negative tests and physical hardware acceptance remain outstanding.",
         category=DriverCategory.INDUSTRIAL, license_feature="driver.modbus-rtu",
     ),
     _planned(
