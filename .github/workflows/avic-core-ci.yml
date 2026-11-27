@@ -109,4 +109,4 @@ jobs:
         run: cargo test --manifest-path rust/avic-communication-engine/Cargo.toml
 
       - name: Run same-simulator Python vs Rust Modbus benchmark smoke test
-        run: python tools/modbus_load_compare.py --devices 4 --points-per-device 20 --cycles 2 --concurrency 2
+        run: python tools/modbus_load_compare.py --devices 100 --points-per-device 100 --cycles 10 --concurrency 16
