@@ -215,3 +215,42 @@ def test_driver_publication_and_quality_fail_closed_for_unowned_device(tmp_path)
     sample = core.point_runtime.publish(point_id, 21.5, source_driver_id=None)
     assert sample.value == 21.5 and sample.quality == "GOOD"
     core.close()
+
+
+def test_point_runtime_rejects_driver_from_another_station_for_value_and_quality(tmp_path):
+    from avic_core.domain.models import Device
+
+    app, station_a, driver_a, inspection = _import_setup(tmp_path, "bacnet-ip")
+    project_b = app.state.project_station.create_project("Second project")
+    station_b = app.state.project_station.create_station(project_b["id"], "Second station")
+    driver_b = app.state.driver_manager.create_instance(
+        station_b["id"], "bacnet-ip", "Foreign station driver", {}
+    )
+    native = inspection["points"][0]["native_identity"]
+    imported = app.state.protocol_point_import.import_points(
+        station_a["id"], driver_a["id"], inspection, [native]
+    )
+
+    device, version = app.state.core.repository.get(imported["device_id"], Device)
+    # Simulate corrupted or manually tampered ownership metadata: the device
+    # now names a valid driver, but that driver belongs to another station.
+    device.driver_instance_id = driver_b["id"]
+    app.state.core.repository.save(device, expected_version=version)
+
+    point_id = imported["points_added"][0]
+    with pytest.raises(ValueError, match="принадлежат разным станциям"):
+        app.state.core.point_runtime.publish(
+            point_id, 22.0, source_driver_id=driver_b["id"]
+        )
+    with pytest.raises(ValueError, match="принадлежат разным станциям"):
+        app.state.core.point_runtime.mark_quality(
+            point_id, "BAD_COMMUNICATION", source_driver_id=driver_b["id"]
+        )
+
+    # The valid driver from station A is also rejected because it no longer
+    # matches the Device owner; station separation is enforced independently.
+    with pytest.raises(ValueError, match="Источник публикации не совпадает"):
+        app.state.core.point_runtime.publish(
+            point_id, 22.0, source_driver_id=driver_a["id"]
+        )
+    app.state.core.close()
