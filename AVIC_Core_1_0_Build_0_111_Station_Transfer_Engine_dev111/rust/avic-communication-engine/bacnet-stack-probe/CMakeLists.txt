@@ -31,6 +31,12 @@ FetchContent_MakeAvailable(bacnet_stack)
 
 add_executable(avic-bacnet-stack-probe src/main.c)
 target_link_libraries(avic-bacnet-stack-probe PRIVATE bacnet-stack)
+# The pinned upstream stack uses getenv() in its platform layer. Suppress
+# only MSVC's CRT deprecation diagnostic for this third-party header/API;
+# keep /W4 /WX enabled for AVIC-owned probe code.
+if(MSVC)
+  target_compile_definitions(avic-bacnet-stack-probe PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()
 
 enable_testing()
 add_test(NAME avic_bacnet_stack_version_probe COMMAND avic-bacnet-stack-probe)
