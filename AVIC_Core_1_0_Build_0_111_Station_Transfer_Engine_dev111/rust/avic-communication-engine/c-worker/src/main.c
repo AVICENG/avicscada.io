@@ -169,8 +169,9 @@ static int connect_modbus(worker_t *w) {
         const char *port_name = w->serial_port;
 #ifdef _WIN32
         /* libmodbus requires the Win32 device namespace for COM ports > 9. */
-        if (strncmp(port_name, "COM", 3) == 0 && port_name[3] >= '1' && port_name[3] <= '9'
-            && port_name[4] >= '0' && port_name[4] <= '9' && port_name[5] == '\\0') {
+        if (strlen(port_name) == 5 && strncmp(port_name, "COM", 3) == 0
+            && port_name[3] >= '1' && port_name[3] <= '9'
+            && port_name[4] >= '0' && port_name[4] <= '9') {
             if (snprintf(device, sizeof(device), "\\\\.\\%s", port_name) >= (int)sizeof(device))
                 return 0;
             port_name = device;
