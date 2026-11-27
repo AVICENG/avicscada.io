@@ -31,6 +31,7 @@ class RustDriverPointAdapter:
 
     def __init__(self, *, worker_command, core, driver_instance_id: str,
                  protocol: str, config: dict[str, Any], bindings: list[dict[str, Any]],
+                 installation_id: str, project_id: str, station_id: str,
                  generation: int = 1, timeout_seconds: float = 5.0) -> None:
         from avic_core.domain.models import PointQuality
 
@@ -40,6 +41,7 @@ class RustDriverPointAdapter:
             raise ValueError("Rust driver requires at least one point binding")
         self.protocol = protocol
         self.core = core
+        self._config = dict(config)
         self.point_runtime = core.point_runtime
         self.driver_instance_id = driver_instance_id
         self.bindings = tuple(dict(item) for item in bindings)
@@ -49,15 +51,15 @@ class RustDriverPointAdapter:
         self._PointQuality = PointQuality
         self._worker = RustDriverWorker(
             worker_command,
-            installation_id=core.installation_id,
-            project_id=config["project_id"],
-            station_id=config["station_id"],
+            installation_id=installation_id,
+            project_id=project_id,
+            station_id=station_id,
             driver_instance_id=driver_instance_id,
             generation=generation,
             timeout_seconds=timeout_seconds,
         )
         worker_config = {k: v for k, v in config.items()
-                         if k not in {"bindings", "poll_interval_seconds", "project_id", "station_id"}}
+                         if k not in {"bindings", "poll_interval_seconds", "project_id", "station_id", "engine"}}
         worker_config["protocol"] = protocol
         self._worker.start(worker_config)
 
@@ -116,16 +118,13 @@ class RustDriverPointAdapter:
         )
         return self._scaled(value, float(binding.get("scale", 1.0)), float(binding.get("offset", 0.0)))
 
-    def _read_bacnet_batch(self) -> dict[tuple[str, int, int], Any]:
-        address = self._config["local_address"]
-        port = int(self._config.get("udp_port", 47808))
-        device_instance = int(self._config["device_instance"])
+    def _read_bacnet_batch(self, address: tuple[str, int], device_instance: int) -> dict[tuple[str, int, int], Any]:
         result = self._worker.read({
-            "protocol": "bacnet-ip", "address": f"{address}:{port}",
-            "device_instance": device_instance,
+            "protocol": "bacnet-ip", "address": f"{address[0]}:{int(address[1])}",
+            "device_instance": int(device_instance),
         }).get("result", {})
         device = result.get("device", {})
-        if int(device.get("device_instance", -1)) != device_instance:
+        if int(device.get("device_instance", -1)) != int(device_instance):
             raise ValueError("BACnet worker returned a different Device Instance")
         objects = result.get("objects")
         if not isinstance(objects, list):
@@ -135,7 +134,7 @@ class RustDriverPointAdapter:
             if not isinstance(obj, dict):
                 continue
             key = (str(obj.get("object_type_name")), int(obj.get("object_instance", -1)),
-                   device_instance)
+                   int(device_instance))
             if obj.get("present_value") is not None:
                 values[key] = obj["present_value"]
         return values
@@ -155,16 +154,21 @@ class RustDriverPointAdapter:
         return result["value"]
 
     def poll_once(self) -> dict:
-        self._config = getattr(self, "_config", {})
-        # BACnet object list is read once per poll and shared across all point bindings.
-        bacnet_values = None
+        # BACnet object lists are fetched once per unique device per poll.
+        bacnet_values_by_device: dict[tuple[str, int, int], dict] = {}
+        bacnet_errors: dict[tuple[str, int, int], str] = {}
         if self.protocol == "bacnet-ip":
-            try:
-                bacnet_values = self._read_bacnet_batch()
-            except Exception as exc:
-                message = f"{type(exc).__name__}: {exc}"
-                rows = [self._mark_failure(b["point_id"], message) for b in self.bindings]
-                return self._result(rows)
+            groups = {}
+            for binding in self.bindings:
+                address = tuple(binding["address"])
+                device_instance = int(binding["device_instance"])
+                key = (str(address[0]), int(address[1]), device_instance)
+                groups.setdefault(key, (address, device_instance))
+            for key, (address, device_instance) in groups.items():
+                try:
+                    bacnet_values_by_device[key] = self._read_bacnet_batch(address, device_instance)
+                except Exception as exc:
+                    bacnet_errors[key] = f"{type(exc).__name__}: {exc}"
 
         rows = []
         for binding in self.bindings:
@@ -173,10 +177,18 @@ class RustDriverPointAdapter:
                 if self.protocol == "modbus-tcp":
                     value = self._read_modbus(binding)
                 elif self.protocol == "bacnet-ip":
+                    address = tuple(binding["address"])
+                    device_instance = int(binding["device_instance"])
+                    device_key = (str(address[0]), int(address[1]), device_instance)
+                    if device_key in bacnet_errors:
+                        raise RuntimeError(bacnet_errors[device_key])
+                    if int(binding.get("property_id", 85)) != 85 or binding.get("array_index") is not None:
+                        raise ValueError("Rust BACnet adapter currently supports Present_Value (property 85) without array index")
                     name = _BACNET_OBJECT_TYPE_NAMES.get(int(binding["object_type"]))
                     if name is None:
                         raise ValueError(f"Unsupported BACnet object type code: {binding['object_type']}")
-                    key = (name, int(binding["object_instance"]), int(binding["device_instance"]))
+                    key = (name, int(binding["object_instance"]), device_instance)
+                    bacnet_values = bacnet_values_by_device.get(device_key, {})
                     if key not in bacnet_values:
                         raise LookupError(f"BACnet object {name}:{binding['object_instance']} has no Present_Value")
                     value = self._scaled(
