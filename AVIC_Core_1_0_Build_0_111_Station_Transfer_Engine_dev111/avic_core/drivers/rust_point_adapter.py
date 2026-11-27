@@ -37,7 +37,7 @@ class RustDriverPointAdapter:
     def __init__(self, *, worker_command, core, driver_instance_id: str,
                  protocol: str, config: dict[str, Any], bindings: list[dict[str, Any]],
                  installation_id: str, project_id: str, station_id: str,
-                 generation: int = 1, timeout_seconds: float = 5.0) -> None:
+                 generation: int = 1, timeout_seconds: float = 5.0, worker_mode: str = "RUST_WORKER_READ_ONLY") -> None:
         from avic_core.domain.models import PointQuality
 
         if protocol not in {"modbus-tcp", "bacnet-ip", "knxnet-ip"}:
@@ -45,6 +45,7 @@ class RustDriverPointAdapter:
         if not bindings:
             raise ValueError("Rust driver requires at least one point binding")
         self.protocol = protocol
+        self.worker_mode = worker_mode
         self.core = core
         self._config = dict(config)
         self.point_runtime = core.point_runtime
@@ -246,7 +247,7 @@ class RustDriverPointAdapter:
                 "results": rows}
 
     def diagnostics(self) -> dict:
-        return {"driver_id": self.protocol, "mode": "RUST_WORKER_READ_ONLY",
+        return {"driver_id": self.protocol, "mode": self.worker_mode,
                 "write_supported": False, "configured_points": len(self.bindings),
                 "success_count": self._success_count, "failure_count": self._failure_count,
                 "last_errors": dict(self._last_errors), "worker": self._worker.diagnostics()}
