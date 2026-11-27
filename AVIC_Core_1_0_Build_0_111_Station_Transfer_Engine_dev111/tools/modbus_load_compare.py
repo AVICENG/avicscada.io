@@ -32,6 +32,17 @@ def recv_exact(sock, size):
     return bytes(data)
 
 
+def build_fc03_response(tid: int, unit: int, address: int, count: int) -> bytes:
+    """Build a valid Modbus TCP FC03 response (MBAP + PDU)."""
+    if not 1 <= count <= 125 or address < 0 or address + count > 65536:
+        raise ValueError("invalid holding-register range")
+    payload = bytes([3, count * 2]) + b"".join(
+        ((address + i) & 0xffff).to_bytes(2, "big") for i in range(count)
+    )
+    return (tid.to_bytes(2, "big") + b"\x00\x00" +
+            (len(payload) + 1).to_bytes(2, "big") + bytes([unit]) + payload)
+
+
 class ModbusHandler(socketserver.BaseRequestHandler):
     def handle(self):
         # DEV221 keeps one TCP socket open for multiple sequential Modbus reads.
@@ -53,12 +64,7 @@ class ModbusHandler(socketserver.BaseRequestHandler):
                 count = int.from_bytes(pdu[3:5], "big")
                 if not 1 <= count <= 125 or address + count > 65536:
                     return
-                payload = bytes([3, count * 2]) + b"".join(
-                    ((address + i) & 0xffff).to_bytes(2, "big") for i in range(count)
-                )
-                response = (tid.to_bytes(2, "big") + b"\x00\x00" +
-                            (len(payload) + 1).to_bytes(2, "big") + bytes([unit]) + payload)
-                self.request.sendall(response)
+                self.request.sendall(build_fc03_response(tid, unit, address, count))
             except (OSError, ConnectionError):
                 return
 
@@ -158,11 +164,17 @@ def main():
         crate = Path(__file__).resolve().parent.parent / "rust" / "avic-communication-engine"
         subprocess.run(["cargo", "build", "--release", "--manifest-path", str(crate / "Cargo.toml")], check=True)
         exe = crate / "target" / "release" / ("avic-modbus-bench.exe" if sys.platform == "win32" else "avic-modbus-bench")
-        rust_run = subprocess.run(
-            [str(exe), host, str(port), str(args.devices), str(args.points_per_device),
-             str(args.cycles), str(args.concurrency)],
-            check=True, capture_output=True, text=True
-        )
+        try:
+            rust_run = subprocess.run(
+                [str(exe), host, str(port), str(args.devices), str(args.points_per_device),
+                 str(args.cycles), str(args.concurrency)],
+                check=True, capture_output=True, text=True
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                "Rust benchmark process failed; "
+                f"exit={exc.returncode}; stdout={exc.stdout!r}; stderr={exc.stderr!r}"
+            ) from exc
         rust_line = next(line for line in rust_run.stdout.splitlines() if line.startswith("engine=rust "))
         fields = dict(part.split("=", 1) for part in rust_line.split() if "=" in part)
         rust_result = {
