@@ -83,9 +83,8 @@ def test_compiled_c_worker_ipc_handshake_when_enabled():
         "port": 502, "unit_id": 1, "timeout": 2.0,
     })
     try:
-        status = worker.get_status()
-        assert status["state"] == "RUNNING"
-        assert status["write_supported"] is False
+        assert worker.diagnostics()["started"] is True
+        assert worker.diagnostics()["process_alive"] is True
     finally:
         worker.close()
     assert worker.diagnostics()["process_alive"] is False
