@@ -259,3 +259,126 @@ def test_compiled_c_worker_fails_closed_on_replayed_ipc_sequence():
         for stream in (process.stdin, process.stdout, process.stderr):
             if stream is not None:
                 stream.close()
+
+
+def test_compiled_c_worker_reads_all_read_only_modbus_functions_when_enabled():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    def recv_exact(sock, size):
+        data = bytearray()
+        while len(data) < size:
+            chunk = sock.recv(size - len(data))
+            if not chunk:
+                raise ConnectionError("client closed Modbus test socket")
+            data.extend(chunk)
+        return bytes(data)
+
+    class ModbusReadFunctionSimulator(socketserver.BaseRequestHandler):
+        def handle(self):
+            try:
+                header = recv_exact(self.request, 7)
+                tid, protocol_id = header[:2], header[2:4]
+                length, unit_id = int.from_bytes(header[4:6], "big"), header[6]
+                if protocol_id != b"\\x00\\x00" or not 2 <= length <= 254:
+                    return
+                pdu = recv_exact(self.request, length - 1)
+                if len(pdu) != 5:
+                    return
+                function = pdu[0]
+                address = int.from_bytes(pdu[1:3], "big")
+                count = int.from_bytes(pdu[3:5], "big")
+                if function == 1 and (count < 1 or count > 2000):
+                    return
+                if function == 2 and (count < 1 or count > 2000):
+                    return
+                if function in (3, 4) and (count < 1 or count > 125):
+                    return
+                if function not in (1, 2, 3, 4) or address + count > 65536:
+                    return
+                if function == 1:
+                    data = bytes((0x55, 0x01))[:(count + 7) // 8]
+                elif function == 2:
+                    data = bytes((0x02,))[:(count + 7) // 8]
+                elif function == 3:
+                    data = b"".join((address + i).to_bytes(2, "big") for i in range(count))
+                else:
+                    values = (0x1234, 0xABCD, 0x0102)
+                    data = b"".join(values[i].to_bytes(2, "big") for i in range(count))
+                response_pdu = bytes((function, len(data))) + data
+                response = (tid + b"\\x00\\x00"
+                    + (len(response_pdu) + 1).to_bytes(2, "big")
+                    + bytes((unit_id,)) + response_pdu)
+                self.request.sendall(response)
+            except (OSError, ConnectionError, IndexError):
+                return
+
+    class ModbusSimulator(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+        request_queue_size = 16
+
+    cases = [
+        (1, 9, [True, False, True, False, True, False, True, False, True]),
+        (2, 3, [False, True, False]),
+        (4, 2, [0x1234, 0xABCD]),
+    ]
+    with ModbusSimulator(("127.0.0.1", 0), ModbusReadFunctionSimulator) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        host, port = server.server_address
+        from avic_core.drivers.rust_worker import RustDriverWorker
+        worker = RustDriverWorker(
+            [str(__import__("pathlib").Path(worker_path).resolve())],
+            installation_id="install-c-modbus-functions", project_id="project-c-modbus-functions",
+            station_id="station-c-modbus-functions", driver_instance_id="driver-c-modbus-functions",
+            generation=1, timeout_seconds=5.0,
+        )
+        try:
+            worker.start({
+                "protocol": "modbus-tcp", "host": host,
+                "port": port, "unit_id": 7, "timeout": 2.0,
+            })
+            for function, count, expected in cases:
+                response = worker.read({
+                    "protocol": "modbus-tcp", "host": host, "port": port,
+                    "unit_id": 7, "timeout_ms": 2000,
+                    "function": function, "address": 0, "count": count,
+                })
+                assert response["transport_ok"] is True
+                assert response["result"]["function"] == function
+                assert response["result"]["values"] == expected
+        finally:
+            worker.close()
+            server.shutdown()
+            thread.join(timeout=2)
+
+
+def test_compiled_c_worker_rejects_oversized_modbus_read_when_enabled():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from avic_core.drivers.rust_worker import RustDriverWorker
+    worker = RustDriverWorker(
+        [str(__import__("pathlib").Path(worker_path).resolve())],
+        installation_id="install-c-modbus-bounds", project_id="project-c-modbus-bounds",
+        station_id="station-c-modbus-bounds", driver_instance_id="driver-c-modbus-bounds",
+        generation=1, timeout_seconds=5.0,
+    )
+    worker.start({
+        "protocol": "modbus-tcp", "host": "127.0.0.1",
+        "port": 502, "unit_id": 1, "timeout": 2.0,
+    })
+    try:
+        with __import__("pytest").raises(RuntimeError):
+            worker.read({
+                "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 502,
+                "unit_id": 1, "timeout_ms": 2000,
+                "function": 3, "address": 0, "count": 126,
+            })
+    finally:
+        worker.close()
