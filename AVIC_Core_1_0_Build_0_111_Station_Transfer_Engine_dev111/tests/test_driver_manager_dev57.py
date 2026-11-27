@@ -400,3 +400,44 @@ def test_driver_stop_close_failure_does_not_leave_stale_session(tmp_path):
     service.stop_instance(created["id"])
     assert replacement.closed is True
     core.close()
+
+
+def test_driver_stop_timeout_does_not_close_transport_during_active_poll(tmp_path):
+    import threading
+    from avic_core.drivers.manager import DriverInstance
+
+    class BlockingAdapter:
+        def __init__(self):
+            self.entered = threading.Event()
+            self.release = threading.Event()
+            self.closed = False
+        def poll_once(self):
+            self.entered.set()
+            self.release.wait(timeout=3)
+            return {"results": []}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    service = core.driver_manager
+    created = service.create_instance(station["id"], "modbus-tcp", "Blocked poll",
+                                      {"poll_interval_seconds": 0.1})
+    adapter = BlockingAdapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _item: adapter)
+    service.start_instance(created["id"])
+    assert adapter.entered.wait(timeout=2)
+
+    with pytest.raises(TimeoutError, match="did not stop"):
+        service.stop_instance(created["id"], timeout=0.01)
+
+    assert adapter.closed is False
+    assert created["id"] in service._sessions
+    assert service.diagnostics(created["id"])["state"] == "STOPPING"
+
+    adapter.release.set()
+    stopped = service.stop_instance(created["id"], timeout=2)
+    assert stopped["state"] == "STOPPED"
+    assert adapter.closed is True
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "STOPPED" and persisted.enabled is False
+    core.close()
