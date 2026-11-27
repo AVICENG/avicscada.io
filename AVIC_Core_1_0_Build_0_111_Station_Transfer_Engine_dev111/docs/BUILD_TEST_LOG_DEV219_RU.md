@@ -14,7 +14,7 @@
 - BACnet Rust backend группирует object-list/property reads по устройству за один poll cycle, сопоставляет object type/instance, ограничен Present_Value (property 85) без array index. BACnet socket привязан к явно настроенному station local address/UDP port.
 - KNX Rust backend делает GroupValue_Read по каждой configured group address и DPT через KNXnet/IP tunnelling; адрес и DPT берутся из AVIC point bindings.
 - Worker запрещает write/write_point, проверяет один protocol на worker, секреты в IPC config запрещены.
-- Добавлены тесты Rust adapter mapping и DriverManager backend selection.
+- Добавлены тесты Rust adapter mapping, BACnet Status_Flags quality propagation, DriverManager backend selection и worker generation.
 
 ## Как включить Rust backend
 
@@ -28,7 +28,7 @@
 
 ## Ограничения — не production acceptance
 - В этом рабочем окружении Cargo отсутствует; Rust compile/test не запускались.
-- CI для текущих коммитов пока не получен.
+- Первый CI запуск обнаружил две Rust compile errors (BACnet PropertyValue import/type и KNX DPT display lifetime); они исправлены. Новый CI для исправленного head ещё ожидает запуска/завершения.
 - Worker пока создаёт протокольное соединение на каждый read; постоянные сессии, batch polling для Modbus, COV subscriptions и reconnect orchestration ещё не готовы.
 - BACnet использует BACnet-RS 0.3.2, upstream прямо указывает статус not production-ready; segmentation/reassembly, alarms/events, trend logs, schedules/calendars, BACnet/SC не реализованы upstream.
 - BACnet worker возвращает общие объектные свойства и поддерживает только Present_Value (85), без array index. Нужны проверки типов object list, RPM и vendor-specific property behavior.
