@@ -254,11 +254,12 @@ class RustDriverPointAdapter:
     def close(self) -> None:
         if self._closed:
             return
-        self._closed = True
         close_error = None
         try:
             self._worker.close()
+            self._closed = True
         except Exception as exc:
+            self._closed = False
             close_error = exc
         for binding in self.bindings:
             try:
