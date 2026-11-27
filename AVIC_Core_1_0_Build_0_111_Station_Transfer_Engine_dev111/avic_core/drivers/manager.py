@@ -1,7 +1,7 @@
 """Persistent driver inventory and explicitly controlled runtime lifecycle."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from threading import RLock
 from typing import Callable, Any
@@ -17,6 +17,7 @@ from avic_core.network.modbus_tcp import ModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
 from avic_core.network.knx_tunneling import KnxTunnelingSession
+from avic_core.drivers.rust_point_adapter import RustDriverPointAdapter
 
 
 def _now():
@@ -71,6 +72,7 @@ class DriverManagerService:
     def __init__(self, core):
         self.core = core
         self._lock = RLock()
+        self._rust_worker_command: str | None = None
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
@@ -93,6 +95,47 @@ class DriverManagerService:
             for index, item in enumerate(value):
                 cls._reject_secrets(item, f"{path}[{index}]")
 
+    def register_rust_worker_command(self, executable: str) -> str:
+        """Register an administrator-selected, absolute Rust worker executable path."""
+        from pathlib import Path
+        path = Path(executable).expanduser()
+        if not path.is_absolute() or not path.is_file():
+            raise ValueError("Rust worker must be an existing absolute executable path")
+        resolved = str(path.resolve(strict=True))
+        with self._lock:
+            if self._sessions:
+                raise RuntimeError("Rust worker executable cannot change while drivers are active")
+            self._rust_worker_command = resolved
+        return resolved
+
+    def _build_rust_adapter(self, core, instance: DriverInstance, cfg: dict, protocol: str, bindings):
+        if not self._rust_worker_command:
+            raise RuntimeError("Rust worker executable is not registered by the AVIC administrator")
+        station = core.repository.get_record(instance.station_id)
+        project_id = station["payload"].get("project_id")
+        if not project_id:
+            raise ValueError("Station has no owning Project; Rust worker scope cannot be established")
+        project = core.repository.get_record(project_id)
+        platform_id = project["payload"].get("platform_id")
+        installation_id = None
+        if platform_id:
+            platform = core.repository.get_record(platform_id)
+            installation_id = platform["payload"].get("installation_id")
+        # Older projects may not yet have a Platform record. Use the Core data
+        # directory as a stable local installation scope, never a caller value.
+        if not installation_id:
+            installation_id = str(core.paths.root.resolve())
+        worker_config = dict(cfg)
+        worker_config["project_id"] = project_id
+        worker_config["station_id"] = instance.station_id
+        return RustDriverPointAdapter(
+            worker_command=[self._rust_worker_command], core=core,
+            driver_instance_id=instance.id, protocol=protocol,
+            config=worker_config, bindings=bindings,
+            installation_id=str(installation_id), project_id=str(project_id),
+            station_id=instance.station_id,
+        )
+
     def register_adapter_factory(self, driver_id: str, factory: Callable[[Any, DriverInstance], Any]) -> None:
         if driver_id not in {item.driver_id for item in list_builtin_drivers()}:
             raise ValueError("Драйвер отсутствует во встроенном каталоге")
@@ -109,10 +152,13 @@ class DriverManagerService:
 
     def _build_modbus_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
-        allowed = {"host", "port", "unit_id", "timeout", "poll_interval_seconds", "bindings"}
+        allowed = {"host", "port", "unit_id", "timeout", "poll_interval_seconds", "bindings", "engine"}
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры Modbus TCP: {sorted(unknown)}")
+        engine = cfg.get("engine", "python")
+        if engine not in {"python", "rust"}:
+            raise ValueError("engine must be python or rust")
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
         client = ModbusTcpClient(
@@ -120,15 +166,20 @@ class DriverManagerService:
             unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
         )
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
         allowed = {"network_id", "interface_name", "local_address", "subnet_cidr",
-                   "udp_port", "device_instance", "timeout", "poll_interval_seconds", "bindings"}
+                   "udp_port", "device_instance", "timeout", "poll_interval_seconds", "bindings", "engine"}
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры BACnet/IP: {sorted(unknown)}")
+        engine = cfg.get("engine", "python")
+        if engine not in {"python", "rust"}:
+            raise ValueError("engine must be python or rust")
         required = ("network_id", "interface_name", "local_address", "subnet_cidr")
         if any(not cfg.get(key) for key in required) or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для BACnet/IP требуются параметры сети и непустой bindings")
@@ -147,17 +198,22 @@ class DriverManagerService:
             if "address" in item:
                 item["address"] = tuple(item["address"])
             bindings.append(BacnetIpPointBinding(**item))
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "bacnet-ip", [asdict(item) for item in bindings])
         return BacnetIpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_knx_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
         allowed = {
             "gateway_host", "gateway_port", "local_host", "local_port", "timeout",
-            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings",
+            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings", "engine",
         }
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры KNXnet/IP: {sorted(unknown)}")
+        engine = cfg.get("engine", "python")
+        if engine not in {"python", "rust"}:
+            raise ValueError("engine must be python or rust")
         required = ("gateway_host", "local_host")
         if any(not cfg.get(key) for key in required) or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для KNXnet/IP требуются gateway_host, local_host и непустой bindings")
@@ -168,6 +224,8 @@ class DriverManagerService:
             heartbeat_interval_seconds=float(cfg.get("heartbeat_interval_seconds", 60.0)),
         )
         bindings = [KnxPointBinding(**item) for item in cfg["bindings"]]
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "knxnet-ip", [asdict(item) for item in bindings])
         return KnxPointAdapter(session, core.point_runtime, instance.id, bindings)
 
     def catalog(self):
