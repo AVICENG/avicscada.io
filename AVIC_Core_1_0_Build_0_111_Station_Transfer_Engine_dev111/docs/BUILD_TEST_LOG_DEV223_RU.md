@@ -200,3 +200,11 @@
 - После closing tag property-list проверяется отсутствие trailing bytes; лишние данные в конце ACK отклоняются.
 - Добавлены тесты на trailing bytes и malformed Error class. Существующие проверки object identity, duplicate/unrequested/missing property и segmented ACK сохранены.
 - **Проверка:** изменения и регрессионные тесты добавлены в ветку; CI на актуальном HEAD ещё ожидает очереди. Результат не объявляется passed до CI.
+
+
+## DEV231 — KNXnet/IP receive sequence integrity (27.11.2026)
+
+- Исправлена обработка входящих TUNNELING_REQ: ранее любой новый sequence получал успешный ACK до проверки ожидаемого номера, после чего out-of-order frame отклонялся локально. Это могло сообщить gateway, что потерянный/неупорядоченный кадр принят.
+- Теперь первый ожидаемый sequence равен 0, последующие номера проверяются с wraparound 255→0. Дубликат получает успешный ACK без повторной доставки; out-of-order кадр получает TUNNELING_ACK со статусом E_SEQUENCE_NUMBER (0x04), состояние rx_sequence не изменяется, кадр не публикуется.
+- Добавлены тесты на error ACK и wraparound; существующий тест duplicate suppression сохранён.
+- **Проверка:** изменения и тесты в ветке; CI ещё ожидает выполнения. Не объявлять KNX приёмку завершённой: ETS import, полное DPT покрытие, reconnect/soak и физический KNX IP gateway остаются обязательными.
