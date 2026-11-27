@@ -185,6 +185,16 @@ jobs:
         shell: msys2 {0}
         run: cmake --build build/c-modbus-worker --parallel 2
 
+      - name: Inspect Windows C Worker runtime dependencies
+        shell: pwsh
+        run: |
+          $worker = "build/c-modbus-worker/avic-modbus-c-worker.exe"
+          $objdump = "C:\msys64\ucrt64\bin\objdump.exe"
+          if (-not (Test-Path $worker)) { throw "C Worker executable was not produced" }
+          if (-not (Test-Path $objdump)) { throw "MSYS2 objdump is unavailable" }
+          & $objdump -p $worker | Select-String "DLL Name"
+          if ($LASTEXITCODE -ne 0) { throw "objdump failed to inspect C Worker" }
+
       - name: Set up Python for Windows IPC and protocol acceptance
         uses: actions/setup-python@v5
         with:
