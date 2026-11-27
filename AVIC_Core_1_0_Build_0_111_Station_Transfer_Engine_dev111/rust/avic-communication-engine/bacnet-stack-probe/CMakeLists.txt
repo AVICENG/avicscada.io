@@ -8,6 +8,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Build only the protocol library needed by AVIC. Keep optional data links
 # disabled until their own worker/serial/security acceptance plans are ready.
 set(BACNET_STACK_BUILD_APPS OFF CACHE BOOL "Disable upstream demo applications" FORCE)
+# The upstream project defaults BAC_ROUTING=ON, but the AVIC probe is a
+# standalone BACnet/IP endpoint, not a BACnet router. Enabling routing aliases
+# datalink_get_my_address to Routed_Device_Get_My_Address, which is not linked
+# by this single-datalink probe.
+set(BAC_ROUTING OFF CACHE BOOL "Disable router-only address provider in endpoint worker" FORCE)
 set(BACDL_BIP ON CACHE BOOL "Enable BACnet/IP" FORCE)
 set(BACDL_BIP6 OFF CACHE BOOL "Disable BACnet/IPv6 in first POC" FORCE)
 set(BACDL_MSTP OFF CACHE BOOL "Enable MS/TP only in a later serial POC" FORCE)
