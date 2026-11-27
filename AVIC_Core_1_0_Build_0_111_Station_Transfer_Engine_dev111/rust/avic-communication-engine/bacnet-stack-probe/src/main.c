@@ -65,7 +65,35 @@ static int iam_codec_self_test(void)
         return 1;
     }
 
-    printf("bacnet_iam_codec=ok device=%u max_apdu=%u segmentation=%d vendor=%u truncated_payloads_rejected=%d wrong_object_rejected=1\n",
+    /* Segmentation enum values outside the BACnet range must be rejected. */
+    uint8_t invalid_segmentation[BACNET_TEST_BUFFER] = { 0 };
+    offset = encode_application_object_id(
+        invalid_segmentation, OBJECT_DEVICE, expected_device);
+    offset += encode_application_unsigned(invalid_segmentation + offset, expected_max_apdu);
+    offset += encode_application_enumerated(
+        invalid_segmentation + offset, MAX_BACNET_SEGMENTATION);
+    offset += encode_application_unsigned(invalid_segmentation + offset, expected_vendor);
+    if (bacnet_iam_request_decode(
+            invalid_segmentation, (unsigned)offset, NULL, NULL, NULL, NULL) >= 0) {
+        fprintf(stderr, "BACnet I-Am decoder accepted out-of-range segmentation\\n");
+        return 1;
+    }
+
+    /* Vendor ID is a 16-bit field; oversized values must be rejected. */
+    uint8_t invalid_vendor[BACNET_TEST_BUFFER] = { 0 };
+    offset = encode_application_object_id(
+        invalid_vendor, OBJECT_DEVICE, expected_device);
+    offset += encode_application_unsigned(invalid_vendor + offset, expected_max_apdu);
+    offset += encode_application_enumerated(
+        invalid_vendor + offset, (uint32_t)expected_segmentation);
+    offset += encode_application_unsigned(invalid_vendor + offset, 65536u);
+    if (bacnet_iam_request_decode(
+            invalid_vendor, (unsigned)offset, NULL, NULL, NULL, NULL) >= 0) {
+        fprintf(stderr, "BACnet I-Am decoder accepted vendor ID > 65535\\n");
+        return 1;
+    }
+
+    printf("bacnet_iam_codec=ok device=%u max_apdu=%u segmentation=%d vendor=%u truncated_payloads_rejected=%d wrong_object_rejected=1 invalid_segmentation_rejected=1 invalid_vendor_rejected=1\\n",
            (unsigned)device, max_apdu, segmentation, (unsigned)vendor, length);
     return 0;
 }
