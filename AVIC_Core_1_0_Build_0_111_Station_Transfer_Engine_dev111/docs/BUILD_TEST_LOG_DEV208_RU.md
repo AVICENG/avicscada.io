@@ -49,3 +49,10 @@ Rust-кандидаты: Communication Engine/драйверы, Point Runtime, F
 Предварительные исторические Modbus 10k данные: Ubuntu Python/Rust 45 288/47 679 точек/с; Windows Python/Rust 72 167/62 554 точек/с. Это не доказывает универсальное преимущество Rust (на Windows в том замере Python быстрее). Предварительный BACnet Python 10k: 1.67/4.54 с, ошибок 0, но длинный p99 tail. Все цифры должны быть повторены единым harness.
 
 Performance gates: 10k базово, 50k+ расширенно, 72 часа soak; throughput, CPU/RAM, p95/p99, очереди, пропуски/задержки, reconnect и recovery. Не переводить backend по умолчанию до functional parity, отказных тестов и аппаратной приёмки.
+
+## Python regression findings after packaging fix
+
+В combined run 45952516103 Python dependency installation прошла на всех шести jobs. На Linux выявлены 4 тестовые регрессии:
+- FBD station isolation тест ожидал отказ на этапе simulate, но реализация корректно отклоняет чужую точку раньше — при add_point_node до сохранения графа; тест перенесён на фактическую границу отказа.
+- MQTT adapter fixtures использовали неопределённый driver или фиктивный driver-mqtt-test; теперь они получают сохранённый station-owned DriverInstance ID. Это также восстанавливает публикацию значения и BAD_COMMUNICATION/BAD_CONFIGURATION quality transitions.
+Полный matrix для текущего исправления ожидает следующего CI; статус не объявляется успешным.

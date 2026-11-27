@@ -185,7 +185,7 @@ def test_fbd_point_input_rejects_point_from_another_station(tmp_path):
     app.state.core.repository.save(foreign_point)
 
     doc = app.state.fbd.create(station_a["id"], "Cross-station input must fail")
-    app.state.fbd.add_point_node(doc["id"], foreign_point.id)
+    # Ownership is rejected at bind time, before an invalid graph can be persisted.
     with pytest.raises(ValueError, match="не принадлежит станции этой FBD-стратегии"):
-        app.state.fbd.simulate(doc["id"])
+        app.state.fbd.add_point_node(doc["id"], foreign_point.id)
     app.state.core.close()

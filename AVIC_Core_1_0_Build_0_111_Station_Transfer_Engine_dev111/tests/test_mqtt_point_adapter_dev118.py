@@ -50,10 +50,16 @@ def _setup(tmp_path, count=1):
     return app, points
 
 
+def _driver_id(app):
+    rows = app.state.core.repository.list_records(entity_type="DriverInstance")
+    assert len(rows) == 1
+    return rows[0]["entity_id"]
+
+
 def test_mqtt_subscribes_and_publishes_json_value_to_point_runtime(tmp_path):
     app, points = _setup(tmp_path)
     client = FakeMqttClient()
-    adapter = MqttPointAdapter(client, app.state.core.point_runtime, driver.id,
+    adapter = MqttPointAdapter(client, app.state.core.point_runtime, _driver_id(app),
         [MqttPointBinding(points[0].id, "site/ahu1/supply", qos=1, value_path="telemetry.temp", scale=1.8, offset=32)],
         host="broker.example", port=8883)
     adapter.start()
@@ -73,7 +79,7 @@ def test_mqtt_subscribes_and_publishes_json_value_to_point_runtime(tmp_path):
 def test_mqtt_disconnect_preserves_last_value_and_marks_bad_communication(tmp_path):
     app, points = _setup(tmp_path)
     client = FakeMqttClient()
-    adapter = MqttPointAdapter(client, app.state.core.point_runtime, "driver-mqtt-test",
+    adapter = MqttPointAdapter(client, app.state.core.point_runtime, _driver_id(app),
         [MqttPointBinding(points[0].id, "sensor/temp")], host="broker.example")
     adapter._on_connect(client, None, {}, 0)
     client.on_message(client, None, SimpleNamespace(topic="sensor/temp", payload=b'{"value": 21.5}'))
