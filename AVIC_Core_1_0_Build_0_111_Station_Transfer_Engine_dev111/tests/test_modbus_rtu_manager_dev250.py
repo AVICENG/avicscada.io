@@ -238,7 +238,7 @@ def test_serial_port_lease_is_exclusive_across_processes(tmp_path):
 def test_driver_manager_holds_and_releases_rtu_serial_lease(tmp_path):
     from avic_core.drivers.serial_port_lease import SerialPortBusyError, SerialPortLease
 
-    core, station = _core_with_project(tmp_path, monkeypatch=None)
+    core, station, _ = _core_with_project(tmp_path, monkeypatch=None)
     port = str(tmp_path / "managed-rs485")
     class Adapter:
         def poll_once(self):
