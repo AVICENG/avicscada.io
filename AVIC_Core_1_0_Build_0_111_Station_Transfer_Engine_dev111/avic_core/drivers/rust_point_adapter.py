@@ -177,7 +177,7 @@ class RustDriverPointAdapter:
         return self._scaled(value, float(binding.get("scale", 1.0)),
                             float(binding.get("offset", 0.0)))
 
-    def _poll_modbus_batches(self) -> tuple[dict[str, Any], dict[str, str]]:
+    def _poll_modbus_batches(self) -> tuple[dict[str, Any], dict[str, Exception]]:
         values_by_point: dict[str, Any] = {}
         errors_by_point: dict[str, str] = {}
         batches = self._plan_modbus_batches(self.bindings)
@@ -191,9 +191,8 @@ class RustDriverPointAdapter:
                     point_id = binding["point_id"]
                     values_by_point[point_id] = self._decode_modbus_binding(binding, batch, values)
             except Exception as exc:
-                message = f"{type(exc).__name__}: {exc}"
                 for binding in batch["bindings"]:
-                    errors_by_point[binding["point_id"]] = message
+                    errors_by_point[binding["point_id"]] = exc
         return values_by_point, errors_by_point
 
     def _read_bacnet_batch(self, address: tuple[str, int], device_instance: int) -> dict[tuple[str, int, int], Any]:
@@ -259,13 +258,12 @@ class RustDriverPointAdapter:
                     bacnet_errors[key] = f"{type(exc).__name__}: {exc}"
 
         modbus_values_by_point: dict[str, Any] = {}
-        modbus_errors_by_point: dict[str, str] = {}
+        modbus_errors_by_point: dict[str, Exception] = {}
         if self.protocol == "modbus-tcp":
             try:
                 modbus_values_by_point, modbus_errors_by_point = self._poll_modbus_batches()
             except Exception as exc:
-                message = f"{type(exc).__name__}: {exc}"
-                modbus_errors_by_point = {binding["point_id"]: message for binding in self.bindings}
+                modbus_errors_by_point = {binding["point_id"]: exc for binding in self.bindings}
 
         rows = []
         for binding in self.bindings:
@@ -273,7 +271,7 @@ class RustDriverPointAdapter:
             try:
                 if self.protocol == "modbus-tcp":
                     if point_id in modbus_errors_by_point:
-                        raise RuntimeError(modbus_errors_by_point[point_id])
+                        raise modbus_errors_by_point[point_id]
                     if point_id not in modbus_values_by_point:
                         raise ValueError("Modbus batch did not return this point")
                     value = modbus_values_by_point[point_id]
