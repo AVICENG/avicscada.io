@@ -190,7 +190,8 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             let device_instance = u32::try_from(required_u64(p, "device_instance")?)
                 .map_err(|_| "invalid BACnet device instance".to_string())?;
             let local_bind: SocketAddr = required_str(p, "local_bind")?.parse().map_err(|_| "invalid BACnet local bind".to_string())?;
-            let client = BacnetIpReadOnlyClient::new(local_bind).map_err(|e| e.to_string())?;
+            let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(3000);
+            let client = BacnetIpReadOnlyClient::new(local_bind, Duration::from_millis(timeout_ms)).map_err(|e| e.to_string())?;
             let (device, objects) = client.read_device_snapshot(address, device_instance).map_err(|e| e.to_string())?;
             let rows: Vec<Value> = objects.into_iter().map(|o| json!({
                 "object_identifier":o.object_identifier, "object_type_name":o.object_type_name,
