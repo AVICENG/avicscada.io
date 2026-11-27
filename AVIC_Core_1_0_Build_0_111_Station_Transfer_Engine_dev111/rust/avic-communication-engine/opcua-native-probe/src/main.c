@@ -134,7 +134,68 @@ static int nodeid_self_test(void) {
     return 0;
 }
 
-static int connect_and_read(int argc, char **argv) {
+
+typedef struct {
+    UA_Client *client;
+    size_t count;
+    size_t maximum;
+} browse_context_t;
+
+static void print_json_string(const UA_String *value) {
+    putchar('"');
+    for(size_t i = 0; i < value->length; ++i) {
+        unsigned char ch = value->data[i];
+        if(ch == '"' || ch == '\\\\') {
+            putchar('\\\\');
+            putchar((int)ch);
+        } else if(ch < 0x20) {
+            printf("\\u%04x", (unsigned int)ch);
+        } else {
+            putchar((int)ch);
+        }
+    }
+    putchar('"');
+}
+
+static UA_StatusCode browse_child(UA_NodeId child_id, UA_Boolean is_inverse,
+                                  UA_NodeId reference_type_id, void *handle) {
+    (void)reference_type_id;
+    browse_context_t *context = (browse_context_t *)handle;
+    if(is_inverse)
+        return UA_STATUSCODE_GOOD;
+    if(context->count >= context->maximum)
+        return UA_STATUSCODE_BADRESOURCEUNAVAILABLE;
+
+    UA_String node_id_text = UA_STRING_NULL;
+    UA_NodeId_print(&child_id, &node_id_text);
+    UA_LocalizedText display_name;
+    UA_LocalizedText_init(&display_name);
+    UA_StatusCode name_status = UA_Client_readDisplayNameAttribute(
+        context->client, child_id, &display_name);
+    if(context->count > 0)
+        putchar(',');
+    printf("{\\"node_id\\":");
+    print_json_string(&node_id_text);
+    printf(",\\"display_name\\":");
+    if(name_status == UA_STATUSCODE_GOOD)
+        print_json_string(&display_name.text);
+    else
+        printf("\\"\\"");
+
+    UA_NodeClass node_class = UA_NODECLASS_UNSPECIFIED;
+    UA_StatusCode class_status = UA_Client_readNodeClassAttribute(
+        context->client, child_id, &node_class);
+    if(class_status == UA_STATUSCODE_GOOD)
+        printf(",\\"node_class\\":%u", (unsigned int)node_class);
+    printf("}");
+    fflush(stdout);
+
+    UA_String_clear(&node_id_text);
+    UA_LocalizedText_clear(&display_name);
+    context->count++;
+    return UA_STATUSCODE_GOOD;
+}
+\nstatic int connect_and_execute(int argc, char **argv, int browse) {
     if(argc != 10) {
         fprintf(stderr, "usage: %s --connect <endpoint> <client-cert.der> <client-key.der> "
                 "<trusted-server.der> <application-uri> <policy-uri> <Sign|SignAndEncrypt> <NodeId>\n",
