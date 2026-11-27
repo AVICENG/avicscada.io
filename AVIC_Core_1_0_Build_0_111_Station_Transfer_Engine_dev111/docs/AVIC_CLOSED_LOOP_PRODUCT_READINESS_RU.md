@@ -380,3 +380,10 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 Предварительный Modbus 10k benchmark (точек/с): Ubuntu Python 45 288 / Rust 47 679; Windows Python 72 167 / Rust 62 554. Поэтому Rust не назначается default: в историческом замере выигрыш на Ubuntu малый, на Windows Python быстрее. BACnet Python 10k запросов предварительно 1.67/4.54 с, 0 ошибок, но длинный p99 tail; ОС для этих двух времён в доступной сводке не установлена.
 
 Gates: 10k базово, 50k+ расширенно, затем 100k; 72h soak; одинаковые Windows/Linux сценарии throughput/CPU/RAM/p50-p95-p99/queue depth/missed samples/reconnect. Запрет на stale rollback, cross-station leakage, duplicate polling, recovery storm и unbounded queues. Все historical benchmarks требуют повторения единым harness. До этих gates Rust pilot не production-ready и не меняет default backend.
+
+
+### 9.16 DEV209 — регрессионные тесты после Rust pilot
+
+- FBD station isolation regression теперь проверяет правильную границу отказа: чужая точка отклоняется при добавлении POINT_INPUT (до сохранения графа), а не позже во время simulate.
+- MQTT adapter-level tests используют зарегистрированный station-owned DriverInstance ID; fake owner IDs больше не приводят к блокировке Point Runtime.
+- Полный CI для DEV209 ещё ожидается. Предыдущий run 45952516103 подтвердил установку Python dependencies после исправления package discovery, но выявил 4 регрессии в Linux pytest. Новое исправление внесено в 925e3ea; оно не считается подтверждённым до полного matrix.
