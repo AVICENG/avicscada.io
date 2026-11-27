@@ -28,13 +28,14 @@ struct Worker {
     incoming: SequenceGuard,
     outgoing_sequence: u64,
     configured: bool,
+    protocol: Option<String>,
     started: bool,
 }
 
 impl Worker {
     fn new() -> Self {
         Self { scope: None, incoming: SequenceGuard::default(), outgoing_sequence: 0,
-               configured: false, started: false }
+               configured: false, protocol: None, started: false }
     }
 
     fn handle(&mut self, request: DriverEnvelope) -> (String, Value, bool) {
@@ -71,11 +72,19 @@ impl Worker {
         match request.kind.as_str() {
             "initialize" => ("initialized".into(), json!({"protocol":"avic.driver.ipc","version":1}), false),
             "configure" => {
+                if self.started {
+                    return ("error".into(), json!({"code":"STOP_REQUIRED_BEFORE_CONFIGURE"}), false);
+                }
                 if contains_secret_key(&request.payload) {
                     return ("error".into(), json!({"code":"SECRET_IN_CONFIG"}), false);
                 }
+                let protocol = match request.payload.get("protocol").and_then(Value::as_str) {
+                    Some(v) if ["modbus-tcp", "bacnet-ip", "knxnet-ip"].contains(&v) => v.to_string(),
+                    _ => return ("error".into(), json!({"code":"UNSUPPORTED_PROTOCOL"}), false),
+                };
+                self.protocol = Some(protocol.clone());
                 self.configured = true;
-                ("configured".into(), json!({"configured":true}), false)
+                ("configured".into(), json!({"configured":true,"protocol":protocol}), false)
             }
             "start" => {
                 if !self.configured { return ("error".into(), json!({"code":"CONFIGURE_REQUIRED"}), false); }
@@ -88,12 +97,16 @@ impl Worker {
             }
             "get_status" => ("status".into(), json!({
                 "state": if self.started {"RUNNING"} else {"STOPPED"},
-                "configured":self.configured, "write_supported":false
+                "configured":self.configured, "protocol":self.protocol, "write_supported":false
             }), false),
             "read" => {
                 if !self.started { return ("error".into(), json!({"code":"DRIVER_NOT_RUNNING"}), false); }
                 if contains_secret_key(&request.payload) {
                     return ("error".into(), json!({"code":"SECRET_IN_REQUEST"}), false);
+                }
+                let requested_protocol = request.payload.get("protocol").and_then(Value::as_str);
+                if requested_protocol != self.protocol.as_deref() {
+                    return ("error".into(), json!({"code":"PROTOCOL_SCOPE_MISMATCH"}), false);
                 }
                 match read_protocol(&request.payload) {
                     Ok(value) => ("read_result".into(), json!({"transport_ok":true,"result":value}), false),
