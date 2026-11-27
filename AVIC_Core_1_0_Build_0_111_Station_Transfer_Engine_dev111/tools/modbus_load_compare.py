@@ -34,30 +34,33 @@ def recv_exact(sock, size):
 
 class ModbusHandler(socketserver.BaseRequestHandler):
     def handle(self):
-        try:
-            header = recv_exact(self.request, 7)
-            tid = int.from_bytes(header[0:2], "big")
-            protocol = int.from_bytes(header[2:4], "big")
-            length = int.from_bytes(header[4:6], "big")
-            unit = header[6]
-            if protocol != 0 or length < 6 or length > 260:
+        # DEV221 keeps one TCP socket open for multiple sequential Modbus reads.
+        # Serve a stream of ADUs until the client closes the connection; a
+        # one-request-per-socket fixture only exercised the pre-DEV221 behavior.
+        while True:
+            try:
+                header = recv_exact(self.request, 7)
+                tid = int.from_bytes(header[0:2], "big")
+                protocol = int.from_bytes(header[2:4], "big")
+                length = int.from_bytes(header[4:6], "big")
+                unit = header[6]
+                if protocol != 0 or length < 6 or length > 260:
+                    return
+                pdu = recv_exact(self.request, length - 1)
+                if len(pdu) != 5 or pdu[0] != 3:
+                    return
+                address = int.from_bytes(pdu[1:3], "big")
+                count = int.from_bytes(pdu[3:5], "big")
+                if not 1 <= count <= 125 or address + count > 65536:
+                    return
+                payload = bytes([3, count * 2]) + b"".join(
+                    ((address + i) & 0xffff).to_bytes(2, "big") for i in range(count)
+                )
+                response = (tid.to_bytes(2, "big") + b"\\x00\\x00" +
+                            (len(payload) + 1).to_bytes(2, "big") + bytes([unit]) + payload)
+                self.request.sendall(response)
+            except (OSError, ConnectionError):
                 return
-            pdu = recv_exact(self.request, length - 1)
-            if len(pdu) != 5 or pdu[0] != 3:
-                return
-            address = int.from_bytes(pdu[1:3], "big")
-            count = int.from_bytes(pdu[3:5], "big")
-            if not 1 <= count <= 125 or address + count > 65536:
-                return
-            payload = bytes([3, count * 2]) + b"".join(
-                ((address + i) & 0xffff).to_bytes(2, "big") for i in range(count)
-            )
-            response = (tid.to_bytes(2, "big") + b"\x00\x00" +
-                        (len(payload) + 1).to_bytes(2, "big") + bytes([unit]) + payload)
-            self.request.sendall(response)
-        except (OSError, ConnectionError):
-            return
-
 
 class Server(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
