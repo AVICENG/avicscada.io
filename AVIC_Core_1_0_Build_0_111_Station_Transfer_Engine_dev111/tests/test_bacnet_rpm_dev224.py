@@ -97,3 +97,31 @@ def test_read_property_multiple_rejects_duplicate_or_unbounded_requests():
         client.read_property_multiple(
             ("127.0.0.2", 47808), 1001, 0, 1, list(range(65))
         )
+
+
+
+def test_read_property_multiple_rejects_trailing_bytes(monkeypatch):
+    packet = _rpm_ack(1)
+    packet = packet + b"\\x00"
+    packet = packet[:2] + len(packet).to_bytes(2, "big") + packet[4:]
+    fake = FakeSocket(packet)
+    monkeypatch.setattr(socket, "socket", lambda *args: fake)
+    client = BacnetIpClient(_config())
+    with pytest.raises(BacnetProtocolError, match="trailing bytes"):
+        client.read_property_multiple(
+            ("127.0.0.2", 47808), 1001, 0, 1, [85, 111]
+        )
+
+
+def test_read_property_multiple_requires_enumerated_error_class_and_code(monkeypatch):
+    packet = _rpm_ack(1).replace(
+        b"\\x5e\\x91\\x02\\x91\\x25\\x5f",
+        b"\\x5e\\x21\\x02\\x91\\x25\\x5f",
+    )
+    fake = FakeSocket(packet)
+    monkeypatch.setattr(socket, "socket", lambda *args: fake)
+    client = BacnetIpClient(_config())
+    with pytest.raises(BacnetProtocolError, match="malformed BACnet Error"):
+        client.read_property_multiple(
+            ("127.0.0.2", 47808), 1001, 0, 1, [85, 111]
+        )
