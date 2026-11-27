@@ -165,9 +165,9 @@ static int connect_modbus(worker_t *w) {
     if (strcmp(w->protocol, "modbus-tcp") == 0) {
         w->modbus = modbus_new_tcp(w->host, w->port);
     } else if (strcmp(w->protocol, "modbus-rtu") == 0) {
-        char device[sizeof(w->serial_port) + 8];
         const char *port_name = w->serial_port;
 #ifdef _WIN32
+        char device[sizeof(w->serial_port) + 8];
         /* libmodbus requires the Win32 device namespace for COM ports > 9. */
         if (strlen(port_name) == 5 && strncmp(port_name, "COM", 3) == 0
             && port_name[3] >= '1' && port_name[3] <= '9'
