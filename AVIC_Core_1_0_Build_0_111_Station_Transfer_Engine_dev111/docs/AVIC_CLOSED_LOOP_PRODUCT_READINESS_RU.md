@@ -350,3 +350,5 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 - Historian API regression test создаёт реальные Station/Device/Point и использует их ID в запросах.
 
 **Статус проверки:** исправления внесены. Новый полный Linux/Windows CI должен подтвердить результат; до завершения всех шести jobs статус остаётся НЕ ПОДТВЕРЖДЁН. Физическая BACnet-приёмка не выполнялась.
+
+- Windows ACL regression: test normalizes SDDL alias LA to the current SID only when whoami confirms the built-in Administrator RID 500. The distinct broad Local Account SID S-1-5-113 remains explicitly forbidden; the production ACL implementation is unchanged.

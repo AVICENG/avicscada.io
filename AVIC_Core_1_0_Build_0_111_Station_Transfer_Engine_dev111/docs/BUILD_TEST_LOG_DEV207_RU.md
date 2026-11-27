@@ -12,6 +12,7 @@
 - Исправлено ожидание текста исключения в тесте межстанционного FBD POINT_INPUT; защитный контракт кода не ослаблялся.
 - License test double дополнен методом assert_feature_enabled().
 - Historian API test переведён с фиктивных ID на реальные сохранённые Station, Device и Point.
+- Windows ACL test корректно распознаёт SDDL alias LA как built-in Administrator RID 500 только при точном совпадении с SID из whoami; broad Local Account SID S-1-5-113 остаётся запрещённым.
 
 ## Безопасность и архитектурные ограничения
 - Проверки принадлежности DriverInstance станции сохранены.
