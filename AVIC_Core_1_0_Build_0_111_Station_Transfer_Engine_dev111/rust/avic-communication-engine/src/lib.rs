@@ -82,13 +82,18 @@ impl ModbusTcpClient {
         if response_tid != tid || protocol != 0 || unit != self.config.unit_id || !(2..=254).contains(&length) {
             return Err(ModbusError::Protocol("invalid MBAP header"));
         }
-        if length as usize != 3 + count as usize * 2 {
-            return Err(ModbusError::Protocol("unexpected MBAP response length"));
-        }
         let mut body = vec![0u8; length as usize - 1];
         stream.read_exact(&mut body)?;
+        // Modbus exception responses have a two-byte PDU and MBAP length 3,
+        // independent of the requested register count.
         if body.first() == Some(&0x83) {
-            return Err(ModbusError::Exception(*body.get(1).unwrap_or(&0xff)));
+            if length != 3 || body.len() != 2 {
+                return Err(ModbusError::Protocol("invalid Modbus exception response length"));
+            }
+            return Err(ModbusError::Exception(body[1]));
+        }
+        if length as usize != 3 + count as usize * 2 {
+            return Err(ModbusError::Protocol("unexpected MBAP response length"));
         }
         if body.len() != 2 + count as usize * 2 || body[0] != 3 || body[1] as usize != count as usize * 2 {
             return Err(ModbusError::Protocol("invalid FC03 response payload"));
@@ -104,6 +109,55 @@ impl ModbusTcpClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_server(pdu: Vec<u8>, wrong_transaction_id: bool) -> (SocketAddr, std::thread::JoinHandle<()>) {
+        use std::net::TcpListener;
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let handle = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0u8; 12];
+            stream.read_exact(&mut request).unwrap();
+            let mut tid = u16::from_be_bytes([request[0], request[1]]);
+            if wrong_transaction_id { tid = tid.wrapping_add(1); }
+            let length = (1 + pdu.len()) as u16;
+            let mut response = Vec::with_capacity(7 + pdu.len());
+            response.extend_from_slice(&tid.to_be_bytes());
+            response.extend_from_slice(&0u16.to_be_bytes());
+            response.extend_from_slice(&length.to_be_bytes());
+            response.push(request[6]);
+            response.extend_from_slice(&pdu);
+            stream.write_all(&response).unwrap();
+        });
+        (address, handle)
+    }
+
+    #[test]
+    fn reads_valid_fc03_response() {
+        let (address, server) = test_server(vec![3, 4, 0, 10, 0, 20], false);
+        let config = ModbusTcpConfig { address, unit_id: 1, timeout: Duration::from_secs(1) };
+        let mut client = ModbusTcpClient::new(config);
+        assert_eq!(client.read_holding_registers(0, 2).unwrap(), vec![10, 20]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn parses_fc03_exception_response() {
+        let (address, server) = test_server(vec![0x83, 2], false);
+        let config = ModbusTcpConfig { address, unit_id: 1, timeout: Duration::from_secs(1) };
+        let mut client = ModbusTcpClient::new(config);
+        assert!(matches!(client.read_holding_registers(0, 2), Err(ModbusError::Exception(2))));
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn rejects_wrong_transaction_id() {
+        let (address, server) = test_server(vec![3, 4, 0, 10, 0, 20], true);
+        let config = ModbusTcpConfig { address, unit_id: 1, timeout: Duration::from_secs(1) };
+        let mut client = ModbusTcpClient::new(config);
+        assert!(matches!(client.read_holding_registers(0, 2), Err(ModbusError::Protocol("invalid MBAP header"))));
+        server.join().unwrap();
+    }
 
     #[test]
     fn rejects_invalid_unit_and_timeout() {
