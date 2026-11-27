@@ -28,9 +28,13 @@ class DebouncedPointRuntimeService(PointRuntimeService):
     def __init__(self, repository):
         super().__init__(repository)
         self._debounce = DebounceEngine()
-        self._debounce_lock = RLock()
+        # Stripe point locks so one slow subscriber cannot serialize unrelated points.
+        self._point_locks = tuple(RLock() for _ in range(64))
         self._debounce_configs: dict[str, tuple[int, int]] = {}
         self._debounce_sources: dict[str, str | None] = {}
+
+    def _point_lock(self, point_id: str) -> RLock:
+        return self._point_locks[hash(str(point_id)) % len(self._point_locks)]
 
     @staticmethod
     def _is_binary(point: Point) -> bool:
@@ -40,7 +44,7 @@ class DebouncedPointRuntimeService(PointRuntimeService):
     def configure_debounce(self, point_id: str, *, on_ms: int = 0, off_ms: int = 0) -> PointRuntimeValue:
         """Persist ON/OFF debounce delays for a binary input point."""
         config = DebounceConfig(on_ms=on_ms, off_ms=off_ms)
-        with self._debounce_lock:
+        with self._point_lock(point_id):
             point, version = self.repository.get(str(point_id), Point)
             if not self._is_binary(point):
                 raise ValueError("Дребезг можно настраивать только для бинарной точки")
@@ -136,11 +140,15 @@ class DebouncedPointRuntimeService(PointRuntimeService):
         if current.tzinfo is None or current.utcoffset() is None:
             raise ValueError("Debounce scheduler timestamp must be timezone-aware")
         published: list[PointRuntimeValue] = []
-        with self._debounce_lock:
-            due = self._debounce.flush_due(now=current)
-            for item in due:
+        due = self._debounce.flush_due(now=current)
+        for item in due:
+            with self._point_lock(item.point_id):
                 source_driver_id = self._debounce_sources.pop(item.point_id, None)
                 point, _, _ = self._read_entity(item.point_id)
+                # A quality-loss transition may race the scheduler after its due
+                # queue was drained. Never let that stale GOOD commit overwrite BAD.
+                if self._quality(point.quality) != PointQuality.GOOD:
+                    continue
                 commit_time = current
                 if point.timestamp is not None and commit_time < point.timestamp:
                     commit_time = point.timestamp
