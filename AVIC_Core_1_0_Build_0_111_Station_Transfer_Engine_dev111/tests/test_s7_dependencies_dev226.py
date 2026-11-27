@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from importlib.metadata import version
 
+import pytest
+
 
 def test_classic_s7_library_is_importable_when_extra_is_installed():
+    pytest.importorskip("s7", reason="install AVIC Core with the optional [s7] extra")
     import s7
     from s7 import Client
 
@@ -13,6 +16,7 @@ def test_classic_s7_library_is_importable_when_extra_is_installed():
 
 
 def test_s7commplus_library_is_importable_when_extra_is_installed():
+    pytest.importorskip("s7commplus", reason="install AVIC Core with the optional [s7] extra")
     import s7commplus
     from s7commplus import Client
 
