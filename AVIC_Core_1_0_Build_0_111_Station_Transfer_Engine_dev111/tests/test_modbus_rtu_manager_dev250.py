@@ -148,10 +148,14 @@ def test_modbus_rtu_point_adapter_polls_through_c_worker_contract(tmp_path, monk
 
     monkeypatch.setattr(adapter_module, "RustDriverWorker", FakeWorker)
     core = CoreApplication(tmp_path / "runtime")
-    project = core.project_station.create_project("RTU runtime")
-    station = core.project_station.create_station(project["id"], "RS485")
+    platform = Platform(name="AVIC Platform")
+    project = Project(name="RTU runtime", platform_id=platform.id)
+    station = Station(name="RS485", project_id=project.id)
+    core.repository.save(platform)
+    core.repository.save(project)
+    core.repository.save(station)
     device = Device(
-        name="RTU device", station_id=station["id"], protocol="modbus/rtu",
+        name="RTU device", station_id=station.id, protocol="modbus/rtu",
         address="/dev/ttyUSB0",
     )
     point = Point(
@@ -174,8 +178,8 @@ def test_modbus_rtu_point_adapter_polls_through_c_worker_contract(tmp_path, monk
             "point_id": point.id, "function": 3, "address": 10,
             "count": 1, "data_type": "uint16",
         }],
-        installation_id="installation", project_id=project["id"],
-        station_id=station["id"], generation=1,
+        installation_id="installation", project_id=project.id,
+        station_id=station.id, generation=1,
         worker_mode="C_LIBMODBUS_READ_ONLY",
     )
     try:
