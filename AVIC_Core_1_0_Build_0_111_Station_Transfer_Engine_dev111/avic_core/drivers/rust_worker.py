@@ -70,6 +70,7 @@ class RustDriverWorker:
         self._stderr_reader: threading.Thread | None = None
         self._stderr_tail: deque[str] = deque(maxlen=100)
         self._started = False
+        self._worker_version: str | None = None
 
     def start(self, config: dict[str, Any]) -> None:
         with self._lock:
@@ -86,9 +87,16 @@ class RustDriverWorker:
             self._reader.start()
             self._stderr_reader.start()
         try:
-            self._request("initialize", {})
-            self._request("configure", config)
-            self._request("start", {})
+            initialized = self._request("initialize", {})
+            if initialized.kind != "initialized" or initialized.payload.get("protocol") != "avic.driver.ipc" or initialized.payload.get("version") != 1:
+                raise RustWorkerError("Rust worker handshake protocol/version mismatch")
+            self._worker_version = str(initialized.payload.get("worker_version") or "unknown")
+            configured = self._request("configure", config)
+            if configured.kind != "configured":
+                raise RustWorkerError("Rust worker did not confirm configuration")
+            started = self._request("start", {})
+            if started.kind != "status" or started.payload.get("state") != "RUNNING":
+                raise RustWorkerError("Rust worker did not enter RUNNING state")
             self._started = True
         except Exception:
             self._terminate()
@@ -194,6 +202,7 @@ class RustDriverWorker:
         process = self._process
         return {
             "worker_id": self.worker_id,
+            "worker_version": self._worker_version,
             "generation": self.generation,
             "started": self._started,
             "process_alive": process is not None and process.poll() is None,
