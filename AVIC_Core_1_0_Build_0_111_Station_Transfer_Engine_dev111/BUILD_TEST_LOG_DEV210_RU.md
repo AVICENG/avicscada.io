@@ -11,7 +11,8 @@
 - Устойчивый переход публикуется после выдержки ON/OFF времени.
 - Потеря качества отменяет ожидающий переход, но сохраняет последнее принятое значение и исходный timestamp.
 - Добавлен отдельный `PointRuntimeScheduler`: один bounded worker с интервалом 25 мс обслуживает все точки и станции, не выполняя сетевой I/O или field writes.
-- Scheduler явно запускается Driver Manager при старте первого polling-драйвера и останавливается после остановки последнего. Ошибка запуска драйвера также очищает scheduler.
+- Для фильтра применяются striped per-point locks: медленный подписчик одной точки не блокирует все точки. Due-transition извлекается атомарно под тем же lock, что и publish/quality-loss; более новый sample не может быть перезаписан устаревшим scheduler tick.
+- Scheduler явно запускается Driver Manager при старте первого polling-драйвера и останавливается после остановки последнего. Запуск/остановка синхронизированы отдельным lifecycle lock; join scheduler не выполняется под registry lock драйверов. Ошибка запуска драйвера не оставляет лишний worker.
 - Добавлены диагностика scheduler и тесты фильтрации, bounce cancellation, due-time commit без нового измерения, quality-loss cancellation, persistence конфигурации, запрета аналоговых/OUTPUT точек и защиты от отмены чужим DriverInstance.
 
 ## Важные инварианты
@@ -42,5 +43,7 @@
 6. Аналоговые и OUTPUT точки не принимают debounce config.
 7. Чужой DriverInstance не может отменить pending transition другого драйвера.
 8. Явный PointRuntimeScheduler обслуживает due transitions и корректно останавливается.
+9. Driver Manager запускает общий scheduler с первой сессией и останавливает с последней.
+10. Новый sample, пришедший перед scheduler commit, заменяет pending edge; старое значение не публикуется.
 
 Результат CI будет внесён после получения фактических workflow logs.
