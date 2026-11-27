@@ -1,4 +1,8 @@
 """Unified live point runtime shared by protocol drivers and AVIC consumers."""
-from .runtime import PointRuntimeService, PointRuntimeValue
+from .debounced_runtime import DebouncedPointRuntimeService
+from .runtime import PointRuntimeValue
 
-__all__ = ["PointRuntimeService", "PointRuntimeValue"]
+# Core composition root uses this alias so all protocol adapters share one filter path.
+PointRuntimeService = DebouncedPointRuntimeService
+
+__all__ = ["PointRuntimeService", "PointRuntimeValue", "DebouncedPointRuntimeService"]
