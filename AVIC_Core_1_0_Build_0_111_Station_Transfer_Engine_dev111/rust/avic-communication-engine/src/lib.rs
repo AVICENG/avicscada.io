@@ -2,6 +2,8 @@
 //! Network workers and Core IPC supervision are introduced incrementally; do not bypass Core validation.
 
 pub mod ipc;
+pub mod bacnet;
+pub mod knx;
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
