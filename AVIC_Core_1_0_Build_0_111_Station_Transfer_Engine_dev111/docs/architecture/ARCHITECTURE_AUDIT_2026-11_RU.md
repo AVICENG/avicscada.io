@@ -276,3 +276,52 @@ Engineering Plane, Operations Plane and AI Plane must not become runtime owners.
 
 **Итоговый статус всей платформы после этого прохода: ARCHITECTURE_AUDIT_IN_PROGRESS.**  
 Ни один P0 не закрыт только этим документом. Следующий этап — оформить ADR-001…ADR-014, затем связать их с кодом и architecture tests.
+
+
+## 15. Дополнение ревизии — DEV222 benchmark fixture и ADR-001
+
+### 15.1 Повторный CI показал, что первое исправление fixture было неполным
+
+Run #653 на исходном audit head `c9496ec3ce0c9f37b1a90f3d83df662086dc6dc9`:
+- Python Linux 3.11 / 3.12 / 3.13 — success.
+- Rust unit tests — success на Linux и Windows.
+- Python Windows 3.11 / 3.12 / 3.13 — на момент последней проверки выполнялись.
+- Сравнительный Modbus benchmark 10 000 точек — failure на Linux и Windows.
+
+Повторный анализ показал конкретный дефект тестового сервера: MBAP Protocol Identifier собирался как литеральные байты последовательности `\\x00\\x00`, а не как два нулевых байта. Из-за этого Rust-клиент получал некорректный Modbus TCP frame. Первоначальное исправление persistent connection не устранило эту ошибку framing.
+
+В ветку audit внесено:
+- отдельная функция `build_fc03_response()` с корректным MBAP/PDU framing;
+- проверка диапазона holding registers;
+- диагностическое включение stdout/stderr Rust benchmark process при ошибке;
+- регрессионные тесты `tests/test_modbus_benchmark_fixture.py` на MBAP length, protocol id, unit id, function code, byte count, register payload и invalid range.
+
+Изменения внесены коммитами:
+- `27728d82bc85e5ce88c468a3308be6ab569e25d6` — исправление protocol bytes;
+- `1d4abb4d79cc6cc5e475fd7f0627e7352c96910f` — helper и диагностика;
+- `9b8b1a2cc13e43d3d146ce292a0476335b48a247` — regression tests.
+
+**Статус проверки:** исправление ещё не подтверждено новым CI на этих коммитах. Run #653 проверял более ранний SHA, поэтому его failure нельзя использовать как результат проверки исправленного кода; но и считать проблему закрытой до нового успешного benchmark нельзя.
+
+### 15.2 Создан фундаментальный ADR-001
+
+Создан документ `ADR-001_POINT_DEFINITION_STATE_SAMPLE_RU.md` со статусом PROPOSED. Он фиксирует:
+- раздельное владение Point Definition, Point State, Point Sample и Historical Record;
+- единый typed Sample envelope для Python/Rust и Core/Edge;
+- единый ingestion API;
+- state + durable outbox в одной транзакционной границе;
+- idempotent consumers для Historian/Alarms/FBD/Analytics;
+- station isolation и runtime epoch fencing;
+- backpressure и явный degraded mode;
+- миграцию текущих `Point.value/quality/timestamp`;
+- acceptance tests для корректности, отказов, масштаба, интеграции и Windows/Linux.
+
+ADR-001 не считается принятым и не означает готовую реализацию. Для ACCEPTED обязательны прототип, crash-consistency tests, migration proof и нагрузочные испытания.
+
+### 15.3 Обновлённый статус
+
+- Архитектурная ревизия: IN_PROGRESS.
+- ADR-001: PROPOSED, ожидает реализации прототипа и acceptance evidence.
+- Point Runtime: P0 finding остаётся открытым.
+- Rust Modbus benchmark: NOT VERIFIED на исправленном fixture.
+- `ARCHITECTURE_DEFINED`: не присваивается.
