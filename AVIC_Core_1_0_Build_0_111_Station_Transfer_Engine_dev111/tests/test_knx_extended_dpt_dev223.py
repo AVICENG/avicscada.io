@@ -73,8 +73,8 @@ class Session:
 
 def group_write_frame(short_value: int) -> bytes:
     # cEMI L_DATA.ind, group destination, GroupValueWrite, one-bit short APDU.
-    return bytes((0x29, 0, 0, 0x80, 0x11, 0x01, 0x00, 0x01,
-                  0x00, (0x02 << 6) | short_value))
+    return bytes((0x29, 0, 0, 0x80, 0x11, 0x01, 0x0A, 0x03,
+                  0x01, 0x00, (0x02 << 6) | short_value))
 
 
 def test_knx_adapter_routes_dpt1_short_value_to_bound_point():
