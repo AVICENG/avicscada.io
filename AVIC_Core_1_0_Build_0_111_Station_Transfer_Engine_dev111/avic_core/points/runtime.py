@@ -175,6 +175,16 @@ class PointRuntimeService:
                     self._subscriber_errors = self._subscriber_errors[-100:]
         return result
 
+    def _assert_driver_station(self, source_driver_id: str, device: dict) -> None:
+        """Require the publishing DriverInstance to belong to the target Device station."""
+        driver = self.repository.get_record(source_driver_id)
+        if driver.get("entity_type") != "DriverInstance":
+            raise ValueError("Источник публикации не является зарегистрированным экземпляром драйвера")
+        driver_station_id = str(driver.get("payload", {}).get("station_id") or "")
+        device_station_id = str(device.get("payload", {}).get("station_id") or "")
+        if not driver_station_id or driver_station_id != device_station_id:
+            raise ValueError("Драйвер и устройство принадлежат разным станциям")
+
     def publish(self, point_id: str, value: Any, *, quality: PointQuality | str = PointQuality.GOOD,
                 timestamp: datetime | None = None, source_driver_id: str | None = None) -> PointRuntimeValue:
         """Publish a sample from a trusted driver adapter; never performs field I/O."""
@@ -191,6 +201,8 @@ class PointRuntimeService:
             # An absent owner is not a wildcard: fail closed for legacy/unbound devices.
             if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Источник публикации не совпадает с драйвером устройства")
+            if source_driver_id is not None:
+                self._assert_driver_station(source_driver_id, device)
             checked = self._validate_value(point, value)
             sample_timestamp = timestamp or _utcnow()
             if sample_timestamp.tzinfo is None or sample_timestamp.utcoffset() is None:
@@ -263,6 +275,8 @@ class PointRuntimeService:
             # claimed implicitly by whichever adapter happens to reference them.
             if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Quality source does not match point's owning driver")
+            if source_driver_id is not None:
+                self._assert_driver_station(source_driver_id, device)
             point.quality = q
             point.updated_at = _utcnow()
             new_version = self.repository.save(point, expected_version=version)
