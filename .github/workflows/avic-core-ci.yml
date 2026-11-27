@@ -294,7 +294,7 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-git
             mingw-w64-ucrt-x86_64-mbedtls
-      - name: Configure open62541 with OpenSSL
+      - name: Configure open62541 with Mbed TLS
         shell: msys2 {0}
         run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build native OPC UA probe
