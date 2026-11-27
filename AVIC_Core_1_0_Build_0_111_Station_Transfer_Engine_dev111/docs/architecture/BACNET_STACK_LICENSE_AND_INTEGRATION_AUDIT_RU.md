@@ -68,3 +68,15 @@ Upstream — переносимая C-библиотека для Windows, Linux
 - Network tests: BBMD/unicast/broadcast, subnet boundary, packet loss, reconnect.
 - Реальный Trend controller и хотя бы один сторонний BACnet controller.
 - Никаких write tests до отдельного разрешённого Command Gateway сценария.
+
+
+## DEV252 — нативная проверка BACnet I-Am codec
+
+В C probe добавлен вызов именно API Steve Karg Stack, а не AVIC-самописного декодера:
+
+- encode/decode I-Am payload с проверкой Device Instance, Max APDU, Segmentation и Vendor ID;
+- перебор всех усечённых длин payload — каждая неполная форма должна отклоняться;
+- проверка отклонения I-Am payload, содержащего не Device Object Identifier;
+- strict compiler warnings для собственного C probe: `-Wall -Wextra -Wpedantic -Werror` или MSVC `/W4 /WX`.
+
+Это повышает проверку native BACnet dependency, но **не является BACnet/IP Worker и не подтверждает сетевой обмен**. Текущий статус остаётся 🟧. Следующий этап — C Worker с BACnet/IP datalink, Who-Is/I-Am discovery, transaction correlation и ReadProperty; затем ReadPropertyMultiple, IPC contract, simulator и Windows/Linux acceptance.
