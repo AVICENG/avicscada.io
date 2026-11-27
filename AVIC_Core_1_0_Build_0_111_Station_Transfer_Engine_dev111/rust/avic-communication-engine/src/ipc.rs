@@ -138,7 +138,7 @@ impl SequenceGuard {
         }
         if let Some(last) = self.last_sequence {
             if sequence <= last { return Err(IpcError::NonMonotonicSequence); }
-            let gap = sequence > last + 1;
+            let gap = sequence > last.saturating_add(1);
             self.last_sequence = Some(sequence);
             return Ok(gap);
         }
