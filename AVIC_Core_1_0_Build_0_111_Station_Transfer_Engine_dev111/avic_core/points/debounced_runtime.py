@@ -83,6 +83,12 @@ class DebouncedPointRuntimeService(PointRuntimeService):
                     point_id, value, quality=q, timestamp=timestamp,
                     source_driver_id=source_driver_id,
                 )
+            direction = getattr(point.direction, "value", str(point.direction)).lower()
+            if direction == PointDirection.OUTPUT.value:
+                return super().publish(
+                    point_id, value, quality=q, timestamp=timestamp,
+                    source_driver_id=source_driver_id,
+                )
 
             on_ms, off_ms = self._ensure_debounce_config(point)
             if on_ms == 0 and off_ms == 0:
