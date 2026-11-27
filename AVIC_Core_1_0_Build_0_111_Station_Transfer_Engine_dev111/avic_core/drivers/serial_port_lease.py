@@ -28,7 +28,14 @@ class SerialPortLease:
             raise ValueError("serial_port is required")
         raw = serial_port.strip()
         if os.name == "nt":
-            self.identity = raw.replace("/", "\\").casefold()
+            normalized = raw.replace("/", "\\").strip()
+            # libmodbus and Win32 accept both COM12 and \\.\COM12.
+            # They are the same physical port and must share one AVIC lease.
+            if normalized.casefold().startswith("\\\\.\\"):
+                normalized = normalized[4:]
+            if normalized.casefold().startswith("com") and normalized[3:].isdigit():
+                normalized = f"COM{int(normalized[3:])}"
+            self.identity = normalized.casefold()
         else:
             self.identity = os.path.realpath(os.path.abspath(raw))
         digest = hashlib.sha256(self.identity.encode("utf-8")).hexdigest()
