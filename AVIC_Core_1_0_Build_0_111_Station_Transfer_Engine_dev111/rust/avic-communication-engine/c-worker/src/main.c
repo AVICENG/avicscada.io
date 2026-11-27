@@ -20,6 +20,7 @@ typedef struct {
     char installation_id[129], project_id[129], station_id[129];
     char driver_instance_id[129], worker_id[37];
     uint64_t generation;
+    uint64_t incoming_sequence;
     uint64_t outgoing_sequence;
     int initialized, configured, started;
     char protocol[32];
@@ -276,12 +277,15 @@ static int process(worker_t *w, json_t *request, int *exit_after) {
     json_t *payload = json_object_get(request, "payload");
     if (!kind || !contract || strcmp(contract, "avic.driver.ipc") != 0
         || !get_int(request, "version", &version) || version != 1
-        || !get_int(request, "sequence", &sequence) || sequence < 0
+        || !get_int(request, "sequence", &sequence) || sequence <= 0
         || !json_is_object(payload) || !valid_uuid(get_string(request, "message_id"))) return 0;
     if (!w->initialized) {
         if (strcmp(kind, "initialize") != 0 || !same_scope(w, request)) return 0;
         w->initialized = 1;
     } else if (!check_scope(w, request)) return 0;
+    /* Reject replayed/out-of-order commands before touching the protocol stack. */
+    if ((uint64_t)sequence <= w->incoming_sequence) return 0;
+    w->incoming_sequence = (uint64_t)sequence;
 
     const char *response_kind = "error";
     json_t *response_payload = NULL;
