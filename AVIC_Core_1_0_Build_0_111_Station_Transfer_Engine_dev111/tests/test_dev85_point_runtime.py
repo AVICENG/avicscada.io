@@ -107,3 +107,56 @@ def test_point_runtime_validates_modbus_scalar_ranges(tmp_path, data_type, value
         with pytest.raises(ValueError):
             app.state.core.point_runtime.publish(point.id, value)
     app.state.core.close()
+
+
+def test_point_runtime_rejects_out_of_order_sample_without_mutation(tmp_path):
+    app, _, _, _, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    accepted_at = datetime(2026, 11, 27, 8, 0, tzinfo=timezone.utc)
+    first = runtime.publish(
+        point.id, 23.5, quality=PointQuality.GOOD, timestamp=accepted_at,
+        source_driver_id="driver-dev85",
+    )
+    seen = []
+    runtime.subscribe(point.id, seen.append)
+
+    with pytest.raises(ValueError, match="Запоздавшее измерение отклонено"):
+        runtime.publish(
+            point.id, 19.0, quality=PointQuality.GOOD,
+            timestamp=datetime(2026, 11, 27, 7, 59, tzinfo=timezone.utc),
+            source_driver_id="driver-dev85",
+        )
+
+    current = runtime.read(point.id)
+    assert current.value == first.value == 23.5
+    assert current.timestamp == accepted_at
+    assert current.quality == "GOOD"
+    assert seen == []
+    app.state.core.close()
+
+
+def test_point_runtime_quality_loss_and_recovery_preserve_last_sample_until_new_good_sample(tmp_path):
+    app, _, _, _, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    sample_at = datetime(2026, 11, 27, 8, 0, tzinfo=timezone.utc)
+    runtime.publish(
+        point.id, 21.75, quality=PointQuality.GOOD, timestamp=sample_at,
+        source_driver_id="driver-dev85",
+    )
+
+    lost = runtime.mark_quality(
+        point.id, PointQuality.BAD_COMMUNICATION, source_driver_id="driver-dev85"
+    )
+    assert lost.value == 21.75
+    assert lost.quality == "BAD_COMMUNICATION"
+    assert lost.timestamp == sample_at
+
+    recovered_at = datetime(2026, 11, 27, 8, 2, tzinfo=timezone.utc)
+    recovered = runtime.publish(
+        point.id, 22.0, quality=PointQuality.GOOD, timestamp=recovered_at,
+        source_driver_id="driver-dev85",
+    )
+    assert recovered.value == 22.0
+    assert recovered.quality == "GOOD"
+    assert recovered.timestamp == recovered_at
+    app.state.core.close()
