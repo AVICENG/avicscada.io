@@ -94,3 +94,12 @@ BACnet/IP Python baseline, 10 000 ReadProperty Present_Value запросов, �
 
 Commit: `ef92a1b5e56f5cb69e0663897177f91291ca6524`.
 Повторная полная CI-матрица после DEV208 ещё должна подтвердить исправление на Windows и Linux.
+
+
+## DEV211 — Windows ACL regression fixture
+
+В CI run `45949467168` Rust Communication Engine jobs завершились успешно на Windows и Ubuntu; полные Python jobs Ubuntu/Python 3.11, 3.12 и 3.13 также прошли. Windows/Python 3.12 выявил один test failure (31 385 passed, 1 skipped): Windows SDDL возвращает alias `LA` для встроенной учётной записи Administrator RID 500, тогда как тест сравнивал его только с числовым SID из `whoami`.
+
+Исправлена только нормализация теста: alias `LA` разрешается в точный SID текущего пользователя, полученный через `whoami`, и только если SID заканчивается на RID `-500`. Отдельная широкая группа Local Account `S-1-5-113` по-прежнему явно запрещена. Production ACL код не менялся и не ослаблялся.
+
+Commit DEV211: `b0fd590df72b61358d59b9cc97d59f1af0deae19`. Новый CI после DEV211 обязателен; результат пока не подтверждён.

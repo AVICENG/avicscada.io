@@ -196,9 +196,28 @@ Rust worker не становится production default, если:
 - Modbus grouped reads: **реализованы в Python**.
 - Общий adaptive Polling Manager: **не завершён**.
 - Межъязыковой SDK/IPC contract: **не реализован**.
-- Rust Modbus worker: **не реализован**.
-- Rust BACnet worker: **не реализован**.
-- Load & Reliability Lab: **требуется реализация**.
+- Rust Modbus TCP FC03 transport pilot: **реализован как отдельный Rust crate и benchmark CLI; не подключён к production Driver Manager / Point Runtime**.
+- Rust BACnet worker: **не реализован**; доступен только Python ReadProperty baseline.
+- Python/Rust Modbus synthetic 10k benchmark и Python BACnet 10k baseline: **запускаются в Windows/Linux CI**; результаты не являются аппаратной приёмкой.
+- Production Driver SDK v1, versioned IPC, worker supervisor, persistent multi-device runtime, adaptive polling/backoff и Load & Reliability Lab: **требуют реализации**.
+- Rust FC01/FC02/FC04 и BACnet: **не реализованы**; FC03 — единственная Rust функция чтения на текущем пилоте.
+- Rust pilot CI unit tests + benchmark jobs: **прошли на Windows и Ubuntu в run 45949467168**; полная Python CI матрица на том же HEAD имела один Windows ACL test failure, исправление DEV211 ожидает нового CI.
 - Physical controller acceptance: **не подтверждён этой архитектурной записью**.
 
 Следующий инженерный шаг: разработать Driver SDK v1 / IPC contract и repeatable Python baseline; затем Rust Modbus pilot. Не начинать массовый перенос драйверов до получения этих измерений.
+
+
+## 10. Фактический объём Rust pilot на текущем HEAD
+
+На ветке `architecture/rust-communication-engine` находится отдельный crate `rust/avic-communication-engine` (без сторонних crate-зависимостей) и CLI `avic-modbus-bench`. Crate реализует Modbus TCP FC03: MBAP framing, transaction/unit/protocol/length validation, timeouts, exception handling на уровне протокола и decode uint16 register values. CLI выполняет bounded по числу worker threads синтетическое сравнение с Python.
+
+Это ещё не многопротокольный Communication Engine. Клиент открывает TCP connection на каждую транзакцию; нет постоянных сессий, async runtime, device actor lifecycle, reconnect/backoff, rate limiter, fair scheduler, bounded event queues, IPC и Core binding. Benchmark буферизует uint16 values локально и не публикует их в AVIC Point Runtime. Поэтому его throughput нельзя переносить на production capacity.
+
+### Следующий обязательный план
+1. Довести FC03 protocol tests (normal response, exception response, wrong TID/unit/protocol, truncated/oversized payload, timeout, peer disconnect).
+2. Реализовать FC01/FC02/FC04 read-only с parity и группировкой.
+3. Зафиксировать Driver SDK v1 wire schema и local IPC handshake/version/epoch/sequence/TTL.
+4. Реализовать Rust worker process + Python supervisor, station/shard isolation, bounded queues/backpressure и restart semantics.
+5. Интегрировать samples только через Core Point Runtime validation; Rust worker не имеет DB/RBAC/licensing authority.
+6. Провести 10k/50k/100k point load/fault/soak suites, затем Modbus hardware acceptance.
+7. Только после этого начать BACnet Rust: protocol stack review, segmentation, RPM, COV, BBMD/Foreign Device и multi-vendor hardware tests.
