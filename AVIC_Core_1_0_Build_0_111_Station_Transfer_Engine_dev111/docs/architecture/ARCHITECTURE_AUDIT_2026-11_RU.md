@@ -325,3 +325,55 @@ ADR-001 не считается принятым и не означает гот
 - Point Runtime: P0 finding остаётся открытым.
 - Rust Modbus benchmark: NOT VERIFIED на исправленном fixture.
 - `ARCHITECTURE_DEFINED`: не присваивается.
+
+
+## 16. Дополнение — Security, Time Manager, Alarm/Notification и Edge contracts
+
+### 16.1 Security: уточнение границы
+
+В коде действительно существуют не только RBAC primitives, но и:
+- `SecurityGateway.execute()` с authentication → scope RBAC → CSRF → action → audit;
+- FastAPI adapter с secure cookie, Origin/HTTPS policy, rate limiter, security headers и `AuthorizedOperation`;
+- `validate_security_routes()`, который может fail-closed проверить изменяющие маршруты;
+- тесты gateway и FastAPI adapter, включая CSRF, Origin, audit chain, route coverage и cookie flags;
+- `CorePublicAPI` с отдельной проверкой station scope.
+
+Это положительная основа. Однако текущий `create_ui_app()` по-прежнему явно документирован как DEV175 local-only Workbench, не подключает SecurityGateway/AVICSecurityMiddleware и защищает мутации через loopback + Origin guard. В комментарии прямо сказано, что session/RBAC ещё не интегрированы. Поэтому A-003 остаётся открытым именно как проблема production composition/integration, а не как отсутствие Security компонентов.
+
+Дополнительный риск: CommandManager принимает `actor_id` строкой и UI модели alarm acknowledgement/note допускают локальные actor defaults. Это приемлемо только в локальном ограниченном режиме; production actor должен поступать из authenticated Principal, а не из payload.
+
+### 16.2 Time Manager — хранит политику, но не доказывает синхронизацию
+
+`TimeManagementService` сохраняет timezone/NTP settings и per-device clock-sync permission. При этом сам сервис не выполняет NTP synchronization и не предоставляет доказательство фактического clock sync. `set_device_sync_permission()` принимает `approved_by` строкой; это не authenticated Principal. Следовательно, в UI и API нельзя показывать «часы синхронизированы» только потому, что NTP включён в конфигурации.
+
+Создан ADR-003 `ADR-003_QUALITY_TIME_SAMPLE_ORDERING_RU.md`: canonical Quality, source/receive/process timestamps, monotonic timers, sequence ordering, clock quality и отдельное permission enforcement для clock-write.
+
+### 16.3 Data ownership и durable events
+
+Проверка сервисов подтвердила неодинаковую зрелость outbox:
+- AlarmService атомарно фиксирует alarm state, transition event и durable outbox в одной Alarm DB — сохранить этот паттерн.
+- NotificationService имеет durable outbox/route registry, но не выполняет transport delivery без sender adapter; статус QUEUED_NO_TRANSPORT честно отражает текущее состояние.
+- HistoryService хранит собственную историю и binding catalog; Point usage ledger Core восстанавливается отдельным idempotent reconciliation после старта.
+- DependencyService остаётся отдельной БД, но не проверяет существование endpoint, station scope, relation registry и cycle policy.
+
+Создан ADR-005 `ADR-005_DATA_OWNERSHIP_OUTBOX_BACKUP_RU.md`: карта source-of-truth, owner per aggregate, transactional outbox/inbox, idempotent delivery, consistency manifest, retention и staged restore.
+
+### 16.4 Созданные фундаментальные ADR
+
+| ADR | Тема | Статус |
+|---|---|---|
+| ADR-001 | Point Definition / Point State / Sample | PROPOSED |
+| ADR-002 | Station Runtime / signed deployment / Edge autonomy | PROPOSED |
+| ADR-003 | Canonical Quality / Time / Sample ordering | PROPOSED |
+| ADR-005 | Data ownership / outbox-inbox / backup-restore | PROPOSED |
+
+Все четыре документа — проектные контракты, не реализованные функции. До acceptance tests и интеграции статусы не повышаются.
+
+### 16.5 Сравнительная проверка
+
+В каждый ADR добавлена отдельная проверка по трём ориентирам:
+- Niagara — объектная и станционная инженерная модель, drivers, points, lifecycle;
+- Trend IQVision — повседневная инженерная работа, FBD, графика, диагностика и обслуживание;
+- Siemens Desigo CC — распределённая эксплуатация, системная интеграция, мобильный/центральный доступ, долговременные данные и автономность нижнего уровня.
+
+Это контрольные ориентиры, а не требование повторять внутреннюю реализацию этих продуктов.
