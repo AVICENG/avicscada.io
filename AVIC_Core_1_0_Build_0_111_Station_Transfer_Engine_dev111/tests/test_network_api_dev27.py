@@ -68,6 +68,9 @@ def test_driver_catalog_api_exposes_runtime_integration_without_overstating_read
     assert drivers["mqtt"]["runtime_start_supported"] is True
     assert drivers["s7comm"]["runtime_start_supported"] is False
     assert drivers["opc-ua-client"]["runtime_start_supported"] is False
+    assert drivers["s7comm"]["supported_engines"] == []
+    assert drivers["opc-ua-client"]["supported_engines"] == []
+    assert drivers["modbus-tcp"]["supported_engines"] == ["python", "rust", "c"]
     assert all(item["write_supported"] is False for item in drivers.values())
 
 
