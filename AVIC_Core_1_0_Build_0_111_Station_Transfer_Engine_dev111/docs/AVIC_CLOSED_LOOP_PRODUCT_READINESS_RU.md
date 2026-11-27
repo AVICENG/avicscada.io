@@ -335,3 +335,18 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 **Регрессионные тесты:** добавлены тесты запрета `POINT_INPUT` из другой станции, публикации/изменения качества чужой FBD virtual point и запуска цикла с повреждённой межстанционной связью.
 
 **Статус проверки:** код и тесты внесены в PR; CI для актуального head должен подтвердить Linux/Windows. Локальный pytest и физическая аппаратная приёмка не выполнялись.
+
+
+### 9.12 DEV207 — исправление CI-регрессий после усиления station ownership
+
+**Причина CI failure DEV203–DEV206:** усиление межстанционной изоляции корректно потребовало зарегистрированный DriverInstance для adapter-originated публикаций, но часть старых adapter-level тестов продолжала использовать фиктивные строки вместо сохранённых экземпляров драйверов. Дополнительно несколько тестов использовали несуществующие station/point IDs для Historian API, один AHU тест ссылался на локальную переменную вне области видимости, а лицензионная тестовая заглушка не реализовывала полный интерфейс entitlement service.
+
+**Изменения DEV207:**
+- BACnet/IP и Modbus TCP adapter fixtures создают реальные station-owned DriverInstance через Driver Manager.
+- MQTT adapter-level fixture сохраняет явный station-owned DriverInstance напрямую: MQTT остаётся PLANNED для production Driver Manager lifecycle, и тест не объявляет его production-ready.
+- AHU regression test получает Device из repository вместо обращения к неопределённой переменной.
+- FBD cross-station test проверяет актуальный контрактный текст отказа; защитная проверка не ослаблялась.
+- License test double реализует assert_feature_enabled().
+- Historian API regression test создаёт реальные Station/Device/Point и использует их ID в запросах.
+
+**Статус проверки:** исправления внесены. Новый полный Linux/Windows CI должен подтвердить результат; до завершения всех шести jobs статус остаётся НЕ ПОДТВЕРЖДЁН. Физическая BACnet-приёмка не выполнялась.
