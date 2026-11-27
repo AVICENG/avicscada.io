@@ -192,3 +192,11 @@
 - Python supervisor теперь при EOF stdout кратко ожидает завершения процесса и drain stderr, после чего включает exit code и последние stderr строки в RustWorkerError. Это устраняет race, при котором Windows test получал пустой stderr до того, как reader thread успевал прочитать диагностику.
 - C libmodbus Worker теперь пишет причины invalid/truncated IPC frame и rejected IPC command в stderr на всех платформах, а не только Windows. В stdout по-прежнему передаются только length-prefixed IPC frames.
 - Это диагностическое усиление, а не исправление предполагаемой первопричины. До повторного CI нельзя утверждать, что Windows handshake исправлен.
+
+
+## DEV230 — BACnet RPM response hardening (27.11.2026)
+
+- Усилена проверка BACnet ReadPropertyMultiple ComplexACK: для каждого BACnet Error теперь обязательны ровно два application Enumerated значения (error-class и error-code). Повреждённый тип/число значений не превращается в допустимую диагностическую структуру.
+- После closing tag property-list проверяется отсутствие trailing bytes; лишние данные в конце ACK отклоняются.
+- Добавлены тесты на trailing bytes и malformed Error class. Существующие проверки object identity, duplicate/unrequested/missing property и segmented ACK сохранены.
+- **Проверка:** изменения и регрессионные тесты добавлены в ветку; CI на актуальном HEAD ещё ожидает очереди. Результат не объявляется passed до CI.
