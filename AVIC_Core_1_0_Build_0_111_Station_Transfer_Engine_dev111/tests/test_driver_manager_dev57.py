@@ -112,11 +112,13 @@ def test_driver_manager_rejects_nested_secrets(tmp_path):
     core.close()
 
 
-def test_driver_manager_requires_registered_runtime_for_mqtt(tmp_path):
+def test_driver_manager_registers_mqtt_runtime_factory(tmp_path):
     core, station = make_station(tmp_path)
-    with pytest.raises(ValueError, match="пока не реализован"):
-        core.driver_manager.create_instance(station["id"], "mqtt", "MQTT")
-    assert next(x for x in core.driver_manager.catalog() if x["driver_id"] == "mqtt")["runtime_start_supported"] is False
+    created = core.driver_manager.create_instance(station["id"], "mqtt", "MQTT")
+    assert created["driver_id"] == "mqtt"
+    catalog_item = next(x for x in core.driver_manager.catalog() if x["driver_id"] == "mqtt")
+    assert catalog_item["runtime_start_supported"] is True
+    assert catalog_item["write_supported"] is False
     core.close()
 
 
