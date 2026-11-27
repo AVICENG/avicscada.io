@@ -7,7 +7,7 @@ DEV208 добавил Rust Communication Engine, после чего combined CI
 
 ## Исправления
 - FBD cross-station test теперь ожидает отказ непосредственно при add_point_node: это фактическая и более ранняя security boundary, до записи некорректного графа.
-- MQTT test fixture получает реальный persisted DriverInstance ID из Core repository во всех сценариях. Устранены неопределённая переменная driver и фиктивный driver-mqtt-test; этим восстанавливается корректная проверка GOOD, BAD_COMMUNICATION, BAD_CONFIGURATION.
+- MQTT test fixture получает реальный persisted DriverInstance ID из Core repository во всех сценариях (включая malformed JSON). Устранены неопределённая переменная driver и все фиктивные driver-mqtt-test; этим восстанавливается корректная проверка GOOD, BAD_COMMUNICATION, BAD_CONFIGURATION.
 
 ## Проверки
 - Предыдущий run 45952516103: Python dependency installation успешно прошла на всех 6 jobs; Linux pytest показал 4 failed / 31 370 passed. Rust cargo test и release build прошли на Ubuntu и Windows.

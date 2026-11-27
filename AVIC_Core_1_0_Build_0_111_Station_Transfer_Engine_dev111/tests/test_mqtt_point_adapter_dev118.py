@@ -95,7 +95,7 @@ def test_mqtt_disconnect_preserves_last_value_and_marks_bad_communication(tmp_pa
 def test_mqtt_invalid_json_marks_bad_configuration(tmp_path):
     app, points = _setup(tmp_path)
     client = FakeMqttClient()
-    adapter = MqttPointAdapter(client, app.state.core.point_runtime, "driver-mqtt-test",
+    adapter = MqttPointAdapter(client, app.state.core.point_runtime, _driver_id(app),
         [MqttPointBinding(points[0].id, "sensor/temp")], host="broker.example")
     adapter._on_message(client, None, SimpleNamespace(topic="sensor/temp", payload=b"{bad"))
     assert app.state.core.point_runtime.read(points[0].id).quality == "BAD_CONFIGURATION"
