@@ -189,7 +189,8 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             let address: SocketAddr = required_str(p, "address")?.parse().map_err(|_| "invalid BACnet address".to_string())?;
             let device_instance = u32::try_from(required_u64(p, "device_instance")?)
                 .map_err(|_| "invalid BACnet device instance".to_string())?;
-            let client = BacnetIpReadOnlyClient::new().map_err(|e| e.to_string())?;
+            let local_bind: SocketAddr = required_str(p, "local_bind")?.parse().map_err(|_| "invalid BACnet local bind".to_string())?;
+            let client = BacnetIpReadOnlyClient::new(local_bind).map_err(|e| e.to_string())?;
             let device = client.discover(address).map_err(|e| e.to_string())?;
             if device.device_instance != device_instance {
                 return Err("BACnet Device Instance does not match requested device".into());
