@@ -119,7 +119,7 @@ class RustDriverWorker:
             while True:
                 frame = read_frame(process.stdout)
                 if frame is None:
-                    self._responses.put((False, "worker stdout closed"))
+                    self._responses.put((False, f"worker stdout closed (exit_code={process.poll()})"))
                     return
                 self._responses.put((True, frame))
         except Exception as exc:
