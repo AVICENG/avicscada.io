@@ -118,3 +118,78 @@ def test_modbus_rtu_manager_rejects_non_c_engine(tmp_path, monkeypatch):
             core.driver_manager._build_modbus_rtu_adapter(core, instance)
     finally:
         core.close()
+
+
+def test_modbus_rtu_point_adapter_polls_through_c_worker_contract(tmp_path, monkeypatch):
+    from avic_core.domain.models import Device, Point, PointQuality
+    from avic_core.drivers import rust_point_adapter as adapter_module
+
+    calls = {}
+
+    class FakeWorker:
+        def __init__(self, command, **kwargs):
+            calls["command"] = command
+            calls["identity"] = kwargs
+            self.started = False
+
+        def start(self, config):
+            calls["config"] = config
+            self.started = True
+
+        def read(self, request):
+            calls["read"] = request
+            return {"transport_ok": True, "result": {"function": 3, "values": [231]}}
+
+        def diagnostics(self):
+            return {"started": self.started}
+
+        def close(self):
+            self.started = False
+
+    monkeypatch.setattr(adapter_module, "RustDriverWorker", FakeWorker)
+    core = CoreApplication(tmp_path / "runtime")
+    project = core.project_station.create_project("RTU runtime")
+    station = core.project_station.create_station(project["id"], "RS485")
+    device = Device(
+        name="RTU device", station_id=station["id"], protocol="modbus/rtu",
+        address="/dev/ttyUSB0",
+    )
+    point = Point(
+        name="Supply temperature", device_id=device.id, data_type="analog-input",
+        native_identity="modbus:hr:10", source_ref="modbus-rtu://hr/10",
+        value=None, quality=PointQuality.UNCERTAIN,
+    )
+    core.repository.save(device)
+    core.repository.save(point)
+    from avic_core.drivers.rust_point_adapter import RustDriverPointAdapter
+    adapter = RustDriverPointAdapter(
+        worker_command=["/opt/avic/avic-modbus-c-worker"], core=core,
+        driver_instance_id="rtu-driver", protocol="modbus-rtu",
+        config={
+            "serial_port": "/dev/ttyUSB0", "baud_rate": 19200,
+            "parity": "E", "data_bits": 8, "stop_bits": 1,
+            "unit_id": 7, "timeout": 1.5, "rts_mode": "none",
+        },
+        bindings=[{
+            "point_id": point.id, "function": 3, "address": 10,
+            "count": 1, "data_type": "uint16",
+        }],
+        installation_id="installation", project_id=project["id"],
+        station_id=station["id"], generation=1,
+        worker_mode="C_LIBMODBUS_READ_ONLY",
+    )
+    try:
+        result = adapter.poll_once()
+        assert result["results"][0]["ok"] is True
+        assert result["results"][0]["value"] == 231
+        assert result["results"][0]["quality"] == "GOOD"
+        assert calls["config"]["protocol"] == "modbus-rtu"
+        assert calls["read"] == {
+            "protocol": "modbus-rtu", "unit_id": 7, "timeout_ms": 1500,
+            "function": 3, "address": 10, "count": 1,
+            "serial_port": "/dev/ttyUSB0", "baud_rate": 19200,
+            "parity": "E", "data_bits": 8, "stop_bits": 1, "rts_mode": "none",
+        }
+    finally:
+        adapter.close()
+        core.close()
