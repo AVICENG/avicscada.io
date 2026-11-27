@@ -174,6 +174,7 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             let address = u16::try_from(required_u64(p, "address")?).map_err(|_| "invalid address".to_string())?;
             let count = u16::try_from(required_u64(p, "count")?).map_err(|_| "invalid count".to_string())?;
             let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(2000);
+            if !(100..=10000).contains(&timeout_ms) { return Err("Modbus timeout_ms must be 100..10000".into()); }
             let config = ModbusTcpConfig::new(host, port, unit_id, Duration::from_millis(timeout_ms))
                 .map_err(|e| e.to_string())?;
             let mut client = ModbusTcpClient::new(config);
@@ -191,6 +192,7 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
                 .map_err(|_| "invalid BACnet device instance".to_string())?;
             let local_bind: SocketAddr = required_str(p, "local_bind")?.parse().map_err(|_| "invalid BACnet local bind".to_string())?;
             let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(3000);
+            if !(100..=30000).contains(&timeout_ms) { return Err("BACnet timeout_ms must be 100..30000".into()); }
             let client = BacnetIpReadOnlyClient::new(local_bind, Duration::from_millis(timeout_ms)).map_err(|e| e.to_string())?;
             let (device, objects) = client.read_device_snapshot(address, device_instance).map_err(|e| e.to_string())?;
             let rows: Vec<Value> = objects.into_iter().map(|o| json!({
@@ -209,6 +211,7 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             let group_address = required_str(p, "group_address")?;
             let dpt = required_str(p, "dpt")?;
             let timeout_ms = p.get("timeout_ms").and_then(Value::as_u64).unwrap_or(2000);
+            if !(100..=30000).contains(&timeout_ms) { return Err("KNX timeout_ms must be 100..30000".into()); }
             let client = KnxIpReadOnlyClient::connect(gateway, local_bind).map_err(|e| e.to_string())?;
             let read_result = client.read_group(group_address, dpt, Duration::from_millis(timeout_ms));
             client.close();
