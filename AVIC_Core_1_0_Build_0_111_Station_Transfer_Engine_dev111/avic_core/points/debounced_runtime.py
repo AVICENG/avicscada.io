@@ -77,7 +77,7 @@ class DebouncedPointRuntimeService(PointRuntimeService):
                 timestamp: datetime | None = None, source_driver_id: str | None = None) -> PointRuntimeValue:
         q = self._quality(quality)
         with self._point_lock(point_id):
-            point, _, _ = self._read_entity(point_id)
+            point, _, device = self._read_entity(point_id)
             if not isinstance(point, Point) or not self._is_binary(point):
                 return super().publish(
                     point_id, value, quality=q, timestamp=timestamp,
