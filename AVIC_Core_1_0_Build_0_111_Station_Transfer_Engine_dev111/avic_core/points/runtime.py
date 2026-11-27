@@ -187,7 +187,9 @@ class PointRuntimeService:
             if direction == PointDirection.OUTPUT.value:
                 raise ValueError("Драйвер не может публиковать входное измерение в OUTPUT-точку")
             owner = str(device.get("payload", {}).get("driver_instance_id") or "")
-            if source_driver_id and owner and source_driver_id != owner:
+            # Adapter-originated samples must prove exact device ownership.
+            # An absent owner is not a wildcard: fail closed for legacy/unbound devices.
+            if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Источник публикации не совпадает с драйвером устройства")
             checked = self._validate_value(point, value)
             if timestamp is not None and (timestamp.tzinfo is None or timestamp.utcoffset() is None):
@@ -248,7 +250,9 @@ class PointRuntimeService:
             if direction == PointDirection.OUTPUT.value:
                 raise ValueError("A driver cannot mark an OUTPUT point as an input measurement")
             owner = str(device.get("payload", {}).get("driver_instance_id") or "")
-            if source_driver_id and owner and source_driver_id != owner:
+            # Quality changes are driver-originated too; unowned points cannot be
+            # claimed implicitly by whichever adapter happens to reference them.
+            if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Quality source does not match point's owning driver")
             point.quality = q
             point.updated_at = _utcnow()
