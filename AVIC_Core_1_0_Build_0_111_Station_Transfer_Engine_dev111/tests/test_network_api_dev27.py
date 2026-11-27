@@ -69,3 +69,14 @@ def test_driver_catalog_api_exposes_runtime_integration_without_overstating_read
     assert drivers["s7comm"]["runtime_start_supported"] is False
     assert drivers["opc-ua-client"]["runtime_start_supported"] is False
     assert all(item["write_supported"] is False for item in drivers.values())
+
+
+def test_driver_manager_ui_exposes_catalog_and_instance_setup(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+    assert "Каталог драйверов AVIC" in html
+    assert "driverCreateConfig" in html
+    assert "Настроить экземпляр" in html
+    assert "driverCatalogSummary" in html
