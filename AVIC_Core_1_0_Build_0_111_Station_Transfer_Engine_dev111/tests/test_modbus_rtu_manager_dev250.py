@@ -77,6 +77,10 @@ def test_modbus_rtu_catalog_and_driver_manager_use_c_worker(tmp_path, monkeypatc
     {"unit_id": 248},
     {"rts_mode": "automatic"},
     {"timeout": 0.01},
+    {"parity": []},
+    {"rts_mode": {}},
+    {"baud_rate": 9600.0},
+    {"data_bits": True},
 ])
 def test_modbus_rtu_manager_rejects_invalid_line_configuration(tmp_path, monkeypatch, overrides):
     core, station, _ = _core_with_project(tmp_path, monkeypatch)
