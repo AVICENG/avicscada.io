@@ -26,8 +26,8 @@
 
 ## Что ещё не закрыто
 
-1. Реальный round-trip через Linux pseudo-terminal и Windows virtual COM.
-2. CRC/short-frame/timeout/late-response/wrong-slave negative tests.
+1. Linux pseudo-terminal round-trip test добавлен в native-worker suite; ждёт фактического CI запуска. Windows virtual COM round-trip ещё не реализован.
+2. Отдельные CRC/short-frame/timeout/late-response/wrong-slave negative tests ещё не закрыты.
 3. Serial Port Manager с эксклюзивным владением и обнаружением конфликта нескольких Worker.
 4. Проверка unplug/replug, reconnect/backoff и bus contention.
 5. RS-485 adapter tests, RTS polarity/timing и несколько физических устройств.
@@ -58,7 +58,7 @@
 
 ## Проверки
 
-На момент создания этого отчёта код и тесты отправлены в GitHub, но фактический запуск CMake/pytest и CI для DEV249 ещё не получен. Никакие новые тесты не помечаются Passed. Исторические Windows/Linux результаты DEV245/DEV247 сохраняются как отдельные результаты старых commit.
+На момент обновления отчёта добавлен Linux PTY round-trip test с проверкой CRC запроса и ответа FC03. Фактический запуск CMake/pytest и CI DEV249 ещё ожидается; тест не помечается Passed до получения результата. Никакие новые тесты не помечаются Passed. Исторические Windows/Linux результаты DEV245/DEV247 сохраняются как отдельные результаты старых commit.
 
 ## Источник API
 
