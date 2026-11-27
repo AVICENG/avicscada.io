@@ -53,6 +53,7 @@ class RustDriverPointAdapter:
         self._last_errors: dict[str, str] = {}
         self._success_count = 0
         self._failure_count = 0
+        self._closed = False
         self._PointQuality = PointQuality
         self._worker = RustDriverWorker(
             worker_command,
@@ -251,4 +252,21 @@ class RustDriverPointAdapter:
                 "last_errors": dict(self._last_errors), "worker": self._worker.diagnostics()}
 
     def close(self) -> None:
-        self._worker.close()
+        if self._closed:
+            return
+        self._closed = True
+        close_error = None
+        try:
+            self._worker.close()
+        except Exception as exc:
+            close_error = exc
+        for binding in self.bindings:
+            try:
+                self.point_runtime.mark_quality(
+                    binding["point_id"], self._PointQuality.STALE,
+                    source_driver_id=self.driver_instance_id,
+                )
+            except Exception as exc:
+                close_error = close_error or exc
+        if close_error is not None:
+            raise close_error
