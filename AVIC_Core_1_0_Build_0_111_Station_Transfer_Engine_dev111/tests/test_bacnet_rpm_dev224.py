@@ -102,7 +102,7 @@ def test_read_property_multiple_rejects_duplicate_or_unbounded_requests():
 
 def test_read_property_multiple_rejects_trailing_bytes(monkeypatch):
     packet = _rpm_ack(1)
-    packet = packet + b"\\x00"
+    packet = packet + bytes((0x00,))
     packet = packet[:2] + len(packet).to_bytes(2, "big") + packet[4:]
     fake = FakeSocket(packet)
     monkeypatch.setattr(socket, "socket", lambda *args: fake)
@@ -114,9 +114,13 @@ def test_read_property_multiple_rejects_trailing_bytes(monkeypatch):
 
 
 def test_read_property_multiple_requires_enumerated_error_class_and_code(monkeypatch):
-    packet = _rpm_ack(1).replace(
-        b"\\x5e\\x91\\x02\\x91\\x25\\x5f",
-        b"\\x5e\\x21\\x02\\x91\\x25\\x5f",
+    packet = _rpm_ack(1)
+    malformed_error_tag = bytes((0x5E, 0x91, 0x02, 0x91, 0x25, 0x5F))
+    assert malformed_error_tag in packet
+    packet = packet.replace(
+        malformed_error_tag,
+        bytes((0x5E, 0x21, 0x02, 0x91, 0x25, 0x5F)),
+        1,
     )
     fake = FakeSocket(packet)
     monkeypatch.setattr(socket, "socket", lambda *args: fake)
