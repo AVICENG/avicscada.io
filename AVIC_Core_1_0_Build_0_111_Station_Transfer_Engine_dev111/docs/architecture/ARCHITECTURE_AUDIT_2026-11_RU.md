@@ -445,3 +445,19 @@ ADR-001 не считается принятым и не означает гот
 
 Новый benchmark fix и regression tests **не имеют CI evidence**. Не считать их проверенными до запуска workflow на актуальном PR head `18b6cb3b50458ef5bced0859db5575d50b1bbb87`.
 
+## Дополнение 27.11.2026 — выбор Protocol Engine и Dependency Graph
+
+### A-011 — Выбор языка коммуникационных драйверов пока не обоснован сравнением библиотек (P1)
+
+Текущий Rust pilot нельзя объявлять окончательным выбором только потому, что он уже существует. Для Modbus есть зрелая C-библиотека libmodbus; для BACnet — открытые и коммерческие C/C++ стеки; для KNX ситуация неоднородна, в том числе существует официальный Falcon .NET SDK. Решение принимается отдельно по протоколу после feature matrix, license review, parity, end-to-end нагрузочных испытаний и проверки Windows/Linux/Edge. Подробно: ADR-007.
+
+### A-012 — DependencyService не интегрирован в единый Change Plan (P1)
+
+CoreObjectService уже проверяет значительную часть ownership references и выполняет транзакционные save/delete graph операции с optimistic versions. Отдельный DependencyService хранит semantic edges, но не проверяет endpoints, relation registry, scope/cycles; delete preview advisory и не защищён graph revision от TOCTOU. Это не повод переписывать весь объектный слой: нужно сохранить рабочую базу CoreObjectService и интегрировать её с формальным Relation Registry и immutable Change Plans. Подробно: ADR-008.
+
+### Обновление реестра архитектурных решений
+
+- ADR-007 Protocol Engine Language and Library Selection — PROPOSED.
+- ADR-008 Dependency Graph and Change Plans — PROPOSED.
+
+Оба решения остаются открытыми до прототипов, проверки исходников, acceptance tests и доказательств CI. PR остаётся Draft; архитектура не объявляется завершённой.
