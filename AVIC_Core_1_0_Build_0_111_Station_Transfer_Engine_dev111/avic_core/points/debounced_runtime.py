@@ -56,10 +56,11 @@ class DebouncedPointRuntimeService(PointRuntimeService):
         return self.read(point_id)
 
     def _ensure_debounce_config(self, point: Point) -> tuple[int, int]:
-        config = (int(getattr(point, "debounce_on_ms", 0)),
-                  int(getattr(point, "debounce_off_ms", 0)))
-        if config[0] < 0 or config[1] < 0:
-            raise ValueError("Параметры debounce не могут быть отрицательными")
+        checked = DebounceConfig(
+            on_ms=getattr(point, "debounce_on_ms", 0),
+            off_ms=getattr(point, "debounce_off_ms", 0),
+        )
+        config = (checked.on_ms, checked.off_ms)
         if self._debounce_configs.get(point.id) != config:
             self._debounce.configure(
                 point.id, DebounceConfig(on_ms=config[0], off_ms=config[1])
@@ -87,11 +88,12 @@ class DebouncedPointRuntimeService(PointRuntimeService):
                 )
 
             if q != PointQuality.GOOD:
-                self._debounce.cancel_pending(point.id)
-                self._debounce_sources.pop(point.id, None)
-                return super().mark_quality(
+                marked = super().mark_quality(
                     point_id, q, source_driver_id=source_driver_id
                 )
+                self._debounce.cancel_pending(point.id)
+                self._debounce_sources.pop(point.id, None)
+                return marked
 
             if not isinstance(value, bool):
                 # Let the authoritative Point Runtime raise its canonical type error.
@@ -121,11 +123,12 @@ class DebouncedPointRuntimeService(PointRuntimeService):
     def mark_quality(self, point_id: str, quality, *, source_driver_id: str | None = None) -> PointRuntimeValue:
         q = self._quality(quality)
         with self._debounce_lock:
-            self._debounce.cancel_pending(str(point_id))
-            self._debounce_sources.pop(str(point_id), None)
-            return super().mark_quality(
+            marked = super().mark_quality(
                 point_id, q, source_driver_id=source_driver_id
             )
+            self._debounce.cancel_pending(str(point_id))
+            self._debounce_sources.pop(str(point_id), None)
+            return marked
 
     def flush_debounce(self, *, now: datetime | None = None) -> tuple[PointRuntimeValue, ...]:
         """Commit elapsed binary transitions; call from the common runtime scheduler."""
