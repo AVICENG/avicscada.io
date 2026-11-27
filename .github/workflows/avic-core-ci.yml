@@ -8,6 +8,7 @@ on:
       - main
       - dev112-station-transfer-reliability
       - dev183-linux-cli-test-fix
+      - drivers/c-only-cleanup-dev246
   pull_request:
     branches:
       - "**"
@@ -304,8 +305,8 @@ jobs:
         shell: msys2 {0}
         run: ctest --test-dir build/opcua-native-probe --output-on-failure
 
-  siemens-s7-dependencies:
-    name: Siemens S7 optional libraries / ${{ matrix.os }}
+  siemens-s7-c-policy:
+    name: Siemens S7 C-only policy / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
@@ -327,11 +328,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install AVIC Core and optional S7 dependencies
-        run: python -m pip install -e ".[dev,s7]"
+      - name: Install AVIC Core without protocol-specific Python S7 packages
+        run: python -m pip install -e ".[dev]"
 
       - name: Check dependency consistency
         run: python -m pip check
 
-      - name: Run Siemens S7 library smoke tests
+      - name: Verify S7 remains disabled until native C Worker acceptance
         run: python -m pytest -q tests/test_s7_dependencies_dev226.py
