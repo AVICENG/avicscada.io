@@ -372,11 +372,21 @@ int main(void) {
 #endif
     worker_t worker;
     memset(&worker, 0, sizeof(worker));
+#ifdef _WIN32
+    fprintf(stderr, "C Worker: binary IPC streams ready\\n");
+    fflush(stderr);
+#endif
     for (;;) {
         json_t *request = NULL;
         int status = read_frame(&request);
         if (status == 0) break;
-        if (status < 0) { close_modbus(&worker); return 2; }
+        if (status < 0) {
+#ifdef _WIN32
+            fprintf(stderr, "C Worker: invalid or truncated IPC frame (errno=%d)\\n", errno);
+            fflush(stderr);
+#endif
+            close_modbus(&worker); return 2;
+        }
         int should_exit = 0;
         int ok = process(&worker, request, &should_exit);
         json_decref(request);
