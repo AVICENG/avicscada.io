@@ -478,7 +478,9 @@ def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled
     master_fd, slave_fd = pty.openpty()
     serial_port = os_module.ttyname(slave_fd)
     tty.setraw(slave_fd)
-    os_module.close(slave_fd)
+    # Keep the PTY slave open until the C Worker has opened it. Otherwise
+    # the master can report EIO before the worker starts, and the simulator
+    # exits without ever seeing the RTU request.
 
     def crc16(data: bytes) -> int:
         crc = 0xFFFF
@@ -540,4 +542,5 @@ def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled
         assert not simulator_error, repr(simulator_error)
     finally:
         worker.close()
+        os_module.close(slave_fd)
         os_module.close(master_fd)
