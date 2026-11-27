@@ -183,7 +183,8 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             }
             let objects = client.read_object_snapshots(address, device_instance).map_err(|e| e.to_string())?;
             let rows: Vec<Value> = objects.into_iter().map(|o| json!({
-                "object_identifier":o.object_identifier, "object_name":o.object_name,
+                "object_identifier":o.object_identifier, "object_type_name":o.object_type_name,
+                "object_instance":o.object_instance, "object_name":o.object_name,
                 "description":o.description, "present_value":o.present_value,
                 "units":o.units, "status_flags":o.status_flags
             })).collect();
