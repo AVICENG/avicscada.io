@@ -121,6 +121,9 @@ class Point(BaseObject):
     licensed_usage: list[str] = field(default_factory=list)
     # Baseline activity is preserved while engineering usage references are added/removed.
     licensed_base_active: bool | None = None
+    # Binary input filtering; zero means disabled. Persisted with the point definition.
+    debounce_on_ms: int = 0
+    debounce_off_ms: int = 0
 
     def update_value(self, value: Any, quality: PointQuality, timestamp: datetime | None = None):
         self.value = value
