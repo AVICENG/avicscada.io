@@ -5,6 +5,7 @@ import pytest
 
 from avic_core.domain.models import Device, Point, PointQuality
 from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
+from avic_core.drivers.manager import DriverInstance
 from avic_core.ui import create_ui_app
 
 
@@ -31,7 +32,9 @@ def _setup(tmp_path, count=1):
     app = create_ui_app(data_dir=str(tmp_path))
     project = app.state.project_station.create_project("MQTT adapter tests")
     station = app.state.project_station.create_station(project["id"], "MQTT station")
-    driver = app.state.driver_manager.create_instance(station["id"], "mqtt", "MQTT test driver", {})
+    driver = DriverInstance(name="MQTT test driver", station_id=station["id"],
+                            driver_id="mqtt", protocol="mqtt")
+    app.state.core.repository.save(driver)
     device = Device(name="MQTT device", station_id=station["id"], protocol="mqtt",
                     address="mqtt://broker.example:1883", driver_instance_id=driver["id"])
     app.state.core.repository.save(device)
@@ -66,9 +69,9 @@ def test_mqtt_subscribes_and_publishes_json_value_to_point_runtime(tmp_path):
 
 
 def test_mqtt_disconnect_preserves_last_value_and_marks_bad_communication(tmp_path):
-    app, points = _setup(tmp_path)
+    app, points, driver_id = _setup(tmp_path)
     client = FakeMqttClient()
-    adapter = MqttPointAdapter(client, app.state.core.point_runtime, "driver-mqtt-test",
+    adapter = MqttPointAdapter(client, app.state.core.point_runtime, driver_id,
         [MqttPointBinding(points[0].id, "sensor/temp")], host="broker.example")
     adapter._on_connect(client, None, {}, 0)
     client.on_message(client, None, SimpleNamespace(topic="sensor/temp", payload=b'{"value": 21.5}'))
@@ -82,9 +85,9 @@ def test_mqtt_disconnect_preserves_last_value_and_marks_bad_communication(tmp_pa
 
 
 def test_mqtt_invalid_json_marks_bad_configuration(tmp_path):
-    app, points = _setup(tmp_path)
+    app, points, driver_id = _setup(tmp_path)
     client = FakeMqttClient()
-    adapter = MqttPointAdapter(client, app.state.core.point_runtime, "driver-mqtt-test",
+    adapter = MqttPointAdapter(client, app.state.core.point_runtime, driver_id,
         [MqttPointBinding(points[0].id, "sensor/temp")], host="broker.example")
     adapter._on_message(client, None, SimpleNamespace(topic="sensor/temp", payload=b"{bad"))
     assert app.state.core.point_runtime.read(points[0].id).quality == "BAD_CONFIGURATION"
