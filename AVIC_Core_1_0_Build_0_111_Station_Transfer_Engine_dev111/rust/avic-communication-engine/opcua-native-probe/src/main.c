@@ -185,50 +185,95 @@ static void print_json_string(const UA_String *value) {
     putchar('"');
 }
 
-typedef struct {
-    UA_Client *client;
-    size_t count;
-} browse_context_t;
-
-static UA_StatusCode browse_child(UA_NodeId child_id, UA_Boolean is_inverse,
-                                  UA_NodeId reference_type_id, void *handle) {
-    (void)reference_type_id;
-    browse_context_t *context = (browse_context_t *)handle;
-    if(is_inverse)
-        return UA_STATUSCODE_GOOD;
-    if(context->count >= MAX_BROWSE_CHILDREN)
-        return UA_STATUSCODE_BADRESOURCEUNAVAILABLE;
-
+static void print_browse_reference(const UA_ReferenceDescription *reference) {
     UA_String node_id_text = UA_STRING_NULL;
-    UA_StatusCode node_status = UA_NodeId_print(&child_id, &node_id_text);
-    if(node_status != UA_STATUSCODE_GOOD)
-        return node_status;
-
-    UA_LocalizedText display_name;
-    UA_LocalizedText_init(&display_name);
-    UA_StatusCode name_status = UA_Client_readDisplayNameAttribute(
-        context->client, child_id, &display_name);
-
-    if(context->count > 0)
-        putchar(',');
+    UA_StatusCode node_status = UA_NodeId_print(&reference->nodeId.nodeId, &node_id_text);
     printf("{\"node_id\":");
-    print_json_string(&node_id_text);
-    printf(",\"display_name\":");
-    if(name_status == UA_STATUSCODE_GOOD)
-        print_json_string(&display_name.text);
+    if(node_status == UA_STATUSCODE_GOOD)
+        print_json_string(&node_id_text);
     else
         printf("\"\"");
-    UA_NodeClass node_class = UA_NODECLASS_UNSPECIFIED;
-    UA_StatusCode class_status = UA_Client_readNodeClassAttribute(
-        context->client, child_id, &node_class);
-    if(class_status == UA_STATUSCODE_GOOD)
-        printf(",\"node_class\":%u", (unsigned int)node_class);
-    printf("}");
-
+    printf(",\"display_name\":");
+    print_json_string(&reference->displayName.text);
+    printf(",\"node_class\":%u", (unsigned int)reference->nodeClass);
+    if(reference->nodeId.namespaceUri.length > 0) {
+        printf(",\"namespace_uri\":");
+        print_json_string(&reference->nodeId.namespaceUri);
+    }
+    printf(",\"server_index\":%u}", (unsigned int)reference->nodeId.serverIndex);
     UA_String_clear(&node_id_text);
-    UA_LocalizedText_clear(&display_name);
-    context->count++;
-    return UA_STATUSCODE_GOOD;
+}
+
+static int browse_children(UA_Client *client, const UA_NodeId *parent) {
+    UA_BrowseRequest request;
+    UA_BrowseRequest_init(&request);
+    request.requestedMaxReferencesPerNode = MAX_BROWSE_CHILDREN;
+    request.nodesToBrowse = UA_BrowseDescription_new();
+    if(!request.nodesToBrowse)
+        return 1;
+    request.nodesToBrowseSize = 1;
+    UA_BrowseDescription *description = &request.nodesToBrowse[0];
+    UA_StatusCode status = UA_NodeId_copy(parent, &description->nodeId);
+    if(status != UA_STATUSCODE_GOOD) {
+        UA_BrowseRequest_clear(&request);
+        return 1;
+    }
+    description->browseDirection = UA_BROWSEDIRECTION_FORWARD;
+    description->referenceTypeId = UA_NODEID_NUMERIC(0, UA_NS0ID_HIERARCHICALREFERENCES);
+    description->includeSubtypes = true;
+    description->resultMask = UA_BROWSERESULTMASK_DISPLAYNAME | UA_BROWSERESULTMASK_NODECLASS;
+
+    UA_BrowseResponse response = UA_Client_Service_browse(client, request);
+    UA_BrowseRequest_clear(&request);
+    status = response.responseHeader.serviceResult;
+    if(status != UA_STATUSCODE_GOOD || response.resultsSize != 1) {
+        fprintf(stderr, "OPC UA Browse service failed: %s\n",
+                UA_StatusCode_name(status == UA_STATUSCODE_GOOD
+                                   ? UA_STATUSCODE_BADUNEXPECTEDERROR : status));
+        UA_BrowseResponse_clear(&response);
+        return 1;
+    }
+
+    UA_BrowseResult *result = &response.results[0];
+    if(result->statusCode != UA_STATUSCODE_GOOD) {
+        fprintf(stderr, "OPC UA Browse result failed: %s\n",
+                UA_StatusCode_name(result->statusCode));
+        UA_BrowseResponse_clear(&response);
+        return 1;
+    }
+
+    size_t count = result->referencesSize;
+    if(count > MAX_BROWSE_CHILDREN)
+        count = MAX_BROWSE_CHILDREN;
+    printf("{\"browse\":[");
+    for(size_t i = 0; i < count; ++i) {
+        if(i > 0)
+            putchar(',');
+        print_browse_reference(&result->references[i]);
+    }
+    UA_Boolean has_more = result->continuationPoint.length > 0 ||
+                          result->referencesSize > MAX_BROWSE_CHILDREN;
+    if(result->continuationPoint.length > 0) {
+        /* Release server-side continuation state without retrieving another page. */
+        UA_BrowseNextRequest release_request;
+        UA_BrowseNextRequest_init(&release_request);
+        release_request.releaseContinuationPoints = true;
+        release_request.continuationPointsSize = 1;
+        release_request.continuationPoints = &result->continuationPoint;
+        UA_BrowseNextResponse release_response =
+            UA_Client_Service_browseNext(client, release_request);
+        if(release_response.responseHeader.serviceResult != UA_STATUSCODE_GOOD)
+            fprintf(stderr, "OPC UA BrowseNext continuation release failed: %s\n",
+                    UA_StatusCode_name(release_response.responseHeader.serviceResult));
+        UA_BrowseNextResponse_clear(&release_response);
+    }
+    printf("],\"count\":%zu,\"has_more\":%s}\n",
+           count, has_more ? "true" : "false");
+    UA_BrowseResponse_clear(&response);
+    if(has_more)
+        fprintf(stderr, "OPC UA Browse result capped at %u; continuation was released\n",
+                (unsigned int)MAX_BROWSE_CHILDREN);
+    return 0;
 }
 
 static int connect_and_execute(int argc, char **argv, int browse) {
@@ -318,17 +363,11 @@ static int connect_and_execute(int argc, char **argv, int browse) {
     }
 
     if(browse) {
-        browse_context_t context = {client, 0};
-        printf("{\"browse\":[");
-        status = UA_Client_forEachChildNodeCall(client, node, browse_child, &context);
-        printf("],\"count\":%zu}\n", context.count);
-        if(status != UA_STATUSCODE_GOOD)
-            fprintf(stderr, "OPC UA Browse failed or node limit reached: %s\n",
-                    UA_StatusCode_name(status));
+        int browse_status = browse_children(client, &node);
         UA_NodeId_clear(&node);
         UA_Client_disconnect(client);
         UA_Client_delete(client);
-        return status == UA_STATUSCODE_GOOD ? 0 : 7;
+        return browse_status == 0 ? 0 : 7;
     }
 
     UA_Variant value;
