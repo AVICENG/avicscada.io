@@ -46,7 +46,8 @@
 
 ### DEV225 — BACnet C evaluation / integration
 - Лицензионный аудит Steve Karg выполнен: см. BACNET_STACK_LICENSE_AND_INTEGRATION_AUDIT_RU.md.
-- Следующий шаг: pinned upstream CMake build на Windows/Linux с BACDL_BIP, затем минимальный Worker discovery + ReadProperty.
+- Добавлен pinned upstream CMake build probe на Windows/Linux с BACDL_BIP; CI пока ожидает выполнения. Это проверка сборки библиотеки, не готовый BACnet Worker.
+- После зелёной сборки — минимальный Worker discovery + ReadProperty.
 - Сначала discovery + ReadProperty, затем RPM; COV только после тестов подписок и восстановления.
 - Сравнение с существующим BACnet/IP путем на Trend-контроллере.
 
