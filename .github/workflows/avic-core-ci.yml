@@ -200,3 +200,29 @@ jobs:
         run: |
           $env:PATH = "C:\msys64\ucrt64\bin;$env:PATH"
           python -m pytest -q tests/test_c_modbus_worker_dev223.py
+
+  bacnet-stack-build:
+    name: BACnet Stack POC / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configure pinned Steve Karg BACnet Stack
+        run: cmake -S rust/avic-communication-engine/bacnet-stack-probe -B build/bacnet-stack-probe -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build BACnet Stack and AVIC probe
+        run: cmake --build build/bacnet-stack-probe --config Release --parallel 2
+
+      - name: Run BACnet Stack version probe test
+        run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
