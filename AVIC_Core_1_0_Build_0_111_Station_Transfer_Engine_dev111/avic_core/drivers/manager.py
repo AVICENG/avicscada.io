@@ -190,6 +190,10 @@ class DriverManagerService:
                 "config": p.get("config", {})})
         return result
 
+    def assert_driver_entitlement(self, driver_id: str) -> None:
+        """Require the signed feature entitlement for an operational driver action."""
+        self._assert_driver_entitlement(driver_id)
+
     def _assert_driver_entitlement(self, driver_id: str) -> None:
         service = getattr(self.core, "installation_license_service", None)
         license_file = getattr(self.core, "license_file", None)
