@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 
 from avic_core.domain.models import PointQuality
 from avic_core.network.knx_cemi import CemiMessageCode, KnxGroupService, parse_cemi_frame
@@ -21,7 +22,15 @@ class KnxPointBinding:
         address = parse_group_address(self.group_address, self.group_address_style)
         object.__setattr__(self, "group_address", address)
         normalized = self.datapoint_type.strip().upper().replace("DPT-", "").replace("DPT", "")
-        if normalized not in {"1.001", "5.001", "9.001", "14.000"}:
+        supported = {
+            "1.001", "1.002", "1.003", "1.004", "1.005", "1.006", "1.007",
+            "1.008", "1.009", "1.010", "1.011", "1.012", "1.013", "1.014",
+            "1.015", "1.016", "1.017", "1.018", "1.019", "1.021", "1.022",
+            "1.023", "1.024", "1.100", "5.001", "5.003", "5.004", "6.001",
+            "7.001", "8.001", "9.001", "12.001", "13.001", "14.000",
+            "16.000", "17.001", "18.001",
+        }
+        if normalized not in supported:
             raise ValueError(f"Unsupported KNX DPT binding: {self.datapoint_type}")
         object.__setattr__(self, "datapoint_type", normalized)
 
@@ -29,9 +38,12 @@ class KnxPointBinding:
 class KnxPointAdapter:
     """Passively monitors mapped group telegrams; does not transmit field writes."""
 
-    def __init__(self, session, point_runtime, driver_instance_id: str, bindings):
+    def __init__(self, session, point_runtime, driver_instance_id: str, bindings, *,
+                 read_mode: str = "passive"):
         if not driver_instance_id.strip():
             raise ValueError("driver_instance_id is required")
+        if read_mode not in {"passive", "poll"}:
+            raise ValueError("KNX read_mode must be 'passive' or 'poll'")
         normalized = tuple(bindings)
         if not normalized:
             raise ValueError("at least one KNX point binding is required")
@@ -40,6 +52,8 @@ class KnxPointAdapter:
         if len({b.group_address for b in normalized}) != len(normalized):
             raise ValueError("duplicate KNX group address in binding map")
         self.session = session
+        self.read_mode = read_mode
+        self._read_cursor = 0
         self.point_runtime = point_runtime
         self.driver_instance_id = driver_instance_id
         self.bindings = normalized
@@ -68,17 +82,82 @@ class KnxPointAdapter:
         return results
 
     def poll_once(self) -> dict:
+        requested_binding = None
         try:
             if not self.session.connected:
                 self.session.connect()
-            cemi = self.session.poll_cemi()
+            if self.read_mode == "poll":
+                requested_binding = self.bindings[self._read_cursor]
+                self._read_cursor = (self._read_cursor + 1) % len(self.bindings)
+                individual = self.session.individual_address
+                if individual is None:
+                    raise KnxProtocolError("KNX gateway did not assign an individual address")
+                destination = int(requested_binding.group_address)
+                # cEMI L_Data.req with GroupValueRead APCI (0x00), no data.
+                read_request = bytes((
+                    0x11, 0x00, 0xBC, 0xE0,
+                    (int(individual) >> 8) & 0xFF, int(individual) & 0xFF,
+                    (destination >> 8) & 0xFF, destination & 0xFF,
+                    0x01, 0x00, 0x00,
+                ))
+                self.session.send_cemi(read_request)
+            if requested_binding is None:
+                cemi = self.session.poll_cemi()
+            else:
+                # Tunnelling can deliver unrelated group telegrams before the
+                # response to our GroupValueRead. Keep receiving until the
+                # requested GroupValueResponse or the session timeout expires.
+                timeout = max(0.05, float(getattr(self.session, "timeout_seconds", 1.0)))
+                deadline = time.monotonic() + timeout
+                cemi = None
+                while time.monotonic() < deadline:
+                    candidate = self.session.poll_cemi()
+                    if candidate is None:
+                        break
+                    candidate_frame = parse_cemi_frame(candidate)
+                    if (candidate_frame.message_code is CemiMessageCode.L_DATA_INDICATION
+                        and candidate_frame.destination_is_group
+                        and candidate_frame.destination_address == int(requested_binding.group_address)
+                        and candidate_frame.service is KnxGroupService.GROUP_VALUE_RESPONSE):
+                        cemi = candidate
+                        break
         except Exception as exc:
             message = f"{type(exc).__name__}: {exc}"
-            results = self._mark_all_bad(message)
+            if requested_binding is None:
+                results = self._mark_all_bad(message)
+            else:
+                self._last_errors[requested_binding.point_id] = message
+                self._failure_count += 1
+                try:
+                    sample = self.point_runtime.mark_quality(
+                        requested_binding.point_id, PointQuality.BAD_COMMUNICATION,
+                        source_driver_id=self.driver_instance_id,
+                    )
+                    results = [{"point_id": requested_binding.point_id, "ok": False,
+                                "value": sample.value, "quality": sample.quality, "error": message}]
+                except Exception as qexc:
+                    results = [{"point_id": requested_binding.point_id, "ok": False,
+                                "quality": "UNKNOWN", "error": message,
+                                "quality_error": f"{type(qexc).__name__}: {qexc}"}]
             return self._result(results)
 
         if cemi is None:
-            return self._result([])
+            if requested_binding is None:
+                return self._result([])
+            message = "KNX GroupValueRead response timeout"
+            self._last_errors[requested_binding.point_id] = message
+            self._failure_count += 1
+            try:
+                sample = self.point_runtime.mark_quality(
+                    requested_binding.point_id, PointQuality.BAD_COMMUNICATION,
+                    source_driver_id=self.driver_instance_id,
+                )
+                return self._result([{"point_id": requested_binding.point_id, "ok": False,
+                                      "value": sample.value, "quality": sample.quality, "error": message}])
+            except Exception as exc:
+                return self._result([{"point_id": requested_binding.point_id, "ok": False,
+                                      "quality": "UNKNOWN", "error": message,
+                                      "quality_error": f"{type(exc).__name__}: {exc}"}])
         try:
             frame = parse_cemi_frame(cemi)
         except KnxProtocolError as exc:
@@ -99,9 +178,9 @@ class KnxPointAdapter:
             return self._result([])
 
         try:
-            if binding.datapoint_type == "1.001":
-                if frame.short_value not in (0, 1):
-                    raise KnxProtocolError("DPT 1.001 requires a one-bit short APDU value")
+            if binding.datapoint_type.startswith("1."):
+                if frame.short_value is None:
+                    raise KnxProtocolError(f"DPT {binding.datapoint_type} requires a short APDU value")
                 raw = bytes((frame.short_value,))
             else:
                 raw = frame.data
@@ -144,8 +223,9 @@ class KnxPointAdapter:
         self.session.disconnect()
 
     def diagnostics(self):
-        return {"driver_id": "knxnet-ip", "mode": "READ_ONLY_PASSIVE_GROUP_MONITOR",
-                "write_supported": False, "configured_points": len(self.bindings),
+        return {"driver_id": "knxnet-ip",
+                "mode": "READ_ONLY_ACTIVE_GROUP_READ" if self.read_mode == "poll" else "READ_ONLY_PASSIVE_GROUP_MONITOR",
+                "read_mode": self.read_mode, "write_supported": False, "configured_points": len(self.bindings),
                 "success_count": self._success_count, "failure_count": self._failure_count,
                 "ignored_count": self._ignored_count, "malformed_count": self._malformed_count,
                 "last_errors": dict(self._last_errors), "transport": self.session.diagnostics()}

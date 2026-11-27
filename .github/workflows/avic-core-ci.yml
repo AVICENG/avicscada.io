@@ -113,3 +113,225 @@ jobs:
 
       - name: Run Python BACnet/IP ReadProperty baseline (10,000 points)
         run: python tools/bacnet_load_baseline.py --points 10000
+
+  c-libmodbus-worker-linux:
+    name: C libmodbus Worker / Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install C build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libmodbus-dev libjansson-dev uuid-dev
+
+      - name: Configure C Worker
+        run: cmake -S rust/avic-communication-engine/c-worker -B build/c-modbus-worker -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build C Worker
+        run: cmake --build build/c-modbus-worker --config Release --parallel 2
+
+      - name: Set up Python for IPC smoke test
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install AVIC Core test dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run compiled C Worker IPC handshake test
+        env:
+          AVIC_C_MODBUS_WORKER: ${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/c-modbus-worker/avic-modbus-c-worker
+        run: python -m pytest -q tests/test_c_modbus_worker_dev223.py
+
+  c-libmodbus-worker-windows:
+    name: C libmodbus Worker / Windows UCRT64
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install MSYS2 UCRT64 C dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-libmodbus
+            mingw-w64-ucrt-x86_64-jansson
+
+      - name: Configure Windows C Worker
+        shell: msys2 {0}
+        run: cmake -S rust/avic-communication-engine/c-worker -B build/c-modbus-worker -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Windows C Worker
+        shell: msys2 {0}
+        run: cmake --build build/c-modbus-worker --parallel 2
+
+      - name: Inspect Windows C Worker runtime dependencies
+        shell: pwsh
+        run: |
+          $worker = "build/c-modbus-worker/avic-modbus-c-worker.exe"
+          if (-not (Test-Path $worker)) { throw "C Worker executable was not produced" }
+          # Use the exact MSYS2 installation used by the compiler. Get-Command
+          # can resolve the runner's unrelated C:\\mingw64 installation.
+          $msysBin = Join-Path $env:RUNNER_TEMP "msys64\\ucrt64\\bin"
+          $objdump = Join-Path $msysBin "objdump.exe"
+          if (-not (Test-Path $objdump)) { throw "UCRT64 objdump not found: $objdump" }
+          & $objdump -p $worker | Select-String "DLL Name"
+          if ($LASTEXITCODE -ne 0) { throw "objdump failed to inspect C Worker" }
+          "MSYS2 UCRT64 runtime bin: $msysBin" | Write-Host
+
+      - name: Set up Python for Windows IPC and protocol acceptance
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install AVIC Core test dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run compiled Windows C Worker IPC and Modbus simulator tests
+        shell: pwsh
+        env:
+          AVIC_C_MODBUS_WORKER: ${{ github.workspace }}\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\build\c-modbus-worker\avic-modbus-c-worker.exe
+        run: |
+          $msysBin = Join-Path $env:RUNNER_TEMP "msys64\\ucrt64\\bin"
+          if (-not (Test-Path (Join-Path $msysBin "libmodbus-5.dll"))) {
+            throw "UCRT64 libmodbus runtime DLL not found: $msysBin"
+          }
+          if (-not (Test-Path (Join-Path $msysBin "libjansson-4.dll"))) {
+            throw "UCRT64 jansson runtime DLL not found: $msysBin"
+          }
+          $env:PATH = "$msysBin;$env:PATH"
+          python -m pytest -q tests/test_c_modbus_worker_dev223.py
+
+  bacnet-stack-build:
+    name: BACnet Stack POC / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configure pinned Steve Karg BACnet Stack
+        run: cmake -S rust/avic-communication-engine/bacnet-stack-probe -B build/bacnet-stack-probe -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build BACnet Stack and AVIC probe
+        run: cmake --build build/bacnet-stack-probe --config Release --parallel 2
+
+      - name: Run BACnet Stack version probe test
+        run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
+
+  opcua-open62541-native-probe:
+    name: OPC UA open62541 native probe / Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git libmbedtls-dev
+      - name: Configure open62541 with Mbed TLS
+        run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -DCMAKE_BUILD_TYPE=Release
+      - name: Build native OPC UA probe
+        run: cmake --build build/opcua-native-probe --config Release --parallel 2
+      - name: Run NodeId self-tests
+        run: ctest --test-dir build/opcua-native-probe -C Release --output-on-failure
+
+  opcua-open62541-native-probe-windows:
+    name: OPC UA open62541 native probe / Windows UCRT64
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install MSYS2 UCRT64 native dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-git
+            mingw-w64-ucrt-x86_64-mbedtls
+      - name: Configure open62541 with Mbed TLS
+        shell: msys2 {0}
+        run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build native OPC UA probe
+        shell: msys2 {0}
+        run: cmake --build build/opcua-native-probe --parallel 2
+      - name: Run NodeId self-tests
+        shell: msys2 {0}
+        run: ctest --test-dir build/opcua-native-probe --output-on-failure
+
+  siemens-s7-dependencies:
+    name: Siemens S7 optional libraries / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+        python-version: ["3.11", "3.13"]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install AVIC Core and optional S7 dependencies
+        run: python -m pip install -e ".[dev,s7]"
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run Siemens S7 library smoke tests
+        run: python -m pytest -q tests/test_s7_dependencies_dev226.py

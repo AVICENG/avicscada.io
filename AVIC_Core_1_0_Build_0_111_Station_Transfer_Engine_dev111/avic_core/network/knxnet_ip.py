@@ -106,26 +106,72 @@ def format_group_address(address:int,style:str="three_level")->str:
     if style=="two_level": return f"{main}/{address&2047}"
     raise ValueError("style must be two_level or three_level")
 
-def decode_datapoint(payload:bytes,datapoint_type:str):
-    dpt=datapoint_type.strip().upper()
-    if dpt in {"1.001","DPT-1.001","DPT1.001"}:
-        if len(payload)!=1 or payload[0]&0xFE: raise KnxProtocolError("invalid DPT 1.001 payload")
-        return bool(payload[0]&1)
-    if dpt in {"5.001","DPT-5.001"}:
-        if len(payload)!=1: raise KnxProtocolError("DPT 5.001 requires one byte")
-        return payload[0]*100.0/255.0
-    if dpt in {"9.001","DPT-9.001"}:
-        if len(payload)!=2: raise KnxProtocolError("DPT 9.001 requires two bytes")
-        raw=int.from_bytes(payload,"big")
-        if raw == 0x7FFF: raise KnxProtocolError("DPT 9.001 invalid data pattern")
-        mantissa=raw&0x07FF
-        if raw&0x8000: mantissa-=2048
-        return 0.01*mantissa*(2**((raw>>11)&15))
-    if dpt in {"14.000","DPT-14.000"}:
-        if len(payload)!=4: raise KnxProtocolError("DPT 14.000 requires four bytes")
-        value=struct.unpack(">f",payload)[0]
-        if not math.isfinite(value): raise KnxProtocolError("DPT 14 value must be finite")
-        return value
+def decode_datapoint(payload: bytes, datapoint_type: str):
+    """Decode common KNX datapoint main types with strict payload validation.
+
+    Supported DPTs: 1.xxx, 5.001/5.003/5.004, 6.001, 7.001, 8.001,
+    9.001, 12.001, 13.001, 14.000, 16.000 and 17.001.
+    """
+    if not isinstance(payload, bytes):
+        raise KnxProtocolError("KNX datapoint payload must be bytes")
+    dpt = datapoint_type.strip().upper().replace("DPT-", "").replace("DPT", "")
+    try:
+        if dpt.startswith("1.") and len(dpt.split(".")) == 2:
+            if len(payload) != 1 or payload[0] & 0xFE:
+                raise KnxProtocolError("DPT 1.xxx requires a one-bit payload")
+            return bool(payload[0] & 1)
+        if dpt == "5.001":
+            if len(payload) != 1: raise KnxProtocolError("DPT 5.001 requires one byte")
+            return payload[0] * 100.0 / 255.0
+        if dpt == "5.003":
+            if len(payload) != 1: raise KnxProtocolError("DPT 5.003 requires one byte")
+            return payload[0] * 360.0 / 255.0
+        if dpt == "5.004":
+            if len(payload) != 1: raise KnxProtocolError("DPT 5.004 requires one byte")
+            return payload[0]
+        if dpt == "6.001":
+            if len(payload) != 1: raise KnxProtocolError("DPT 6.001 requires one byte")
+            return int.from_bytes(payload, "big", signed=True)
+        if dpt == "7.001":
+            if len(payload) != 2: raise KnxProtocolError("DPT 7.001 requires two bytes")
+            return int.from_bytes(payload, "big")
+        if dpt == "8.001":
+            if len(payload) != 2: raise KnxProtocolError("DPT 8.001 requires two bytes")
+            return int.from_bytes(payload, "big", signed=True)
+        if dpt == "9.001":
+            if len(payload) != 2: raise KnxProtocolError("DPT 9.001 requires two bytes")
+            raw = int.from_bytes(payload, "big")
+            if raw == 0x7FFF: raise KnxProtocolError("DPT 9.001 invalid data pattern")
+            mantissa = raw & 0x07FF
+            if raw & 0x8000: mantissa -= 2048
+            return 0.01 * mantissa * (2 ** ((raw >> 11) & 15))
+        if dpt == "12.001":
+            if len(payload) != 4: raise KnxProtocolError("DPT 12.001 requires four bytes")
+            return int.from_bytes(payload, "big")
+        if dpt == "13.001":
+            if len(payload) != 4: raise KnxProtocolError("DPT 13.001 requires four bytes")
+            return int.from_bytes(payload, "big", signed=True)
+        if dpt == "14.000":
+            if len(payload) != 4: raise KnxProtocolError("DPT 14.000 requires four bytes")
+            value = struct.unpack(">f", payload)[0]
+            if not math.isfinite(value): raise KnxProtocolError("DPT 14.000 value must be finite")
+            return value
+        if dpt == "16.000":
+            if len(payload) != 14: raise KnxProtocolError("DPT 16.000 requires fourteen bytes")
+            return payload.rstrip(b"\x00").decode("latin-1")
+        if dpt == "17.001":
+            if len(payload) != 1 or payload[0] & 0xC0:
+                raise KnxProtocolError("DPT 17.001 requires reserved bits 7..6 to be zero")
+            return payload[0] & 0x3F
+        if dpt == "18.001":
+            if len(payload) != 1 or payload[0] & 0x40:
+                raise KnxProtocolError("DPT 18.001 requires reserved bit 6 to be zero")
+            return {
+                "command": "learn" if payload[0] & 0x80 else "activate",
+                "scene_number": payload[0] & 0x3F,
+            }
+    except (OverflowError, struct.error) as exc:
+        raise KnxProtocolError(f"invalid {dpt} payload") from exc
     raise KnxProtocolError(f"unsupported KNX datapoint type: {datapoint_type}")
 
 __all__=["KnxProtocolError","KnxNetIpFrame","KnxConnectResponse","KnxTunnelingAck","encode_frame","decode_frame","encode_hpai","build_connect_request","parse_connect_response","build_tunneling_ack","parse_tunneling_ack","parse_group_address","format_group_address","decode_datapoint"]

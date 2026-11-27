@@ -54,7 +54,7 @@ def _planned(driver_id: str, name: str, protocol: str, category: DriverCategory,
 
 
 # Catalog membership is not a claim that a protocol implementation is complete.
-# Only BACnet/IP and Modbus TCP currently expose the limited read-only transports.
+# Only the explicitly listed read-only transports expose operational capabilities.
 BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
     DriverCatalogEntry(
         "trend-ip", "Trend IP / IQ Network", "Trend vCNC over TCP",
@@ -89,21 +89,33 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         DriverCategory.BUILDING_AUTOMATION,
         "One protocol driver with manufacturer/device profiles; media and interface support to be validated.",
     ),
+    _planned(
+        "mbus", "M-Bus (wired)", "EN 13757-2/-3 wired Meter-Bus",
+        DriverCategory.BUILDING_AUTOMATION,
+        "Planned read-only meter integration using the libmbus C library candidate. Serial converters and TCP gateways are in scope; Wireless M-Bus is a separate engine and is not included.",
+    ),
     DriverCatalogEntry(
         "knxnet-ip", "KNXnet/IP (EIB)", "KNXnet/IP",
         DriverLifecycle.READ_ONLY_TRANSPORT, True,
-        notes="Read-only KNXnet/IP tunnelling and passive GroupValue monitor with explicit group-address/DPT bindings; no GroupValueWrite transmit, ETS import or Routing yet.",
+        notes="Read-only KNXnet/IP tunnelling and passive GroupValue monitor with explicit group-address/DPT bindings; no GroupValueWrite transmit, ETS import or Routing yet. Python engine is retained; evaluate XKNX as the maintained protocol library before replacing the current transport implementation.",
         category=DriverCategory.BUILDING_AUTOMATION, license_feature="driver.knxnet-ip",
     ),
-    _planned(
+    DriverCatalogEntry(
         "mqtt", "MQTT", "MQTT 3.1.1 / 5.0",
-        DriverCategory.INTEGRATION,
-        "Read-only adapter code exists, but production runtime factory, SecretStore credential wiring, TLS policy and broker acceptance tests are not complete.",
+        DriverLifecycle.READ_ONLY_TRANSPORT, True,
+        notes="Subscribe-only Paho runtime with JSON/raw topic bindings and optional CA-validated TLS; broker credentials/SecretStore integration and live broker acceptance remain outstanding.",
+        category=DriverCategory.INTEGRATION, license_feature="driver.mqtt",
+    ),
+    DriverCatalogEntry(
+        "s7comm", "Siemens S7comm", "S7comm over ISO-on-TCP",
+        DriverLifecycle.READ_ONLY_TRANSPORT, True,
+        notes="DEV239 Rust worker: bounded read-only standard DB byte reads for S7-200/200 SMART/300/400/1200/1500. CI and hardware acceptance pending; no S7CommPlus/TLS or optimized DB symbolic access.",
+        category=DriverCategory.INDUSTRIAL, license_feature="driver.s7comm",
     ),
     _planned(
         "opc-ua-client", "OPC UA Client", "OPC UA",
         DriverCategory.INDUSTRIAL,
-        "Client subscriptions, browse, certificates and secure-channel policies planned.",
+        "DEV225 contracts plus DEV227/DEV228 secure open62541 read/Browse probe exist; probe is not an AVIC IPC worker. Namespace URI lifecycle, Browse paging, subscriptions, reconnect, SecretStore key handoff and hardware acceptance remain outstanding.",
     ),
     _planned(
         "opc-ua-server", "OPC UA Server", "OPC UA",

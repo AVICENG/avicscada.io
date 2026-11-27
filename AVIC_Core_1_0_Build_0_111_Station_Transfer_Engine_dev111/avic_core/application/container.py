@@ -57,7 +57,8 @@ class CoreApplication:
     """
 
     def __init__(self, data_dir: str | Path, *, license_service=None, license_file: str | Path | None = None,
-                 rust_worker_command: str | Path | None = None):
+                 rust_worker_command: str | Path | None = None,
+                 c_worker_command: str | Path | None = None):
         self.paths = CorePaths.under(data_dir)
         for directory in (self.paths.root, self.paths.databases, self.paths.configuration, self.paths.backups):
             directory.mkdir(parents=True, exist_ok=True)
@@ -75,6 +76,8 @@ class CoreApplication:
         self.driver_manager = DriverManagerService(self)
         if rust_worker_command is not None:
             self.driver_manager.register_rust_worker_command(str(rust_worker_command))
+        if c_worker_command is not None:
+            self.driver_manager.register_c_worker_command(str(c_worker_command))
         self.audit = AuditService(self.paths.databases / "audit.sqlite3")
         self.custom_svg = CustomSvgLibrary(self.paths.databases / "custom_svg_library.sqlite3")
         self.runtime = RuntimeManager()

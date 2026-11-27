@@ -196,14 +196,21 @@ class KnxTunnelingSession:
         channel, sequence = payload[1], payload[2]
         if channel != self.channel_id or payload[3] != 0:
             raise KnxProtocolError("TUNNELING_REQ channel/reserved mismatch")
+        expected = 0 if self.rx_sequence is None else (self.rx_sequence + 1) & 0xFF
+        if self.rx_sequence is not None and sequence == self.rx_sequence:
+            # A retransmitted frame is acknowledged successfully but never delivered twice.
+            self._socket.sendto(build_tunneling_ack(channel, sequence), sender)
+            self.last_activity = time.monotonic()
+            return None
+        if sequence != expected:
+            # KNXnet/IP E_SEQUENCE_NUMBER: do not acknowledge an out-of-order
+            # frame as successfully consumed, otherwise the gateway may drop it.
+            self._socket.sendto(build_tunneling_ack(channel, sequence, 0x04), sender)
+            raise KnxProtocolError(
+                f"unexpected KNX receive sequence {sequence}, expected {expected}"
+            )
         self._socket.sendto(build_tunneling_ack(channel, sequence), sender)
         self.last_activity = time.monotonic()
-        if self.rx_sequence is not None:
-            if sequence == self.rx_sequence:
-                return None  # Duplicate retransmission: ACK it, but do not deliver twice.
-            expected = (self.rx_sequence + 1) & 0xFF
-            if sequence != expected:
-                raise KnxProtocolError(f"unexpected KNX receive sequence {sequence}, expected {expected}")
         self.rx_sequence = sequence
         return payload[4:]
 

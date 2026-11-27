@@ -169,4 +169,17 @@ RBAC, лицензия, staged publish, audit и разрешения на уп�
 
 ## 13. Текущий статус
 
-Спецификация описывает целевое поведение. На момент DEV215 уже существует Python `DriverManifest`/`DriverContext` Protocol и отдельный Rust Modbus transport pilot, но нет versioned IPC wire implementation, Rust worker supervisor или production Point Runtime bridge. Не считать пункты плана реализованными до появления кода, тестов и CI evidence.
+Статус на DEV244: versioned IPC wire implementation присутствует в Rust (`rust/avic-communication-engine/src/ipc.rs`) и Python (`avic_core/drivers/ipc.py`); Rust worker binary и Python `RustDriverWorker` реализуют изолированный процесс, handshake, конфигурацию, lifecycle, scope/generation fencing и bounded framing. `RustDriverPointAdapter` передаёт результаты read-only адаптеров через общий Core Point Runtime. Это интеграционный пилот, а не production acceptance: Rust-native Point Runtime/FBD Runtime не заявляются готовыми, нет полной аппаратной приёмки всех протоколов, подписанных worker-пакетов и завершённой промышленной сертификации. Реализованные пункты подтверждаются только кодом, тестами и CI evidence конкретного HEAD.
+
+
+## DEV244 — Строгая проверка временной метки IPC
+
+Проверка `sent_at` в Rust IPC теперь использует полноценный RFC3339 parser из Chrono, а не только проверку расположения символов и цифр.
+
+- Требуется каноническое UTC-представление с суффиксом `Z`.
+- Проверяются календарная дата, часы, минуты, секунды и корректность всей временной метки.
+- Значения с часовым смещением, включая `+00:00`, не принимаются вместо канонического `Z`.
+- Допускаются корректные дробные секунды.
+- Добавлены регрессионные тесты для невозможных дат и значений времени.
+
+Это защищает IPC-контракт от синтаксически похожих, но невозможных временных меток. Результат CI для DEV244 фиксируется отдельно после завершения workflow.

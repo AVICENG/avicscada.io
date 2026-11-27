@@ -57,7 +57,8 @@ Network & Drivers
 | Modbus TCP | Read-only transport foundation | `driver.modbus-tcp` |
 | Modbus RTU | Planned | `driver.modbus-rtu` |
 | LonWorks | Planned; единый драйвер + профили производителей | `driver.lonworks` |
-| KNXnet/IP | Planned | `driver.knxnet-ip` |
+| KNXnet/IP | Read-only transport foundation | `driver.knxnet-ip` |
+| M-Bus (wired) | Planned; libmbus C library candidate | `driver.mbus` |
 | MQTT | Read-only subscribe adapter (DEV118) | `driver.mqtt` |
 | OPC UA Client | Planned | `driver.opc-ua-client` |
 | OPC UA Server | Planned | `driver.opc-ua-server` |
@@ -106,13 +107,21 @@ AVIC реализует протоколы независимо по опубл�
 1. Trend IP / vCNC — выяснение доступной спецификации и read-only испытание на IQ3.
 2. Доведение BACnet/IP и Modbus TCP до polling + Point Runtime adapter + reconnect/quality.
 3. BACnet MS/TP и Modbus RTU — общий Serial Bus Manager.
-4. LonWorks и KNXnet/IP.
-5. MQTT, OPC UA Client/Server.
-6. SNMP, oBIX, Haystack и REST.
-7. OPC DA gateway — отдельный Windows compatibility package.
+4. KNXnet/IP: сохранить Python runtime boundary; оценить замену самописного транспорта на XKNX и ETS import через xknxproject. LonWorks остаётся отдельным этапом.
+5. Wired M-Bus на libmbus C Worker; Wireless M-Bus — отдельный engine после отдельной оценки.
+6. MQTT, OPC UA Client/Server.
+7. SNMP, oBIX, Haystack и REST.
+8. OPC DA gateway — отдельный Windows compatibility package.
 
 Готовность каждого драйвера подтверждается протокольными тестами, тестами ошибок, нагрузкой, безопасностью, документацией и испытанием с независимым сервером или реальным устройством.
 
 ## 8. Границы DEV119
 
 DEV119 добавляет MQTT subscribe adapter (Paho-compatible injected client), topic→point mapping, JSON/raw payload decoding, quality on disconnect, bounded payload size and diagnostics. TLS/credentials must be configured on the client by the deployment layer; no broker command publishing. Добавлены unit tests. DEV119 также уточняет фактические статусы: BACnet/IP и Modbus TCP имеют read-only one-shot адаптеры в общий Point Runtime, но не имеют управляемого polling lifecycle, COV/subscriptions, восстановления сессии или аппаратной приёмки. Каталог не должен скрывать эти границы. В DEV117 CI выявил только точное сравнение float в тесте BACnet; исправление теста использует допуск pytest.approx, не меняя инженерную математику адаптера. Коммерческое лицензирование и пользовательский экран дерева по-прежнему не реализованы.
+
+
+## 9. Решения DEV245 по KNX и M-Bus
+
+- KNX остаётся Python-драйвером на уровне AVIC интеграции: не создаём собственный стек, если зрелая библиотека закрывает требуемый профиль. XKNX выбран кандидатом для замены текущего самописного KNXnet/IP transport после проверки совместимости с поддерживаемым Python, parity-тестов и сохранения AVIC Point Runtime/IPC boundary. xknxproject рассматривается для ETS import. До этой проверки текущий KNX код не считается заменённым.
+- В каталог добавлен 'mbus' как PLANNED. Это регистрация направления разработки, а не работающий драйвер. Первый объём — только проводной M-Bus EN 13757-2/-3, read-only. 'libmbus' — кандидат C-библиотеки; до интеграции проверяются upstream license, Windows/Linux build, serial lifecycle, TCP gateway, адресный поиск и корректность декодирования.
+- Wireless M-Bus не входит в первый wired M-Bus scope и должен оцениваться как отдельный протокольный engine.

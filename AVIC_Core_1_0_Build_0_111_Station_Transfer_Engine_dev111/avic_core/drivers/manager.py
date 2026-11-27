@@ -9,11 +9,12 @@ from typing import Callable, Any
 from uuid import UUID, uuid4
 
 from avic_core.drivers.catalog import list_builtin_drivers
-from avic_core.drivers.polling import PollingSession
+from avic_core.drivers.polling import PollingSession, EventDrivenSession
 from avic_core.runtime.point_scheduler import PointRuntimeScheduler
 from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTcpPointBinding
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
+from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
 from avic_core.network.modbus_tcp import ModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
@@ -77,10 +78,12 @@ class DriverManagerService:
         self.core = core
         self._lock = RLock()
         self._rust_worker_command: str | None = None
+        self._c_worker_command: str | None = None
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
             "knxnet-ip": self._build_knx_adapter,
+            "mqtt": self._build_mqtt_adapter,
         }
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
@@ -115,6 +118,51 @@ class DriverManagerService:
                 raise RuntimeError("Rust worker executable cannot change while drivers are active")
             self._rust_worker_command = resolved
         return resolved
+
+    def register_c_worker_command(self, executable: str) -> str:
+        """Register an administrator-selected, absolute C Worker executable path."""
+        from pathlib import Path
+        path = Path(executable).expanduser()
+        if not path.is_absolute() or not path.is_file():
+            raise ValueError("C Worker must be an existing absolute executable path")
+        resolved_path = path.resolve(strict=True)
+        import os
+        if os.name != "nt" and not os.access(resolved_path, os.X_OK):
+            raise ValueError("C Worker file is not executable")
+        resolved = str(resolved_path)
+        with self._lock:
+            if self._sessions:
+                raise RuntimeError("C Worker executable cannot change while drivers are active")
+            self._c_worker_command = resolved
+        return resolved
+
+    def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings):
+        if not self._c_worker_command:
+            raise RuntimeError("C libmodbus Worker is not registered by the AVIC administrator")
+        station = core.repository.get_record(instance.station_id)
+        project_id = station["payload"].get("project_id")
+        if not project_id:
+            raise ValueError("Station has no owning Project; C Worker scope cannot be established")
+        project = core.repository.get_record(project_id)
+        platform_id = project["payload"].get("platform_id")
+        installation_id = None
+        if platform_id:
+            platform = core.repository.get_record(platform_id)
+            installation_id = platform["payload"].get("installation_id")
+        if not installation_id:
+            installation_id = str(core.paths.root.resolve())
+        worker_config = dict(cfg)
+        worker_config["project_id"] = project_id
+        worker_config["station_id"] = instance.station_id
+        return RustDriverPointAdapter(
+            worker_command=[self._c_worker_command], core=core,
+            driver_instance_id=instance.id, protocol="modbus-tcp",
+            config=worker_config, bindings=bindings,
+            installation_id=str(installation_id), project_id=str(project_id),
+            station_id=instance.station_id,
+            generation=max(1, int(instance.runtime_generation)),
+            worker_mode="C_LIBMODBUS_READ_ONLY",
+        )
 
     def _build_rust_adapter(self, core, instance: DriverInstance, cfg: dict, protocol: str, bindings):
         if not self._rust_worker_command:
@@ -166,17 +214,22 @@ class DriverManagerService:
         if unknown:
             raise ValueError(f"Неизвестные параметры Modbus TCP: {sorted(unknown)}")
         engine = cfg.get("engine", "python")
-        if engine not in {"python", "rust"}:
-            raise ValueError("engine must be python or rust")
+        if engine not in {"python", "rust", "c"}:
+            raise ValueError("engine must be python, rust or c")
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
+        # Resolve the selected engine before constructing any protocol client.
+        # Worker modes own their transport lifecycle; creating a Python client
+        # here would allocate an unused socket client and obscure engine isolation.
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
+        if engine == "c":
+            return self._build_c_modbus_adapter(core, instance, cfg, [asdict(item) for item in bindings])
         client = ModbusTcpClient(
             cfg["host"], port=int(cfg.get("port", 502)),
             unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
         )
-        if engine == "rust":
-            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
@@ -215,7 +268,7 @@ class DriverManagerService:
         cfg = dict(instance.config)
         allowed = {
             "gateway_host", "gateway_port", "local_host", "local_port", "timeout",
-            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings", "engine",
+            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings", "engine", "read_mode",
         }
         unknown = set(cfg) - allowed
         if unknown:
@@ -228,6 +281,8 @@ class DriverManagerService:
             raise ValueError("Для KNXnet/IP требуются gateway_host, local_host и непустой bindings")
         bindings = [KnxPointBinding(**item) for item in cfg["bindings"]]
         if engine == "rust":
+            if cfg.get("read_mode", "passive") != "passive":
+                raise ValueError("KNX active GroupValueRead polling is currently supported by the Python engine only")
             return self._build_rust_adapter(core, instance, cfg, "knxnet-ip", [asdict(item) for item in bindings])
         session = KnxTunnelingSession(
             cfg["gateway_host"], gateway_port=int(cfg.get("gateway_port", 3671)),
@@ -235,15 +290,56 @@ class DriverManagerService:
             timeout_seconds=float(cfg.get("timeout", 1.0)), retries=int(cfg.get("retries", 2)),
             heartbeat_interval_seconds=float(cfg.get("heartbeat_interval_seconds", 60.0)),
         )
-        return KnxPointAdapter(session, core.point_runtime, instance.id, bindings)
+        return KnxPointAdapter(session, core.point_runtime, instance.id, bindings, read_mode=str(cfg.get("read_mode", "passive")))
+
+    def _build_mqtt_adapter(self, core, instance: DriverInstance):
+        """Create a subscribe-only Paho client; credentials never live in driver config."""
+        from pathlib import Path
+        cfg = dict(instance.config)
+        allowed = {"host", "port", "keepalive", "bindings", "protocol", "client_id", "tls_ca_certs"}
+        unknown = set(cfg) - allowed
+        if unknown:
+            raise ValueError(f"Неизвестные параметры MQTT: {sorted(unknown)}")
+        host = str(cfg.get("host", "")).strip()
+        if not host:
+            raise ValueError("Для MQTT требуется host")
+        if not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
+            raise ValueError("Для MQTT требуется непустой bindings")
+        bindings = [MqttPointBinding(**dict(item)) for item in cfg["bindings"]]
+        protocol_name = str(cfg.get("protocol", "3.1.1"))
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise RuntimeError("Для MQTT установите AVIC Core с extra [mqtt]") from exc
+        protocol = {"3.1.1": mqtt.MQTTv311, "5.0": mqtt.MQTTv5}.get(protocol_name)
+        if protocol is None:
+            raise ValueError("MQTT protocol must be 3.1.1 or 5.0")
+        client_id = str(cfg.get("client_id") or f"avic-{instance.id[:12]}")
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=client_id, protocol=protocol,
+        )
+        ca_file = cfg.get("tls_ca_certs")
+        if ca_file:
+            ca_path = Path(str(ca_file)).expanduser()
+            if not ca_path.is_file():
+                raise ValueError("MQTT TLS CA certificate file does not exist")
+            client.tls_set(ca_certs=str(ca_path))
+            client.tls_insecure_set(False)
+        return MqttPointAdapter(
+            client, core.point_runtime, instance.id, bindings,
+            host=host, port=int(cfg.get("port", 8883 if ca_file else 1883)),
+            keepalive=int(cfg.get("keepalive", 60)),
+        )
 
     def catalog(self):
         return [{"driver_id": x.driver_id, "name": x.display_name, "protocol": x.protocol,
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "supported_engines": ["python", "rust"] if x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"} else ["python"],
+                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python"] if x.driver_id == "mqtt" else []),
                  "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
+                 "c_engine_available": self._c_worker_command is not None and x.driver_id == "modbus-tcp",
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
@@ -376,7 +472,10 @@ class DriverManagerService:
                 adapter = factory(self.core, item)
                 interval = float(poll_interval_seconds if poll_interval_seconds is not None
                                  else item.config.get("poll_interval_seconds", 5.0))
-                session = PollingSession(adapter, interval, name=f"avic-{item.driver_id}-{item.id[:8]}")
+                if callable(getattr(adapter, "poll_once", None)):
+                    session = PollingSession(adapter, interval, name=f"avic-{item.driver_id}-{item.id[:8]}")
+                else:
+                    session = EventDrivenSession(adapter, name=f"avic-{item.driver_id}-{item.id[:8]}")
                 session.start()
                 self._adapters[instance_id] = adapter
                 self._sessions[instance_id] = session
@@ -474,10 +573,12 @@ class DriverManagerService:
             effective_state = "ORPHANED"
         else:
             effective_state = item.state
+        adapter_status = adapter.diagnostics() if adapter and callable(getattr(adapter, "diagnostics", None)) else None
         return {"instance_id": instance_id, "driver_id": item.driver_id,
             "state": effective_state, "persisted_state": item.state,
             "enabled": effective_state in {"STARTING", "RUNNING", "DEGRADED", "STOPPING"},
-            "field_read_enabled": session is not None and effective_state in {"RUNNING", "DEGRADED"},
+            "field_read_enabled": session is not None and effective_state in {"RUNNING", "DEGRADED"}
+                and not (isinstance(adapter_status, dict) and adapter_status.get("connected") is False),
             "field_write_enabled": False,
             "polling": polling,
             "point_runtime_scheduler": self._point_runtime_scheduler.diagnostics(),

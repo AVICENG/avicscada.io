@@ -119,7 +119,20 @@ class RustDriverWorker:
             while True:
                 frame = read_frame(process.stdout)
                 if frame is None:
-                    self._responses.put((False, "worker stdout closed"))
+                    # EOF can race the stderr-drain thread and process exit on Windows.
+                    # Wait briefly so startup/loader/IPC rejection diagnostics are retained.
+                    try:
+                        process.wait(timeout=0.5)
+                    except subprocess.TimeoutExpired:
+                        pass
+                    stderr_reader = self._stderr_reader
+                    if stderr_reader is not None and stderr_reader is not threading.current_thread():
+                        stderr_reader.join(timeout=0.25)
+                    detail = list(self._stderr_tail)[-10:]
+                    self._responses.put((
+                        False,
+                        f"worker stdout closed (exit_code={process.poll()}; stderr={detail})",
+                    ))
                     return
                 self._responses.put((True, frame))
         except Exception as exc:

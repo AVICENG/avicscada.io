@@ -63,20 +63,14 @@ impl DriverEnvelope {
             }
         }
         if self.generation == 0 { return Err(IpcError::InvalidEnvelope("generation must be positive")); }
-        let ts = self.sent_at.as_bytes();
-        let fixed_positions = [4usize, 7, 10, 13, 16];
-        let separators_ok = ts.len() >= 20
-            && ts[4] == b'-' && ts[7] == b'-' && ts[10] == b'T'
-            && ts[13] == b':' && ts[16] == b':'
-            && ts.last() == Some(&b'Z')
-            && fixed_positions.iter().enumerate().all(|(i, pos)| {
-                let expected = [b'-', b'-', b'T', b':', b':'][i];
-                ts[*pos] == expected
-            })
-            && [0usize,1,2,3,5,6,8,9,11,12,14,15,17,18]
-                .iter().all(|pos| ts[*pos].is_ascii_digit());
-        if !separators_ok {
-            return Err(IpcError::InvalidEnvelope("sent_at must be UTC RFC3339"));
+        // Validate the calendar/time fields, not just the RFC3339 punctuation.
+        // The wire contract deliberately requires the canonical UTC "Z" form.
+        let timestamp_is_utc = self.sent_at.ends_with('Z')
+            && chrono::DateTime::parse_from_rfc3339(&self.sent_at)
+                .map(|parsed| parsed.offset().local_minus_utc() == 0)
+                .unwrap_or(false);
+        if !timestamp_is_utc {
+            return Err(IpcError::InvalidEnvelope("sent_at must be a valid UTC RFC3339 timestamp"));
         }
         if !self.payload.is_object() { return Err(IpcError::InvalidEnvelope("payload must be an object")); }
         Ok(())
@@ -169,8 +163,28 @@ mod tests {
     #[test] fn rejects_non_utc_or_malformed_timestamp() {
         let mut e = envelope(); e.sent_at = "2026-11-27T10:00:00+03:00".into();
         assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
+        let mut e = envelope(); e.sent_at = "2026-11-27T10:00:00+00:00".into();
+        assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
         let mut e = envelope(); e.sent_at = "not-a-time".into();
         assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
+    }
+    #[test] fn rejects_impossible_calendar_and_clock_values() {
+        for invalid in [
+            "2026-13-27T10:00:00Z",
+            "2026-02-30T10:00:00Z",
+            "2026-11-27T25:00:00Z",
+            "2026-11-27T10:61:00Z",
+            "2026-11-27T10:00:61Z",
+        ] {
+            let mut e = envelope();
+            e.sent_at = invalid.into();
+            assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))), "{invalid}");
+        }
+    }
+    #[test] fn accepts_valid_utc_rfc3339_fractional_seconds() {
+        let mut e = envelope();
+        e.sent_at = "2026-11-27T10:00:00.125Z".into();
+        assert!(e.validate().is_ok());
     }
     #[test] fn rejects_bad_contract_and_generation() {
         let mut e = envelope(); e.contract = "other".into();
@@ -179,7 +193,7 @@ mod tests {
         assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
     }
     #[test] fn rejects_oversized_frame_before_allocation() {
-        let mut bytes = ((MAX_FRAME_BYTES as u32) + 1).to_be_bytes().to_vec();
+        let bytes = ((MAX_FRAME_BYTES as u32) + 1).to_be_bytes().to_vec();
         assert!(matches!(read_frame(&mut bytes.as_slice()), Err(IpcError::FrameTooLarge(_))));
     }
     #[test] fn sequence_guard_fences_old_worker_and_detects_gaps() {
