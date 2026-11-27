@@ -52,11 +52,16 @@ fn main() {
                     Ok(c) => c, Err(e) => { eprintln!("config error: {e}"); *failed.lock().unwrap() += cycles; continue; }
                 };
                 let mut client = ModbusTcpClient::new(config);
+                // A per-device point-value buffer models the final uint16 binding update.
+                let mut point_values = vec![0u16; points as usize];
                 for _ in 0..cycles {
                     let t = Instant::now();
                     match client.read_holding_registers(0, points) {
                         Ok(values) if values.len() == points as usize => {
-                            *completed.lock().unwrap() += values.len();
+                            for (index, value) in values.iter().enumerate() {
+                                point_values[index] = *value;
+                            }
+                            *completed.lock().unwrap() += point_values.len();
                             latencies.lock().unwrap().push(t.elapsed().as_secs_f64() * 1000.0);
                         }
                         Ok(_) => *failed.lock().unwrap() += 1,
