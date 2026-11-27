@@ -194,3 +194,22 @@ def test_explicit_point_runtime_scheduler_commits_due_transition(tmp_path):
     finally:
         scheduler.stop()
         app.state.core.close()
+
+
+def test_driver_manager_owns_shared_scheduler_lifecycle(tmp_path):
+    app, _ = _setup(tmp_path)
+
+    class FakeAdapter:
+        def poll_once(self):
+            return {"results": []}
+
+    app.state.core.driver_manager.register_adapter_factory(
+        "modbus-tcp", lambda core, instance: FakeAdapter()
+    )
+    started = app.state.core.driver_manager.start_instance(
+        DRIVER_ID, poll_interval_seconds=0.1
+    )
+    assert started["point_runtime_scheduler"]["state"] == "RUNNING"
+    stopped = app.state.core.driver_manager.stop_instance(DRIVER_ID)
+    assert stopped["point_runtime_scheduler"]["state"] == "STOPPED"
+    app.state.core.close()
