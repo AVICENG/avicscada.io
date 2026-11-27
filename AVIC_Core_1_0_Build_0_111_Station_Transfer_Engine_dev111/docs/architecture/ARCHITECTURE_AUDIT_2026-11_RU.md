@@ -377,3 +377,29 @@ ADR-001 не считается принятым и не означает гот
 - Siemens Desigo CC — распределённая эксплуатация, системная интеграция, мобильный/центральный доступ, долговременные данные и автономность нижнего уровня.
 
 Это контрольные ориентиры, а не требование повторять внутреннюю реализацию этих продуктов.
+
+
+### 16.6 Command boundary — подтверждение текущей безопасной заглушки
+
+Проверен `CommandManagerService`:
+- режим явно `SIMULATION_ONLY`;
+- физические driver writes не выполняются;
+- Access Lease ограничен 900 секундами, привязан к station и actor_id;
+- проверяются OUTPUT/INOUT, boolean data type и quality interlock;
+- simulated feedback отдельно фиксирует confirmed/mismatch;
+- результат явно содержит `field_write_performed: false`.
+
+Это правильная безопасная заглушка, но не законченный Command Manager. Lease и actor_id пока не связаны с authenticated Principal/SecurityGateway в текущем UI composition; приёмка interlock требует проверки свежести sample и полного контракта, а не только GOOD. Нет единого arbitration pipeline между Operator, Schedule, FBD и Supervisor, поскольку Schedule/FBD пока не dispatch physical commands.
+
+Создан ADR-004 `ADR-004_COMMAND_ARBITRATION_FIELD_WRITE_RU.md`: единый Command Contract, этапы authentication/authorization/lease/freshness/interlocks/arbitration/dispatch/ACK/readback, idempotency, timeout/UNKNOWN semantics и запрет прямых driver writes.
+
+### 16.7 Полный список созданных проектных ADR
+
+| ADR | Тема | Статус |
+|---|---|---|
+| ADR-001 | Point Definition / Point State / Sample | PROPOSED |
+| ADR-002 | Station Runtime / signed deployment / Edge autonomy | PROPOSED |
+| ADR-003 | Canonical Quality / Time / Sample ordering | PROPOSED |
+| ADR-004 | Command arbitration / physical write boundary | PROPOSED |
+| ADR-005 | Data ownership / outbox-inbox / backup-restore | PROPOSED |
+
