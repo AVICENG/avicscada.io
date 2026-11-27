@@ -192,9 +192,18 @@ class PointRuntimeService:
             if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Источник публикации не совпадает с драйвером устройства")
             checked = self._validate_value(point, value)
-            if timestamp is not None and (timestamp.tzinfo is None or timestamp.utcoffset() is None):
+            sample_timestamp = timestamp or _utcnow()
+            if sample_timestamp.tzinfo is None or sample_timestamp.utcoffset() is None:
                 raise ValueError("Timestamp должен содержать часовой пояс")
-            point.update_value(checked, q, timestamp or _utcnow())
+            previous_timestamp = point.timestamp
+            if previous_timestamp is not None:
+                if previous_timestamp.tzinfo is None or previous_timestamp.utcoffset() is None:
+                    raise ValueError("Сохранённый timestamp точки не содержит часовой пояс")
+                if sample_timestamp < previous_timestamp:
+                    raise ValueError(
+                        "Запоздавшее измерение отклонено: timestamp старше последнего принятого значения"
+                    )
+            point.update_value(checked, q, sample_timestamp)
             new_version = self.repository.save(point, expected_version=version)
             result = PointRuntimeValue(
                 point_id=point.id, value=point.value, quality=q.value, timestamp=point.timestamp,
