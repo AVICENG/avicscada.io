@@ -54,7 +54,7 @@ def _planned(driver_id: str, name: str, protocol: str, category: DriverCategory,
 
 
 # Catalog membership is not a claim that a protocol implementation is complete.
-# Only BACnet/IP and Modbus TCP currently expose the limited read-only transports.
+# Only the explicitly listed read-only transports expose operational capabilities.
 BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
     DriverCatalogEntry(
         "trend-ip", "Trend IP / IQ Network", "Trend vCNC over TCP",
@@ -89,10 +89,15 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         DriverCategory.BUILDING_AUTOMATION,
         "One protocol driver with manufacturer/device profiles; media and interface support to be validated.",
     ),
+    _planned(
+        "mbus", "M-Bus (wired)", "EN 13757-2/-3 wired Meter-Bus",
+        DriverCategory.BUILDING_AUTOMATION,
+        "Planned read-only meter integration using the libmbus C library candidate. Serial converters and TCP gateways are in scope; Wireless M-Bus is a separate engine and is not included.",
+    ),
     DriverCatalogEntry(
         "knxnet-ip", "KNXnet/IP (EIB)", "KNXnet/IP",
         DriverLifecycle.READ_ONLY_TRANSPORT, True,
-        notes="Read-only KNXnet/IP tunnelling and passive GroupValue monitor with explicit group-address/DPT bindings; no GroupValueWrite transmit, ETS import or Routing yet.",
+        notes="Read-only KNXnet/IP tunnelling and passive GroupValue monitor with explicit group-address/DPT bindings; no GroupValueWrite transmit, ETS import or Routing yet. Python engine is retained; evaluate XKNX as the maintained protocol library before replacing the current transport implementation.",
         category=DriverCategory.BUILDING_AUTOMATION, license_feature="driver.knxnet-ip",
     ),
     DriverCatalogEntry(
