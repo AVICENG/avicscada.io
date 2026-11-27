@@ -263,8 +263,8 @@ jobs:
       - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git libssl-dev
-      - name: Configure open62541 with OpenSSL
+          sudo apt-get install -y build-essential cmake git libmbedtls-dev
+      - name: Configure open62541 with Mbed TLS
         run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -DCMAKE_BUILD_TYPE=Release
       - name: Build native OPC UA probe
         run: cmake --build build/opcua-native-probe --config Release --parallel 2
@@ -293,7 +293,7 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-git
-            mingw-w64-ucrt-x86_64-openssl
+            mingw-w64-ucrt-x86_64-mbedtls
       - name: Configure open62541 with OpenSSL
         shell: msys2 {0}
         run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -G Ninja -DCMAKE_BUILD_TYPE=Release
