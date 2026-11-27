@@ -21,7 +21,15 @@ class KnxPointBinding:
         address = parse_group_address(self.group_address, self.group_address_style)
         object.__setattr__(self, "group_address", address)
         normalized = self.datapoint_type.strip().upper().replace("DPT-", "").replace("DPT", "")
-        if normalized not in {"1.001", "5.001", "9.001", "14.000"}:
+        supported = {
+            "1.001", "1.002", "1.003", "1.004", "1.005", "1.006", "1.007",
+            "1.008", "1.009", "1.010", "1.011", "1.012", "1.013", "1.014",
+            "1.015", "1.016", "1.017", "1.018", "1.019", "1.021", "1.022",
+            "1.023", "1.024", "1.100", "5.001", "5.003", "5.004", "6.001",
+            "7.001", "8.001", "9.001", "12.001", "13.001", "14.000",
+            "16.000", "17.001",
+        }
+        if normalized not in supported:
             raise ValueError(f"Unsupported KNX DPT binding: {self.datapoint_type}")
         object.__setattr__(self, "datapoint_type", normalized)
 
