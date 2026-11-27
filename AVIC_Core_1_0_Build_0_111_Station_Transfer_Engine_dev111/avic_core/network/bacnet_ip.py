@@ -648,11 +648,17 @@ class BacnetIpClient:
                         raise BacnetProtocolError("ReadPropertyMultiple ACK missing error closing tag")
                     error_values = _application_values(data[error_start:pos])
                     pos += 1
+                    if (len(error_values) != 2
+                            or any(tag != _APP_ENUMERATED or not isinstance(value, int)
+                                   or isinstance(value, bool) for tag, value in error_values)):
+                        raise BacnetProtocolError("ReadPropertyMultiple ACK contains malformed BACnet Error class/code")
                     results[property_id] = {"error": [value for _, value in error_values]}
                 else:
                     raise BacnetProtocolError("ReadPropertyMultiple ACK missing property value or error")
             if pos >= len(data) or data[pos:pos + 1] != b"\x1f":
                 raise BacnetProtocolError("ReadPropertyMultiple ACK missing property-list closing tag")
+            if pos + 1 != len(data):
+                raise BacnetProtocolError("ReadPropertyMultiple ACK contains unexpected trailing bytes")
             if set(results) != set(requested):
                 missing = sorted(set(requested) - set(results))
                 raise BacnetProtocolError(f"ReadPropertyMultiple ACK omitted requested properties: {missing}")
