@@ -351,3 +351,14 @@ def test_serial_port_lease_keeps_kernel_lock_when_unlock_fails(tmp_path, monkeyp
     assert lease._held is False
     with SerialPortLease(port):
         pass
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX symlink identity normalization")
+def test_serial_port_lease_unifies_symlink_aliases(tmp_path):
+    from avic_core.drivers.serial_port_lease import SerialPortLease
+
+    physical_port = tmp_path / "ttyUSB-real"
+    alias = tmp_path / "ttyUSB-alias"
+    physical_port.touch()
+    alias.symlink_to(physical_port)
+    assert SerialPortLease(str(physical_port)).identity == SerialPortLease(str(alias)).identity
