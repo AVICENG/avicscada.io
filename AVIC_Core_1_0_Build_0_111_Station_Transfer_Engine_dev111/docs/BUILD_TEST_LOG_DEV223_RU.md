@@ -133,3 +133,14 @@
 - Безопасные ограничения RPM: только чтение; один объект на запрос; array-index результаты и segmented ComplexACK пока явно не поддерживаются; лимит 64 свойства ограничивает размер запроса. Для таких случаев вызывающая сторона должна использовать отдельный ReadProperty либо получить явную ошибку.
 - Добавлены тесты \`tests/test_bacnet_rpm_dev224.py\` на несколько значений в одной транзакции, частичный BACnet Error, правильное формирование запроса, неверную идентичность объекта и ограничения размера/дубликатов.
 - **Статус проверки:** код и тесты отправлены в ветку, но CI run на актуальном HEAD ещё ожидает запуска из-за общей concurrency queue. Ни прохождение RPM tests, ни исправление Windows IPC пока не подтверждены. Аппаратная BACnet приёмка не выполнялась.
+
+## DEV225 — OPC UA Client foundation (27.11.2026)
+
+- По прежнему плану четвёртым протоколом выбран OPC UA Client на базе open62541. Работу по Modbus TCP, BACnet/IP и KNXnet/IP не прекращаем; этот этап начат из-за длительного ожидания общей GitHub Actions queue.
+- Добавлен `avic_core/network/opc_ua.py`: строгая проверка opc.tcp endpoint URL, secure policy allowlist, запрет SecurityPolicy None, обязательные application/certificate/trust references, лимиты timeout/message/chunks.
+- Добавлен parser стандартных NodeId `ns=<index>;i|s|g|b=<identifier>` с проверкой диапазонов UInt16/UInt32, UUID, base64 и управляющих символов.
+- Добавлен read-only `OpcUaNodeBinding`: только read access, ограниченный список типов, конечные scale/offset и запрет числового масштабирования для boolean/string/datetime/auto.
+- Экспортированы публичные контракты из `avic_core.network`; каталог OPC UA остаётся PLANNED и прямо указывает, что open62541 worker пока не подключён. Никакая runtime/read capability не рекламируется.
+- Добавлены `tests/test_opc_ua_contract_dev225.py` и `docs/drivers/OPC_UA_DEV225_RU.md`.
+- Следующий этап: native open62541 worker с AVIC IPC, GetEndpoints/secure-channel/certificate validation, Browse/Read, status-code mapping, reconnect/subscriptions. Только после этого можно включать OPC UA runtime factory.
+- **Проверка:** код и тесты отправлены в PR; CI на текущем HEAD ещё не дал результата. Ни тесты DEV225, ни native transport, ни аппаратная приёмка не подтверждены.
