@@ -44,10 +44,61 @@ static int endpoint_allowed(const char *endpoint) {
     const char *authority = endpoint + 10;
     const char *end = strpbrk(authority, "/?#");
     size_t length = end ? (size_t)(end - authority) : strlen(authority);
-    return length > 0 && memchr(authority, '@', length) == NULL;
+    if(length == 0 || length > 255 || memchr(authority, '@', length) != NULL)
+        return 0;
+    for(size_t i = 0; i < length; ++i)
+        if((unsigned char)authority[i] <= 0x20 || authority[i] == 0x7f)
+            return 0;
+
+    const char *port_text = NULL;
+    if(authority[0] == '[') {
+        const char *close = memchr(authority, ']', length);
+        if(!close || close + 1 >= authority + length || close[1] != ':')
+            return 0;
+        port_text = close + 2;
+    } else {
+        const char *colon = memchr(authority, ':', length);
+        if(!colon || memchr(colon + 1, ':', (size_t)((authority + length) - (colon + 1))))
+            return 0;
+        port_text = colon + 1;
+    }
+    if(!port_text || port_text >= authority + length)
+        return 0;
+    char port_buffer[8];
+    size_t port_length = (size_t)((authority + length) - port_text);
+    if(port_length == 0 || port_length >= sizeof(port_buffer))
+        return 0;
+    memcpy(port_buffer, port_text, port_length);
+    port_buffer[port_length] = '\\0';
+    char *parse_end = NULL;
+    unsigned long port = strtoul(port_buffer, &parse_end, 10);
+    return parse_end != port_buffer && *parse_end == '\\0' && port >= 1 && port <= 65535;
+}
+
+static int security_self_test(void) {
+    static const char *const policies[] = {
+        "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256",
+        "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep",
+        "http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss"
+    };
+    for(size_t i = 0; i < sizeof(policies) / sizeof(policies[0]); ++i)
+        if(!policy_allowed(policies[i])) return 1;
+    if(policy_allowed("http://opcfoundation.org/UA/SecurityPolicy#None") ||
+       endpoint_allowed("opc.tcp://host") ||
+       endpoint_allowed("opc.tcp://user@host:4840") ||
+       endpoint_allowed("opc.tcp://host:0") ||
+       endpoint_allowed("opc.tcp://host:70000") ||
+       !endpoint_allowed("opc.tcp://127.0.0.1:4840/UA/Plant") ||
+       !endpoint_allowed("opc.tcp://[::1]:4840/UA/Plant")) {
+        fprintf(stderr, "security self-test failed\\n");
+        return 1;
+    }
+    return 0;
 }
 
 static int nodeid_self_test(void) {
+    if(security_self_test() != 0)
+        return 1;
     static const char *const valid[] = {
         "ns=0;i=2258", "ns=2;s=AHU.SupplyAirTemp",
         "ns=2;g=00112233-4455-6677-8899-aabbccddeeff", "ns=3;b=YWJj"
@@ -79,7 +130,7 @@ static int nodeid_self_test(void) {
         }
         UA_NodeId_clear(&node);
     }
-    puts("opcua_native_probe=self_test_ok nodeid_forms=4 invalid_rejected=7 security_none=forbidden");
+    puts("opcua_native_probe=self_test_ok nodeid_forms=4 invalid_rejected=7 secure_policies=3 endpoint_validation=ok security_none=forbidden");
     return 0;
 }
 
@@ -131,7 +182,7 @@ static int connect_and_read(int argc, char **argv) {
         ? UA_MESSAGESECURITYMODE_SIGN : UA_MESSAGESECURITYMODE_SIGNANDENCRYPT;
     UA_String_clear(&config->securityPolicyUri);
     config->securityPolicyUri = UA_String_fromChars(policy);
-    UA_String_clear(&config->applicationDescription.applicationUri);
+    UA_String_clear(&config->clientDescription.applicationUri);
     config->applicationDescription.applicationUri = UA_String_fromChars(app_uri);
     config->timeout = 5000;
 
