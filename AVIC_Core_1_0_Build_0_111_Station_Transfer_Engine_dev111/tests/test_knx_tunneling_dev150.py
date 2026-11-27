@@ -105,3 +105,31 @@ def test_knx_send_requires_connection():
     session = make_session(FakeKnxSocket())
     with pytest.raises(KnxTunnelingError):
         session.send_cemi(b"\x29")
+
+
+
+def test_knx_out_of_order_inbound_frame_is_not_acknowledged_as_success():
+    fake = FakeKnxSocket()
+    session = make_session(fake)
+    session.connect()
+    incoming = encode_frame(TUNNELING_REQ, bytes((4, 7, 1, 0)) + b"\\x29\\x00\\x00\\x00")
+    fake.queue.append((incoming, ("192.0.2.20", 3672)))
+    with pytest.raises(Exception, match="unexpected KNX receive sequence"):
+        session.receive_cemi()
+    ack = decode_frame(fake.sent[-1][0])
+    assert ack.service_type == 0x0421
+    assert ack.payload == bytes((4, 7, 1, 0x04))
+    assert session.rx_sequence is None
+    session.close()
+
+
+def test_knx_receive_sequence_wraps_from_255_to_zero():
+    fake = FakeKnxSocket()
+    session = make_session(fake)
+    session.connect()
+    session.rx_sequence = 0xFF
+    incoming = encode_frame(TUNNELING_REQ, bytes((4, 7, 0, 0)) + b"\\x29\\x00\\x00\\x00")
+    fake.queue.append((incoming, ("192.0.2.20", 3672)))
+    assert session.receive_cemi() == b"\\x29\\x00\\x00\\x00"
+    assert session.rx_sequence == 0
+    session.close()
