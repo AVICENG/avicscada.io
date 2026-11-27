@@ -55,9 +55,21 @@ def test_dev49_platform_service_apis_are_persistent_and_separate(tmp_path):
     assert event.status_code == 201
     assert client.get("/api/events?severity=NOTICE").json()["events"][0]["message"] == "Test event"
 
-    sample = client.post("/api/history/samples", json={"station_id": "s1", "point_id": "p1", "value": 23.5, "quality": "GOOD"})
-    assert sample.status_code == 201
-    assert len(client.get("/api/stations/s1/points/p1/history").json()["samples"]) == 1
+    from avic_core.domain.models import Device, Point, PointQuality
+    project = client.post("/api/projects", json={"name": "History API validation"}).json()
+    station = client.post("/api/stations", json={
+        "project_id": project["id"], "name": "History station",
+    }).json()
+    device = Device(name="History device", station_id=station["id"],
+                    protocol="manual", address="manual://history")
+    client.app.state.core.repository.save(device)
+    point = Point(name="History point", device_id=device.id, data_type="analog-input",
+                  value=None, quality=PointQuality.UNCERTAIN, native_identity="history:test")
+    client.app.state.core.repository.save(point)
+    sample = client.post("/api/history/samples", json={
+        "station_id": station["id"], "point_id": point.id, "value": 23.5, "quality": "GOOD"})
+    assert sample.status_code == 201, sample.text
+    assert len(client.get(f"/api/stations/{station['id']}/points/{point.id}/history").json()["samples"]) == 1
 
     dep = client.post("/api/dependencies", json={"dependent_id": "graphic-1", "dependency_id": "p1", "relation_type": "binding"})
     assert dep.status_code == 201
