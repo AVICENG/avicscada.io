@@ -1,6 +1,5 @@
 //! Siemens S7comm read-only adapter over ISO-on-TCP (TCP/102).
 //! This legacy S7comm path is not equivalent to secure S7CommPlus/TLS.
-use std::time::Duration;
 use tokio::runtime::{Builder, Runtime};
 use tokio_s7::client::{S7Client, S7Config};
 use tokio_s7::types::PlcType;

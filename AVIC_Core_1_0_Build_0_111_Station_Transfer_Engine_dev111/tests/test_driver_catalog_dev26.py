@@ -15,7 +15,7 @@ def test_catalog_has_unique_ids_and_all_entries_have_license_keys():
 def test_requested_open_protocol_families_are_in_catalog():
     expected = {
         "trend-ip", "bacnet-ip", "bacnet-mstp", "modbus-tcp", "modbus-rtu",
-        "lonworks", "knxnet-ip", "mqtt", "opc-ua-client", "opc-ua-server",
+        "lonworks", "knxnet-ip", "mqtt", "s7comm", "opc-ua-client", "opc-ua-server",
         "opc-da-gateway", "obix", "snmp", "haystack", "rest-api",
     }
     assert {entry.driver_id for entry in list_builtin_drivers()} == expected
@@ -28,7 +28,7 @@ def test_excluded_proprietary_families_are_not_in_catalog():
 
 
 def test_only_existing_read_only_transports_advertise_read_capability():
-    expected = {"bacnet-ip", "modbus-tcp", "knxnet-ip", "mqtt"}
+    expected = {"bacnet-ip", "modbus-tcp", "knxnet-ip", "mqtt", "s7comm"}
     actual = {entry.driver_id for entry in BUILTIN_DRIVERS if entry.read_supported}
     assert actual == expected
     assert all(not entry.write_supported for entry in BUILTIN_DRIVERS)
