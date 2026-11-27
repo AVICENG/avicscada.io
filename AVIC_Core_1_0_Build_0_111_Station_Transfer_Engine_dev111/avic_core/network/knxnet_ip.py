@@ -158,7 +158,7 @@ def decode_datapoint(payload: bytes, datapoint_type: str):
             return value
         if dpt == "16.000":
             if len(payload) != 14: raise KnxProtocolError("DPT 16.000 requires fourteen bytes")
-            return payload.rstrip(b"\\x00").decode("latin-1")
+            return payload.rstrip(b"\x00").decode("latin-1")
         if dpt == "17.001":
             if len(payload) != 1 or not 1 <= payload[0] <= 64:
                 raise KnxProtocolError("DPT 17.001 scene number must be in range 1..64")
