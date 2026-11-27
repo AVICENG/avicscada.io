@@ -62,3 +62,30 @@ def test_c_worker_registration_requires_absolute_existing_executable(tmp_path):
         import pytest
         with pytest.raises(ValueError, match="absolute"):
             core.driver_manager.register_c_worker_command("avic-modbus-c-worker")
+
+
+def test_compiled_c_worker_ipc_handshake_when_enabled():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from avic_core.drivers.rust_worker import RustDriverWorker
+
+    worker = RustDriverWorker(
+        [str(__import__("pathlib").Path(worker_path).resolve())],
+        installation_id="install-c-test", project_id="project-c-test",
+        station_id="station-c-test", driver_instance_id="driver-c-test",
+        generation=1, timeout_seconds=3.0,
+    )
+    worker.start({
+        "protocol": "modbus-tcp", "host": "127.0.0.1",
+        "port": 502, "unit_id": 1, "timeout": 2.0,
+    })
+    try:
+        status = worker.get_status()
+        assert status["state"] == "RUNNING"
+        assert status["write_supported"] is False
+    finally:
+        worker.close()
+    assert worker.diagnostics()["process_alive"] is False
