@@ -87,3 +87,31 @@ def test_config_validation_and_point_isolation():
     assert engine.ingest("b", True, timestamp=T0 + timedelta(milliseconds=1)).accepted
     assert engine.stable_value("a") is False
     assert engine.stable_value("b") is True
+
+
+def test_atomic_single_point_due_flush_keeps_other_points_isolated():
+    engine = DebounceEngine()
+    engine.configure("fan-a", DebounceConfig(on_ms=100))
+    engine.configure("fan-b", DebounceConfig(on_ms=200))
+    engine.ingest("fan-a", False, timestamp=T0)
+    engine.ingest("fan-b", False, timestamp=T0)
+    engine.ingest("fan-a", True, timestamp=T0 + timedelta(milliseconds=10))
+    engine.ingest("fan-b", True, timestamp=T0 + timedelta(milliseconds=20))
+
+    assert set(engine.pending_points()) == {"fan-a", "fan-b"}
+    assert engine.flush_point_due(
+        "fan-a", now=T0 + timedelta(milliseconds=109)
+    ) is None
+    committed = engine.flush_point_due(
+        "fan-a", now=T0 + timedelta(milliseconds=110)
+    )
+    assert committed is not None
+    assert committed.point_id == "fan-a"
+    assert committed.value is True
+    assert engine.pending_points() == ("fan-b",)
+    assert engine.flush_point_due(
+        "fan-b", now=T0 + timedelta(milliseconds=219)
+    ) is None
+    assert engine.flush_point_due(
+        "fan-b", now=T0 + timedelta(milliseconds=220)
+    ).value is True
