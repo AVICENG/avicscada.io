@@ -240,6 +240,62 @@ jobs:
       - name: Run BACnet Stack version probe test
         run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
 
+  opcua-open62541-native-probe:
+    name: OPC UA open62541 native probe / Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git libssl-dev
+      - name: Configure open62541 with OpenSSL
+        run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -DCMAKE_BUILD_TYPE=Release
+      - name: Build native OPC UA probe
+        run: cmake --build build/opcua-native-probe --config Release --parallel 2
+      - name: Run NodeId self-tests
+        run: ctest --test-dir build/opcua-native-probe -C Release --output-on-failure
+
+  opcua-open62541-native-probe-windows:
+    name: OPC UA open62541 native probe / Windows UCRT64
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install MSYS2 UCRT64 native dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-git
+            mingw-w64-ucrt-x86_64-openssl
+      - name: Configure open62541 with OpenSSL
+        shell: msys2 {0}
+        run: cmake -S rust/avic-communication-engine/opcua-native-probe -B build/opcua-native-probe -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build native OPC UA probe
+        shell: msys2 {0}
+        run: cmake --build build/opcua-native-probe --parallel 2
+      - name: Run NodeId self-tests
+        shell: msys2 {0}
+        run: ctest --test-dir build/opcua-native-probe --output-on-failure
+
   siemens-s7-dependencies:
     name: Siemens S7 optional libraries / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
