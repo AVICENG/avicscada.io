@@ -167,3 +167,25 @@ def test_point_runtime_quality_loss_and_recovery_preserve_last_sample_until_new_
     assert recovered.quality == "GOOD"
     assert recovered.timestamp == recovered_at
     app.state.core.close()
+
+
+def test_fbd_point_input_rejects_point_from_another_station(tmp_path):
+    app, _, station_a, _, _ = _setup(tmp_path)
+    project_b = app.state.project_station.create_project("Foreign FBD project")
+    station_b = app.state.project_station.create_station(project_b["id"], "Foreign FBD station")
+    device_b = Device(
+        name="Foreign controller", station_id=station_b["id"],
+        protocol="bacnet/ip", address="192.0.2.20:47808",
+    )
+    app.state.core.repository.save(device_b)
+    foreign_point = Point(
+        name="Foreign temperature", device_id=device_b.id, data_type="float",
+        value=24.0, quality=PointQuality.GOOD, native_identity="foreign:temperature",
+    )
+    app.state.core.repository.save(foreign_point)
+
+    doc = app.state.fbd.create(station_a["id"], "Cross-station input must fail")
+    app.state.fbd.add_point_node(doc["id"], foreign_point.id)
+    with pytest.raises(ValueError, match="принадлежит другой станции"):
+        app.state.fbd.simulate(doc["id"])
+    app.state.core.close()
