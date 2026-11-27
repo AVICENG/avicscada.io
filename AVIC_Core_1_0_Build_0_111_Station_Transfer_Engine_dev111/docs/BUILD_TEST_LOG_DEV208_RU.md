@@ -21,8 +21,13 @@
 - BACnet remains Python READ-ONLY; no Rust BACnet implementation is claimed.
 - Python remains explicitly selectable; failed Rust startup does not silently switch backend.
 
+## CI finding and correction
+- First combined CI exposed setuptools flat-layout auto-discovery: the new top-level `rust/` source tree was incorrectly treated as a second Python package (`Multiple top-level packages discovered: ['rust', 'avic_core']`).
+- `pyproject.toml` now explicitly discovers only `avic_core*` Python packages and excludes `rust*`/`tests*`; Rust sources remain part of the repository but are not installed as Python packages.
+- Rust target build output is ignored via `rust/communication-engine/.gitignore`.
+
 ## Verification
-- Python test suite after DEV208: pending GitHub Actions.
+- Python test suite after DEV208: pending the next CI run after package-discovery correction.
 - Rust `cargo test` and release build: pending GitHub Actions; local Rust toolchain unavailable in this environment.
 - Workflow run `45952214681`: pending at the time of this log; global repository concurrency may delay job creation.
 - No hardware Modbus/BACnet acceptance claimed.
