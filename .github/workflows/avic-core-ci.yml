@@ -196,7 +196,7 @@ jobs:
       - name: Run compiled Windows C Worker IPC and Modbus simulator tests
         shell: pwsh
         env:
-          AVIC_C_MODBUS_WORKER: ${{ github.workspace }}\\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\\build\\c-modbus-worker\\avic-modbus-c-worker.exe
+          AVIC_C_MODBUS_WORKER: ${{ github.workspace }}\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\build\c-modbus-worker\avic-modbus-c-worker.exe
         run: |
-          $env:PATH = "C:\\msys64\\ucrt64\\bin;$env:PATH"
+          $env:PATH = "C:\msys64\ucrt64\bin;$env:PATH"
           python -m pytest -q tests/test_c_modbus_worker_dev223.py
