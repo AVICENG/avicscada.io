@@ -17,7 +17,7 @@ from typing import Any, Sequence
 from uuid import uuid4
 
 from avic_core.drivers.ipc import (
-    DriverEnvelope, DriverIpcError, SequenceGuard, encode_frame, read_frame,
+    DriverEnvelope, DriverIpcError, SequenceGuard, encode_frame, read_frame, write_frame,
 )
 
 
@@ -161,8 +161,7 @@ class RustDriverWorker:
                 raise RustWorkerError("Rust worker stdin is unavailable")
             request = self._envelope(kind, payload)
             try:
-                process.stdin.write(encode_frame(request))
-                process.stdin.flush()
+                write_frame(process.stdin, request)
             except (BrokenPipeError, OSError) as exc:
                 raise RustWorkerError(f"failed to send IPC request: {exc}") from exc
 
