@@ -303,3 +303,49 @@ def test_driver_manager_retains_rtu_lease_when_worker_close_fails(tmp_path):
             pass
     finally:
         core.close()
+
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX flock unlock fault injection")
+def test_serial_port_lease_keeps_kernel_lock_when_unlock_fails(tmp_path, monkeypatch):
+    import fcntl
+    import subprocess
+    import sys
+    from avic_core.drivers.serial_port_lease import SerialPortBusyError, SerialPortLease
+
+    port = str(tmp_path / "unlock-failure-rs485")
+    lease = SerialPortLease(port).acquire()
+    original_flock = fcntl.flock
+
+    def fail_unlock(fd, operation):
+        if operation == fcntl.LOCK_UN:
+            raise OSError("simulated flock unlock failure")
+        return original_flock(fd, operation)
+
+    monkeypatch.setattr(fcntl, "flock", fail_unlock)
+    with pytest.raises(OSError, match="simulated flock unlock failure"):
+        lease.release()
+
+    assert lease._held is True
+    assert lease._stream is not None
+    assert not lease._stream.closed
+
+    code = (
+        "import sys; "
+        "from avic_core.drivers.serial_port_lease import SerialPortLease, SerialPortBusyError; "
+        "p=sys.argv[1]; "
+        "\\ntry:\\n SerialPortLease(p).acquire()\\n"
+        "except SerialPortBusyError:\\n sys.exit(0)\\n"
+        "sys.exit(5)\\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code, port],
+        capture_output=True, text=True, timeout=10,
+    )
+    assert result.returncode == 0, result.stderr
+
+    monkeypatch.setattr(fcntl, "flock", original_flock)
+    lease.release()
+    assert lease._held is False
+    with SerialPortLease(port):
+        pass
