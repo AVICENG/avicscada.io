@@ -236,3 +236,6 @@ Rust transport дополнен чтением Coils (FC01), Discrete Inputs (FC
 ### DEV214 — parity backlog после FC01–FC04
 
 Сверка с действующим Python Modbus client выявила оставшийся протокольный разрыв: Python уже поддерживает Modbus Encapsulated Interface Transport / MEI 0x2B/0x0E Device Identification (read-only), включая continuation object list. Rust pilot пока не реализует эту операцию. Для AVIC это важно не только для чтения значений, но и для подтверждённой идентификации производителя/модели при сетевом обнаружении. Следующий Modbus parity шаг — MEI 0x0E с ограничениями числа объектов, проверкой continuation и сохранением источника/достоверности идентификационных данных в Core. Никаких manufacturer/model значений нельзя угадывать по одному адресу или неизвестному vendor ID.
+
+
+**CI qualification for current branch HEAD:** run 45949467168 was executed against older commit `7e3a5b12d3ad6235b80899fafe443a22af0e0ab6`. Its Rust jobs passed, but one Windows Python job failed on the Administrator SDDL alias and the full run concluded failure. DEV211 fixed the test mapping; DEV212/DEV213 then changed the Rust parser and added FC01/FC02/FC04 tests. These newer changes have not yet been validated by a workflow run. The current branch HEAD is `51c7f55de6bfe2904a259a0153646314885bc1d3`; do not infer CI success for it from run 45949467168.
