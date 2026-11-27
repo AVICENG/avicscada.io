@@ -242,7 +242,8 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "rust_engine_available": self._rust_worker_command is not None,
+                 "supported_engines": ["python", "rust"] if x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"} else ["python"],
+                 "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
@@ -258,7 +259,7 @@ class DriverManagerService:
                 "state": runtime["state"], "persisted_state": p["state"],
                 "enabled": runtime["enabled"], "field_read_enabled": runtime["field_read_enabled"],
                 "field_write_enabled": False, "package_trust": p["package_trust"],
-                "config": p.get("config", {})})
+                "engine": p.get("config", {}).get("engine", "python"), "config": p.get("config", {})})
         return result
 
     def assert_driver_entitlement(self, driver_id: str) -> None:
