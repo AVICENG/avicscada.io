@@ -102,6 +102,10 @@ BACnet Status_Flags order is interpreted as inAlarm, fault, overridden, outOfSer
 - absent/malformed Status_Flags → AVIC UNCERTAIN;
 - inAlarm does not by itself change data quality; Alarm Manager remains responsible for alarm semantics.
 
+## Process transport and lifecycle
+
+Rust worker is a child process connected through anonymous stdin/stdout pipes owned by Core; no TCP listener is exposed for IPC. The supervisor uses bounded response queue, handshake, timeout, process termination on a hung pipe, and monotonic per-DriverInstance generation. On orderly stop, owned points transition to STALE.
+
 ## Security and limitations
 
 - Never place passwords, tokens, certificates or private keys in DriverInstance config or IPC payloads.
