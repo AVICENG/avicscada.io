@@ -176,3 +176,13 @@
 - В том же run C Worker Ubuntu прошёл; BACnet Stack probe прошёл на Ubuntu и Windows; Rust Communication Engine прошёл на Ubuntu и Windows. Windows Python matrix ещё выполнялась.
 - Windows C Worker IPC acceptance в run 46029096824 упал: workflow нашёл objdump в постороннем `C:\\mingw64\\bin`, тогда как компилятор и DLL пакеты были в `$RUNNER_TEMP\\msys64\\ucrt64\\bin`. Из-за неверного PATH дочерний процесс закрывал stdout до IPC handshake. Workflow исправлен: путь к UCRT64 runtime теперь вычисляется от RUNNER_TEMP, проверяется наличие `libmodbus-5.dll` и `libjansson-4.dll`, затем каталог добавляется в PATH перед IPC tests.
 - **Актуальный статус:** commits с исправленным probe/Browse и путём UCRT64 отправлены в ветку; свежий CI должен подтвердить компиляцию и тесты. Ни secure read, ни Browse, ни Windows C Worker acceptance пока не отмечаются как passed до завершения соответствующего run. PR остаётся Draft.
+
+
+## DEV229 — Modbus MEI concurrency and parser hardening (27.11.2026)
+
+- Исправлен общий источник MBAP transaction ID: Modbus Device Identification MEI 0x0E теперь использует тот же потокобезопасный allocator, что FC01–FC04. До этого MEI вручную менял счётчик без lock и мог столкнуться с параллельным опросом точек.
+- Ужесточён разбор MEI ответа: проверяется совпадение read-code, допустимое значение more-follows, точная длина exception response, отсутствие дублирующих Object ID, полнота значений и отсутствие лишних байтов.
+- Добавлены регрессионные тесты на неправильный read-code, некорректный more-follows, усечённый объект, trailing bytes, malformed exception и единый transaction ID allocator.
+- **Проверка:** изменения и тесты отправлены в ветку. Локальный запуск тестов в этой среде недоступен; CI актуального commit ещё ожидает запуска. Не объявлять DEV229 passed до результата GitHub Actions.
+- **Уточнение по Windows C Worker:** старый run 46029096824 использовал SHA до последнего изменения Windows workflow и завершился тремя IPC failures (initialize handshake, Modbus read, replay rejection). Процесс закрыл stdout до ответа; stderr в диагностике Python оказался пуст. Предположение о DLL/PATH не доказано как первопричина. В актуальном workflow теперь используется точный UCRT64 runtime directory и проверяются DLL, но подтверждение исправления ожидается от нового CI. Следующий диагностический шаг при повторе: вывести полный objdump imports, проверить все не-системные DLL, захватить exit code и stderr до очистки процесса, добавить smoke запуска C Worker до Python IPC.
+- PR #9 остаётся Draft. Modbus остаётся RED до зелёного Windows IPC+simulator acceptance и hardware/soak проверки.
