@@ -34,6 +34,7 @@
 - В том же run сравнительный Rust Modbus benchmark завершился ошибкой на Linux и Windows. Выявлена недостаточная очередь accept у локального ThreadingTCPServer при параллельном подключении; очередь увеличена до 128, а сообщение об ошибке теперь включает stdout/stderr процесса.
 - Удалено предупреждение Rust unused_mut в тесте oversized IPC frame.
 - Добавлен native C Worker acceptance smoke test с локальным Modbus TCP simulator: собранный C процесс устанавливает IPC, выполняет FC03 для адресов 7..9 и возвращает ожидаемые значения [7, 8, 9]. Тест запускается только в C build job при наличии AVIC_C_MODBUS_WORKER.
+- Добавлен отдельный Windows UCRT64 CI job: сборка C Worker через MSYS2 packages libmodbus/Jansson и запуск IPC + FC03 simulator acceptance на Windows. Этот job ещё не выполнен.
 - Run 46010738145 для batch planner tests был зарегистрирован как pending; актуальная ветка получила дополнительные исправления после этого SHA, поэтому требуется новый полный CI по последнему head.
 - Полный pytest на актуальном head, C IPC handshake, полный Windows/Linux CI и аппаратная проверка пока не объявляются пройденными.
 - C Worker пока принимает один диапазон на IPC-команду; объединение выполняет общий адаптер, а libmodbus делает один протокольный запрос на каждый сформированный диапазон.
