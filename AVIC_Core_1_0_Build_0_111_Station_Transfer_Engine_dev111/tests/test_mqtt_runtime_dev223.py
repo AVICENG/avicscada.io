@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
+from uuid import uuid4
 
 from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
 from avic_core.drivers.polling import EventDrivenSession
+from avic_core.drivers.manager import DriverManagerService, DriverInstance
 
 
 class FakePointRuntime:
@@ -42,6 +43,12 @@ class FakeMqttClient:
     def subscribe(self, topic, qos):
         self.subscriptions.append((topic, qos))
         return (0, len(self.subscriptions))
+
+    def tls_set(self, ca_certs):
+        self.ca_certs = ca_certs
+
+    def tls_insecure_set(self, value):
+        self.tls_insecure = value
 
 
 def test_mqtt_adapter_subscribes_once_per_topic_with_highest_qos():
@@ -119,3 +126,37 @@ def test_event_driven_session_reports_disconnected_adapter_as_degraded():
     assert session.diagnostics()["state"] == "RUNNING"
     session.stop()
     assert session.diagnostics()["state"] == "STOPPED"
+
+
+def test_driver_manager_builds_mqtt_runtime_with_optional_paho_and_verified_tls(tmp_path, monkeypatch):
+    ca_file = tmp_path / "broker-ca.pem"
+    ca_file.write_text("test CA placeholder", encoding="utf-8")
+    client = FakeMqttClient()
+    module = ModuleType("paho.mqtt.client")
+    module.MQTTv311 = 4
+    module.MQTTv5 = 5
+    module.CallbackAPIVersion = SimpleNamespace(VERSION2=2)
+    module.Client = lambda **kwargs: client
+    paho = ModuleType("paho")
+    paho.__path__ = []
+    mqtt_package = ModuleType("paho.mqtt")
+    mqtt_package.__path__ = []
+    mqtt_package.client = module
+    monkeypatch.setitem(__import__("sys").modules, "paho", paho)
+    monkeypatch.setitem(__import__("sys").modules, "paho.mqtt", mqtt_package)
+    monkeypatch.setitem(__import__("sys").modules, "paho.mqtt.client", module)
+
+    runtime = FakePointRuntime()
+    core = SimpleNamespace(point_runtime=runtime)
+    instance = DriverInstance(
+        name="MQTT test", station_id=str(uuid4()), driver_id="mqtt",
+        protocol="MQTT 3.1.1", config={
+            "host": "broker.example", "tls_ca_certs": str(ca_file),
+            "bindings": [{"point_id": "point-1", "topic": "site/ahu/temp"}],
+        },
+    )
+    adapter = DriverManagerService._build_mqtt_adapter(object(), core, instance)
+    assert adapter.host == "broker.example"
+    assert adapter.port == 8883
+    assert client.ca_certs == str(ca_file)
+    assert client.tls_insecure is False
