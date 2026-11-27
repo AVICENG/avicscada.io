@@ -27,7 +27,7 @@ class KnxPointBinding:
             "1.015", "1.016", "1.017", "1.018", "1.019", "1.021", "1.022",
             "1.023", "1.024", "1.100", "5.001", "5.003", "5.004", "6.001",
             "7.001", "8.001", "9.001", "12.001", "13.001", "14.000",
-            "16.000", "17.001",
+            "16.000", "17.001", "18.001",
         }
         if normalized not in supported:
             raise ValueError(f"Unsupported KNX DPT binding: {self.datapoint_type}")
