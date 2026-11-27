@@ -199,6 +199,9 @@ def test_point_becomes_licensed_when_used_in_fbd_and_graphics_and_releases_after
         def assert_can_create_point(self, status, existing_ids, new_id):
             if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
                 raise LicenseLimitExceeded("point limit")
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid:
+                raise PermissionError("invalid test license")
 
     gate = Gate()
     app.state.core.installation_license_service = gate

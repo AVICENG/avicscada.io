@@ -16,8 +16,9 @@ def _setup(tmp_path, count=2):
     app = create_ui_app(data_dir=str(tmp_path))
     project = app.state.project_station.create_project("BACnet adapter tests")
     station = app.state.project_station.create_station(project["id"], "BACnet station")
+    driver = app.state.driver_manager.create_instance(station["id"], "bacnet-ip", "BACnet test driver", {})
     device = Device(name="BACnet device", station_id=station["id"], protocol="bacnet/ip",
-                    address="192.0.2.40:47808", driver_instance_id="driver-bacnet-test")
+                    address="192.0.2.40:47808", driver_instance_id=driver["id"])
     app.state.core.repository.save(device)
     points = []
     for i in range(count):
@@ -25,13 +26,13 @@ def _setup(tmp_path, count=2):
                   native_identity=f"bacnet:ai:{i}", source_ref=f"bacnet://ai/{i}",
                   value=None, quality=PointQuality.UNCERTAIN)
         app.state.core.repository.save(p); points.append(p)
-    return app, points
+    return app, points, driver["id"]
 
 
 def test_bacnet_adapter_reads_present_value_into_shared_runtime(tmp_path):
-    app, pts = _setup(tmp_path)
+    app, pts, driver_id = _setup(tmp_path)
     client = FakeBacnetClient({1: 21.75, 2: 22.5})
-    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, "driver-bacnet-test", [
+    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, driver_id, [
         BacnetIpPointBinding(pts[0].id, ("192.0.2.40", 47808), 1234, 0, 1, scale=0.1),
         BacnetIpPointBinding(pts[1].id, ("192.0.2.40", 47808), 1234, 0, 2, offset=1.0)])
     result = adapter.poll_once()
@@ -45,10 +46,10 @@ def test_bacnet_adapter_reads_present_value_into_shared_runtime(tmp_path):
 
 
 def test_bacnet_adapter_retains_last_value_and_marks_communication_failure(tmp_path):
-    app, pts = _setup(tmp_path, 1)
+    app, pts, driver_id = _setup(tmp_path, 1)
     client = FakeBacnetClient({1: 20.0})
     binding = BacnetIpPointBinding(pts[0].id, ("192.0.2.40", 47808), 1234, 0, 1)
-    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, "driver-bacnet-test", [binding])
+    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, driver_id, [binding])
     adapter.poll_once(); before = app.state.core.point_runtime.read(pts[0].id)
     client.fail_instances.add(1); result = adapter.poll_once()
     after = app.state.core.point_runtime.read(pts[0].id)
@@ -59,7 +60,7 @@ def test_bacnet_adapter_retains_last_value_and_marks_communication_failure(tmp_p
 
 
 def test_bacnet_adapter_checks_driver_ownership(tmp_path):
-    app, pts = _setup(tmp_path, 1)
+    app, pts, driver_id = _setup(tmp_path, 1)
     adapter = BacnetIpPointAdapter(FakeBacnetClient({1: 20.0}), app.state.core.point_runtime,
         "wrong-owner", [BacnetIpPointBinding(pts[0].id, ("192.0.2.40", 47808), 1234, 0, 1)])
     result = adapter.poll_once()
