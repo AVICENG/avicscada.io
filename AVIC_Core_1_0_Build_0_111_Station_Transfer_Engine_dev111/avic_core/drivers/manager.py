@@ -219,14 +219,17 @@ class DriverManagerService:
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
-        client = ModbusTcpClient(
-            cfg["host"], port=int(cfg.get("port", 502)),
-            unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
-        )
+        # Resolve the selected engine before constructing any protocol client.
+        # Worker modes own their transport lifecycle; creating a Python client
+        # here would allocate an unused socket client and obscure engine isolation.
         if engine == "rust":
             return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         if engine == "c":
             return self._build_c_modbus_adapter(core, instance, cfg, [asdict(item) for item in bindings])
+        client = ModbusTcpClient(
+            cfg["host"], port=int(cfg.get("port", 502)),
+            unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
+        )
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
