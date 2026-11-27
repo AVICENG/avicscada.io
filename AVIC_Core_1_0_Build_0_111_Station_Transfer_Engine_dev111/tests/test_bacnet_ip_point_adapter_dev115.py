@@ -46,10 +46,10 @@ def test_bacnet_adapter_reads_present_value_into_shared_runtime(tmp_path):
 
 
 def test_bacnet_adapter_retains_last_value_and_marks_communication_failure(tmp_path):
-    app, pts = _setup(tmp_path, 1)
+    app, pts, driver_id = _setup(tmp_path, 1)
     client = FakeBacnetClient({1: 20.0})
     binding = BacnetIpPointBinding(pts[0].id, ("192.0.2.40", 47808), 1234, 0, 1)
-    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, "driver-bacnet-test", [binding])
+    adapter = BacnetIpPointAdapter(client, app.state.core.point_runtime, driver_id, [binding])
     adapter.poll_once(); before = app.state.core.point_runtime.read(pts[0].id)
     client.fail_instances.add(1); result = adapter.poll_once()
     after = app.state.core.point_runtime.read(pts[0].id)
@@ -60,7 +60,7 @@ def test_bacnet_adapter_retains_last_value_and_marks_communication_failure(tmp_p
 
 
 def test_bacnet_adapter_checks_driver_ownership(tmp_path):
-    app, pts = _setup(tmp_path, 1)
+    app, pts, driver_id = _setup(tmp_path, 1)
     adapter = BacnetIpPointAdapter(FakeBacnetClient({1: 20.0}), app.state.core.point_runtime,
         "wrong-owner", [BacnetIpPointBinding(pts[0].id, ("192.0.2.40", 47808), 1234, 0, 1)])
     result = adapter.poll_once()
