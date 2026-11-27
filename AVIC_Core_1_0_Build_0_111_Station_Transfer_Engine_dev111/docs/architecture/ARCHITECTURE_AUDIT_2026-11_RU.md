@@ -421,3 +421,27 @@ ADR-001 не считается принятым и не означает гот
 
 Создан ADR-006 `ADR-006_RUST_COMMUNICATION_ENGINE_BOUNDARY_RU.md`: Python остаётся владельцем SCADA/engineering/data/security, Rust — протокольного I/O; определены batch strategies, IPC compatibility, worker signing, restart/fencing, parity tests и end-to-end benchmark.
 
+
+
+### 16.9 Реестр решений — обновление
+
+| ADR | Тема | Статус |
+|---|---|---|
+| ADR-001 | Point Definition / Point State / Sample | PROPOSED |
+| ADR-002 | Station Runtime / signed deployment / Edge autonomy | PROPOSED |
+| ADR-003 | Canonical Quality / Time / Sample ordering | PROPOSED |
+| ADR-004 | Command arbitration / physical write boundary | PROPOSED |
+| ADR-005 | Data ownership / outbox-inbox / backup-restore | PROPOSED |
+| ADR-006 | Rust Communication Engine / IPC / batching / worker lifecycle | PROPOSED |
+
+### 16.10 CI evidence boundary
+
+После создания regression test и ADR документы были добавлены в PR #8, но GitHub Actions не создал новый workflow run для новых head commits через используемый способ обновления файлов. Текущий доступный run #653 относится к старому SHA `c9496ec3ce0c9f37b1a90f3d83df662086dc6dc9`:
+- Python Linux matrix завершена успешно;
+- Python Windows 3.12 и 3.13 завершены успешно;
+- Python Windows 3.11 оставался in_progress при последней проверке;
+- Rust unit tests прошли на Linux/Windows;
+- Rust Modbus benchmark завершился failure на Linux/Windows до исправления MBAP framing.
+
+Новый benchmark fix и regression tests **не имеют CI evidence**. Не считать их проверенными до запуска workflow на актуальном PR head `18b6cb3b50458ef5bced0859db5575d50b1bbb87`.
+
