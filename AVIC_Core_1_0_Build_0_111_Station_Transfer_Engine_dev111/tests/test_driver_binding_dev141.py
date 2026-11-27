@@ -189,3 +189,29 @@ def test_protocol_import_rechecks_driver_entitlement_before_any_mutation(tmp_pat
     assert after_driver["config"] == before_driver["config"]
     assert after_driver["state"] == "STOPPED"
     app.state.core.close()
+
+
+def test_driver_publication_and_quality_fail_closed_for_unowned_device(tmp_path):
+    from avic_core.domain.models import Device, Point
+
+    app, station, driver, inspection = _import_setup(tmp_path, "bacnet-ip")
+    native = inspection["points"][0]["native_identity"]
+    imported = app.state.protocol_point_import.import_points(
+        station["id"], driver["id"], inspection, [native])
+    core = app.state.core
+    device, version = core.repository.get(imported["device_id"], Device)
+    device.driver_instance_id = ""
+    core.repository.save(device, expected_version=version)
+
+    point_id = imported["points_added"][0]
+    with pytest.raises(ValueError, match="Источник публикации не совпадает"):
+        core.point_runtime.publish(point_id, 21.5, source_driver_id=driver["id"])
+    with pytest.raises(ValueError, match="Quality source does not match"):
+        core.point_runtime.mark_quality(
+            point_id, "BAD_COMMUNICATION", source_driver_id=driver["id"])
+
+    # Explicit trusted internal publication without an adapter identity remains
+    # available to controlled Core services; field adapters must identify ownership.
+    sample = core.point_runtime.publish(point_id, 21.5, source_driver_id=None)
+    assert sample.value == 21.5 and sample.quality == "GOOD"
+    core.close()
