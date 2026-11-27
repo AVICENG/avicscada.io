@@ -456,3 +456,82 @@ def test_compiled_c_worker_rejects_invalid_modbus_rtu_configuration_when_enabled
             "timeout": 1.5,
         })
     worker.close()
+
+
+def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled():
+    import pytest
+    if os.name == "nt":
+        pytest.skip("Linux PTY round-trip is exercised by the Linux native C job")
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    import os as os_module
+    import pty
+    import select
+    import tty
+    from pathlib import Path
+    from avic_core.drivers.rust_worker import RustDriverWorker
+
+    master_fd, slave_fd = pty.openpty()
+    serial_port = os_module.ttyname(slave_fd)
+    tty.setraw(slave_fd)
+    os_module.close(slave_fd)
+
+    def crc16(data: bytes) -> int:
+        crc = 0xFFFF
+        for byte in data:
+            crc ^= byte
+            for _ in range(8):
+                crc = (crc >> 1) ^ (0xA001 if crc & 1 else 0)
+        return crc
+
+    simulator_error = []
+
+    def simulator():
+        try:
+            ready, _, _ = select.select([master_fd], [], [], 5.0)
+            if not ready:
+                raise TimeoutError("RTU simulator did not receive a request")
+            request = bytearray()
+            while len(request) < 8:
+                ready, _, _ = select.select([master_fd], [], [], 2.0)
+                if not ready:
+                    raise TimeoutError("RTU request frame was truncated")
+                request.extend(os_module.read(master_fd, 8 - len(request)))
+            if request[0] != 7 or request[1] != 3 or crc16(request[:-2]) != int.from_bytes(request[-2:], "little"):
+                raise AssertionError(f"invalid Modbus RTU request: {bytes(request).hex()}")
+            body = bytes((7, 3, 2, 0x12, 0x34))
+            crc = crc16(body)
+            os_module.write(master_fd, body + crc.to_bytes(2, "little"))
+        except Exception as exc:
+            simulator_error.append(exc)
+
+    simulator_thread = threading.Thread(target=simulator, daemon=True)
+    simulator_thread.start()
+    worker = RustDriverWorker(
+        [str(Path(worker_path).resolve())],
+        installation_id="install-c-modbus-rtu-pty", project_id="project-c-modbus-rtu-pty",
+        station_id="station-c-modbus-rtu-pty", driver_instance_id="driver-c-modbus-rtu-pty",
+        generation=1, timeout_seconds=5.0,
+    )
+    try:
+        worker.start({
+            "protocol": "modbus-rtu", "serial_port": serial_port,
+            "baud_rate": 9600, "parity": "N", "data_bits": 8,
+            "stop_bits": 1, "unit_id": 7, "timeout": 1.5,
+        })
+        response = worker.read({
+            "protocol": "modbus-rtu", "serial_port": serial_port,
+            "baud_rate": 9600, "parity": "N", "data_bits": 8,
+            "stop_bits": 1, "unit_id": 7, "timeout_ms": 1500,
+            "function": 3, "address": 0, "count": 1,
+        })
+        assert response["transport_ok"] is True
+        assert response["result"] == {"function": 3, "values": [0x1234]}
+        simulator_thread.join(timeout=2)
+        assert not simulator_thread.is_alive()
+        assert not simulator_error, repr(simulator_error)
+    finally:
+        worker.close()
+        os_module.close(master_fd)
