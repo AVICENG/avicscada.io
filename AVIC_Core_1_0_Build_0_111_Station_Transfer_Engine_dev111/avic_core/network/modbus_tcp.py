@@ -134,6 +134,8 @@ class ModbusTcpClient:
                 raise ModbusProtocolError("invalid Modbus MEI 0x0E response")
             if body[2] != read_code:
                 raise ModbusProtocolError("Modbus MEI response read-code mismatch")
+            if body[3] not in (0x01, 0x02, 0x03, 0x81, 0x82, 0x83):
+                raise ModbusProtocolError("invalid Modbus MEI conformity level")
             more_follows = body[4]
             if more_follows not in (0x00, 0xFF):
                 raise ModbusProtocolError("invalid Modbus MEI more-follows flag")
