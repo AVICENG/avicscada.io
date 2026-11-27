@@ -401,6 +401,8 @@ int main(void) {
         }
         int should_exit = 0;
         const char *command = get_string(request, "kind");
+        /* Used by Windows diagnostics; keep strict -Werror builds clean on POSIX. */
+        (void)command;
         int ok = process(&worker, request, &should_exit);
         if (!ok) {
 #ifdef _WIN32
