@@ -52,3 +52,20 @@ def test_network_interfaces_endpoint_returns_detected_adapters(monkeypatch, tmp_
     response = TestClient(create_ui_app(data_dir=str(tmp_path))).get("/api/network/interfaces")
     assert response.status_code == 200
     assert response.json()["interfaces"][0]["ipv4"] == "10.10.10.100"
+
+
+def test_driver_catalog_api_exposes_runtime_integration_without_overstating_readiness(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    response = client.get("/api/drivers/catalog")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["field_io_enabled"] is False
+    drivers = {item["driver_id"]: item for item in payload["drivers"]}
+    assert len(drivers) == 16
+    assert drivers["modbus-tcp"]["runtime_start_supported"] is True
+    assert drivers["bacnet-ip"]["runtime_start_supported"] is True
+    assert drivers["knxnet-ip"]["runtime_start_supported"] is True
+    assert drivers["mqtt"]["runtime_start_supported"] is True
+    assert drivers["s7comm"]["runtime_start_supported"] is False
+    assert drivers["opc-ua-client"]["runtime_start_supported"] is False
+    assert all(item["write_supported"] is False for item in drivers.values())
