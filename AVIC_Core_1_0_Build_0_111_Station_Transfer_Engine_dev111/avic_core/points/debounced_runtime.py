@@ -140,20 +140,25 @@ class DebouncedPointRuntimeService(PointRuntimeService):
         if current.tzinfo is None or current.utcoffset() is None:
             raise ValueError("Debounce scheduler timestamp must be timezone-aware")
         published: list[PointRuntimeValue] = []
-        due = self._debounce.flush_due(now=current)
-        for item in due:
-            with self._point_lock(item.point_id):
-                source_driver_id = self._debounce_sources.pop(item.point_id, None)
-                point, _, _ = self._read_entity(item.point_id)
-                # A quality-loss transition may race the scheduler after its due
-                # queue was drained. Never let that stale GOOD commit overwrite BAD.
+        for point_id in self._debounce.pending_points():
+            with self._point_lock(point_id):
+                # Drain only after acquiring the same point lock used by publish()
+                # and mark_quality(); a newer sample can therefore replace/cancel
+                # the pending edge before the scheduler commits it.
+                item = self._debounce.flush_point_due(point_id, now=current)
+                if item is None:
+                    continue
+                source_driver_id = self._debounce_sources.pop(point_id, None)
+                point, _, _ = self._read_entity(point_id)
                 if self._quality(point.quality) != PointQuality.GOOD:
+                    continue
+                if point.value is item.value:
                     continue
                 commit_time = current
                 if point.timestamp is not None and commit_time < point.timestamp:
                     commit_time = point.timestamp
                 published.append(super().publish(
-                    item.point_id, item.value, quality=PointQuality.GOOD,
+                    point_id, item.value, quality=PointQuality.GOOD,
                     timestamp=commit_time, source_driver_id=source_driver_id,
                 ))
         return tuple(published)
