@@ -51,6 +51,10 @@ impl KnxIpReadOnlyClient {
         Ok(Self { runtime, client })
     }
 
+    pub fn close(self) {
+        self.runtime.block_on(self.client.close());
+    }
+
     /// Read a commissioned group address using its configured DPT.
     /// No GroupValue_Write or device restart operation is exposed here.
     pub fn read_group(
