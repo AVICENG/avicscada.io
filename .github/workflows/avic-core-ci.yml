@@ -108,5 +108,8 @@ jobs:
       - name: Run Rust unit tests
         run: cargo test --manifest-path rust/avic-communication-engine/Cargo.toml
 
-      - name: Run same-simulator Python vs Rust Modbus benchmark smoke test
+      - name: Run same-simulator Python vs Rust Modbus benchmark (10,000 points)
         run: python tools/modbus_load_compare.py --devices 100 --points-per-device 100 --cycles 10 --concurrency 16
+
+      - name: Run Python BACnet/IP ReadProperty baseline (10,000 points)
+        run: python tools/bacnet_load_baseline.py --points 10000
