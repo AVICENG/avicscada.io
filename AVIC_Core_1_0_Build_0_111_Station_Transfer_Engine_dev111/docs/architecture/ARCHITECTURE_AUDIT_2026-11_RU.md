@@ -1,0 +1,278 @@
+# AVIC Core 1.0 — первичная архитектурная ревизия
+
+Дата: 27.11.2026  
+Проверенный исходный код: `ae85b68f60a2680ddad7fb7594f4b44158b89379`  
+Базовый рабочий коммит после исправления benchmark fixture: `8f74b8f9dda9f27ea6ba657bc08f5d711c85e7bc`  
+Область: статическая ревизия структуры, composition root, доменных моделей, хранилищ, Runtime, Drivers, Security, Commands, Graphics и Edge/Field Runtime.
+
+> Это первичный архитектурный аудит, а не заключение о полной готовности продукта. Он не заменяет выполнение тестов, threat modeling, нагрузочные испытания, проверку миграций и испытания на реальных контроллерах. Статус ARCHITECTURE_DEFINED не присваивается по факту наличия этого документа.
+
+## 1. Резюме
+
+В кодовой базе уже выделены самостоятельные пакеты Core, Domain, Repository, Drivers, Network, Points, Runtime/FBD, Commands, Events, History, Alarm, Analytics, Notifications, Security, Licensing, Configuration, Deployment, Transfer, Graphics, Web Pages, Engineering Lifecycle и Field Runtime.
+
+Главный риск текущей архитектуры — не отсутствие названий подсистем, а отсутствие окончательно согласованной модели владения данными и исполнения. В частности, текущее значение точки сохраняется через общий объектный SQLite Repository; Field Runtime пока является отдельным процессным host/heartbeat prototype без присоединённого FBD execution engine; производственный Security/RBAC путь не интегрирован в локальный Workbench; ряд журналов и реестров находятся в отдельных БД и нуждаются в формально определённых consistency/outbox правилах.
+
+**Рекомендация:** до расширения функциональности зафиксировать целевые контракты для Point State, Field Runtime, Command Execution, Identity/Security, Configuration/Deployment и Data Ownership. Не делать необратимый рефакторинг до согласования этих контрактов.
+
+## 2. Приоритетные архитектурные находки
+
+### A-001 — Point Runtime использует объектное Repository как горячее хранилище значений
+**Приоритет: P0 / блокирует архитектурное принятие Runtime на масштаб AVIC.**
+
+Фактическое поведение:
+- `PointRuntimeService.publish()` загружает объект Point из `SQLiteRepository`, проверяет значение и timestamp, обновляет Point и сохраняет его через `repository.save()` при каждом принятом sample.
+- Публикация FBD exposed point использует аналогичный путь.
+- В `PointRuntimeService` один общий `RLock` охватывает чтение, валидацию и сохранение. Поэтому параллельные обновления разных точек внутри данного экземпляра сервиса сериализуются.
+- Определение Point и его текущие runtime-поля (value/quality/timestamp) смешаны в одной persisted entity.
+
+Риск:
+- Каждое измерение создаёт транзакционную запись в БД инженерных объектов и увеличивает revision объекта.
+- Высокая частота и число точек превращают SQLite object registry в bottleneck и связывают скорость драйверов с инженерным CRUD.
+- Несколько процессов Runtime не имеют согласованного владельца оперативного значения.
+
+**Целевое решение:**
+1. Разделить Point Definition (инженерная конфигурация, стабильная идентичность, тип, единицы, направление, источник) и Point State/Sample (value, quality, source timestamp, receive timestamp, sequence, source).
+2. Определить один авторитетный Point State API/contract, используемый Python и Rust drivers, FBD, Alarms, HMI, Historian и Central/Edge.
+3. Не выполнять полный CRUD-перезапис инженерной сущности на каждый sample.
+4. Ввести bounded ingestion pipeline, backpressure, batching и независимую политику persistence/cache.
+5. Historian подписывается на поток принятых sample и не становится владельцем текущего значения.
+6. Обеспечить station isolation, stale generation fencing, out-of-order policy и восстановление после перезапуска.
+
+До утверждения решения запрещено считать текущий путь достаточным для целевых 5k/10k+ точек на Edge.
+
+### A-002 — Field Runtime пока не является исполнительной средой
+**Приоритет: P0 / блокирует заявление об автономной станции.**
+
+Фактическое поведение:
+- `field_runtime/process.py` запускает отдельный OS process и управляет loopback TCP heartbeat/control connection.
+- `field_runtime/agent.py` отвечает на status/ping и maintenance_stop; в status явно сообщает `active_strategies: 0`, `execution_engine_attached: false`, `capability_state: PROCESS_HOST_ONLY`.
+- Документ DEV181 прямо фиксирует отсутствие FBD execution attachment и отсутствие устойчивого повторного обнаружения/аутентификации агента новым Supervisor после рестарта.
+- Основной `FBDExecutionService` сейчас является отдельным сервисом Python в процессе Core/Application; сам по себе факт наличия process host не переносит исполнение в него.
+
+**Целевое решение:**
+1. Разделить Supervisor/Platform Manager и Station Field Runtime как разные владельцы жизненного цикла.
+2. Определить подписанный immutable deployment bundle: Logic/FBD graph, bindings, schedules, driver config, runtime compatibility, checksums и revision.
+3. Field Runtime самостоятельно загружает последний разрешённый bundle после reboot и выполняет циклы без Workbench/Central.
+4. Определить безопасный local state, watchdog, bounded restart, crash recovery, update/rollback, persistent node identity, authenticated IPC и epoch/generation fencing.
+5. Потеря Supervisor/Central не останавливает автономное исполнение; устаревшие команды и пакеты отвергаются.
+6. До появления этих механизмов называть реализацию только Field Runtime Process Host Prototype, не Edge Runtime и не автономным контроллером.
+
+### A-003 — Не завершена производственная цепочка Authentication → Authorization → API → Audit
+**Приоритет: P0 / блокирует удалённый/сетевой коммерческий Workbench.**
+
+Фактическое поведение:
+- В Security есть `SecurityManager`, сессии, Argon2, MFA, SecretStore, RBAC primitives и FastAPI adapter.
+- `create_ui_app()` документирован как local-only Workbench. Mutating endpoints используют `require_local_operator()`, который проверяет loopback host и Origin.
+- В показанном composition path UI создаёт CoreApplication, но не создаёт и не подключает SecurityManager/SecurityGateway как обязательную authentication middleware цепочку.
+- Command Manager получает actor_id строкой; локальный режим ограничивает поверхность, но строка actor_id сама по себе не является доказанным Principal.
+- Входные модели некоторых UI операций содержат actor_id с локальным значением по умолчанию. Это нельзя переносить в production identity model.
+
+**Целевое решение:**
+1. Единый authenticated Principal, передаваемый через request context/service boundary; actor_id нельзя принимать как доверенную личность из тела запроса.
+2. Authorization проверяется на сервере в каждом service/use-case, а не только на UI/API route.
+3. Permission + installation/project/station scope + capability + license entitlement — отдельные проверяемые условия.
+4. Audit записывает фактического Principal, разрешение/отказ, correlation_id, target, before/after или reference к change set.
+5. Локальный loopback guard сохраняется как дополнительная защита, но не считается authentication.
+6. Сетевой/мобильный доступ запрещён до интеграционных тестов auth/RBAC/CSRF/session revocation/MFA/audit.
+
+### A-004 — Command Manager пока simulation-only; граница будущего field write требует единого контракта
+**Приоритет: P0 для архитектуры управления; текущий запрет реальной записи является правильной защитой.**
+
+Фактическое поведение:
+- `CommandManagerService` явно документирован как simulation-only; physical driver writes не выполняются.
+- FBD execution публикует только read-only virtual FBD points; прямых полевых записей нет.
+- ScheduleService формирует schedule intent и не выполняет физическую команду.
+- Наличие трёх отдельных источников intent (оператор, расписание, FBD/автоматизация) требует единой арбитражной точки.
+
+**Целевое решение:**
+1. Ввести единый Command Contract: command_id, target, requested value, actor/agent, source intent, reason, priority, created_at, expiry/TTL, generation, correlation_id, idempotency key.
+2. Command Manager — единственный policy/arbitration gateway к physical write executor.
+3. Разделить intent, authorization, interlock evaluation, dispatch, protocol acknowledgement и observed feedback.
+4. Ввести conflict arbitration для operator/manual, schedule, FBD/automatic, remote supervisor и emergency/local interlock.
+5. Expired/stale/replayed commands отклоняются; retry не должен приводить к повторному опасному действию.
+6. Write-capable driver capability включается только после RBAC, Access Lease, safety policy, audit, test/simulation и device-level acceptance.
+7. Независимые safety interlocks и защитные функции остаются в предназначенном контроллере/оборудовании.
+
+### A-005 — Несколько хранилищ без единой формальной карты владения и consistency
+**Приоритет: P0/P1 — архитектурная спецификация обязательна до масштабирования и HA.**
+
+Фактическое состояние:
+- Core Object Repository использует `objects.sqlite3`.
+- Отдельные хранилища существуют для Audit, Alarms, Events, History, Dependencies, Analytics, Notifications, Time Management, Engineering Lifecycle, Schedules, Point Views, Custom SVG и других служб.
+- Alarm имеет собственные transition journal и durable outbox; это правильный локальный паттерн.
+- History использует отдельный database и при старте выполняет reconciliation point usage, прямо называя это repair protocol вместо cross-database ACID.
+- Configuration Manager хранит versioned JSON envelopes в файловом каталоге с lock DB; ProjectTransaction обеспечивает отдельный журнал файлово-DB операций.
+- В доменной модели одновременно объявлены generic `Alarm`, `Event`, `HistoryRecord` entities, тогда как специализированные службы имеют собственные persistent records.
+
+Риск:
+- Неочевидно, какая модель является канонической для Alarm/Event/History и какие generic entities являются legacy/DTO.
+- Нет общей таблицы: source of truth, owner, write API, transaction boundary, outbox/inbox, retention, backup/restore, migration owner.
+- Межсервисные операции могут завершиться частично, если не определены idempotency и reconciliation.
+
+**Целевое решение:**
+1. Не обязательно сводить все данные в одну БД. Разделённые БД допустимы и полезны для изоляции нагрузки.
+2. Для каждого агрегата назначить ровно одного владельца записи и один canonical write API.
+3. Все cross-store операции оформлять через transactional outbox/inbox, idempotent consumers и reconciliation.
+4. Утвердить единый backup/restore manifest с согласованными snapshot barriers и проверкой восстановления.
+5. Удалить/пометить deprecated дублирующие generic entity модели только после проверки всех импортов, transfer format и миграций.
+6. Определить retention/compaction и disk-capacity policy для каждого журнала.
+
+### A-006 — Словарь качества точки не унифицирован
+**Приоритет: P1, но контракт должен быть утверждён до расширения драйверов.**
+
+Наблюдается расхождение:
+- `PointQuality` содержит GOOD, UNCERTAIN, STALE, BAD_COMMUNICATION, BAD_CONFIGURATION, DISABLED.
+- HistoryService использует GOOD, UNCERTAIN, STALE, BAD, COMM_LOST, DISABLED.
+- FBD exposed point допускает BAD, COMM_LOST и дополнительные варианты.
+- BACnet Rust adapter отображает Status_Flags в enum PointQuality, а отсутствие/невалидность flags переводит в UNCERTAIN.
+
+**Целевое решение:**
+- Ввести canonical cross-language Quality enum с документированными семантиками и compatibility mapping.
+- Не смешивать quality, alarm state, out-of-service/disabled, freshness и communication diagnostics.
+- Определить source_timestamp, received_at, processed_at, clock_quality, sequence и provenance как отдельные поля sample envelope.
+- Запретить незаметное преобразование неизвестного качества в GOOD.
+
+### A-007 — DependencyService пока не доказан как канонический граф объектов
+**Приоритет: P1.**
+
+Фактическое поведение:
+- DependencyService хранит edges в отдельной SQLite DB.
+- Его add() не проверяет существование обоих объектов, принадлежность станции, допустимость типа связи или циклы.
+- delete_preview() возвращает advisory result; destructive operation должна отдельно потребить результат.
+- Domain Object Service имеет собственную проверку части прямых ссылок при сохранении объектного графа, но это не тождественно универсальному Dependency Graph.
+
+**Целевое решение:**
+1. Разделить структурные ownership references и семантические dependency relations.
+2. Для dependency edge определить relation registry, допустимые типы объектов, station/project scope и cycle policy.
+3. Ввести проверяемый deletion/change plan с revision/fingerprint, чтобы preview нельзя было применить к уже изменившемуся графу.
+4. Все delete/replace/transfer/publish операции должны учитывать обязательные зависимости.
+5. Добавление edges должно быть атомарным с изменением соответствующего инженерного объекта либо через durable outbox.
+
+### A-008 — Graphics и Web Pages имеют разные модели; границу надо сохранить, но унифицировать presentation contract
+**Приоритет: P1.**
+
+Фактическое поведение:
+- Graphics имеет GraphicDocument, GraphicElement и PointBinding.
+- Web Pages имеет WebPageNode с HTML/CSS/JavaScript, layout, graphic_ids и опубликованными версиями.
+- WebPage может включать GraphicDocument как компонент.
+
+**Целевое решение:**
+- Не сливать страницу и мнемосхему в один гигантский документ.
+- Ввести общий Presentation Asset/Renderer/Binding Contract.
+- Page = навигационный/композиционный контейнер; GraphicDocument = инженерная мнемосхема; оба ссылаются на canonical objects/points.
+- Публикация должна фиксировать immutable revision всех зависимых graphics/assets/bindings.
+- Определить CSP, sandbox, trusted extensions, asset origin и политику выполнения пользовательского JavaScript.
+- PX оставить необязательным importer/export adapter; native format AVIC остаётся собственным.
+
+### A-009 — Application Composition и service ownership требуют формального правила
+**Приоритет: P1.**
+
+Положительная сторона: в текущем UI composition `app.state.driver_manager` и `app.state.fbd_execution` ссылаются на экземпляры, принадлежащие CoreApplication; второй экземпляр этих runtime служб в актуальном app.py не создаётся.
+
+Открытый вопрос: CommandManagerService и часть UI/engineering services создаются в ASGI host, а не в CoreApplication. Нужно формально разделить:
+- Platform/Core-owned services;
+- Station Runtime-owned services;
+- Host/UI adapters;
+- request-scoped services.
+
+Один service/process resource должен иметь одного владельца lifecycle. Shutdown должен закрывать владельцев в определённом порядке и не останавливать автономный Field Runtime.
+
+### A-010 — Notification и Analytics пока являются базовыми registry/primitives, а не полными эксплуатационными платформами
+**Приоритет: P1.**
+
+- NotificationService хранит routes и durable outbox, но прямо указывает, что transport sender без adapter не выполняется.
+- AnalyticsService содержит tags, hierarchy и deterministic aggregation primitives; это не полная Alarm Analytics/FDD/energy/reliability analytics.
+- Alarm transition journal существует, но требуется доказать end-to-end ingestion, correlation, alarm KPIs, chattering/fleeting/standing, first-out, root-cause evidence, notification delivery and reporting.
+
+**Целевое решение:** отделить event/alarm facts, analytical projections, recommendations и notification delivery. AI/analytics не должны непосредственно исполнять команды.
+
+## 3. Целевая архитектура владения
+
+| Область | Единственный владелец ответственности | Не должен делать |
+|---|---|---|
+| Domain/Object Registry | Core Object/Domain Service | Хранить высокочастотный поток sample как основной механизм |
+| Point Definition | Point Manager | Выполнять сетевой I/O или физические команды |
+| Point State | Point Runtime / State Store | Владеть инженерной конфигурацией и долгосрочным архивом |
+| Historian | History Service/Store | Быть источником текущего оперативного значения |
+| Network Discovery | Network Manager | Создавать активные field writes |
+| Driver lifecycle | Driver Manager/Supervisor | Обходить Point Runtime |
+| Protocol transport | Python/Rust Driver adapter | Самостоятельно менять Core objects или права |
+| FBD/Automation | Station Automation Runtime | Обходить Command Manager для физических выходов |
+| Command arbitration | Command Manager | Самостоятельно реализовывать протокол устройства |
+| Field execution | Field Runtime | Зависеть от UI/Central для локального цикла |
+| Alarm state | Alarm Manager | Подменять audit или operational event journal |
+| Audit | Audit Service | Считаться защищённым только за счёт hash chain без внешнего anchor/ACL |
+| Operational events | Event Service | Становиться заменой Alarm или Audit |
+| Configuration/Deployment | Configuration + Deployment lifecycle | Применять несовместимые конфиги без migration/rollback |
+| Identity/Authorization | Security Platform | Доверять actor_id, переданному клиентом |
+| Graphics | Native Graphics Model/Renderer | Выполнять полевые команды напрямую |
+| Web Pages | Page composition/publishing | Дублировать объектную и runtime модели |
+| AI | AI Gateway/Policy/Tools | Иметь прямое право на управление оборудованием |
+
+## 4. Целевые слои платформы
+
+1. **Platform Foundation:** installation/tenant/project/station identity, canonical object model, contracts, schema/versioning, repository, configuration, security, licensing, audit.
+2. **Station Runtime:** driver sessions, point state, quality/time, event stream, FBD, scheduler, command arbitration, local historian, alarms.
+3. **Engineering Plane:** discovery, device onboarding, point import, FBD/graphics authoring, commissioning, simulation, change sets, staged publish/rollback.
+4. **Operations Plane:** alarm/event analytics, notifications, asset passport, maintenance, reports, dashboards.
+5. **Distributed Plane:** Central/Supervisor, station deployment, Edge autonomy, synchronization, HA, resource management.
+6. **AI Plane:** provider gateway, context, knowledge, agent tools, policy and audit. AI remains advisory; changes go through validation/simulation/approval/publish.
+
+Engineering Plane, Operations Plane and AI Plane must not become runtime owners. Central/Supervisor is not the deterministic control loop.
+
+## 5. Архитектурные решения, которые нужно оформить ADR до расширения
+
+- ADR-001: Point Definition vs Point State vs Historian sample ownership.
+- ADR-002: Station Field Runtime process boundary and deployment bundle.
+- ADR-003: Canonical Quality, timestamp and provenance contract.
+- ADR-004: Command arbitration, lease, interlock, dispatch and feedback.
+- ADR-005: Canonical aggregate ownership and multi-store consistency/outbox.
+- ADR-006: Canonical identity, Principal, RBAC scopes and service authorization.
+- ADR-007: Object ownership graph vs semantic dependency graph.
+- ADR-008: Graphics/Page/Asset/Binding presentation model.
+- ADR-009: Central/Edge synchronization, offline conflict and revision policy.
+- ADR-010: API/SDK/module compatibility and deprecation policy.
+- ADR-011: Backup/restore, migration and disaster recovery consistency.
+- ADR-012: HA/fencing, node identity and split-brain protection.
+- ADR-013: Event, Alarm, Audit, History and Notification semantics.
+- ADR-014: Runtime resource budgets, isolation, backpressure and overload behavior.
+
+## 6. Внешний инженерный benchmark
+
+Официальные материалы Siemens Desigo CC полезны как контроль полноты, но не как шаблон копирования:
+- Desigo CC описывает single-server, redundant-server и distributed configurations, северные/южные интеграции, открытые библиотеки/SDK, online engineering, mobile access и несколько дисциплин здания.
+- System Openness перечисляет BACnet/BACnet-SC, OPC DA/UA, Modbus TCP, SNMP, KNX/KNX Secure, S7/S7 Plus/S7 secure и IEC 61850.
+- Это подтверждает, что в AVIC надо проектировать northbound/southbound integration, SDK ecosystem, redundancy/distribution, mobile operations и мультидисциплинарную модель как архитектурные направления, а не как случайные будущие плагины.
+
+Источники:
+- https://sid.siemens.com/r/A6V11882331/15481750667_16118268811__en-US_15261635851
+- https://sid.siemens.com/r/A6V12900997/33153351179___en-US_33213215115
+- https://www.siemens.com/en-us/products/desigo/cc-ecosystem/
+
+## 7. Проверки и текущие ограничения аудита
+
+- Проверен Git tree и исходники ветки `dev219-rust-worker-ci` на SHA `ae85b68f60a2680ddad7fb7594f4b44158b89379`.
+- PR #7 остаётся Draft и stacked поверх PR #6; PR #6 также Draft. Нельзя считать эту цепочку готовой к merge без проверки base/head и полного CI.
+- CI run #651 для SHA ae85: Python Linux jobs 3.11/3.12/3.13 и Windows 3.11 завершились успешно; Windows 3.12/3.13 были ещё в процессе при просмотре. Rust unit tests завершились успешно на Windows/Linux, но benchmark job завершился ошибкой на обеих ОС.
+- Причина benchmark failure установлена по исходникам и job logs: DEV221 Rust client сохраняет TCP session, а benchmark ModbusHandler закрывал соединение после одного ADU. Это дефект simulator fixture, не доказательство дефекта Modbus client.
+- В commit `8f74b8f9dda9f27ea6ba657bc08f5d711c85e7bc` benchmark simulator изменён на обработку нескольких ADU в одном TCP соединении. Новый CI для этого commit должен подтвердить исправление; до этого benchmark считается не прошедшим.
+- Эта ревизия не утверждает готовность Production Security, автономного Field Runtime, physical writes, HA, distributed sync, full BACnet parity, production notifications или full analytics.
+- Не проверены полностью: все API endpoints, все domain mutations, полный transfer/migration graph, performance profiles, fuzzing, penetration tests, backup disaster recovery, real BACnet/Modbus/KNX controllers, Linux/Windows service recovery, ARM target.
+
+## 8. Критерий закрытия ARCHITECTURE_DEFINED
+
+Модуль получает этот статус только если:
+1. Назначен единственный владелец данных и операций.
+2. Описаны входы/выходы, versioned contracts и compatibility policy.
+3. Определены storage ownership, transaction boundaries, outbox/inbox и recovery.
+4. Определены security principal, authorization scopes и audit.
+5. Определены timeout, retry, backpressure, overload и failure semantics.
+6. Описаны зависимости и запрещённые зависимости.
+7. Определена миграция и обратная совместимость.
+8. Есть architecture tests и acceptance scenarios.
+9. Проверена совместимость Central, Edge и будущего Controller.
+10. Нет открытого P0 противоречия с соседними модулями.
+
+**Итоговый статус всей платформы после этого прохода: ARCHITECTURE_AUDIT_IN_PROGRESS.**  
+Ни один P0 не закрыт только этим документом. Следующий этап — оформить ADR-001…ADR-014, затем связать их с кодом и architecture tests.
