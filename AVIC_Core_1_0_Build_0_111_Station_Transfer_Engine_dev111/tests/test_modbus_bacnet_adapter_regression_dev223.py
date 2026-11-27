@@ -111,3 +111,19 @@ def test_bacnet_adapter_marks_communication_failure_bad():
     result = adapter.poll_once()
     assert result["failure_count"] == 1
     assert runtime.qualities == [("value", PointQuality.BAD_COMMUNICATION, "bacnet-2")]
+
+
+def test_modbus_transaction_id_allocator_is_unique_under_concurrency():
+    from concurrent.futures import ThreadPoolExecutor
+    client = ModbusClient()
+    # Exercise the production allocator without opening network sockets.
+    from avic_core.network.modbus_tcp import ModbusTcpClient
+    allocator = object.__new__(ModbusTcpClient)
+    import threading
+    allocator._transaction_id = 0
+    allocator._transaction_lock = threading.Lock()
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        values = list(pool.map(lambda _: allocator._next_transaction_id(), range(2000)))
+    assert len(set(values)) == 2000
+    assert min(values) == 1
+    assert max(values) == 2000
