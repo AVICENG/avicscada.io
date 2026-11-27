@@ -197,3 +197,60 @@ def test_modbus_rtu_point_adapter_polls_through_c_worker_contract(tmp_path, monk
     finally:
         adapter.close()
         core.close()
+
+
+def test_serial_port_lease_is_exclusive_across_processes(tmp_path):
+    import subprocess
+    import sys
+    from avic_core.drivers.serial_port_lease import SerialPortLease
+
+    port = str(tmp_path / "virtual-rs485")
+    lease = SerialPortLease(port).acquire()
+    code = (
+        "import sys; "
+        "from avic_core.drivers.serial_port_lease import SerialPortLease, SerialPortBusyError; "
+        "p=sys.argv[1]; "
+        "try_acquire=None; "
+        "\ntry:\n SerialPortLease(p).acquire()\n"
+        "except SerialPortBusyError:\n sys.exit(0)\n"
+        "sys.exit(5)\n"
+    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", code, port],
+            capture_output=True, text=True, timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+    finally:
+        lease.release()
+    with SerialPortLease(port):
+        pass
+
+
+def test_driver_manager_holds_and_releases_rtu_serial_lease(tmp_path):
+    from avic_core.drivers.serial_port_lease import SerialPortBusyError, SerialPortLease
+
+    core, station = _core_with_project(tmp_path, monkeypatch=None)
+    port = str(tmp_path / "managed-rs485")
+    class Adapter:
+        def poll_once(self):
+            return {"results": []}
+        def close(self):
+            pass
+
+    instance = DriverInstance(
+        name="Managed RS485", station_id=station.id,
+        driver_id="modbus-rtu", protocol="Modbus RTU",
+        config={"serial_port": port, "poll_interval_seconds": 0.1},
+    )
+    core.repository.save(instance)
+    core.driver_manager.register_adapter_factory("modbus-rtu", lambda _core, _item: Adapter())
+    try:
+        core.driver_manager.start_instance(instance.id)
+        with pytest.raises(SerialPortBusyError):
+            SerialPortLease(port).acquire()
+        core.driver_manager.stop_instance(instance.id)
+        with SerialPortLease(port):
+            pass
+    finally:
+        core.close()
