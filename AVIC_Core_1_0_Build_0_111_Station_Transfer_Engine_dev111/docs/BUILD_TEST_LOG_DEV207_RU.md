@@ -103,3 +103,8 @@ Commit: `ef92a1b5e56f5cb69e0663897177f91291ca6524`.
 Исправлена только нормализация теста: alias `LA` разрешается в точный SID текущего пользователя, полученный через `whoami`, и только если SID заканчивается на RID `-500`. Отдельная широкая группа Local Account `S-1-5-113` по-прежнему явно запрещена. Production ACL код не менялся и не ослаблялся.
 
 Commit DEV211: `b0fd590df72b61358d59b9cc97d59f1af0deae19`. Новый CI после DEV211 обязателен; результат пока не подтверждён.
+
+
+## DEV212 — Modbus FC03 exception response correctness
+
+Исправлена обработка валидных Modbus exception frames. Ранее parser проверял MBAP length как для обычного FC03 ответа до распознавания exception function 0x83; корректный exception PDU длиной 2 байта и MBAP length 3 ошибочно классифицировался как неверная длина. Теперь ограниченное тело ответа читается, exception frame отдельно проверяется и возвращается `ModbusError::Exception(code)`. Добавлены локальные TCP tests: нормальный FC03 response, exception response и несовпадающий transaction ID. Полный CI после DEV212 ожидает запуска; результаты не заявляются до завершения матрицы.

@@ -221,3 +221,8 @@ Rust worker не становится production default, если:
 5. Интегрировать samples только через Core Point Runtime validation; Rust worker не имеет DB/RBAC/licensing authority.
 6. Провести 10k/50k/100k point load/fault/soak suites, затем Modbus hardware acceptance.
 7. Только после этого начать BACnet Rust: protocol stack review, segmentation, RPM, COV, BBMD/Foreign Device и multi-vendor hardware tests.
+
+
+### DEV212 — Modbus FC03 exception frame handling
+
+During review of the Rust FC03 transport pilot, the response parser was found to compare every response MBAP length with the normal register payload length before checking the Modbus exception function. A valid exception response (function 0x83, two-byte PDU, MBAP length 3) was therefore rejected as a generic length error. The parser now reads the bounded MBAP body first, validates the exception frame length, and returns the typed Modbus exception code. Added local TCP protocol tests for a valid FC03 response, a valid exception response, and a mismatched transaction ID. CI confirmation is pending; this does not change the production readiness boundary.
