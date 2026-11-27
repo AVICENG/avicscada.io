@@ -178,6 +178,12 @@ class RustModbusTcpClient:
                 self._terminate_locked()
             finally:
                 if self._process is not None and self._process.poll() is not None:
+                    for pipe in (self._process.stdin, self._process.stdout):
+                        if pipe is not None:
+                            try:
+                                pipe.close()
+                            except OSError:
+                                pass
                     self._process = None
                     self._healthy = False
 

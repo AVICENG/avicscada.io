@@ -113,7 +113,7 @@ fn modbus_read(
         }
         let mut values = Vec::with_capacity(usize::from(count));
         for index in 0..usize::from(count) {
-            values.push(u16::from((body[2 + index / 8] >> (index % 8)) & 1));
+            values.push(if ((body[2 + index / 8] >> (index % 8)) & 1) == 1 { 1 } else { 0 });
         }
         Ok(values)
     }

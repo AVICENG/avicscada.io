@@ -352,3 +352,14 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 **Статус проверки:** исправления внесены. Новый полный Linux/Windows CI должен подтвердить результат; до завершения всех шести jobs статус остаётся НЕ ПОДТВЕРЖДЁН. Физическая BACnet-приёмка не выполнялась.
 
 - Windows ACL regression: test normalizes SDDL alias LA to the current SID only when whoami confirms the built-in Administrator RID 500. The distinct broad Local Account SID S-1-5-113 remains explicitly forbidden; the production ACL implementation is unchanged.
+
+
+### 9.13 DEV208 — Rust Communication Engine / Modbus TCP pilot
+
+**Архитектура:** Python AVIC Core сохраняет владение инженерной моделью, безопасностью, лицензиями, Point Runtime, Historian, FBD и API. Rust вынесен в отдельный supervised process; IPC — JSON Lines stdin/stdout с request_id. Движок не открывает БД и не получает SecretStore.
+
+**Реализация:** добавлен Rust crate `rust/communication-engine` и Python IPC client. Modbus TCP Rust transport поддерживает только FC 1/2/3/4, валидирует MBAP transaction/protocol/length/unit, длины ответа и Modbus exception. Python adapter продолжает декодирование типов/scale/offset и публикует в Point Runtime после проверки driver/station ownership. Backend выбирается явно (`engine_backend=python|rust`); тихого fallback нет. Python остаётся резервной реализацией.
+
+**CI:** добавлены Cargo test/build на Ubuntu и Windows параллельно с существующей Python 3.11/3.12/3.13 matrix. Последний commit DEV208 — `11798c4`; workflow run `45952214681` ожидает запуска (глобальная concurrency группа). Локальный Rust toolchain в текущей среде отсутствует, поэтому cargo test/build здесь не заявляются как выполненные.
+
+**Не подтверждено:** производительность 1k/10k точек, soak/fault/reconnect испытания, реальный Modbus TCP контроллер. BACnet/IP Rust port ещё не начат; текущий BACnet остаётся Python READ-ONLY. DEV208 — pilot, не production acceptance.
