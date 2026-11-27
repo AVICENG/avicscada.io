@@ -529,17 +529,29 @@ def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled
             "baud_rate": 9600, "parity": "N", "data_bits": 8,
             "stop_bits": 1, "unit_id": 7, "timeout": 1.5,
         })
-        response = worker.read({
-            "protocol": "modbus-rtu", "serial_port": serial_port,
-            "baud_rate": 9600, "parity": "N", "data_bits": 8,
-            "stop_bits": 1, "unit_id": 7, "timeout_ms": 1500,
-            "function": 3, "address": 0, "count": 1,
-        })
+        read_error = None
+        response = None
+        try:
+            response = worker.read({
+                "protocol": "modbus-rtu", "serial_port": serial_port,
+                "baud_rate": 9600, "parity": "N", "data_bits": 8,
+                "stop_bits": 1, "unit_id": 7, "timeout_ms": 1500,
+                "function": 3, "address": 0, "count": 1,
+            })
+        except Exception as exc:
+            read_error = exc
+
+        # Always collect the simulator side before reporting the libmodbus
+        # error. This distinguishes "no request", malformed request/CRC and
+        # a valid request whose response was not accepted by the C worker.
+        simulator_thread.join(timeout=3.5)
+        assert not simulator_thread.is_alive(), "RTU simulator did not terminate"
+        assert not simulator_error, f"RTU simulator rejected traffic: {simulator_error!r}"
+        if read_error is not None:
+            raise read_error
+        assert response is not None
         assert response["transport_ok"] is True
         assert response["result"] == {"function": 3, "values": [0x1234]}
-        simulator_thread.join(timeout=2)
-        assert not simulator_thread.is_alive()
-        assert not simulator_error, repr(simulator_error)
     finally:
         worker.close()
         os_module.close(slave_fd)
