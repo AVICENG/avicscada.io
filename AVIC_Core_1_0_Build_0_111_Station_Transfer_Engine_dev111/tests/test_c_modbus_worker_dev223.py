@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 import socketserver
 import threading
+import subprocess
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from avic_core.application import CoreApplication
 from avic_core.domain.models import Platform, Project, Station
@@ -174,3 +177,65 @@ def test_compiled_c_worker_reads_modbus_tcp_register_range_when_enabled():
             worker.close()
             server.shutdown()
             server_thread.join(timeout=2)
+
+
+
+def test_compiled_c_worker_fails_closed_on_replayed_ipc_sequence():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from avic_core.drivers.ipc import DriverEnvelope, encode_frame, read_frame
+
+    process = subprocess.Popen(
+        [str(__import__("pathlib").Path(worker_path).resolve())],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        bufsize=0,
+    )
+    worker_id = str(uuid4())
+    scope = {
+        "installation_id": "install-sequence-test",
+        "project_id": "project-sequence-test",
+        "station_id": "station-sequence-test",
+        "driver_instance_id": "driver-sequence-test",
+        "worker_id": worker_id,
+        "generation": 1,
+    }
+
+    def send(kind, sequence, payload):
+        envelope = DriverEnvelope(
+            contract="avic.driver.ipc", version=1, message_id=str(uuid4()),
+            kind=kind, **scope, sequence=sequence,
+            sent_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            correlation_id=None, payload=payload,
+        )
+        process.stdin.write(encode_frame(envelope))
+        process.stdin.flush()
+        return read_frame(process.stdout)
+
+    try:
+        assert send("initialize", 1, {}).kind == "initialized"
+        assert send("configure", 2, {
+            "protocol": "modbus-tcp", "host": "127.0.0.1",
+            "port": 502, "unit_id": 1, "timeout": 2.0,
+        }).kind == "configured"
+        assert send("start", 3, {}).kind == "status"
+
+        # A replayed sequence must terminate the worker before any new action.
+        process.stdin.write(encode_frame(DriverEnvelope(
+            contract="avic.driver.ipc", version=1, message_id=str(uuid4()),
+            kind="get_status", **scope, sequence=3,
+            sent_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            correlation_id=None, payload={},
+        )))
+        process.stdin.flush()
+        assert read_frame(process.stdout) is None
+        assert process.wait(timeout=3) == 3
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=3)
+        for stream in (process.stdin, process.stdout, process.stderr):
+            if stream is not None:
+                stream.close()
