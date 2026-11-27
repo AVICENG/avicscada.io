@@ -19,6 +19,8 @@ pub struct BacnetDeviceSnapshot {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BacnetPointSnapshot {
     pub object_identifier: String,
+    pub object_type_name: String,
+    pub object_instance: u32,
     pub object_name: Option<String>,
     pub description: Option<String>,
     pub present_value: Option<Value>,
@@ -51,6 +53,7 @@ impl BacnetIpReadOnlyClient {
     }
 
     pub fn discover(&self, address: SocketAddr) -> Result<BacnetDeviceSnapshot, BacnetDriverError> {
+        if address.port() == 0 { return Err(BacnetDriverError::InvalidAddress); }
         let info = self.client.discover_device(address)
             .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
         Ok(BacnetDeviceSnapshot {
@@ -74,6 +77,8 @@ impl BacnetIpReadOnlyClient {
             .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
         Ok(objects.into_iter().map(|item| BacnetPointSnapshot {
             object_identifier: format!("{:?}", item.object_identifier),
+            object_type_name: format!("{:?}", item.object_identifier.object_type),
+            object_instance: item.object_identifier.instance,
             object_name: item.object_name,
             description: item.description,
             present_value: item.present_value.as_ref().map(property_value_to_json),
