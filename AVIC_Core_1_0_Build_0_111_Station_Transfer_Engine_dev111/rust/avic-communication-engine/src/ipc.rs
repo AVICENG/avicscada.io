@@ -1,6 +1,6 @@
 //! Versioned, bounded AVIC Driver IPC framing and envelope validation.
 use serde::{Deserialize, Serialize};
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 use uuid::Uuid;
 
 pub const IPC_CONTRACT: &str = "avic.driver.ipc";
@@ -8,6 +8,7 @@ pub const IPC_VERSION: u16 = 1;
 pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct DriverEnvelope {
     pub contract: String,
     pub version: u16,
@@ -62,7 +63,19 @@ impl DriverEnvelope {
             }
         }
         if self.generation == 0 { return Err(IpcError::InvalidEnvelope("generation must be positive")); }
-        if self.sent_at.len() < 20 || !self.sent_at.ends_with('Z') || !self.sent_at.contains('T') {
+        let ts = self.sent_at.as_bytes();
+        let fixed_positions = [4usize, 7, 10, 13, 16];
+        let separators_ok = ts.len() >= 20
+            && ts[4] == b'-' && ts[7] == b'-' && ts[10] == b'T'
+            && ts[13] == b':' && ts[16] == b':'
+            && ts.last() == Some(&b'Z')
+            && fixed_positions.iter().enumerate().all(|(i, pos)| {
+                let expected = [b'-', b'-', b'T', b':', b':'][i];
+                ts[*pos] == expected
+            })
+            && [0usize,1,2,3,5,6,8,9,11,12,14,15,17,18]
+                .iter().all(|pos| ts[*pos].is_ascii_digit());
+        if !separators_ok {
             return Err(IpcError::InvalidEnvelope("sent_at must be UTC RFC3339"));
         }
         if !self.payload.is_object() { return Err(IpcError::InvalidEnvelope("payload must be an object")); }
@@ -152,6 +165,12 @@ mod tests {
         let mut bytes = Vec::new(); write_frame(&mut bytes, &envelope()).unwrap();
         let decoded = read_frame(&mut bytes.as_slice()).unwrap().unwrap();
         assert_eq!(decoded, envelope());
+    }
+    #[test] fn rejects_non_utc_or_malformed_timestamp() {
+        let mut e = envelope(); e.sent_at = "2026-11-27T10:00:00+03:00".into();
+        assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
+        let mut e = envelope(); e.sent_at = "not-a-time".into();
+        assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
     }
     #[test] fn rejects_bad_contract_and_generation() {
         let mut e = envelope(); e.contract = "other".into();
