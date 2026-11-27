@@ -10,10 +10,11 @@
 - Для Rust backend создаётся отдельный worker на каждый DriverInstance; контекст установки/проекта/станции/драйвера передаётся из Core repository, не из произвольных IPC данных.
 - PollingSession управляет тем же жизненным циклом, что и Python adapters; остановка DriverInstance вызывает stop/shutdown worker.
 - Каждый sample проходит через Point Runtime с source_driver_id текущего DriverInstance. Ошибки связи переводят качество в BAD_COMMUNICATION; неподдерживаемые BACnet bindings — BAD_CONFIGURATION.
-- Modbus Rust backend использует FC01/02/03/04 и существующий AVIC decode_registers; значения и scaling публикуются только после проверки.
+- Modbus Rust backend использует FC01/02/03/04 и существующий AVIC decode_registers; значения и scaling публикуются только после проверки. Modbus configuration validates address/function/count/timeout before read.
 - BACnet Rust backend группирует object-list/property reads по устройству за один poll cycle, сопоставляет object type/instance, ограничен Present_Value (property 85) без array index. BACnet socket привязан к явно настроенному station local address/UDP port.
-- KNX Rust backend делает GroupValue_Read по каждой configured group address и DPT через KNXnet/IP tunnelling; адрес и DPT берутся из AVIC point bindings.
-- Worker запрещает write/write_point, проверяет один protocol на worker, секреты в IPC config запрещены.
+- KNX Rust backend делает GroupValue_Read по каждой configured group address и DPT через KNXnet/IP tunnelling; адрес и DPT берутся из AVIC point bindings. Gateway/local endpoints and timeout are validated; IPv4/IPv6 socket formatting is supported.
+- Worker запрещает write/write_point, проверяет один protocol на worker, секреты в IPC config запрещены; процесс запускается с минимальным очищенным environment, stdout/stderr разведены, pipe framing поддерживает partial reads/writes.
+- Worker сообщает build version и счётчики sequence gaps; Python supervisor проверяет handshake, correlation ID, scope, generation и sequence.
 - Добавлены тесты Rust adapter mapping, BACnet Status_Flags quality propagation, DriverManager backend selection и worker generation.
 
 ## Как включить Rust backend
