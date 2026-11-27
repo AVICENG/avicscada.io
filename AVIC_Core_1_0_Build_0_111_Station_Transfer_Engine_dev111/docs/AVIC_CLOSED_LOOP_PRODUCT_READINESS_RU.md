@@ -363,3 +363,10 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 **CI:** добавлены Cargo test/build на Ubuntu и Windows параллельно с существующей Python 3.11/3.12/3.13 matrix. Последний commit DEV208 — `11798c4`; workflow run `45952214681` ожидает запуска (глобальная concurrency группа). Локальный Rust toolchain в текущей среде отсутствует, поэтому cargo test/build здесь не заявляются как выполненные.
 
 **Не подтверждено:** производительность 1k/10k точек, soak/fault/reconnect испытания, реальный Modbus TCP контроллер. BACnet/IP Rust port ещё не начат; текущий BACnet остаётся Python READ-ONLY. DEV208 — pilot, не production acceptance.
+
+
+### 9.14 DEV208 CI follow-up — Python packaging boundary
+
+Первый combined run `45952330782` подтвердил Rust crate на обеих ОС: Ubuntu и Windows — `cargo test` (4/4) и `cargo build --release` прошли. Python matrix остановился до pytest: setuptools flat-layout автоматически обнаружил `rust/` как второй top-level package. Это не ошибка Core-тестов.
+
+Исправлено в `pyproject.toml`: явный discovery только `avic_core*`, исключены `rust*` и `tests*`; Rust build output исключён из Git. Исправление вошло в commit `4a8f822`. Новый combined CI run `45952516103` ожидает запуска; до его завершения Python matrix и общий PR остаются НЕ ПОДТВЕРЖДЕНЫ.
