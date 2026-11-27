@@ -41,7 +41,7 @@
 
 ### Реализовано
 - Безопасное BACnet/IP discovery через Who-Is/I-Am с BVLC/NPDU/APDU разбором.
-- ReadProperty и ограниченный ReadPropertyMultiple (до 64 свойств одного объекта за запрос), включая проверку Invoke ID и object/property identity в ComplexACK; RPM сохраняет индивидуальные BACnet Error для свойств.
+- ReadProperty и ограниченный ReadPropertyMultiple (до 64 свойств одного объекта за запрос), включая проверку Invoke ID и object/property identity в ComplexACK; RPM сохраняет индивидуальные BACnet Error только при корректной паре Enumerated error-class/error-code и отклоняет trailing bytes после closing tag.
 - Чтение Device.Object_List с ограничением количества объектов; чтение Object_Name и стандартных свойств идентичности.
 - Разделение manufacturer/model/source/confidence; неизвестная модель не угадывается.
 - Read-only политика запрещает WriteProperty, reboot и конфигурационные сервисы.
