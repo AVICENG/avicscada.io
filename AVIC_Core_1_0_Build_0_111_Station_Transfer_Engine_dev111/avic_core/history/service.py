@@ -181,6 +181,7 @@ class HistoryService:
         with self._db() as db: db.execute('INSERT INTO history_samples VALUES(?,?,?,?,?,?,?)',(sample.sample_id,station_id,point_id,ts,json.dumps(value,ensure_ascii=False,allow_nan=False),q,source))
         return sample
     def query(self,station_id:str,point_id:str,*,since:str|None=None,until:str|None=None,limit:int=5000,include_bad:bool=True)->list[HistorySample]:
+        self._assert_point_station(station_id, point_id)
         if not 1<=limit<=50000: raise ValueError('limit must be between 1 and 50000')
         clauses=['station_id=?','point_id=?']; args=[station_id,point_id]
         if since: clauses.append('recorded_at>=?'); args.append(since)
