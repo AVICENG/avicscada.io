@@ -21,7 +21,7 @@
 - Объединение смежных и пересекающихся адресов с одинаковой функцией; чтение не пересекает адресные разрывы.
 - Ограничения запроса: 2 000 бит для FC01/02 и 125 регистров для FC03/04.
 - Чтение Device Identification MEI 0x0E для производителя/модели и других доступных стандартных идентификаторов; MEI использует общий атомарный allocator MBAP transaction ID с обычными чтениями.
-- MEI parser проверяет read-code, more-follows flag, длину exception response, усечённые/повторные object ID и лишние trailing bytes; malformed response не принимается как идентичность устройства.
+- MEI parser проверяет read-code, conformity level, more-follows flag, длину exception response, усечённые/повторные object ID и лишние trailing bytes; malformed response не принимается как идентичность устройства.
 - Python, Rust и C libmodbus Worker выбираются явно; автоматического fallback нет.
 - Идентификатор MBAP теперь резервируется потокобезопасно при параллельном опросе групп.
 - Windows C Worker собирается со статическими runtime dependencies (MinGW `-static`), чтобы не зависеть от MSYS2/UCRT DLL search path при запуске из изолированного DriverManager process environment. В stderr добавлена диагностика ошибок бинарного IPC.
