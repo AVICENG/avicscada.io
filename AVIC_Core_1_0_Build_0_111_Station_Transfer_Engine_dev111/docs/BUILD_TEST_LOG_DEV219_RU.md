@@ -41,3 +41,20 @@
 ## Проверки
 - Добавлены tests: fake worker lifecycle, Modbus decoding, BACnet object mapping/batch-per-device, KNX group address/DPT mapping, unsupported BACnet property fail-closed, Core/DriverManager backend selection.
 - Эти тесты добавлены, но не объявляются пройденными до CI.
+
+## DEV220 — Исправление optimistic concurrency при запуске драйвера
+
+### Причина отказа CI (27.11.2026)
+- Rust unit tests и Rust release/build jobs прошли на Ubuntu и Windows.
+- Все шесть Python matrix jobs выявили одну общую регрессию в Driver Manager: после сохранения состояния STARTING локальная переменная версии уже соответствовала новой версии записи, но финальное сохранение RUNNING ошибочно ожидало ещё одну дополнительную версию (expected_version=version+1).
+- SQLiteRepository корректно отклонял запись как ConcurrencyConflict; API запускa возвращал 409 вместо 200. Это не ошибка SQLite и не проблема конкретной ОС.
+
+### Исправление
+- После перехода STARTING -> RUNNING финальное сохранение использует текущую версию, возвращённую логикой предыдущего перехода, без лишнего инкремента.
+- Проверка оптимистической блокировки, защита от конкурентного изменения и fail-closed поведение не ослаблялись.
+- Существующие тесты запуска/остановки драйверов и HTTP lifecycle должны подтвердить исправление на Linux и Windows.
+
+### Статус
+- Исправление внесено в commit 787494483b61a199cf7a71f7060dd16294343200.
+- Полный CI для нового HEAD обязателен; до его завершения DEV220 не считается принятым.
+- Rust драйверы остаются READ-ONLY пилотом; подключение физических контроллеров и нагрузочная приёмка 1k/10k ещё впереди.
