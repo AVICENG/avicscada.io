@@ -17,6 +17,7 @@
 - RTU read request повторно сверяет serial endpoint и все параметры линии с конфигурацией Worker до обращения к libmodbus.
 - DEV250 follow-up: `modbus-rtu` зарегистрирован во встроенном каталоге и Driver Manager; RTU конфигурация валидируется в Core и направляется в тот же libmodbus C Worker.
 - Общий Point Runtime adapter расширен на `modbus-rtu`: batching, FC01/02/03/04, decode/scaling, quality и публикация используют тот же путь, что и TCP.
+- Добавлен `SerialPortLease`: ОС-блокировка (POSIX `flock`, Windows byte-range lock) удерживается всё время жизни RTU-драйвера. Повторное открытие того же нормализованного COM/TTY из другого AVIC-процесса отклоняется; после штатного закрытия блокировка освобождается, после аварийного завершения снимается ядром ОС.
 - Добавлены DEV250 тесты Driver Manager, serial config validation и RTU point-poll IPC contract; они добавлены в репозиторий, но ещё не имеют подтверждённого CI результата.
 - TCP путь оставлен на прежнем `modbus_new_tcp()`; общие IPC framing, identity, sequence, secret rejection и lifecycle сохранены.
 - Добавлены native-worker tests на принятие корректной RTU конфигурации, отказ при несовпадении serial settings и отказ при некорректной parity.
@@ -33,13 +34,13 @@ DEV250 устранил функциональный разрыв: RTU боль�
 
 1. Linux pseudo-terminal round-trip test добавлен в native-worker suite; ждёт фактического CI запуска. Windows virtual COM round-trip ещё не реализован.
 2. Отдельные CRC/short-frame/timeout/late-response/wrong-slave negative tests ещё не закрыты.
-3. Serial Port Manager с эксклюзивным владением и обнаружением конфликта нескольких Worker. В текущем DEV250 интеграция ещё не блокирует параллельное открытие одного COM/TTY из разных DriverInstance.
+3. Полноценный Serial Port Manager с инвентаризацией портов, горячим unplug/replug, восстановлением соединения и диагностикой конфликтов. DEV250 уже блокирует параллельное владение одним COM/TTY между AVIC-процессами, но пока не управляет обнаружением/перечнем устройств и не подтверждён на физических адаптерах.
 4. Проверка unplug/replug, reconnect/backoff и bus contention.
 5. RS-485 adapter tests, RTS polarity/timing и несколько физических устройств.
 6. Soak/load и latency p95/p99.
 7. Физический acceptance на реальных устройствах.
 
-Пока нет Serial Port Manager, нельзя запускать несколько AVIC RTU Workers на один и тот же COM/TTY порт и считать арбитраж гарантированным. Один Worker должен владеть одной serial line. RTS — адаптеро- и драйверозависимая опция; `none` остаётся безопасным значением по умолчанию.
+Один AVIC RTU Worker должен владеть одной serial line. DEV250 добавил межпроцессную advisory-блокировку на уровне ОС; внешние приложения, которые не используют AVIC lock contract, всё ещё могут открыть тот же порт. RTS — адаптеро- и драйверозависимая опция; `none` остаётся безопасным значением по умолчанию.
 
 ## Формат конфигурации RTU
 
