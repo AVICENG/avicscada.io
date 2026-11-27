@@ -162,7 +162,7 @@ def test_wrong_driver_cannot_cancel_another_drivers_pending_debounce(tmp_path):
         source_driver_id=DRIVER_ID,
     )
 
-    with pytest.raises(ValueError, match="не совпадает"):
+    with pytest.raises(ValueError, match="does not match"):
         runtime.mark_quality(
             point.id, PointQuality.BAD_COMMUNICATION,
             source_driver_id="00000000-0000-4000-8000-000000000999",
