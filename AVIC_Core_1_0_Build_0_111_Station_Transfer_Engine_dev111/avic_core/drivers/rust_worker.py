@@ -65,6 +65,7 @@ class RustDriverWorker:
         self._request_sequence = 0
         self._response_guard = SequenceGuard()
         self._lock = threading.RLock()
+        self._exchange_lock = threading.RLock()
         self._reader: threading.Thread | None = None
         self._stderr_reader: threading.Thread | None = None
         self._stderr_tail: deque[str] = deque(maxlen=100)
@@ -132,6 +133,10 @@ class RustDriverWorker:
         )
 
     def _request(self, kind: str, payload: dict[str, Any]) -> DriverEnvelope:
+        with self._exchange_lock:
+            return self._request_serialized(kind, payload)
+
+    def _request_serialized(self, kind: str, payload: dict[str, Any]) -> DriverEnvelope:
         with self._lock:
             process = self._process
             if process is None or process.poll() is not None:
