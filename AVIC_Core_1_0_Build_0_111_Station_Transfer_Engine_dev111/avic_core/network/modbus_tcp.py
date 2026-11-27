@@ -130,7 +130,7 @@ class ModbusTcpClient:
                 if len(body) != 2:
                     raise ModbusProtocolError("malformed Modbus device-identification exception")
                 raise ModbusProtocolError(f"Modbus device-identification exception: {body[1]}")
-            if len(body) < 7 or body[0:2] != b"\\x2b\\x0e":
+            if len(body) < 7 or body[0:2] != bytes((0x2B, 0x0E)):
                 raise ModbusProtocolError("invalid Modbus MEI 0x0E response")
             if body[2] != read_code:
                 raise ModbusProtocolError("Modbus MEI response read-code mismatch")
