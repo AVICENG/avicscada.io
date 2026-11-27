@@ -65,6 +65,7 @@ class RustDriverWorker:
         self._responses: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=128)
         self._request_sequence = 0
         self._response_guard = SequenceGuard()
+        self._response_sequence_gaps = 0
         self._lock = threading.RLock()
         self._exchange_lock = threading.RLock()
         self._reader: threading.Thread | None = None
@@ -185,7 +186,8 @@ class RustDriverWorker:
             self._terminate()
             raise RustWorkerError("Rust worker response identity/correlation mismatch")
         try:
-            self._response_guard.accept(response.generation, response.sequence)
+            if self._response_guard.accept(response.generation, response.sequence):
+                self._response_sequence_gaps += 1
         except DriverIpcError as exc:
             self._terminate()
             raise RustWorkerError(f"Rust worker response sequence rejected: {exc}") from exc
@@ -211,6 +213,7 @@ class RustDriverWorker:
             "worker_id": self.worker_id,
             "worker_version": self._worker_version,
             "generation": self.generation,
+            "response_sequence_gaps": self._response_sequence_gaps,
             "started": self._started,
             "process_alive": process is not None and process.poll() is None,
             "exit_code": process.poll() if process is not None else None,
