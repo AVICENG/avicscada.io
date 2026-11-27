@@ -383,7 +383,7 @@ class DriverManagerService:
                 item.state = "RUNNING"
                 item.enabled = True
                 item.updated_at = _now()
-                self.core.repository.save(item, expected_version=version + 1)
+                self.core.repository.save(item, expected_version=version)
                 self.core.audit.append(actor_id="local-engineer", action="driver.instance_started",
                     resource_type="driver_instance", resource_id=instance_id,
                     details={"driver_id": item.driver_id, "poll_interval_seconds": interval})
