@@ -212,7 +212,18 @@ def test_compiled_c_worker_fails_closed_on_replayed_ipc_sequence():
         )
         process.stdin.write(encode_frame(envelope))
         process.stdin.flush()
-        return read_frame(process.stdout)
+        response = read_frame(process.stdout)
+        if response is None:
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=2)
+            stderr = process.stderr.read().decode("utf-8", errors="replace") if process.stderr else ""
+            raise AssertionError(
+                f"C Worker closed stdout during {kind}; exit_code={process.returncode}; stderr={stderr!r}"
+            )
+        return response
 
     try:
         assert send("initialize", 1, {}).kind == "initialized"
