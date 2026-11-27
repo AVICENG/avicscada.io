@@ -120,7 +120,7 @@ def test_compiled_c_worker_reads_modbus_tcp_register_range_when_enabled():
                     protocol_id = header[2:4]
                     length = int.from_bytes(header[4:6], "big")
                     unit_id = header[6]
-                    if protocol_id != b"\\x00\\x00" or not 2 <= length <= 254:
+                    if protocol_id != b"\x00\x00" or not 2 <= length <= 254:
                         return
                     pdu = recv_exact(self.request, length - 1)
                     if len(pdu) != 5 or pdu[0] != 3:
@@ -135,7 +135,7 @@ def test_compiled_c_worker_reads_modbus_tcp_register_range_when_enabled():
                     )
                     response_pdu = bytes((3, len(data))) + data
                     response = (
-                        transaction_id + b"\\x00\\x00"
+                        transaction_id + b"\x00\x00"
                         + (len(response_pdu) + 1).to_bytes(2, "big")
                         + bytes((unit_id,)) + response_pdu
                     )
