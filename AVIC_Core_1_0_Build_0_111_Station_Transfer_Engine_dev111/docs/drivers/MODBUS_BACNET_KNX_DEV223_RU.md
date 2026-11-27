@@ -61,6 +61,7 @@
 
 ### Реализовано
 - KNXnet/IP UDP tunnelling: CONNECT, TUNNELING, ACK, receive sequence, duplicate suppression, CONNECTIONSTATE heartbeat и DISCONNECT.
+- Входящая sequence validation начинается с ожидаемого sequence 0, учитывает wraparound 255→0; duplicate ACK подтверждается без повторной доставки, out-of-order получает TUNNELING_ACK E_SEQUENCE_NUMBER (0x04), а не ложный success ACK.
 - Проверка доверенного адреса gateway/data endpoint; клиент не принимает произвольный адрес из UDP-ответа.
 - cEMI L_Data indication parsing и passive GroupValue monitor.
 - Публикация GroupValueResponse/GroupValueWrite в Point Runtime; GroupValueRead не интерпретируется как значение.
@@ -76,6 +77,7 @@
 - Негативные тесты длины, invalid float pattern и некорректного scene number.
 - Передача short APDU через KNX adapter в точку с качеством GOOD.
 - Проверка принятия расширенного списка DPT при создании binding.
+- Проверка out-of-order receive sequence, error ACK status и wraparound 255→0.
 
 ### Не завершено
 - ETS project import (групповые адреса, описания, DPT, структура и связи).
