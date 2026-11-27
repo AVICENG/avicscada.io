@@ -57,9 +57,14 @@ class Runtime:
 
 class Session:
     connected = True
+    individual_address = 0x1101
 
     def __init__(self, frame):
         self.frame = frame
+        self.sent = []
+
+    def send_cemi(self, frame):
+        self.sent.append(frame)
 
     def poll_cemi(self):
         return self.frame
@@ -90,3 +95,35 @@ def test_knx_binding_accepts_extended_common_dpt_types():
     for dpt in ("5.003", "5.004", "6.001", "7.001", "8.001",
                 "12.001", "13.001", "16.000", "17.001"):
         assert KnxPointBinding("point-" + dpt, "1/2/3", dpt).datapoint_type == dpt
+
+
+def group_response_frame(short_value: int) -> bytes:
+    return bytes((0x29, 0, 0, 0x80, 0x11, 0x01, 0x0A, 0x03,
+                  0x01, 0x00, (0x01 << 6) | short_value))
+
+
+def test_knx_active_poll_sends_group_value_read_and_publishes_response():
+    runtime = Runtime()
+    session = Session(group_response_frame(1))
+    adapter = KnxPointAdapter(
+        session, runtime, "knx-poll", [KnxPointBinding("point-bool", "1/2/3", "1.001")],
+        read_mode="poll",
+    )
+    result = adapter.poll_once()
+    assert result["success_count"] == 1
+    assert runtime.values[0][0:2] == ("point-bool", True)
+    assert session.sent == [bytes((0x11, 0, 0xBC, 0xE0, 0x11, 0x01,
+                                   0x0A, 0x03, 0x01, 0, 0))]
+    assert adapter.diagnostics()["read_mode"] == "poll"
+
+
+def test_knx_active_poll_marks_requested_point_bad_on_response_timeout():
+    runtime = Runtime()
+    session = Session(None)
+    adapter = KnxPointAdapter(
+        session, runtime, "knx-poll-timeout",
+        [KnxPointBinding("point-bool", "1/2/3", "1.001")], read_mode="poll",
+    )
+    result = adapter.poll_once()
+    assert result["failure_count"] == 1
+    assert runtime.qualities[0][0:2] == ("point-bool", PointQuality.BAD_COMMUNICATION)
