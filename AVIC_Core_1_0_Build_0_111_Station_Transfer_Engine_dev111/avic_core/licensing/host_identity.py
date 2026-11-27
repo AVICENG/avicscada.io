@@ -15,6 +15,51 @@ from pathlib import Path
 from typing import Callable
 
 
+def _set_windows_identity_acl(path: Path, user_sid: str, *, is_directory: bool) -> None:
+    """Apply a protected DACL with explicit user/System/Admin SIDs using Win32 APIs."""
+    if not re.fullmatch(r"S-1-5-21-(?:\d+-){2,}\d+", user_sid):
+        raise HostIdentityError("Некорректный Windows user SID для ACL installation identity")
+
+    # Replace the DACL rather than relying on icacls name/SID resolution. The
+    # protected DACL excludes inherited broad principals such as Local Account.
+    import ctypes
+    from ctypes import wintypes
+
+    inheritance = "OICI" if is_directory else ""
+    user_ace = f"(A;{inheritance};FA;;;{user_sid})"
+    system_ace = f"(A;{inheritance};FA;;;SY)"
+    admins_ace = f"(A;{inheritance};FA;;;BA)"
+    sddl = "D:P" + user_ace + system_ace + admins_ace
+
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    convert = advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW
+    convert.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    convert.restype = wintypes.BOOL
+    set_security = advapi32.SetFileSecurityW
+    set_security.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p]
+    set_security.restype = wintypes.BOOL
+    local_free = kernel32.LocalFree
+    local_free.argtypes = [ctypes.c_void_p]
+    local_free.restype = ctypes.c_void_p
+
+    descriptor = ctypes.c_void_p()
+    size = wintypes.DWORD()
+    if not convert(sddl, 1, ctypes.byref(descriptor), ctypes.byref(size)):
+        raise HostIdentityError(
+            f"Не удалось сформировать защищённый ACL installation identity: {ctypes.WinError(ctypes.get_last_error())}"
+        )
+    try:
+        if not set_security(str(path), 0x00000004, descriptor):
+            raise HostIdentityError(
+                f"Не удалось применить защищённый ACL installation identity: {ctypes.WinError(ctypes.get_last_error())}"
+            )
+    finally:
+        local_free(descriptor)
+
 class HostIdentityError(RuntimeError):
     """Raised when a stable machine identity cannot safely be obtained."""
 
@@ -127,10 +172,8 @@ class HostIdentity:
         try:
             identity_dir.mkdir(parents=True, exist_ok=True)
 
+            current_sid = None
             if os.name == "nt":
-                # Build the DACL with .NET SecurityIdentifier objects. icacls can
-                # canonicalize local-account principals to the broad LA alias on
-                # hosted Windows runners; explicit SID objects avoid that ambiguity.
                 who = subprocess.run(
                     ["whoami", "/user", "/fo", "csv", "/nh"],
                     check=True, capture_output=True, text=True, timeout=10,
@@ -142,48 +185,13 @@ class HostIdentity:
                         "Не удалось определить точный Windows user SID для ACL installation identity"
                     )
 
-                # Disable inheritance, remove every existing ACE, then grant
-                # FullControl only to the current user SID, SYSTEM and Administrators.
-                # The same protected DACL applies to child files and directories.
-                import base64
-
-                ps_path = str(identity_dir).replace("'", "''")
-                ps_user_sid = current_sid.replace("'", "''")
-                ps_script = r"""
-$ErrorActionPreference = 'Stop'
-$path = '__AVIC_PATH__'
-$userSid = '__AVIC_USER_SID__'
-$acl = Get-Acl -LiteralPath $path
-$acl.SetAccessRuleProtection($true, $false)
-foreach ($existingRule in @($acl.Access)) {
-    $acl.RemoveAccessRuleAll($existingRule)
-}
-$principals = @(
-    [System.Security.Principal.SecurityIdentifier]::new($userSid),
-    [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18'),
-    [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')
-)
-$inheritance = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
-foreach ($principal in $principals) {
-    $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
-        $principal,
-        [System.Security.AccessControl.FileSystemRights]::FullControl,
-        $inheritance,
-        [System.Security.AccessControl.PropagationFlags]::None,
-        [System.Security.AccessControl.AccessControlType]::Allow
-    )
-    [void]$acl.AddAccessRule($rule)
-}
-Set-Acl -LiteralPath $path -AclObject $acl
-""".replace("__AVIC_PATH__", ps_path).replace("__AVIC_USER_SID__", ps_user_sid)
-                encoded_script = base64.b64encode(ps_script.encode("utf-16le")).decode("ascii")
-                subprocess.run(
-                    [
-                        "powershell", "-NoProfile", "-NonInteractive",
-                        "-EncodedCommand", encoded_script,
-                    ],
-                    check=True, capture_output=True, text=True, timeout=15,
-                )
+                # Set a protected DACL through Windows Security APIs. This removes
+                # every previous ACE and grants FullControl only to the current
+                # user, Local System and Builtin Administrators. OI/CI ACE flags
+                # protect newly created child files and directories as well.
+                _set_windows_identity_acl(identity_dir, current_sid, is_directory=True)
+                if identity_file.exists():
+                    _set_windows_identity_acl(identity_file, current_sid, is_directory=False)
 
             if identity_file.exists():
                 return str(
@@ -210,6 +218,9 @@ Set-Acl -LiteralPath $path -AclObject $acl
                 stream.write(value)
                 stream.flush()
                 os.fsync(stream.fileno())
+
+            if current_sid:
+                _set_windows_identity_acl(identity_file, current_sid, is_directory=False)
 
             return value
 

@@ -11,13 +11,16 @@ def _make_ahu_chain(tmp_path):
     core = app.state.core
     project = app.state.project_station.create_project("AHU DEV102")
     station = app.state.project_station.create_station(project["id"], "AHU-01")
+    driver = core.driver_manager.create_instance(
+        station["id"], "bacnet-ip", "DEV102 BACnet", {}
+    )
     device = Device(name="Virtual AHU Controller", station_id=station["id"],
-                    protocol="bacnet/ip", address="192.0.2.50", driver_instance_id="dev102-driver")
+                    protocol="bacnet/ip", address="192.0.2.50", driver_instance_id=driver["id"])
     core.repository.save(device)
     point = Point(name="Fan run feedback", device_id=device.id, data_type="binary-input",
                   value=None, quality=PointQuality.UNCERTAIN, unit="")
     core.repository.save(point)
-    core.point_runtime.publish(point.id, True, quality="GOOD", source_driver_id="dev102-driver")
+    core.point_runtime.publish(point.id, True, quality="GOOD", source_driver_id=device.driver_instance_id)
 
     graphic = app.state.graphics.create_modular_ahu_demo(station["id"])
     fan = next(x for x in graphic["elements"] if x["symbol_key"] == "ahu_section_supply_fan")
@@ -45,6 +48,7 @@ def _make_ahu_chain(tmp_path):
 def test_real_point_to_fbd_bool_output_drives_ahu_fan_binding_and_persists(tmp_path):
     app, station, point, graphic, fan, fbd, binding, and_id = _make_ahu_chain(tmp_path)
     try:
+        device, _ = app.state.core.repository.get(point.device_id, Device)
         assert binding["graphic_element_id"] == fan["id"]
         # Saving the drawing must not delete the FBD link on the modular AHU fan symbol.
         saved = app.state.graphics.save(graphic["id"], graphic["revision"], graphic["elements"])
@@ -59,11 +63,11 @@ def test_real_point_to_fbd_bool_output_drives_ahu_fan_binding_and_persists(tmp_p
         assert evaluated["mode"] == "SIMULATION_ONLY"
         assert evaluated["runtime_published"] is False
 
-        app.state.core.point_runtime.publish(point.id, False, quality="GOOD", source_driver_id="dev102-driver")
+        app.state.core.point_runtime.publish(point.id, False, quality="GOOD", source_driver_id=device.driver_instance_id)
         stopped = app.state.fbd.evaluate_graphic_bindings(graphic["id"])["bindings"][binding["id"]]
         assert stopped["quality"] == "GOOD" and stopped["value"] is False
 
-        app.state.core.point_runtime.publish(point.id, True, quality="UNCERTAIN", source_driver_id="dev102-driver")
+        app.state.core.point_runtime.publish(point.id, True, quality="UNCERTAIN", source_driver_id=device.driver_instance_id)
         degraded = app.state.fbd.evaluate_graphic_bindings(graphic["id"])["bindings"][binding["id"]]
         assert degraded["quality"] == "BAD" and degraded["value"] is None
     finally:

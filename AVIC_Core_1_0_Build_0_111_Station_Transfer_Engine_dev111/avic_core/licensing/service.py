@@ -30,6 +30,13 @@ class InstallationLicenseService:
         host = self.host_id()
         return InstallationLicenseState(host, self.manager.verify(license_file, host))
 
+    def assert_feature_enabled(self, status: LicenseStatus, feature: str) -> None:
+        """Authorize a licensed capability by its exact signed feature key."""
+        if not status.valid:
+            raise PermissionError(f"Операция запрещена: лицензия недействительна ({status.reason})")
+        if feature not in status.features:
+            raise PermissionError(f"Функция не включена в лицензию: {feature}")
+
     def assert_can_create_point(self, status: LicenseStatus, existing_point_ids: Iterable[str], new_point_id: str) -> None:
         """A UUID already present is an update/reference, not a new licensed point."""
         ids = {str(item) for item in existing_point_ids}
@@ -87,4 +94,5 @@ def summarize_point_usage(point_records: Iterable[dict], point_limit: int | None
         "by_type": by_type,
         "warning": warning,
         "unique_point_ids": sorted(unique),
+        "licensed_active_point_ids": sorted(licensed_ids),
     }

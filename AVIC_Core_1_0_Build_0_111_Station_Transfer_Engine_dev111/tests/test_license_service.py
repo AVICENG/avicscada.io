@@ -73,3 +73,361 @@ def test_point_usage_separates_project_total_and_licensed_points():
     assert result["remaining_points"] == 0
     assert result["warning"] == "LIMIT_REACHED"
     assert result["by_type"] == {"physical": 1, "calculated": 2, "software": 0, "manual": 1}
+
+
+def test_feature_entitlement_requires_valid_signed_feature():
+    service = InstallationLicenseService(".", Manager(), Identity())
+    valid = LicenseStatus(True, "OK", features=("driver.bacnet-ip",))
+    service.assert_feature_enabled(valid, "driver.bacnet-ip")
+    with pytest.raises(PermissionError, match="не включена"):
+        service.assert_feature_enabled(valid, "driver.modbus-tcp")
+    invalid = LicenseStatus(False, "LICENSE_EXPIRED", features=("driver.bacnet-ip",))
+    with pytest.raises(PermissionError, match="недействительна"):
+        service.assert_feature_enabled(invalid, "driver.bacnet-ip")
+
+
+def test_core_application_wires_license_service_into_point_creation(tmp_path):
+    from avic_core.application.container import CoreApplication
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from types import SimpleNamespace
+
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    core = CoreApplication(tmp_path, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    first = Point("P1", device_id=device.id)
+    core.objects.save_graph([platform, project, station, device, first])
+    with pytest.raises(LicenseLimitExceeded):
+        core.objects.save_graph([Point("P2", device_id=device.id)])
+    assert len(core.repository.list_records(entity_type="Point")) == 1
+    core.close()
+
+
+def test_workbench_loads_installation_license_from_explicit_environment(tmp_path, monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+    from avic_core.ui.app import create_ui_app
+
+    public_key = tmp_path / "avic-license-public.pem"
+    private = Ed25519PrivateKey.generate()
+    public_key.write_bytes(private.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ))
+    license_file = tmp_path / "customer.aviclic"
+    license_file.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("AVIC_LICENSE_PUBLIC_KEY", str(public_key))
+    monkeypatch.setenv("AVIC_LICENSE_FILE", str(license_file))
+    app = create_ui_app(data_dir=str(tmp_path / "workbench"))
+    assert app.state.core.installation_license_service is not None
+    assert app.state.core.license_file == license_file
+    app.state.core.close()
+
+
+def test_workbench_rejects_partial_license_configuration(tmp_path, monkeypatch):
+    from avic_core.ui.app import create_ui_app
+    monkeypatch.setenv("AVIC_LICENSE_PUBLIC_KEY", str(tmp_path / "public.pem"))
+    monkeypatch.delenv("AVIC_LICENSE_FILE", raising=False)
+    with pytest.raises(RuntimeError, match="задайте одновременно"):
+        create_ui_app(data_dir=str(tmp_path / "workbench"))
+
+def test_workbench_license_status_endpoint_is_safe_and_reports_capacity(tmp_path):
+    from fastapi.testclient import TestClient
+    from types import SimpleNamespace
+    from avic_core.application.container import CoreApplication
+    from avic_core.ui.app import create_ui_app
+
+    class Entitlements:
+        def inspect(self, license_file):
+            return SimpleNamespace(
+                host_id="AVIC-HOST-TEST",
+                status=LicenseStatus(True, "OK", "AVIC-HOST-TEST", "Test Customer",
+                                     12, ("driver.bacnet-ip",), "LIC-123"),
+            )
+
+    app = create_ui_app(data_dir=str(tmp_path / "api"))
+    app.state.core.close()
+    core = CoreApplication(tmp_path / "api", license_service=Entitlements(),
+                           license_file=tmp_path / "api" / "customer.aviclic")
+    app.state.core = core
+    payload = TestClient(app).get("/api/licensing/status").json()
+    assert payload == {
+        "configured": True, "valid": True, "reason": "OK",
+        "customer": "Test Customer", "license_id": "LIC-123",
+        "host_id": "AVIC-HOST-TEST", "point_limit": 12,
+        "licensed_active_points": 0, "remaining_points": 12,
+        "features": ["driver.bacnet-ip"],
+    }
+    assert "private_key" not in payload and "license_file" not in payload
+    core.close()
+
+
+def test_workbench_license_status_reports_unconfigured_development_mode(tmp_path):
+    from fastapi.testclient import TestClient
+    from avic_core.ui.app import create_ui_app
+    app = create_ui_app(data_dir=str(tmp_path / "api"))
+    payload = TestClient(app).get("/api/licensing/status").json()
+    assert payload["configured"] is False
+    assert payload["valid"] is None
+    assert payload["reason"] == "LICENSE_NOT_CONFIGURED"
+    assert payload["remaining_points"] is None
+    app.state.core.close()
+
+def test_workbench_can_require_license_for_commercial_installation(tmp_path, monkeypatch):
+    from avic_core.ui.app import create_ui_app
+    monkeypatch.setenv("AVIC_LICENSE_REQUIRED", "true")
+    monkeypatch.delenv("AVIC_LICENSE_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("AVIC_LICENSE_FILE", raising=False)
+    with pytest.raises(RuntimeError, match="Коммерческий режим требует"):
+        create_ui_app(data_dir=str(tmp_path / "commercial"))
+
+
+
+def test_inactive_discovered_points_do_not_consume_license_capacity(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from types import SimpleNamespace
+
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    repo = SQLiteRepository(tmp_path / "draft-points.db")
+    service = CoreObjectService(repo, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("P")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    discovered = Point("Discovered", device_id=device.id, licensed_active=False)
+    service.save_graph([platform, project, station, device, discovered])
+    active = Point("Active", device_id=device.id)
+    service.save_graph([active])
+    assert len(repo.list_records(entity_type="Point")) == 2
+
+
+def test_activating_existing_draft_point_consumes_capacity_atomically(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point
+    from types import SimpleNamespace
+
+    class Gate:
+        def inspect(self, license_file):
+            return SimpleNamespace(status=LicenseStatus(True, "OK", point_limit=1))
+        def assert_can_create_point(self, status, existing_ids, new_id):
+            if new_id not in existing_ids and len(set(existing_ids)) >= status.point_limit:
+                raise LicenseLimitExceeded("point limit")
+
+    repo = SQLiteRepository(tmp_path / "activate-point.db")
+    service = CoreObjectService(repo, license_service=Gate(), license_file="signed.aviclic")
+    platform = Platform("P")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    draft = Point("Draft", device_id=device.id, licensed_active=False)
+    service.save_graph([platform, project, station, device, draft])
+    active = Point("Active", device_id=device.id)
+    service.save_graph([active])
+    draft.licensed_active = True
+    with pytest.raises(LicenseLimitExceeded):
+        service.save_graph([draft], expected_versions={draft.id: 1})
+    stored = next(r for r in repo.list_records(entity_type="Point") if r["entity_id"] == draft.id)
+    assert stored["payload"]["licensed_active"] is False
+
+
+def test_calculated_point_requires_publication_and_activation_to_be_licensed():
+    from avic_core.licensing import summarize_point_usage
+    records = [
+        {"entity_type": "Point", "entity_id": "calc-draft",
+         "payload": {"point_type": "calculated", "published": False, "licensed_active": True}},
+        {"entity_type": "Point", "entity_id": "calc-live",
+         "payload": {"point_type": "calculated", "published": True, "licensed_active": True}},
+        {"entity_type": "Point", "entity_id": "discovered",
+         "payload": {"point_type": "physical", "licensed_active": False}},
+    ]
+    result = summarize_point_usage(records, point_limit=1)
+    assert result["licensed_active_points"] == 1
+    assert result["licensed_active_point_ids"] == ["calc-live"]
+
+
+
+def test_alarm_rule_configuration_activates_and_releases_its_point_usage(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("High temperature", device_id=device.id, licensed_active=False)
+    alarm = Alarm("High temperature alarm", station_id=station.id, source_object_id=point.id)
+
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+    point_record = repo.get_record(point.id)
+    stored = point_record["payload"]
+    assert stored["licensed_active"] is True
+    assert stored["licensed_usage"] == [f"alarm:{alarm.id}"]
+    assert versions[point.id] == point_record["version"]
+
+    alarm.source_object_id = ""
+    service.save_graph([alarm], expected_versions={alarm.id: versions[alarm.id]})
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is False
+    assert stored["licensed_usage"] == []
+
+
+def test_deleting_alarm_rule_releases_only_alarm_usage(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-delete-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Pressure", device_id=device.id, licensed_active=False)
+    alarm = Alarm("Low pressure", station_id=station.id, source_object_id=point.id)
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+
+    service.delete_graph({alarm.id: versions[alarm.id]})
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is False
+    assert stored["licensed_usage"] == []
+
+
+
+def test_point_deletion_is_blocked_until_licensed_alarm_usage_is_removed(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService, DomainIntegrityError
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-point-delete.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    alarm = Alarm("No flow", station_id=station.id, source_object_id=point.id)
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+
+    with pytest.raises(DomainIntegrityError, match="remove active usages first"):
+        service.delete_graph({point.id: versions[point.id]})
+
+    service.delete_graph({alarm.id: versions[alarm.id]})
+    refreshed = repo.get_record(point.id)
+    service.delete_graph({point.id: refreshed["version"]})
+    assert not any(row["entity_id"] == point.id for row in repo.list_records(entity_type="Point"))
+
+
+
+def test_usage_removal_preserves_legacy_active_physical_point_baseline(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "legacy-point-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Legacy physical", device_id=device.id)  # None means legacy active.
+    alarm = Alarm("Legacy alarm", station_id=station.id, source_object_id=point.id)
+
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+    alarm.source_object_id = ""
+    service.save_graph([alarm], expected_versions={alarm.id: versions[alarm.id]})
+
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is True
+    assert stored["licensed_usage"] == []
+    assert stored["licensed_base_active"] is None
+
+
+def test_alarm_and_source_point_can_be_deleted_in_one_optimistic_batch(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+
+    repo = SQLiteRepository(tmp_path / "alarm-point-batch-delete.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Flow", device_id=device.id, licensed_active=False)
+    alarm = Alarm("No flow", station_id=station.id, source_object_id=point.id)
+    versions = service.save_graph([platform, project, station, device, point, alarm])
+
+    # Both original optimistic versions must remain valid through the atomic delete.
+    service.delete_graph({alarm.id: versions[alarm.id], point.id: versions[point.id]})
+    from avic_core.repository.sqlite_repository import EntityNotFound
+    with pytest.raises(EntityNotFound):
+        repo.get_record(alarm.id)
+    with pytest.raises(EntityNotFound):
+        repo.get_record(point.id)
+
+
+def test_one_point_shared_across_engineering_subsystems_consumes_one_license_slot(tmp_path):
+    from avic_core.repository import SQLiteRepository
+    from avic_core.domain.service import CoreObjectService
+    from avic_core.domain.models import Platform, Project, Station, Device, Point, Alarm
+    from avic_core.licensing import summarize_point_usage
+
+    repo = SQLiteRepository(tmp_path / "shared-point-usage.db")
+    service = CoreObjectService(repo)
+    platform = Platform("Platform")
+    project = Project("Project", platform_id=platform.id)
+    station = Station("Station", project_id=project.id)
+    device = Device("Device", station_id=station.id)
+    point = Point("Supply temperature", device_id=device.id, licensed_active=False)
+    service.save_graph([platform, project, station, device, point])
+
+    # The same physical point is referenced by multiple persistent functions.
+    service.set_point_usage("logic:ahu-sequence", [point.id])
+    service.set_point_usage("graphics:ahu-page", [point.id])
+    service.set_point_usage(f"schedule:{station.id}", [point.id])
+    service.set_point_usage(f"history:{station.id}", [point.id])
+    alarm = Alarm("Low supply temperature", station_id=station.id, source_object_id=point.id)
+    service.save_graph([alarm])
+
+    stored = repo.get_record(point.id)["payload"]
+    summary = summarize_point_usage(repo.list_records(entity_type="Point"))
+    assert set(stored["licensed_usage"]) == {
+        "logic:ahu-sequence", "graphics:ahu-page", f"schedule:{station.id}",
+        f"history:{station.id}", f"alarm:{alarm.id}",
+    }
+    assert summary["licensed_active_points"] == 1
+    assert summary["licensed_active_point_ids"] == [point.id]
+
+    service.set_point_usage("logic:ahu-sequence", [])
+    service.set_point_usage("graphics:ahu-page", [])
+    service.set_point_usage(f"schedule:{station.id}", [])
+    service.set_point_usage(f"history:{station.id}", [])
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is True
+    assert stored["licensed_usage"] == [f"alarm:{alarm.id}"]
+
+    alarm_record = repo.get_record(alarm.id)
+    service.delete_graph({alarm.id: alarm_record["version"]})
+    stored = repo.get_record(point.id)["payload"]
+    assert stored["licensed_active"] is False
+    assert stored["licensed_usage"] == []

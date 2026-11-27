@@ -13,6 +13,7 @@ from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTc
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
 from avic_core.network.modbus_tcp import ModbusTcpClient
+from avic_core.drivers.rust_communication_engine import RustModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
 from avic_core.network.knx_tunneling import KnxTunnelingSession
@@ -106,16 +107,30 @@ class DriverManagerService:
 
     def _build_modbus_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
-        allowed = {"host", "port", "unit_id", "timeout", "poll_interval_seconds", "bindings"}
+        allowed = {"host", "port", "unit_id", "timeout", "poll_interval_seconds", "bindings", "engine_backend", "engine_binary"}
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры Modbus TCP: {sorted(unknown)}")
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
-        client = ModbusTcpClient(
-            cfg["host"], port=int(cfg.get("port", 502)),
-            unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
-        )
+        backend = str(cfg.get("engine_backend", "python")).lower()
+        if backend == "python":
+            if cfg.get("engine_binary"):
+                raise ValueError("engine_binary допустим только при engine_backend='rust'")
+            client = ModbusTcpClient(
+                cfg["host"], port=int(cfg.get("port", 502)),
+                unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
+            )
+        elif backend == "rust":
+            if not cfg.get("engine_binary"):
+                raise ValueError("Для Rust Modbus TCP требуется engine_binary")
+            client = RustModbusTcpClient(
+                cfg["host"], port=int(cfg.get("port", 502)),
+                unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
+                engine_binary=cfg["engine_binary"],
+            )
+        else:
+            raise ValueError("engine_backend должен быть 'python' или 'rust'")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
@@ -172,7 +187,7 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "notes": x.notes} for x in list_builtin_drivers()]
+                 "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
         station = self.core.repository.get_record(station_id)
@@ -190,6 +205,21 @@ class DriverManagerService:
                 "config": p.get("config", {})})
         return result
 
+    def assert_driver_entitlement(self, driver_id: str) -> None:
+        """Require the signed feature entitlement for an operational driver action."""
+        self._assert_driver_entitlement(driver_id)
+
+    def _assert_driver_entitlement(self, driver_id: str) -> None:
+        service = getattr(self.core, "installation_license_service", None)
+        license_file = getattr(self.core, "license_file", None)
+        if service is None:
+            return  # Explicit development/unconfigured mode; production must inject a signed license service.
+        entry = next((item for item in list_builtin_drivers() if item.driver_id == driver_id), None)
+        if entry is None:
+            raise ValueError("Драйвер отсутствует во встроенном каталоге")
+        status = service.inspect(license_file).status
+        service.assert_feature_enabled(status, entry.license_feature)
+
     def create_instance(self, station_id: str, driver_id: str, name: str, config: dict | None = None):
         station = self.core.repository.get_record(station_id)
         if station["entity_type"] != "Station":
@@ -199,6 +229,7 @@ class DriverManagerService:
             raise ValueError("Драйвер отсутствует в доверенном встроенном каталоге")
         if entry.lifecycle.value == "planned":
             raise ValueError("Драйвер пока не реализован")
+        self._assert_driver_entitlement(driver_id)
         if config is not None and not isinstance(config, dict):
             raise ValueError("Конфигурация должна быть объектом")
         safe_config = dict(config or {})
@@ -221,6 +252,7 @@ class DriverManagerService:
         self._reject_secrets(safe_config)
         with self._lock:
             item, version = self._load(instance_id)
+            self._assert_driver_entitlement(item.driver_id)
             if version != expected_version:
                 from avic_core.repository.sqlite_repository import ConcurrencyConflict
                 raise ConcurrencyConflict(
@@ -261,6 +293,7 @@ class DriverManagerService:
             if instance_id in self._sessions:
                 return self.diagnostics(instance_id)
             item, version = self._load(instance_id)
+            self._assert_driver_entitlement(item.driver_id)
             factory = self._factories.get(item.driver_id)
             if factory is None:
                 raise RuntimeError(f"Для {item.driver_id} runtime adapter factory не зарегистрирована")
@@ -314,17 +347,37 @@ class DriverManagerService:
             session = self._sessions.get(instance_id)
             adapter = self._adapters.get(instance_id)
             item, version = self._load(instance_id)
+            # A timeout means the worker may still be inside field I/O. Keep its
+            # adapter and registry entries intact; closing underneath it is unsafe.
             if session is not None:
                 session.stop(timeout=timeout)
+
+            close_error = None
             close = getattr(adapter, "close", None)
             if callable(close):
-                close()
+                try:
+                    close()
+                except Exception as exc:
+                    close_error = exc
+
+            # Once the worker has stopped, never retain a dead session in the
+            # manager: it would make later start_instance() report a stale session.
             self._sessions.pop(instance_id, None)
             self._adapters.pop(instance_id, None)
-            self._save_state(item, version, "STOPPED", False)
-            self.core.audit.append(actor_id="local-engineer", action="driver.instance_stopped",
-                resource_type="driver_instance", resource_id=instance_id,
-                details={"driver_id": item.driver_id})
+            final_state = "ERROR" if close_error is not None else "STOPPED"
+            self._save_state(item, version, final_state, False)
+            if close_error is None:
+                self.core.audit.append(actor_id="local-engineer", action="driver.instance_stopped",
+                    resource_type="driver_instance", resource_id=instance_id,
+                    details={"driver_id": item.driver_id})
+            else:
+                self.core.audit.append(actor_id="local-engineer", action="driver.instance_stop_failed",
+                    resource_type="driver_instance", resource_id=instance_id, outcome="error",
+                    details={"driver_id": item.driver_id,
+                             "error": f"{type(close_error).__name__}: {close_error}"})
+                raise RuntimeError(
+                    f"Драйвер {instance_id} остановлен, но адаптер не освободил ресурсы"
+                ) from close_error
             return self.diagnostics(instance_id)
 
     def diagnostics(self, instance_id: str) -> dict:

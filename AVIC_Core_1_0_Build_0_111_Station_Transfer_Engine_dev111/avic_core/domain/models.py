@@ -114,6 +114,13 @@ class Point(BaseObject):
     native_identity: str = ""
     object_type: str = ""
     engineering_description: str = ""
+    # Licensing metadata: discovered points can remain unlicensed until used.
+    point_type: str = "physical"
+    licensed_active: bool | None = None
+    published: bool = False
+    licensed_usage: list[str] = field(default_factory=list)
+    # Baseline activity is preserved while engineering usage references are added/removed.
+    licensed_base_active: bool | None = None
 
     def update_value(self, value: Any, quality: PointQuality, timestamp: datetime | None = None):
         self.value = value

@@ -150,7 +150,16 @@ class ModbusTcpPointAdapter:
                 "group_count": group_count, "success_count": self._success_count,
                 "failure_count": self._failure_count, "results": results}
 
+    def close(self) -> None:
+        """Release persistent transport resources (including a supervised Rust process)."""
+        close = getattr(self.client, "close", None)
+        if callable(close):
+            close()
+
     def diagnostics(self) -> dict:
+        client_diagnostics = getattr(self.client, "diagnostics", None)
         return {"driver_id": "modbus-tcp", "mode": "READ_ONLY", "write_supported": False,
+                "engine_backend": getattr(self.client, "engine_backend", "python"),
+                "engine": client_diagnostics() if callable(client_diagnostics) else None,
                 "configured_points": len(self.bindings), "success_count": self._success_count,
                 "failure_count": self._failure_count, "last_errors": dict(self._last_errors)}

@@ -1,41 +1,38 @@
 name: AVIC Core CI
 
 on:
-  # The active development branch is validated through its pull request.
-  # Do not also run the same 4-job matrix on every push to that branch:
-  # that duplicated the full test workload and burned Actions minutes.
+  # Public repository: standard GitHub-hosted runners are free.
+  # Pull requests are tested on both Linux and Windows.
   push:
-    branches:
-      - dev112-station-transfer-reliability
-  pull_request:
     branches:
       - main
       - dev112-station-transfer-reliability
+      - dev183-linux-cli-test-fix
+  pull_request:
+    branches:
+      - "**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# One workflow run at a time across this repository.
+# Keep the active matrix running; newer commits replace only the pending run.
+# Matrix jobs inside the active run are capped at 20.
 concurrency:
-  group: avic-core-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: avic-core-ci-global
 
 jobs:
-  tests:
+  test-matrix:
     name: Python ${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 20
       matrix:
-        include:
-          - os: ubuntu-latest
-            python-version: "3.11"
-          - os: ubuntu-latest
-            python-version: "3.12"
-          - os: ubuntu-latest
-            python-version: "3.13"
-          - os: windows-latest
-            python-version: "3.13"
+        os: [ubuntu-latest, windows-2025]
+        python-version: ["3.11", "3.12", "3.13"]
 
     defaults:
       run:
@@ -44,6 +41,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -63,17 +62,40 @@ jobs:
       - name: Compile package
         run: python -m compileall -q avic_core
 
+      - name: Prepare test report directory
+        run: python -c "from pathlib import Path; Path('test-results').mkdir(exist_ok=True)"
+
       - name: Run full test suite
-        shell: bash
-        run: |
-          mkdir -p test-results
-          python -m pytest -q -rs --junitxml=test-results/junit.xml
+        run: python -m pytest -q -rs --junitxml=test-results/junit.xml
 
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: avic-test-report-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: avic-test-report-${{ runner.os }}-py${{ matrix.python-version }}
           path: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/test-results/junit.xml
           if-no-files-found: ignore
           retention-days: 14
+
+  rust-communication-engine:
+    name: Rust Communication Engine / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/rust/communication-engine
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cargo test
+        run: cargo test
+      - name: Cargo release build
+        run: cargo build --release

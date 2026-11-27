@@ -149,8 +149,17 @@ class PointRuntimeService:
             values.append(self.read(row["entity_id"]))
         return values
 
-    def publish_fbd(self, point_id: str, value: Any, *, quality: str = "GOOD", timestamp: datetime | None = None) -> PointRuntimeValue:
-        """Publish a validated FBD output to its virtual point; this never writes a field device."""
+    def _assert_fbd_station(self, point: FBDExposedPoint, station_id: str) -> None:
+        if not station_id or point.station_id != station_id:
+            raise ValueError("Нарушена изоляция станции FBD: виртуальная точка принадлежит другой станции")
+        document = self.repository.get_record(point.fbd_document_id)
+        if (document.get("entity_type") != "LogicDocument"
+                or document.get("payload", {}).get("station_id") != station_id):
+            raise ValueError("FBD virtual point is not owned by a LogicDocument in the same station")
+
+    def publish_fbd(self, point_id: str, value: Any, *, station_id: str,
+                    quality: str = "GOOD", timestamp: datetime | None = None) -> PointRuntimeValue:
+        """Publish a validated FBD output only inside its owning station; never writes field I/O."""
         q = str(quality).upper()
         if q not in {"GOOD", "UNCERTAIN", "BAD", "STALE", "COMM_LOST", "BAD_COMMUNICATION", "BAD_CONFIGURATION"}:
             raise ValueError("Недопустимое качество FBD-точки")
@@ -160,6 +169,7 @@ class PointRuntimeService:
             point, version, _ = self._read_entity(point_id)
             if not isinstance(point, FBDExposedPoint):
                 raise ValueError("Публикация FBD разрешена только в виртуальную FBD-точку")
+            self._assert_fbd_station(point, station_id)
             checked = self._validate_value(point, value)
             point.update_value(checked, q, timestamp or _utcnow())
             new_version = self.repository.save(point, expected_version=version)
@@ -175,6 +185,16 @@ class PointRuntimeService:
                     self._subscriber_errors = self._subscriber_errors[-100:]
         return result
 
+    def _assert_driver_station(self, source_driver_id: str, device: dict) -> None:
+        """Require the publishing DriverInstance to belong to the target Device station."""
+        driver = self.repository.get_record(source_driver_id)
+        if driver.get("entity_type") != "DriverInstance":
+            raise ValueError("Источник публикации не является зарегистрированным экземпляром драйвера")
+        driver_station_id = str(driver.get("payload", {}).get("station_id") or "")
+        device_station_id = str(device.get("payload", {}).get("station_id") or "")
+        if not driver_station_id or driver_station_id != device_station_id:
+            raise ValueError("Драйвер и устройство принадлежат разным станциям")
+
     def publish(self, point_id: str, value: Any, *, quality: PointQuality | str = PointQuality.GOOD,
                 timestamp: datetime | None = None, source_driver_id: str | None = None) -> PointRuntimeValue:
         """Publish a sample from a trusted driver adapter; never performs field I/O."""
@@ -187,12 +207,25 @@ class PointRuntimeService:
             if direction == PointDirection.OUTPUT.value:
                 raise ValueError("Драйвер не может публиковать входное измерение в OUTPUT-точку")
             owner = str(device.get("payload", {}).get("driver_instance_id") or "")
-            if source_driver_id and owner and source_driver_id != owner:
+            # Adapter-originated samples must prove exact device ownership.
+            # An absent owner is not a wildcard: fail closed for legacy/unbound devices.
+            if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Источник публикации не совпадает с драйвером устройства")
+            if source_driver_id is not None:
+                self._assert_driver_station(source_driver_id, device)
             checked = self._validate_value(point, value)
-            if timestamp is not None and (timestamp.tzinfo is None or timestamp.utcoffset() is None):
+            sample_timestamp = timestamp or _utcnow()
+            if sample_timestamp.tzinfo is None or sample_timestamp.utcoffset() is None:
                 raise ValueError("Timestamp должен содержать часовой пояс")
-            point.update_value(checked, q, timestamp or _utcnow())
+            previous_timestamp = point.timestamp
+            if previous_timestamp is not None:
+                if previous_timestamp.tzinfo is None or previous_timestamp.utcoffset() is None:
+                    raise ValueError("Сохранённый timestamp точки не содержит часовой пояс")
+                if sample_timestamp < previous_timestamp:
+                    raise ValueError(
+                        "Запоздавшее измерение отклонено: timestamp старше последнего принятого значения"
+                    )
+            point.update_value(checked, q, sample_timestamp)
             new_version = self.repository.save(point, expected_version=version)
             result = PointRuntimeValue(
                 point_id=point.id, value=point.value, quality=q.value, timestamp=point.timestamp,
@@ -212,7 +245,7 @@ class PointRuntimeService:
                     self._subscriber_errors = self._subscriber_errors[-100:]
         return result
 
-    def mark_fbd_quality(self, point_id: str, quality: str) -> PointRuntimeValue:
+    def mark_fbd_quality(self, point_id: str, quality: str, *, station_id: str) -> PointRuntimeValue:
         q = str(quality).upper()
         if q not in {"UNCERTAIN", "BAD", "STALE", "COMM_LOST", "BAD_CONFIGURATION"}:
             raise ValueError("Недопустимое качество FBD-точки")
@@ -220,6 +253,7 @@ class PointRuntimeService:
             point, version, _ = self._read_entity(point_id)
             if not isinstance(point, FBDExposedPoint):
                 raise ValueError("Качество можно менять только у FBD virtual point")
+            self._assert_fbd_station(point, station_id)
             point.quality = q
             point.updated_at = _utcnow()
             new_version = self.repository.save(point, expected_version=version)
@@ -248,8 +282,12 @@ class PointRuntimeService:
             if direction == PointDirection.OUTPUT.value:
                 raise ValueError("A driver cannot mark an OUTPUT point as an input measurement")
             owner = str(device.get("payload", {}).get("driver_instance_id") or "")
-            if source_driver_id and owner and source_driver_id != owner:
+            # Quality changes are driver-originated too; unowned points cannot be
+            # claimed implicitly by whichever adapter happens to reference them.
+            if source_driver_id is not None and source_driver_id != owner:
                 raise ValueError("Quality source does not match point's owning driver")
+            if source_driver_id is not None:
+                self._assert_driver_station(source_driver_id, device)
             point.quality = q
             point.updated_at = _utcnow()
             new_version = self.repository.save(point, expected_version=version)

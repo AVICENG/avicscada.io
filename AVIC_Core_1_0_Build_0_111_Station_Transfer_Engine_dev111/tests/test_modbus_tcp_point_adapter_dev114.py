@@ -21,8 +21,10 @@ def _setup(tmp_path, count=2):
     app = create_ui_app(data_dir=str(tmp_path))
     project = app.state.project_station.create_project("DEV115")
     station = app.state.project_station.create_station(project["id"], "Modbus tests")
+    driver = app.state.core.driver_manager.create_instance(
+        station["id"], "modbus-tcp", "Modbus adapter test", {})
     device = Device(name="Modbus device", station_id=station["id"], protocol="modbus/tcp",
-                    address="192.0.2.20", driver_instance_id="driver-modbus-test")
+                    address="192.0.2.20", driver_instance_id=driver["id"])
     app.state.core.repository.save(device)
     points = []
     for i in range(count):
@@ -33,10 +35,16 @@ def _setup(tmp_path, count=2):
     return app, points
 
 
+def _driver_id(app):
+    rows = app.state.core.repository.list_records(entity_type="DriverInstance")
+    assert len(rows) == 1
+    return rows[0]["entity_id"]
+
+
 def test_modbus_adapter_publishes_scaled_values_into_runtime(tmp_path):
     app, pts = _setup(tmp_path)
     client = FakeModbusClient({0: [2345], 1: [1987]})
-    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test", [
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, _driver_id(app), [
         ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16", scale=0.1),
         ModbusTcpPointBinding(pts[1].id, 4, 1, data_type="uint16", offset=1.0)])
     result = adapter.poll_once()
@@ -51,7 +59,7 @@ def test_modbus_adapter_publishes_scaled_values_into_runtime(tmp_path):
 def test_modbus_adapter_retains_value_and_marks_communication_failure(tmp_path):
     app, pts = _setup(tmp_path, 1)
     client = FakeModbusClient({0: [2150]})
-    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test",
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, _driver_id(app),
         [ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16", scale=0.1)])
     adapter.poll_once(); before = app.state.core.point_runtime.read(pts[0].id)
     client.fail_addresses.add(0); result = adapter.poll_once()
@@ -82,7 +90,7 @@ def test_modbus_adapter_checks_driver_ownership(tmp_path):
 def test_modbus_adapter_coalesces_adjacent_register_bindings(tmp_path):
     app, pts = _setup(tmp_path, 2)
     client = FakeModbusClient({0: [100, 200]})
-    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test", [
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, _driver_id(app), [
         ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16"),
         ModbusTcpPointBinding(pts[1].id, 3, 1, data_type="uint16"),
     ])
@@ -91,3 +99,17 @@ def test_modbus_adapter_coalesces_adjacent_register_bindings(tmp_path):
     assert client.calls == [(3, 0, 2)]
     assert [app.state.core.point_runtime.read(point.id).value for point in pts] == [100, 200]
     app.state.core.close()
+
+
+def test_modbus_adapter_closes_persistent_transport():
+    class ClosableClient(FakeModbusClient):
+        def __init__(self):
+            super().__init__()
+            self.closed = False
+        def close(self):
+            self.closed = True
+
+    client = ClosableClient()
+    adapter = ModbusTcpPointAdapter(client, object(), "driver-id", [])
+    adapter.close()
+    assert client.closed is True

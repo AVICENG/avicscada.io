@@ -78,10 +78,11 @@ class ScheduleService:
     it never writes to physical controllers or point values.
     """
 
-    def __init__(self, database_path: str | Path, *, repository=None, audit_service=None):
+    def __init__(self, database_path: str | Path, *, repository=None, audit_service=None, point_usage_service=None):
         self.path = str(database_path)
         self.repository = repository
         self.audit = audit_service
+        self.point_usage_service = point_usage_service
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as db:
             db.executescript("""
@@ -380,20 +381,37 @@ class ScheduleService:
         device = self.repository.get_record(p.get("device_id", ""))
         if device.get("payload", {}).get("station_id") != schedule["station_id"]:
             raise ScheduleError("Точка принадлежит другой станции")
-        with closing(self._connect()) as db:
-            db.execute("INSERT OR IGNORE INTO schedule_bindings(schedule_id,point_id,created_at) VALUES(?,?,?)",
-                       (schedule_id, point_id, datetime.now(timezone.utc).isoformat()))
-            self._bump(db, schedule_id, None)
-            db.commit()
+        previous_point_ids = list(schedule["point_ids"])
+        desired_point_ids = sorted(set(previous_point_ids) | {point_id})
+        # Activate the license reference before committing the scheduler binding.
+        # If the schedule transaction fails, compensate by restoring its prior set.
+        if self.point_usage_service is not None:
+            self.point_usage_service.set_point_usage(f"schedule:{schedule_id}", desired_point_ids)
+        try:
+            with closing(self._connect()) as db:
+                db.execute("BEGIN IMMEDIATE")
+                db.execute("INSERT OR IGNORE INTO schedule_bindings(schedule_id,point_id,created_at) VALUES(?,?,?)",
+                           (schedule_id, point_id, datetime.now(timezone.utc).isoformat()))
+                self._bump(db, schedule_id, None)
+                db.commit()
+        except Exception:
+            if self.point_usage_service is not None:
+                self.point_usage_service.set_point_usage(f"schedule:{schedule_id}", previous_point_ids)
+            raise
         self._audit(actor_id, "schedule.point.bound", schedule_id, {"point_id": point_id})
         return self.get(schedule_id)
 
     def unbind_point(self, schedule_id: str, point_id: str, *, actor_id: str = "local-engineer") -> dict:
+        schedule = self.get(schedule_id)
         with closing(self._connect()) as db:
+            db.execute("BEGIN IMMEDIATE")
             self._row(schedule_id, db)
             db.execute("DELETE FROM schedule_bindings WHERE schedule_id=? AND point_id=?", (schedule_id, point_id))
             self._bump(db, schedule_id, None)
             db.commit()
+        remaining_point_ids = [item for item in schedule["point_ids"] if item != point_id]
+        if self.point_usage_service is not None:
+            self.point_usage_service.set_point_usage(f"schedule:{schedule_id}", remaining_point_ids)
         self._audit(actor_id, "schedule.point.unbound", schedule_id, {"point_id": point_id})
         return self.get(schedule_id)
 

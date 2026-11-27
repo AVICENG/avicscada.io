@@ -70,7 +70,7 @@ def test_fbd_studio_compiler_refuses_unknown_semantics_without_creating_core_doc
     client = TestClient(create_ui_app(data_dir=str(tmp_path)))
     station = _station(client)
     data = _studio_graph()
-    data["pages"][0]["modules"][2]["type"] = "PID_LOOP"
+    data["pages"][0]["modules"][2]["type"] = "UNSUPPORTED_CUSTOM_BLOCK"
     created = client.post(f"/api/stations/{station['id']}/fbd-studio",
                           json={"name": "Unsupported PID", "data": data})
     assert created.status_code == 201, created.text
@@ -81,7 +81,7 @@ def test_fbd_studio_compiler_refuses_unknown_semantics_without_creating_core_doc
                           json={"expected_revision": source["revision"]})
     assert preview.status_code == 200
     assert preview.json()["compilable"] is False
-    assert any("PID_LOOP" in issue for issue in preview.json()["issues"])
+    assert any("UNSUPPORTED_CUSTOM_BLOCK" in issue for issue in preview.json()["issues"])
 
     compiled = client.post(f"/api/fbd-studio/{source['id']}/compile",
                            json={"expected_revision": source["revision"]})
@@ -181,3 +181,257 @@ def test_fbd_studio_rejects_module_id_collision_across_pages(tmp_path):
     )
     assert response.status_code == 400
     assert "unique across the entire project" in response.json()["detail"]
+
+
+
+def _studio_graph_with_connective():
+    data = _studio_graph()
+    data["pages"].append({
+        "id": "page-fan", "name": "Вентилятор", "code": "P2", "modules": [
+            {"id": "proxy-start", "type": "CONNECTIVE", "name": "Connective Команда Пуск",
+             "params": {"referenceId": "ref-start-fan", "label": "Команда Пуск",
+                        "sourcePageId": "page-main", "sourceModuleId": "start",
+                        "sourcePort": 0, "targetPageId": "page-fan"},
+             "ins": [], "outs": [{"id": "proxy-out", "name": "OUT", "type": "bool"}]},
+            {"id": "remote-run", "type": "BOOL_OUTPUT", "name": "REMOTE_RUN",
+             "params": {}, "ins": [{"id": "remote-in", "name": "IN", "type": "bool"}], "outs": []},
+        ],
+    })
+    data["pages"][0]["modules"].append({
+        "id": "marker-start-fan", "type": "TO_CONNECTIVE", "name": "To Connective Команда Пуск",
+        "params": {"referenceId": "ref-start-fan", "targetPageId": "page-fan"},
+        "ins": [{"id": "marker-in", "name": "OUT", "type": "bool"}], "outs": [],
+    })
+    data["links"].append({
+        "id": "cross-link-start-fan", "pageId": "page-fan",
+        "from": "out:proxy-start:0", "to": "in:remote-run:0", "signalType": "bool",
+    })
+    data["references"] = [{
+        "id": "ref-start-fan", "sourcePageId": "page-main", "sourceModuleId": "start",
+        "sourcePort": 0, "targetPageId": "page-fan",
+        "proxyModuleId": "proxy-start", "toModuleId": "marker-start-fan",
+    }]
+    return data
+
+
+def test_fbd_studio_compiles_connective_alias_to_core_cross_page_runtime(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    created = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                          json={"name": "Cross-page Connective", "data": data})
+    assert created.status_code == 201, created.text
+    source = created.json()
+
+    preview = client.post(f"/api/fbd-studio/{source['id']}/compile-preview",
+                          json={"expected_revision": source["revision"]})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["compilable"] is True, preview.json()
+    assert preview.json()["source_blocks"] == 5
+    assert preview.json()["source_links"] == 4
+
+    compiled = client.post(f"/api/fbd-studio/{source['id']}/compile",
+                           json={"expected_revision": source["revision"]})
+    assert compiled.status_code == 200, compiled.text
+    result = compiled.json()
+    core_doc = result["core_document"]
+    assert result["compiled_blocks"] == 5
+    assert result["compiled_links"] == 4
+    assert len(core_doc["connectives"]) == 1
+    assert len(core_doc["links"]) == 3
+    assert all(node["type"] not in {"CONNECTIVE", "TO_CONNECTIVE"} for node in core_doc["nodes"])
+
+    simulation = client.post(f"/api/fbd/{core_doc['id']}/simulate", json={})
+    assert simulation.status_code == 200, simulation.text
+    assert simulation.json()["outputs"]["RUN"] is True
+    assert simulation.json()["outputs"]["REMOTE_RUN"] is True
+    assert simulation.json()["field_writes_performed"] is False
+
+
+def test_fbd_studio_rejects_connective_reference_with_missing_proxy(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    data["references"][0]["proxyModuleId"] = "missing-proxy"
+    response = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                           json={"name": "Missing proxy", "data": data})
+    assert response.status_code == 400
+    assert "proxy does not exist" in response.json()["detail"]
+
+
+def test_fbd_studio_rejects_connective_proxy_with_wrong_signal_type(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    data["pages"][1]["modules"][0]["outs"][0]["type"] = "float"
+    response = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                           json={"name": "Wrong proxy type", "data": data})
+    assert response.status_code == 400
+    assert "signal type differs" in response.json()["detail"]
+
+
+def test_fbd_studio_recompile_does_not_reuse_legacy_compiler_artifact(tmp_path):
+    from avic_core.logic_fbd import FBDService
+
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph_with_connective()
+    created = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                          json={"name": "Compiler versioning", "data": data})
+    assert created.status_code == 201, created.text
+    source = created.json()
+
+    legacy_marker = f"AVIC_FBD_STUDIO_SOURCE={source['id']};REV={source['revision']}"
+    legacy = FBDService(client.app.state.core).create(
+        station["id"], "Legacy compiler output", legacy_marker
+    )
+
+    compiled = client.post(f"/api/fbd-studio/{source['id']}/compile",
+                           json={"expected_revision": source["revision"]})
+    assert compiled.status_code == 200, compiled.text
+    assert compiled.json()["core_document"]["id"] != legacy["id"]
+    assert len(compiled.json()["core_document"]["connectives"]) == 1
+
+
+def test_fbd_studio_page_copy_and_delete_are_reference_aware():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    assert "const incomingRefs=state.references.filter(r=>r.targetPageId===pg.id)" in html
+    assert "const outgoingRefs=state.references.filter(r=>r.sourcePageId===pg.id)" in html
+    assert "deadModuleIds" in html
+    assert "state.links.filter(l=>" in html
+
+
+def test_fbd_studio_compiler_rejects_cycle_created_by_cross_page_connectives(tmp_path):
+    client = TestClient(create_ui_app(data_dir=str(tmp_path)))
+    station = _station(client)
+    data = _studio_graph()
+    data["pages"].append({
+        "id": "page-fan", "name": "Вентилятор", "code": "P2", "modules": [
+            {"id": "fan-and", "type": "AND", "name": "Межстраничный цикл",
+             "params": {}, "ins": [
+                 {"id": "fan-a", "name": "A", "type": "bool"},
+                 {"id": "fan-b", "name": "B", "type": "bool"}],
+             "outs": [{"id": "fan-out", "name": "OUT", "type": "bool"}]},
+            {"id": "proxy-main-and", "type": "CONNECTIVE", "name": "Из основной страницы",
+             "params": {"referenceId": "ref-main-fan", "label": "Разрешение",
+                        "sourcePageId": "page-main", "sourceModuleId": "and",
+                        "sourcePort": 0, "targetPageId": "page-fan"},
+             "ins": [], "outs": [{"id": "proxy-main-out", "name": "OUT", "type": "bool"}]},
+        ],
+    })
+    data["pages"][0]["modules"].append({
+        "id": "proxy-fan-main", "type": "CONNECTIVE", "name": "Из вентилятора",
+        "params": {"referenceId": "ref-fan-main", "label": "Межстраничный цикл",
+                   "sourcePageId": "page-fan", "sourceModuleId": "fan-and",
+                   "sourcePort": 0, "targetPageId": "page-main"},
+        "ins": [], "outs": [{"id": "proxy-fan-out", "name": "OUT", "type": "bool"}],
+    })
+    data["pages"][0]["modules"].append({
+        "id": "marker-main-fan", "type": "TO_CONNECTIVE", "name": "To fan",
+        "params": {"referenceId": "ref-main-fan", "targetPageId": "page-fan"},
+        "ins": [{"id": "marker-main-in", "name": "OUT", "type": "bool"}], "outs": [],
+    })
+    data["pages"][1]["modules"].append({
+        "id": "marker-fan-main", "type": "TO_CONNECTIVE", "name": "To main",
+        "params": {"referenceId": "ref-fan-main", "targetPageId": "page-main"},
+        "ins": [{"id": "marker-fan-in", "name": "OUT", "type": "bool"}], "outs": [],
+    })
+    data["links"] = [
+        link for link in data["links"] if link["id"] != "l2"
+    ] + [
+        {"id": "cycle-a", "pageId": "page-fan",
+         "from": "out:proxy-main-and:0", "to": "in:fan-and:0", "signalType": "bool"},
+        {"id": "cycle-b", "pageId": "page-main",
+         "from": "out:proxy-fan-main:0", "to": "in:and:1", "signalType": "bool"},
+    ]
+    data["references"] = [
+        {"id": "ref-main-fan", "sourcePageId": "page-main", "sourceModuleId": "and",
+         "sourcePort": 0, "targetPageId": "page-fan",
+         "proxyModuleId": "proxy-main-and", "toModuleId": "marker-main-fan"},
+        {"id": "ref-fan-main", "sourcePageId": "page-fan", "sourceModuleId": "fan-and",
+         "sourcePort": 0, "targetPageId": "page-main",
+         "proxyModuleId": "proxy-fan-main", "toModuleId": "marker-fan-main"},
+    ]
+    created = client.post(f"/api/stations/{station['id']}/fbd-studio",
+                          json={"name": "Cross-page cycle", "data": data})
+    assert created.status_code == 201, created.text
+    preview = client.post(f"/api/fbd-studio/{created.json()['id']}/compile-preview",
+                          json={"expected_revision": created.json()["revision"]})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["compilable"] is False
+    assert any("циклическую зависимость" in issue for issue in preview.json()["issues"])
+
+
+def test_fbd_studio_page_copy_assigns_unique_page_code():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    copy_start = html.index("function copyActivePage(){")
+    copy_end = html.index("\nfunction deleteActivePage(){", copy_start)
+    copy_function = html[copy_start:copy_end]
+    assert "const usedPageCodes=new Set(state.pages.map" in copy_function
+    assert "c.code='P'+pageNumber" in copy_function
+
+
+def test_fbd_studio_page_check_ignores_to_connective_navigation_marker():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    check_start = html.index("function check(){")
+    check_end = html.index("\nfunction undo(){", check_start)
+    check_function = html[check_start:check_end]
+    assert "if(m.type==='TO_CONNECTIVE')return" in check_function
+
+
+def test_fbd_studio_navigation_proxies_cannot_be_copied_as_orphan_modules():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    assert "if(!['CONNECTIVE','TO_CONNECTIVE'].includes(m.type))items.push({id:'copy'" in html
+    assert "Connective и To Connective нельзя копировать отдельно" in html
+
+
+def test_fbd_studio_page_copy_generates_unique_module_tags_within_the_copy():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    copy_start = html.index("function copyActivePage(){")
+    copy_end = html.index("\nfunction deleteActivePage(){", copy_start)
+    copy_function = html[copy_start:copy_end]
+    assert "const usedTags=new Set(allModules().map" in copy_function
+    assert "const nextCopyTag=type=>" in copy_function
+    assert "m.tag=nextCopyTag(m.type)" in copy_function
+
+
+def test_fbd_studio_delete_block_cleans_connectives_links_and_exposed_points():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    start = html.index("function deleteSelected(){")
+    end = html.index("\nfunction interpolateSensor", start)
+    function = html[start:end]
+    assert "const deadModuleIds=new Set" in function
+    assert "state.links=state.links.filter" in function
+    assert "state.fbdPoints=state.fbdPoints.filter" in function
+    assert "Удалить блок и связанные объекты?" in function
+
+
+def test_fbd_studio_delete_page_cleans_exposed_points_and_confirms_dependencies():
+    from pathlib import Path
+
+    html_path = Path(__file__).parents[1] / "avic_core" / "ui" / "static" / "logic.html"
+    html = html_path.read_text(encoding="utf-8")
+    start = html.index("function deleteActivePage(){")
+    end = html.index("\nconst sensorCatalog", start)
+    function = html[start:end]
+    assert "const deadPoints=state.fbdPoints.filter" in function
+    assert "state.fbdPoints=state.fbdPoints.filter(pt=>!deadPoints.includes(pt))" in function
+    assert "deadRefs.length||deadPoints.length" in function

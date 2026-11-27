@@ -24,15 +24,17 @@ def test_fbd_import_validates_before_replacing_and_supports_legacy_json():
     assert "Связь ссылается на неизвестный блок" in SOURCE
 
 
-def test_schedule_block_is_editable_and_included_in_fbd_simulation():
-    assert "SCHEDULE:{label:'Schedule'" in SOURCE
-    assert "if(type==='SCHEDULE')params.schedule=" in SOURCE
-    assert "if(m.type==='SCHEDULE'){const result=AVICFBDLogic.evaluateSchedule" in SOURCE
+def test_schedule_block_binds_to_core_scheduler_and_uses_station_runtime():
+    # The editor no longer owns a second, local schedule implementation.
+    assert "SCHEDULE:{label:'Core Schedule'" in SOURCE
+    assert "if(type==='SCHEDULE'){params.schedule_id='';params.schedule_value_type='BOOLEAN';params.schedule_name=''};" in SOURCE
+    assert "fetch(`/api/stations/${encodeURIComponent(studioStationId)}/schedules`)" in SOURCE
+    assert "m.params={...(m.params||{}),schedule_id:schedule.id,schedule_value_type:schedule.value_type,schedule_name:schedule.name}" in SOURCE
+    assert "fetch('/api/schedules/'+encodeURIComponent(id)+'/evaluate')" in SOURCE
+    assert "if(m.type==='SCHEDULE'){const result=m.runtimeState?.coreSchedule" in SOURCE
     assert "function evaluateSchedule(config, instant=new Date())" in SOURCE
     assert "weeklyEvents" in SOURCE and "exceptions" in SOURCE
-    assert "scheduleCopy" in SOURCE and "exceptionAdd" in SOURCE
-    assert "schValueType" in SOURCE
-    assert "часовой пояс IANA" in SOURCE
+    assert "timezone" in SOURCE and "schedule_value_type" in SOURCE
 
 
 def test_schedule_logic_weekly_exception_override_timezone_and_overnight():

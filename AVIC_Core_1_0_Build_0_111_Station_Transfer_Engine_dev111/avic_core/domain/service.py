@@ -3,6 +3,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Iterable
 
 from avic_core.repository.sqlite_repository import SQLiteRepository
+from avic_core.licensing.service import summarize_point_usage
 from .models import (
     Project, Station, Device, Point, Component, Link, PropertyDefinition, Alarm,
     Event, HistoryRecord, DriverInstance, DriverPackage, RuntimeInstance,
@@ -91,6 +92,76 @@ class CoreObjectService:
             elif kind == "RuntimeInstance":
                 require(payload.get("station_id"), {"Station"}, f"RuntimeInstance {entity_id}.station_id")
 
+    def assert_point_usage_transition(self, existing_records: Iterable[dict], point_items: Iterable[Point]) -> None:
+        """Check newly activated unique points against the signed installation capacity."""
+        candidates = [item for item in point_items if isinstance(item, Point)]
+        if self.license_service is None or not candidates:
+            return
+        status = self.license_service.inspect(self.license_file).status
+        existing_point_records = [
+            {"entity_type": record["entity_type"], "entity_id": record["entity_id"],
+             "payload": record["payload"]}
+            for record in existing_records if record["entity_type"] == "Point"
+        ]
+        resulting_points = {record["entity_id"]: record for record in existing_point_records}
+        for item in candidates:
+            resulting_points[str(item.id)] = {
+                "entity_type": "Point", "entity_id": str(item.id), "payload": asdict(item)
+            }
+        existing_active = set(summarize_point_usage(existing_point_records)["licensed_active_point_ids"])
+        resulting_active = set(summarize_point_usage(resulting_points.values())["licensed_active_point_ids"])
+        for point_id in sorted(resulting_active - existing_active):
+            self.license_service.assert_can_create_point(status, existing_active, point_id)
+            existing_active.add(point_id)
+
+    def set_point_usage(self, source_key: str, point_ids: Iterable[str], *, connection=None) -> dict[str, int]:
+        """Reconcile one engineering-use reference set and enforce licensing atomically.
+
+        source_key is a stable owner such as logic:<document-id> or graphics:<document-id>.
+        Multiple independent engineering objects can therefore reference the same point.
+        """
+        if not isinstance(source_key, str) or not any(
+            source_key.startswith(prefix) for prefix in
+            ("logic:", "graphics:", "alarm:", "history:", "schedule:", "control:")
+        ):
+            raise ValueError("Unsupported licensed point usage source")
+        desired = {str(point_id) for point_id in point_ids if str(point_id)}
+        records = self.repository.list_records(entity_type="Point", connection=connection)
+        changed = []
+        for record in records:
+            point_id = record["entity_id"]
+            usages = set(record["payload"].get("licensed_usage") or [])
+            if source_key not in usages and point_id not in desired:
+                continue
+            point, version = self.repository.get(point_id, Point, connection=connection)
+            had_tracked_usage = bool(point.licensed_usage)
+            if point_id in desired:
+                if not had_tracked_usage:
+                    # Preserve legacy/manual activation separately from the
+                    # activation contributed by this set of engineering references.
+                    point.licensed_base_active = (
+                        bool(point.licensed_active)
+                        if point.licensed_active is not None
+                        else point.point_type == "physical"
+                    )
+                usages.add(source_key)
+            else:
+                usages.discard(source_key)
+            point.licensed_usage = sorted(usages)
+            if point.licensed_usage:
+                point.licensed_active = True
+            elif had_tracked_usage:
+                point.licensed_active = bool(point.licensed_base_active)
+                point.licensed_base_active = None
+            changed.append((point, version))
+        self.assert_point_usage_transition(records, [point for point, _ in changed])
+        versions = {}
+        for point, version in changed:
+            versions[str(point.id)] = self.repository.save(
+                point, expected_version=version, connection=connection
+            )
+        return versions
+
     def save_graph(self, entities: Iterable[Any], *, expected_versions: dict[str, int] | None = None) -> dict[str, int]:
         items = list(entities)
         if not items:
@@ -111,17 +182,7 @@ class CoreObjectService:
                 seen.add(entity_id)
                 by_id[entity_id] = (item.__class__.__name__, asdict(item))
 
-            # Enforce licensing inside the same repository transaction as Point creation.
-            # Existing Point UUIDs are updates and do not consume another slot.
-            new_points = [item for item in items
-                          if isinstance(item, Point)
-                          and not any(r["entity_id"] == str(item.id) and r["entity_type"] == "Point" for r in existing)]
-            if new_points and self.license_service is not None:
-                status = self.license_service.inspect(self.license_file).status
-                current_point_ids = {r["entity_id"] for r in existing if r["entity_type"] == "Point"}
-                for point in new_points:
-                    self.license_service.assert_can_create_point(status, current_point_ids, str(point.id))
-                    current_point_ids.add(str(point.id))
+            self.assert_point_usage_transition(existing, items)
 
             self._validate_graph(by_id)
             versions = {}
@@ -134,6 +195,20 @@ class CoreObjectService:
                 if current is not None and expected is None:
                     raise DomainIntegrityError(f"Updating {entity_id} requires expected_versions[{entity_id}]")
                 versions[entity_id] = self.repository.save(item, expected_version=expected, connection=connection)
+
+            # Alarm domain objects are persistent alarm-rule configuration, unlike
+            # transient AlarmService alarm occurrences. Only Point-backed rules
+            # activate a licensed point; the reconciliation shares this transaction.
+            for item in items:
+                if isinstance(item, Alarm):
+                    source_type = by_id.get(item.source_object_id, (None, {}))[0]
+                    point_ids = [item.source_object_id] if source_type == "Point" else []
+                    usage_versions = self.set_point_usage(
+                        f"alarm:{item.id}", point_ids, connection=connection
+                    )
+                    for point_id, point_version in usage_versions.items():
+                        if point_id in versions:
+                            versions[point_id] = point_version
             return versions
 
     def delete_graph(self, entity_versions: dict[str, int]) -> None:
@@ -151,6 +226,37 @@ class CoreObjectService:
                 record["entity_id"]: (record["entity_type"], record["payload"])
                 for record in records if record["entity_id"] not in deleting
             }
+            records_by_id = {record["entity_id"]: record for record in records}
+
+            # Release references from deleted Alarm rules, except when their
+            # source Point is also in this deletion batch. In that case the Point
+            # row itself is removed, so mutating it first would invalidate the
+            # caller's optimistic version supplied for this atomic delete.
+            alarm_usages_owned_by_deleted_points: dict[str, set[str]] = {}
+            for entity_id in deleting:
+                if records_by_id[entity_id]["entity_type"] != "Alarm":
+                    continue
+                payload = records_by_id[entity_id]["payload"]
+                source_id = payload.get("source_object_id")
+                source_record = records_by_id.get(source_id)
+                if source_record and source_record["entity_type"] == "Point" and source_id in deleting:
+                    alarm_usages_owned_by_deleted_points.setdefault(source_id, set()).add(f"alarm:{entity_id}")
+                else:
+                    self.set_point_usage(f"alarm:{entity_id}", [], connection=connection)
+
+            for entity_id in deleting:
+                if records_by_id[entity_id]["entity_type"] == "Point":
+                    current = self.repository.get_record(entity_id, connection=connection)
+                    usages = set(current.get("payload", {}).get("licensed_usage") or [])
+                    usages.difference_update(alarm_usages_owned_by_deleted_points.get(entity_id, set()))
+                    if usages:
+                        raise DomainIntegrityError(
+                            f"Cannot delete licensed Point {entity_id}; remove active usages first: {', '.join(sorted(usages))}"
+                        )
+
+            # Validate after usage reconciliation: a Point with a surviving
+            # Alarm reference is rejected by the licensing guard above, while
+            # deleting both objects in one batch leaves no dangling reference.
             self._validate_graph(remaining)
             for entity_id, expected_version in entity_versions.items():
                 self.repository.delete(entity_id, expected_version=expected_version, connection=connection)

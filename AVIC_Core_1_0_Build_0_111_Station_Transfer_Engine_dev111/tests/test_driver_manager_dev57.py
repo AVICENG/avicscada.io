@@ -306,3 +306,138 @@ def test_polling_session_start_waits_until_worker_is_running():
     assert session.diagnostics()["state"] in {"RUNNING", "DEGRADED"}
     assert session.diagnostics()["worker_alive"] is True
     session.stop()
+
+
+def test_driver_catalog_exposes_license_feature_and_enforces_entitlement(tmp_path):
+    from avic_core.licensing import LicenseStatus
+    from types import SimpleNamespace
+
+    class Entitlements:
+        status = LicenseStatus(True, "OK", features=("driver.modbus-tcp",))
+        def inspect(self, license_file):
+            return SimpleNamespace(status=self.status)
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid:
+                raise PermissionError("license invalid")
+            if feature not in status.features:
+                raise PermissionError("feature not included")
+
+    core, station = make_station(tmp_path)
+    core.installation_license_service = Entitlements()
+    core.license_file = "signed.aviclic"
+    catalog = {x["driver_id"]: x for x in core.driver_manager.catalog()}
+    assert catalog["modbus-tcp"]["license_feature"] == "driver.modbus-tcp"
+    assert catalog["bacnet-ip"]["license_feature"] == "driver.bacnet-ip"
+    with pytest.raises(PermissionError, match="feature not included"):
+        core.driver_manager.create_instance(station["id"], "bacnet-ip", "Denied")
+    created = core.driver_manager.create_instance(station["id"], "modbus-tcp", "Allowed")
+    core.installation_license_service.status = LicenseStatus(False, "LICENSE_EXPIRED")
+    with pytest.raises(PermissionError, match="license invalid"):
+        core.driver_manager.start_instance(created["id"])
+    assert core.driver_manager.diagnostics(created["id"])["state"] == "STOPPED"
+    core.close()
+
+def test_driver_config_update_requires_current_feature_entitlement(tmp_path):
+    from avic_core.licensing import LicenseStatus
+    from types import SimpleNamespace
+
+    class Entitlements:
+        status = LicenseStatus(True, "OK", features=("driver.modbus-tcp",))
+        def inspect(self, license_file):
+            return SimpleNamespace(status=self.status)
+        def assert_feature_enabled(self, status, feature):
+            if not status.valid or feature not in status.features:
+                raise PermissionError("driver entitlement denied")
+
+    core, station = make_station(tmp_path)
+    core.installation_license_service = Entitlements()
+    core.license_file = "signed.aviclic"
+    created = core.driver_manager.create_instance(station["id"], "modbus-tcp", "Modbus")
+    _, version = core.driver_manager._load(created["id"])
+    core.installation_license_service.status = LicenseStatus(False, "LICENSE_EXPIRED")
+    with pytest.raises(PermissionError, match="entitlement denied"):
+        core.driver_manager.update_config(created["id"], {"host": "192.0.2.10"},
+                                          expected_version=version)
+    assert core.driver_manager.diagnostics(created["id"])["state"] == "STOPPED"
+    core.close()
+
+
+def test_driver_stop_close_failure_does_not_leave_stale_session(tmp_path):
+    from avic_core.drivers.manager import DriverInstance
+
+    class BrokenCloseAdapter:
+        def poll_once(self):
+            return {"results": []}
+        def close(self):
+            raise OSError("socket close failed")
+
+    class GoodAdapter:
+        def poll_once(self):
+            return {"results": []}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    service = core.driver_manager
+    created = service.create_instance(station["id"], "modbus-tcp", "Close failure",
+                                      {"poll_interval_seconds": 0.1})
+    broken = BrokenCloseAdapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _item: broken)
+    service.start_instance(created["id"])
+
+    with pytest.raises(RuntimeError, match="не освободил ресурсы"):
+        service.stop_instance(created["id"])
+
+    assert created["id"] not in service._sessions
+    assert created["id"] not in service._adapters
+    assert service.diagnostics(created["id"])["state"] == "ERROR"
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "ERROR" and persisted.enabled is False
+
+    replacement = GoodAdapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _item: replacement)
+    assert service.start_instance(created["id"])["state"] in {"RUNNING", "DEGRADED"}
+    service.stop_instance(created["id"])
+    assert replacement.closed is True
+    core.close()
+
+
+def test_driver_stop_timeout_does_not_close_transport_during_active_poll(tmp_path):
+    import threading
+    from avic_core.drivers.manager import DriverInstance
+
+    class BlockingAdapter:
+        def __init__(self):
+            self.entered = threading.Event()
+            self.release = threading.Event()
+            self.closed = False
+        def poll_once(self):
+            self.entered.set()
+            self.release.wait(timeout=3)
+            return {"results": []}
+        def close(self):
+            self.closed = True
+
+    core, station = make_station(tmp_path)
+    service = core.driver_manager
+    created = service.create_instance(station["id"], "modbus-tcp", "Blocked poll",
+                                      {"poll_interval_seconds": 0.1})
+    adapter = BlockingAdapter()
+    service.register_adapter_factory("modbus-tcp", lambda _core, _item: adapter)
+    service.start_instance(created["id"])
+    assert adapter.entered.wait(timeout=2)
+
+    with pytest.raises(TimeoutError, match="did not stop"):
+        service.stop_instance(created["id"], timeout=0.01)
+
+    assert adapter.closed is False
+    assert created["id"] in service._sessions
+    assert service.diagnostics(created["id"])["state"] == "STOPPING"
+
+    adapter.release.set()
+    stopped = service.stop_instance(created["id"], timeout=2)
+    assert stopped["state"] == "STOPPED"
+    assert adapter.closed is True
+    persisted, _ = core.repository.get(created["id"], DriverInstance)
+    assert persisted.state == "STOPPED" and persisted.enabled is False
+    core.close()

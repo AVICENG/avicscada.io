@@ -4,6 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from avic_core.domain.models import Device, Point, PointDirection, PointQuality
+from avic_core.drivers.manager import DriverInstance
+
+DRIVER_ID = "00000000-0000-4000-8000-000000000085"
 from avic_core.ui import create_ui_app
 
 
@@ -12,8 +15,12 @@ def _setup(tmp_path, *, direction=PointDirection.INPUT, data_type="analog-input"
     client = TestClient(app)
     project = app.state.project_station.create_project("DEV85 Project")
     station = app.state.project_station.create_station(project["id"], "DEV85 Station")
+    app.state.core.repository.save(DriverInstance(
+        name="DEV85 BACnet", station_id=station["id"], driver_id="bacnet-ip",
+        protocol="BACnet/IP", id=DRIVER_ID,
+    ))
     device = Device(name="Trend Controller", station_id=station["id"], protocol="bacnet/ip",
-                    address="192.0.2.10", driver_instance_id="driver-dev85")
+                    address="192.0.2.10", driver_instance_id=DRIVER_ID)
     app.state.core.repository.save(device)
     point = Point(name="Supply temperature", device_id=device.id, data_type=data_type,
                   direction=direction, unit="°C", native_identity="bacnet:analog-input:1",
@@ -30,7 +37,7 @@ def test_point_runtime_publish_read_snapshot_and_subscribe(tmp_path):
     stamp = datetime.now(timezone.utc)
     live = app.state.core.point_runtime.publish(
         point.id, 22.678, quality=PointQuality.GOOD, timestamp=stamp,
-        source_driver_id="driver-dev85",
+        source_driver_id=DRIVER_ID,
     )
     assert live.value == 22.678
     assert live.quality == "GOOD"
@@ -106,4 +113,79 @@ def test_point_runtime_validates_modbus_scalar_ranges(tmp_path, data_type, value
     else:
         with pytest.raises(ValueError):
             app.state.core.point_runtime.publish(point.id, value)
+    app.state.core.close()
+
+
+def test_point_runtime_rejects_out_of_order_sample_without_mutation(tmp_path):
+    app, _, _, _, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    accepted_at = datetime(2026, 11, 27, 8, 0, tzinfo=timezone.utc)
+    first = runtime.publish(
+        point.id, 23.5, quality=PointQuality.GOOD, timestamp=accepted_at,
+        source_driver_id=DRIVER_ID,
+    )
+    seen = []
+    runtime.subscribe(point.id, seen.append)
+
+    with pytest.raises(ValueError, match="Запоздавшее измерение отклонено"):
+        runtime.publish(
+            point.id, 19.0, quality=PointQuality.GOOD,
+            timestamp=datetime(2026, 11, 27, 7, 59, tzinfo=timezone.utc),
+            source_driver_id=DRIVER_ID,
+        )
+
+    current = runtime.read(point.id)
+    assert current.value == first.value == 23.5
+    assert current.timestamp == accepted_at
+    assert current.quality == "GOOD"
+    assert seen == []
+    app.state.core.close()
+
+
+def test_point_runtime_quality_loss_and_recovery_preserve_last_sample_until_new_good_sample(tmp_path):
+    app, _, _, _, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    sample_at = datetime(2026, 11, 27, 8, 0, tzinfo=timezone.utc)
+    runtime.publish(
+        point.id, 21.75, quality=PointQuality.GOOD, timestamp=sample_at,
+        source_driver_id=DRIVER_ID,
+    )
+
+    lost = runtime.mark_quality(
+        point.id, PointQuality.BAD_COMMUNICATION, source_driver_id=DRIVER_ID
+    )
+    assert lost.value == 21.75
+    assert lost.quality == "BAD_COMMUNICATION"
+    assert lost.timestamp == sample_at
+
+    recovered_at = datetime(2026, 11, 27, 8, 2, tzinfo=timezone.utc)
+    recovered = runtime.publish(
+        point.id, 22.0, quality=PointQuality.GOOD, timestamp=recovered_at,
+        source_driver_id=DRIVER_ID,
+    )
+    assert recovered.value == 22.0
+    assert recovered.quality == "GOOD"
+    assert recovered.timestamp == recovered_at
+    app.state.core.close()
+
+
+def test_fbd_point_input_rejects_point_from_another_station(tmp_path):
+    app, _, station_a, _, _ = _setup(tmp_path)
+    project_b = app.state.project_station.create_project("Foreign FBD project")
+    station_b = app.state.project_station.create_station(project_b["id"], "Foreign FBD station")
+    device_b = Device(
+        name="Foreign controller", station_id=station_b["id"],
+        protocol="bacnet/ip", address="192.0.2.20:47808",
+    )
+    app.state.core.repository.save(device_b)
+    foreign_point = Point(
+        name="Foreign temperature", device_id=device_b.id, data_type="float",
+        value=24.0, quality=PointQuality.GOOD, native_identity="foreign:temperature",
+    )
+    app.state.core.repository.save(foreign_point)
+
+    doc = app.state.fbd.create(station_a["id"], "Cross-station input must fail")
+    # Ownership is rejected at bind time, before an invalid graph can be persisted.
+    with pytest.raises(ValueError, match="не принадлежит станции этой FBD-стратегии"):
+        app.state.fbd.add_point_node(doc["id"], foreign_point.id)
     app.state.core.close()

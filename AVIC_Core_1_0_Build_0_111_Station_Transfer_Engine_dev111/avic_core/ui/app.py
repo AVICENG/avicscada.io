@@ -15,6 +15,7 @@ from uuid import uuid4
 from time import monotonic
 
 from avic_core.application.container import CoreApplication
+from avic_core.licensing import InstallationLicenseService, LicenseManager
 from avic_core.transfer import StationTransferError
 from avic_core.repository.sqlite_repository import ConcurrencyConflict, EntityNotFound
 from avic_core.domain.models import Point, PointQuality, PhysicalNetwork, ProtocolChannel
@@ -355,6 +356,9 @@ class HistoryCreateInput(BaseModel):
     recorded_at: str | None = None
     source: str = "manual-import"
 
+class HistoryPointConfigInput(BaseModel):
+    enabled: bool = True
+
 class DependencyCreateInput(BaseModel):
     dependent_id: str
     dependency_id: str
@@ -400,9 +404,22 @@ class ObjectPatch(BaseModel):
 
 def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | None = None) -> FastAPI:
     """Create the DEV175 local-only Workbench host. Drivers and OT commands remain stopped."""
-    app = FastAPI(title=title, version="1.0.0.dev175")
+    app = FastAPI(title=title, version="1.0.0.dev196")
     root = data_dir or os.environ.get("AVIC_DATA_DIR") or os.path.join(os.path.expanduser("~"), ".avic", "data")
-    app.state.core = CoreApplication(root)
+    license_public_key = os.environ.get("AVIC_LICENSE_PUBLIC_KEY")
+    license_file = os.environ.get("AVIC_LICENSE_FILE")
+    license_required = os.environ.get("AVIC_LICENSE_REQUIRED", "").strip().lower() in {"1", "true", "yes", "on"}
+    if bool(license_public_key) != bool(license_file):
+        raise RuntimeError("Для включения лицензирования задайте одновременно AVIC_LICENSE_PUBLIC_KEY и AVIC_LICENSE_FILE")
+    if license_required and not license_public_key:
+        raise RuntimeError("Коммерческий режим требует AVIC_LICENSE_PUBLIC_KEY и AVIC_LICENSE_FILE; режим без лицензии запрещён")
+    license_service = None
+    if license_public_key and license_file:
+        license_service = InstallationLicenseService(root, LicenseManager(license_public_key))
+    app.state.core = CoreApplication(
+        root, license_service=license_service,
+        license_file=license_file if license_service is not None else None,
+    )
     app.state.project_station = ProjectStationService(app.state.core)
     app.state.device_import = DeviceImportService(app.state.core)
     app.state.protocol_point_import = ProtocolDeviceImportService(app.state.core)
@@ -775,7 +792,16 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             style += f"color:{block.get('color', '#243746')};background:{block.get('background', 'transparent')};text-align:{block.get('align', 'left')};font-size:{int(block.get('font_size', 16))}px;padding:8px;"
             content = ""
             if kind == "heading": content = f"<h2>{html_escape.escape(str(block.get('text') or block.get('label') or 'Заголовок'))}</h2>"
-            elif kind in {"text", "card", "button"}: content = html_escape.escape(str(block.get("text") or block.get("label") or block.get("title") or "Текст"))
+            elif kind in {"text", "card"}: content = html_escape.escape(str(block.get("text") or block.get("label") or block.get("title") or "Текст"))
+            elif kind == "button":
+                button_text = html_escape.escape(str(block.get("text") or block.get("label") or block.get("title") or "Открыть"))
+                href = str(block.get("href") or "")
+                if href:
+                    # href has already passed WebPagesService URL validation; escape again at the HTML boundary.
+                    safe_href = html_escape.escape(href, quote=True)
+                    content = f'<a href="{safe_href}" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 14px;border:1px solid #8da7bd;border-radius:6px;background:#eef4fa;color:#245a9b;text-decoration:none">{button_text}</a>'
+                else:
+                    content = button_text
             elif kind == "image":
                 src = str(block.get("src") or "")
                 content = f'<img src="{html_escape.escape(src, quote=True)}" alt="{html_escape.escape(str(block.get("alt") or ""), quote=True)}" style="width:100%;height:100%;object-fit:contain">'
@@ -1608,12 +1634,44 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         """Unified navigator: Project → Station → Physical Network → Protocol → Device → Point."""
         return app.state.engineering_tree.build(include_archived=include_archived)
 
+    @app.get("/api/licensing/status")
+    def licensing_status() -> dict:
+        """Safe license status for the local engineering UI; never exposes key or file paths."""
+        from avic_core.licensing import summarize_point_usage
+        core = app.state.core
+        service = core.installation_license_service
+        records = core.repository.list_records(entity_type="Point")
+        if service is None or core.license_file is None:
+            usage = summarize_point_usage(records, point_limit=None)
+            return {
+                "configured": False, "valid": None, "reason": "LICENSE_NOT_CONFIGURED",
+                "customer": None, "license_id": None, "host_id": None,
+                "point_limit": None, "licensed_active_points": usage["licensed_active_points"],
+                "remaining_points": None, "features": [],
+            }
+        state = service.inspect(core.license_file)
+        status = state.status
+        usage = summarize_point_usage(records, point_limit=status.point_limit if status.valid else 0)
+        return {
+            "configured": True, "valid": bool(status.valid), "reason": status.reason,
+            "customer": status.customer, "license_id": status.license_id,
+            "host_id": state.host_id, "point_limit": status.point_limit,
+            "licensed_active_points": usage["licensed_active_points"],
+            "remaining_points": usage["remaining_points"],
+            "features": list(status.features),
+        }
+
     @app.get("/api/licensing/point-usage")
     def licensing_point_usage() -> dict:
-        """Project/installation point counters; no license activation is implied."""
+        """Project/installation point counters, including signed license capacity when configured."""
         from avic_core.licensing import summarize_point_usage
-        records = app.state.core.repository.list_records(entity_type="Point")
-        return summarize_point_usage(records, point_limit=None)
+        core = app.state.core
+        records = core.repository.list_records(entity_type="Point")
+        limit = None
+        if core.installation_license_service is not None and core.license_file is not None:
+            status = core.installation_license_service.inspect(core.license_file).status
+            limit = status.point_limit if status.valid else 0
+        return summarize_point_usage(records, point_limit=limit)
 
     @app.post("/api/engineering/devices/{device_id}/read-values")
     def read_device_point_values(device_id: str, request: Request) -> dict:
@@ -2395,6 +2453,33 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             return {k:getattr(event,k) for k in event.__dataclass_fields__}
         except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/api/stations/{station_id}/history/points")
+    def history_configured_points(station_id: str) -> dict:
+        try:
+            app.state.core.repository.get_record(station_id)
+            return {"station_id": station_id,
+                    "point_ids": app.state.core.history.configured_points(station_id)}
+        except EntityNotFound as exc:
+            raise HTTPException(status_code=404, detail="Станция не найдена") from exc
+
+    @app.put("/api/stations/{station_id}/history/points/{point_id}")
+    def history_configure_point(station_id: str, point_id: str,
+                                payload: HistoryPointConfigInput, request: Request) -> dict:
+        require_local_operator(request)
+        try:
+            result = app.state.core.history.configure_point(
+                station_id, point_id, enabled=payload.enabled)
+            app.state.core.audit.append(
+                actor_id="local-engineer",
+                action="history.point_enabled" if payload.enabled else "history.point_disabled",
+                resource_type="point", resource_id=point_id,
+                details={"station_id": station_id, "enabled": payload.enabled})
+            return result
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except PermissionError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
     @app.post("/api/history/samples", status_code=201)
     def history_append(payload: HistoryCreateInput, request: Request) -> dict:
         require_local_operator(request)
@@ -2517,7 +2602,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 "stations": [{"id": row["entity_id"], "name": row["name"]}
                     for row in sorted(stations, key=lambda item: item.get("name", "").casefold())
                     if row.get("payload", {}).get("project_id") == project["entity_id"]]})
-        return {"projects": result, "core_version": "1.0.0.dev148"}
+        return {"projects": result, "core_version": "1.0.0.dev196"}
 
     @app.post("/api/station-transfer/export")
     def station_transfer_export(payload: StationTransferExportInput, request: Request) -> Response:
@@ -2540,7 +2625,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             try:
                 package_path = export_dir / "station.avicstation"
                 core.station_transfer.export_station(
-                    core, payload.station_id, package_path, source_core_version="1.0.0.dev148")
+                    core, payload.station_id, package_path, source_core_version="1.0.0.dev196")
                 content = package_path.read_bytes()
             finally:
                 shutil.rmtree(export_dir, ignore_errors=True)
@@ -2576,7 +2661,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             if total == 0:
                 raise HTTPException(status_code=400, detail="Пустой пакет станции")
             preview = app.state.core.station_transfer.inspect_package(
-                package_path, target_core_version="1.0.0.dev148")
+                package_path, target_core_version="1.0.0.dev196")
         except HTTPException:
             package_path.unlink(missing_ok=True)
             raise
@@ -2599,7 +2684,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
             "station_id": preview.station_id, "station_name": preview.station_name,
             "source_project_id": preview.source_project_id,
             "source_core_version": preview.source_core_version,
-            "target_core_version": "1.0.0.dev148",
+            "target_core_version": "1.0.0.dev196",
             "entity_count": preview.entity_count,
             "auxiliary_record_count": preview.auxiliary_record_count,
             "compatible": preview.compatible, "warnings": warnings,
@@ -2621,7 +2706,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
         try:
             stage_path = app.state.core.station_transfer.stage_import(
                 item["package_path"], app.state.core.paths.backups / "station-transfer-staging",
-                expected_package_id=payload.package_id, target_core_version="1.0.0.dev148")
+                expected_package_id=payload.package_id, target_core_version="1.0.0.dev196")
             item["stage_path"] = stage_path
             return {"stage_token": payload.upload_token, "package_id": payload.package_id,
                     "state": "STAGED_NOT_ACTIVATED", "activation": "NOT_ACTIVATED"}
@@ -2675,7 +2760,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                     "generation": item.generation, "last_error": item.last_error}
                    for item in app.state.core.runtime.all()]
         backup_files = sorted(p.name for p in app.state.core.paths.backups.glob("*.avicbackup.zip") if p.is_file())
-        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev77",
+        return {"product": "AVIC Engineering & Automation Platform", "version": "1.0.0.dev196",
                 "core_open": not app.state.core.closed, "object_counts": counts,
                 "runtime_stations": runtime, "backup_archives": backup_files,
                 "safety": {"driver_autostart": False, "field_writes_enabled": False,
@@ -2686,7 +2771,7 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
     def manifest() -> dict:
         return {
             "product": "AVIC Engineering & Automation Platform",
-            "version": "1.0.0.dev77",
+            "version": "1.0.0.dev196",
             "mode": "engineering-workbench-project-station",
             "execution_enabled": False,
             "network_discovery_enabled": False,
@@ -2708,6 +2793,12 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
                 "project_station_persistence": True,
                 "project_station_api": True,
                 "bacnet_ip_discovery": "explicit-read-only-manual-trigger",
+                "driver_manager": True,
+                "driver_lifecycle": "create-start-stop-diagnostics",
+                "bacnet_ip_polling": "managed-read-only-present-value",
+                "physical_point_to_fbd_binding": True,
+                "fbd_exposed_points": True,
+                "field_writes_enabled": False,
                 "discovery_history": "persistent-session-journal",
                 "point_import_preview": "non-mutating-preview-before-import",
                 "modbus_tcp_read": "explicit-read-only",
@@ -2741,6 +2832,6 @@ def create_ui_app(*, title: str = "AVIC Engineering Workbench", data_dir: str | 
 
     @app.get("/api/ui/health")
     def ui_health() -> dict:
-        return {"status": "ok", "ui": "available", "version": "1.0.0.dev109", "mode": "safe-workbench-project-station"}
+        return {"status": "ok", "ui": "available", "version": "1.0.0.dev196", "mode": "safe-workbench-project-station"}
 
     return app

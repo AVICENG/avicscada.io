@@ -78,10 +78,10 @@ def test_dev67_version_is_reported_consistently(tmp_path):
     client = TestClient(create_ui_app(data_dir=str(tmp_path)))
     manifest = client.get("/api/ui/manifest")
     assert manifest.status_code == 200
-    assert manifest.json()["version"] == "1.0.0.dev77"
+    assert manifest.json()["version"] == "1.0.0.dev196"
     status = client.get("/api/platform/status")
     assert status.status_code == 200
-    assert status.json()["version"] == "1.0.0.dev77"
+    assert status.json()["version"] == "1.0.0.dev196"
 
 
 def test_all_internal_editor_links_resolve_to_live_workbench_routes(tmp_path):
