@@ -53,7 +53,7 @@ class DriverEnvelope:
         return item
 
     def validate(self) -> None:
-        if self.contract != IPC_CONTRACT or self.version != IPC_VERSION:
+        if self.contract != IPC_CONTRACT or isinstance(self.version, bool) or self.version != IPC_VERSION:
             raise DriverIpcError("unsupported IPC contract/version")
         if not isinstance(self.kind, str) or not self.kind or len(self.kind) > 64:
             raise DriverIpcError("invalid message kind")
@@ -94,8 +94,18 @@ def encode_frame(envelope: DriverEnvelope) -> bytes:
     return struct.pack(">I", len(body)) + body
 
 
+def _read_exact(stream: BinaryIO, size: int) -> bytes:
+    chunks = bytearray()
+    while len(chunks) < size:
+        chunk = stream.read(size - len(chunks))
+        if not chunk:
+            break
+        chunks.extend(chunk)
+    return bytes(chunks)
+
+
 def read_frame(stream: BinaryIO) -> DriverEnvelope | None:
-    header = stream.read(4)
+    header = _read_exact(stream, 4)
     if header == b"":
         return None
     if len(header) != 4:
@@ -103,7 +113,7 @@ def read_frame(stream: BinaryIO) -> DriverEnvelope | None:
     (length,) = struct.unpack(">I", header)
     if length == 0 or length > MAX_FRAME_BYTES:
         raise DriverIpcError("IPC frame length out of bounds")
-    body = stream.read(length)
+    body = _read_exact(stream, length)
     if len(body) != length:
         raise DriverIpcError("truncated IPC frame body")
     try:
