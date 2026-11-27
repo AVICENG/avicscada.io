@@ -545,33 +545,50 @@ class DriverManagerService:
                     details={"driver_id": item.driver_id, "poll_interval_seconds": interval})
                 return self.diagnostics(instance_id)
             except Exception as exc:
+                cleanup_error = None
                 if session is not None:
                     try:
                         session.stop(timeout=5.0)
-                    except Exception:
-                        pass
-                close = getattr(adapter, "close", None)
-                if callable(close):
-                    try:
-                        close()
-                    except Exception:
-                        pass
-                self._sessions.pop(instance_id, None)
-                self._adapters.pop(instance_id, None)
-                lease = self._serial_leases.pop(instance_id, None)
-                if lease is not None:
-                    try:
-                        lease.release()
-                    except Exception:
-                        pass
+                    except Exception as stop_exc:
+                        cleanup_error = stop_exc
+
+                # Never discard a Worker reference or release its serial lease if
+                # shutdown failed: the process/thread may still own the physical bus.
+                if cleanup_error is None:
+                    close = getattr(adapter, "close", None)
+                    if callable(close):
+                        try:
+                            close()
+                        except Exception as close_exc:
+                            cleanup_error = close_exc
+
+                if cleanup_error is None:
+                    self._sessions.pop(instance_id, None)
+                    self._adapters.pop(instance_id, None)
+                    lease = self._serial_leases.get(instance_id)
+                    if lease is not None:
+                        try:
+                            lease.release()
+                            self._serial_leases.pop(instance_id, None)
+                        except Exception as lease_exc:
+                            cleanup_error = lease_exc
+                else:
+                    if session is not None:
+                        self._sessions[instance_id] = session
+                    if adapter is not None:
+                        self._adapters[instance_id] = adapter
+
                 try:
                     failed, current_version = self._load(instance_id)
                     self._save_state(failed, current_version, "ERROR", False)
                 except Exception:
                     pass
+                details = {"error": f"{type(exc).__name__}: {exc}"}
+                if cleanup_error is not None:
+                    details["cleanup_error"] = f"{type(cleanup_error).__name__}: {cleanup_error}"
                 self.core.audit.append(actor_id="local-engineer", action="driver.instance_start_failed",
                     resource_type="driver_instance", resource_id=instance_id,
-                    outcome="error", details={"error": f"{type(exc).__name__}: {exc}"})
+                    outcome="error", details=details)
                 raise
 
     def stop_instance(self, instance_id: str, *, timeout: float = 5.0) -> dict:
@@ -593,21 +610,27 @@ class DriverManagerService:
                     except Exception as exc:
                         close_error = exc
 
-                # Keep the serial lease if the adapter failed to close: another
-                # Worker must not open the line while the old process may own it.
+                # Keep both the adapter reference and serial lease when close
+                # fails. A later stop_instance() call can retry cleanup safely.
                 if close_error is None:
-                    lease = self._serial_leases.pop(instance_id, None)
+                    lease = self._serial_leases.get(instance_id)
                     if lease is not None:
                         try:
                             lease.release()
+                            self._serial_leases.pop(instance_id, None)
                         except Exception as exc:
                             close_error = exc
 
-                # Once the worker has stopped, never retain a dead session in the
-                # manager: it would make later start_instance() report a stale session.
-                self._sessions.pop(instance_id, None)
-                self._adapters.pop(instance_id, None)
-                stop_scheduler = not self._sessions
+                if close_error is None:
+                    self._sessions.pop(instance_id, None)
+                    self._adapters.pop(instance_id, None)
+
+                # The scheduler may stop when all retained sessions are already
+                # stopped, even if an adapter close is pending retry.
+                stop_scheduler = all(
+                    current.diagnostics().get("state") == "STOPPED"
+                    for current in self._sessions.values()
+                )
 
             # Do not join the scheduler while holding DriverManager's registry lock:
             # subscriber callbacks may inspect driver diagnostics during a final tick.
