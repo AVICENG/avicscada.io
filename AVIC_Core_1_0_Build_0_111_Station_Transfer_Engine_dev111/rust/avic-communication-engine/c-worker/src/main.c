@@ -359,8 +359,16 @@ configure_done:
 int main(void) {
 #ifdef _WIN32
     /* IPC frames are binary length-prefixed data, never Windows text streams. */
-    if (_setmode(_fileno(stdin), _O_BINARY) == -1
-        || _setmode(_fileno(stdout), _O_BINARY) == -1) return 4;
+    int stdin_mode = _setmode(_fileno(stdin), _O_BINARY);
+    if (stdin_mode == -1) {
+        fprintf(stderr, "C Worker: failed to set stdin binary mode (errno=%d)\\n", errno);
+        return 4;
+    }
+    int stdout_mode = _setmode(_fileno(stdout), _O_BINARY);
+    if (stdout_mode == -1) {
+        fprintf(stderr, "C Worker: failed to set stdout binary mode (errno=%d)\\n", errno);
+        return 4;
+    }
 #endif
     worker_t worker;
     memset(&worker, 0, sizeof(worker));
