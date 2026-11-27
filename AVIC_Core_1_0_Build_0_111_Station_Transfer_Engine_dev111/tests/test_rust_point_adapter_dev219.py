@@ -146,4 +146,4 @@ def test_rust_bacnet_status_fault_is_published_with_bad_quality(fake_worker):
           "property_id": 85, "array_index": None, "scale": 1.0, "offset": 0.0}],
     )
     adapter.poll_once()
-    assert core.point_runtime.published[0][2] == PointQuality.BAD
+    assert core.point_runtime.published[0][2] == PointQuality.BAD_COMMUNICATION
