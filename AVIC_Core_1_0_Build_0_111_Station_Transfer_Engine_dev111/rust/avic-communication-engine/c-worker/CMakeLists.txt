@@ -40,10 +40,8 @@ target_link_libraries(avic-modbus-c-worker PRIVATE ${LIBMODBUS_TARGET} ${JANSSON
 if(WIN32)
   target_link_libraries(avic-modbus-c-worker PRIVATE Rpcrt4)
 else()
-  find_library(UUID_LIBRARY NAMES uuid)
-  if(UUID_LIBRARY)
-    target_link_libraries(avic-modbus-c-worker PRIVATE ${UUID_LIBRARY})
-  endif()
+  find_library(UUID_LIBRARY NAMES uuid REQUIRED)
+  target_link_libraries(avic-modbus-c-worker PRIVATE ${UUID_LIBRARY})
 endif()
 
 if(MSVC)
