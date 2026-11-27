@@ -248,3 +248,13 @@
 - **OPC UA Windows crypto:** upstream open62541 1.4.21 не компилируется с OpenSSL 4 из актуального MSYS2 UCRT64 (opaque ASN1_IA5STRING). Для единого Linux/Windows crypto backend переключено на Mbed TLS; CI ставит `libmbedtls-dev` на Ubuntu и `mingw-w64-ucrt-x86_64-mbedtls` на Windows. Шифрование не отключается.
 - **Подтверждённый прогресс:** run 46031940885 показал C libmodbus Worker build success на Ubuntu и Windows, включая Windows runtime dependency inspection; BACnet Stack и Rust Communication Engine build/test success на обеих ОС. Полный Python suite имел 3 отказа (2 Modbus MEI fixture/signature и 1 BACnet malformed test fixture); исправления выше внесены. OPC UA Linux build прошёл, CTest выявил NodeId namespace overflow; Windows build остановился на OpenSSL 4 incompatibility.
 - **Проверка:** DEV237 исправления ожидают нового CI run. До его результата Modbus остаётся RED по полной регрессии, OPC UA RED по native build+self-test. Не объявлять статусы зелёными заранее.
+
+
+## DEV238 — OPC UA numeric NodeId overflow validation (27.11.2026)
+
+- Актуальный run 46033977232 подтвердил сборку нативного open62541 probe с Mbed TLS на Ubuntu и Windows UCRT64, но оба self-test завершились одинаковой ошибкой: ns=1;i=4294967296 принимался парсером.
+- Причина: предварительно проверялся диапазон namespace index, но не диапазон numeric identifier. OPC UA numeric NodeId использует UInt32; проверка после UA_NodeId_parse недостаточна, поскольку parser path может сузить переполненное значение.
+- Добавлена предварительная десятичная проверка numeric identifier i= до передачи строки в open62541: только цифры, обязательное непустое значение, строгий предел 4 294 967 295, защита от арифметического переполнения.
+- Добавлен положительный граничный тест i=4294967295 и негативные случаи i=4294967296, UInt64 overflow, суффикс после числа и пустое значение.
+- Число отрицательных NodeId cases в self-test увеличено с 7 до 10. Строковые, GUID и ByteString NodeId продолжают передаваться штатному парсеру open62541.
+- Проверка: run 46033977232 подтвердил native build на обеих ОС, но NodeId CTest failed на прежнем HEAD. Исправление DEV238 отправлено отдельным коммитом; его Linux/Windows CTest и полный Python matrix ожидают нового CI. До подтверждения актуальным run OPC UA остаётся RED.
