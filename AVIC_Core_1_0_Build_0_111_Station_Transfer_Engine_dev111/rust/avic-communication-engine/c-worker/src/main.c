@@ -112,7 +112,7 @@ static int get_int(json_t *object, const char *key, json_int_t *out) {
 static int copy_required(char *dst, size_t cap, json_t *object, const char *key) {
     const char *value = get_string(object, key);
     if (!value || !*value || strlen(value) >= cap) return 0;
-    strcpy(dst, value);
+    memcpy(dst, value, strlen(value) + 1);
     return 1;
 }
 static int valid_uuid(const char *s) {
@@ -308,9 +308,9 @@ static int process(worker_t *w, json_t *request, int *exit_after) {
                         w->configured = 0;
                         goto configure_done;
                     }
-                    w->timeout_ms = (int)(timeout_seconds * 1000.0 + 0.5);
+                    w->timeout_ms = (int)(timeout_seconds * 1000.0);
                 }
-                strcpy(w->protocol, protocol); w->configured = 1;
+                memcpy(w->protocol, protocol, strlen(protocol) + 1); w->configured = 1;
                 response_kind = "configured";
                 response_payload = json_pack("{s:b,s:s}", "configured", 1, "protocol", protocol);
             } else response_payload = error_payload("INVALID_CONFIGURATION", "Invalid Modbus TCP configuration");
