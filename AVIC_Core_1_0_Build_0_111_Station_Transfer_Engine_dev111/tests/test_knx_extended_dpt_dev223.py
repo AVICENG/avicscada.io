@@ -93,7 +93,7 @@ def test_knx_adapter_routes_dpt1_short_value_to_bound_point():
 
 def test_knx_binding_accepts_extended_common_dpt_types():
     for dpt in ("5.003", "5.004", "6.001", "7.001", "8.001",
-                "12.001", "13.001", "16.000", "17.001"):
+                "12.001", "13.001", "16.000", "17.001", "18.001"):
         assert KnxPointBinding("point-" + dpt, "1/2/3", dpt).datapoint_type == dpt
 
 
