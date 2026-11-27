@@ -35,6 +35,7 @@ class DriverInstance:
     state: str = "STOPPED"
     config: dict = field(default_factory=dict)
     enabled: bool = False
+    runtime_generation: int = 0
     package_trust: str = "BUILTIN"
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -50,6 +51,8 @@ class DriverInstance:
         active = self.state in {"STARTING", "RUNNING", "DEGRADED", "STOPPING"}
         if self.enabled != active:
             raise ValueError("Флаг enabled не соответствует состоянию драйвера")
+        if isinstance(self.runtime_generation, bool) or not isinstance(self.runtime_generation, int) or self.runtime_generation < 0:
+            raise ValueError("runtime_generation must be a non-negative integer")
         if self.package_trust not in {"BUILTIN", "VERIFIED", "UNVERIFIED", "REJECTED"}:
             raise ValueError("Недопустимый статус доверия пакету")
 
@@ -138,6 +141,7 @@ class DriverManagerService:
             config=worker_config, bindings=bindings,
             installation_id=str(installation_id), project_id=str(project_id),
             station_id=instance.station_id,
+            generation=max(1, int(instance.runtime_generation)),
         )
 
     def register_adapter_factory(self, driver_id: str, factory: Callable[[Any, DriverInstance], Any]) -> None:
@@ -361,7 +365,9 @@ class DriverManagerService:
                 raise RuntimeError(f"Для {item.driver_id} runtime adapter factory не зарегистрирована")
             if item.package_trust == "REJECTED":
                 raise RuntimeError("Пакет драйвера помечен как REJECTED")
+            item.runtime_generation += 1
             self._save_state(item, version, "STARTING", True)
+            version += 1
             adapter = None
             session = None
             try:
@@ -473,6 +479,7 @@ class DriverManagerService:
             "field_write_enabled": False,
             "polling": polling,
             "point_runtime_scheduler": self._point_runtime_scheduler.diagnostics(),
+            "runtime_generation": int(item.runtime_generation),
             "adapter": adapter.diagnostics() if adapter and callable(getattr(adapter, "diagnostics", None)) else None}
 
     def stop_station(self, station_id: str) -> dict:
@@ -520,6 +527,6 @@ class DriverManagerService:
             "driver_id": p["driver_id"], "protocol": p["protocol"], "state": runtime["state"],
             "persisted_state": p["state"], "enabled": runtime["enabled"],
             "package_trust": p["package_trust"], "config": p.get("config", {}),
-            "version": int(row["version"]),
+            "version": int(row["version"]), "runtime_generation": int(p.get("runtime_generation", 0)),
             "field_io_enabled": False, "field_read_enabled": runtime["field_read_enabled"],
             "field_write_enabled": False, "start_supported": p["driver_id"] in self._factories}
