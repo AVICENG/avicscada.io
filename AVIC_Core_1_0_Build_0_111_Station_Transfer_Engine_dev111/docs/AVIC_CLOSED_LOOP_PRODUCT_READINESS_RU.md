@@ -370,3 +370,13 @@ Distributed SCADA, HA, Integration API/SDK, AI Engineering Assistant, произ
 Первый combined run `45952330782` подтвердил Rust crate на обеих ОС: Ubuntu и Windows — `cargo test` (4/4) и `cargo build --release` прошли. Python matrix остановился до pytest: setuptools flat-layout автоматически обнаружил `rust/` как второй top-level package. Это не ошибка Core-тестов.
 
 Исправлено в `pyproject.toml`: явный discovery только `avic_core*`, исключены `rust*` и `tests*`; Rust build output исключён из Git. Исправление вошло в commit `4a8f822`. Новый combined CI run `45952516103` ожидает запуска; до его завершения Python matrix и общий PR остаются НЕ ПОДТВЕРЖДЕНЫ.
+
+
+
+### 9.15 Rust engines — roadmap and performance gates
+
+План из ноутбучного обсуждения: Driver SDK v1 → Load & Reliability Lab/Python baseline → Modbus Rust pilot → BACnet/IP Rust (RPM/COV/segmentation/BBMD) → версионированная IPC/Point Runtime граница → кандидаты Point Runtime/FBD Engine/Historian/Alarm Engine; Scheduler оценивается отдельно. PyO3/maturin — для изолированных вычислительных функций; сетевые драйверы — отдельные процессы для fault isolation.
+
+Предварительный Modbus 10k benchmark (точек/с): Ubuntu Python 45 288 / Rust 47 679; Windows Python 72 167 / Rust 62 554. Поэтому Rust не назначается default: в историческом замере выигрыш на Ubuntu малый, на Windows Python быстрее. BACnet Python 10k запросов предварительно 1.67/4.54 с, 0 ошибок, но длинный p99 tail; ОС для этих двух времён в доступной сводке не установлена.
+
+Gates: 10k базово, 50k+ расширенно, затем 100k; 72h soak; одинаковые Windows/Linux сценарии throughput/CPU/RAM/p50-p95-p99/queue depth/missed samples/reconnect. Запрет на stale rollback, cross-station leakage, duplicate polling, recovery storm и unbounded queues. Все historical benchmarks требуют повторения единым harness. До этих gates Rust pilot не production-ready и не меняет default backend.

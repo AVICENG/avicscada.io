@@ -41,3 +41,11 @@
 
 ## Readiness
 DEV208 is an integration pilot. Rust Modbus is NOT production-ready until full CI, performance/fault parity and real controller acceptance are complete.
+
+## Дополнительная стратегия из ноутбучного обсуждения 27.11.2026
+
+Rust-кандидаты: Communication Engine/драйверы, Point Runtime, FBD Engine, Historian, Alarm Engine; Scheduler — отдельная оценка. Порядок: Driver SDK v1 → Load & Reliability Lab и Python baseline → Rust Modbus → Rust BACnet/IP (RPM/COV/segmentation/BBMD) → версионированная IPC граница Point Runtime → остальные кандидаты только по benchmark.
+
+Предварительные исторические Modbus 10k данные: Ubuntu Python/Rust 45 288/47 679 точек/с; Windows Python/Rust 72 167/62 554 точек/с. Это не доказывает универсальное преимущество Rust (на Windows в том замере Python быстрее). Предварительный BACnet Python 10k: 1.67/4.54 с, ошибок 0, но длинный p99 tail. Все цифры должны быть повторены единым harness.
+
+Performance gates: 10k базово, 50k+ расширенно, 72 часа soak; throughput, CPU/RAM, p95/p99, очереди, пропуски/задержки, reconnect и recovery. Не переводить backend по умолчанию до functional parity, отказных тестов и аппаратной приёмки.
