@@ -196,7 +196,7 @@ Rust worker не становится production default, если:
 - Modbus grouped reads: **реализованы в Python**.
 - Общий adaptive Polling Manager: **не завершён**.
 - Межъязыковой SDK/IPC contract: **не реализован**.
-- Rust Modbus TCP FC03 transport pilot: **реализован как отдельный Rust crate и benchmark CLI; не подключён к production Driver Manager / Point Runtime**.
+- Rust Modbus TCP FC01/FC02/FC03/FC04 read-only transport pilot: **реализованы как отдельный Rust crate; FC03 используется сравнительным benchmark CLI; не подключён к production Driver Manager / Point Runtime**.
 - Rust BACnet worker: **не реализован**; доступен только Python ReadProperty baseline.
 - Python/Rust Modbus synthetic 10k benchmark и Python BACnet 10k baseline: **запускаются в Windows/Linux CI**; результаты не являются аппаратной приёмкой.
 - Production Driver SDK v1, versioned IPC, worker supervisor, persistent multi-device runtime, adaptive polling/backoff и Load & Reliability Lab: **требуют реализации**.
@@ -226,3 +226,8 @@ Rust worker не становится production default, если:
 ### DEV212 — Modbus FC03 exception frame handling
 
 During review of the Rust FC03 transport pilot, the response parser was found to compare every response MBAP length with the normal register payload length before checking the Modbus exception function. A valid exception response (function 0x83, two-byte PDU, MBAP length 3) was therefore rejected as a generic length error. The parser now reads the bounded MBAP body first, validates the exception frame length, and returns the typed Modbus exception code. Added local TCP protocol tests for a valid FC03 response, a valid exception response, and a mismatched transaction ID. CI confirmation is pending; this does not change the production readiness boundary.
+
+
+### DEV213 — Modbus read-only function parity
+
+Rust transport дополнен чтением Coils (FC01), Discrete Inputs (FC02), Holding Registers (FC03) и Input Registers (FC04). Для битовых функций реализовано LSB-first unpacking согласно Modbus PDU; для регистров — big-endian uint16 transport decode. Проверяются пределы 2000 bits / 125 registers, адресное переполнение, response function, byte count и размер PDU. Добавлены loopback TCP tests на все четыре функции, FC03 exception response и transaction ID mismatch. Это transport-level parity по базовым read functions, не parity всего Python adapter: grouped binding planner, typed decoding/scaling, retries, rate scheduling, IPC и Point Runtime integration ещё не подключены. Cargo CI confirmation pending.

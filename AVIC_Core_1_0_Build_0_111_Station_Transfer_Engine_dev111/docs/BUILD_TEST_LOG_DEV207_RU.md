@@ -108,3 +108,8 @@ Commit DEV211: `b0fd590df72b61358d59b9cc97d59f1af0deae19`. Новый CI пос�
 ## DEV212 — Modbus FC03 exception response correctness
 
 Исправлена обработка валидных Modbus exception frames. Ранее parser проверял MBAP length как для обычного FC03 ответа до распознавания exception function 0x83; корректный exception PDU длиной 2 байта и MBAP length 3 ошибочно классифицировался как неверная длина. Теперь ограниченное тело ответа читается, exception frame отдельно проверяется и возвращается `ModbusError::Exception(code)`. Добавлены локальные TCP tests: нормальный FC03 response, exception response и несовпадающий transaction ID. Полный CI после DEV212 ожидает запуска; результаты не заявляются до завершения матрицы.
+
+
+## DEV213 — Modbus FC01/FC02/FC04 read-only
+
+Rust transport расширен с FC03 до четырёх read-only функций: FC01 Read Coils, FC02 Read Discrete Inputs, FC03 Read Holding Registers, FC04 Read Input Registers. Bit response декодируется LSB-first; register response возвращается как big-endian uint16. Введены общие проверки границ (1..2000 bits, 1..125 registers), MBAP header, response function, byte count и длины payload. Добавлены локальные TCP unit tests для каждой функции, а также проверка exception response и Transaction ID. Это пока transport crate: Python binding/group planner, decode/scaling, production IPC/Driver SDK и Core Point Runtime остаются следующими этапами. На текущем контейнере cargo отсутствует, поэтому локальная Rust-компиляция не заявляется; ожидается GitHub Windows/Linux Rust CI.
