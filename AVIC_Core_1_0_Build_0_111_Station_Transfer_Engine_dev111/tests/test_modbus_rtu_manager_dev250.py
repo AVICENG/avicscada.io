@@ -41,6 +41,8 @@ def test_modbus_rtu_catalog_and_driver_manager_use_c_worker(tmp_path, monkeypatc
         assert catalog["modbus-rtu"]["read_supported"] is True
         assert catalog["modbus-rtu"]["write_supported"] is False
         assert catalog["modbus-rtu"]["runtime_start_supported"] is True
+        assert catalog["modbus-rtu"]["supported_engines"] == ["c"]
+        assert catalog["modbus-rtu"]["c_engine_available"] is True
 
         instance = DriverInstance(
             name="RS-485 line", station_id=station.id,
