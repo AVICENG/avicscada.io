@@ -1,6 +1,5 @@
-//! AVIC Communication Engine pilot.
-//! This first implementation is intentionally read-only and supports Modbus TCP FC03.
-//! It is a benchmarkable transport kernel, not yet the production Driver SDK/IPC worker.
+//! AVIC Communication Engine read-only Modbus TCP transport pilot.
+//! This crate is not yet the production Driver SDK/IPC worker.
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
@@ -52,10 +51,10 @@ pub struct ModbusTcpClient {
 impl ModbusTcpClient {
     pub fn new(config: ModbusTcpConfig) -> Self { Self { config, transaction_id: 0 } }
 
-    /// Read holding registers only (function code 03). No write API is exposed.
-    pub fn read_holding_registers(&mut self, address: u16, count: u16) -> Result<Vec<u16>, ModbusError> {
-        if count == 0 || count > 125 || (address as u32 + count as u32) > 65536 {
-            return Err(ModbusError::InvalidArgument("FC03 count must be 1..125 and address range must fit"));
+    fn read_payload(&mut self, function: u8, address: u16, count: u16,
+                    maximum: u16, expected_bytes: usize) -> Result<Vec<u8>, ModbusError> {
+        if count == 0 || count > maximum || (address as u32 + count as u32) > 65536 {
+            return Err(ModbusError::InvalidArgument("Modbus read count/address range out of bounds"));
         }
         self.transaction_id = self.transaction_id.wrapping_add(1);
         let tid = self.transaction_id;
@@ -64,7 +63,7 @@ impl ModbusTcpClient {
         request.extend_from_slice(&0u16.to_be_bytes());
         request.extend_from_slice(&6u16.to_be_bytes());
         request.push(self.config.unit_id);
-        request.push(3);
+        request.push(function);
         request.extend_from_slice(&address.to_be_bytes());
         request.extend_from_slice(&count.to_be_bytes());
 
@@ -82,36 +81,68 @@ impl ModbusTcpClient {
         if response_tid != tid || protocol != 0 || unit != self.config.unit_id || !(2..=254).contains(&length) {
             return Err(ModbusError::Protocol("invalid MBAP header"));
         }
+
+        // MBAP length includes Unit Identifier + PDU. A Modbus exception
+        // response has a two-byte PDU and therefore MBAP length 3.
         let mut body = vec![0u8; length as usize - 1];
         stream.read_exact(&mut body)?;
-        // Modbus exception responses have a two-byte PDU and MBAP length 3,
-        // independent of the requested register count.
-        if body.first() == Some(&0x83) {
+        if body.first() == Some(&(function | 0x80)) {
             if length != 3 || body.len() != 2 {
                 return Err(ModbusError::Protocol("invalid Modbus exception response length"));
             }
             return Err(ModbusError::Exception(body[1]));
         }
-        if length as usize != 3 + count as usize * 2 {
-            return Err(ModbusError::Protocol("unexpected MBAP response length"));
+        if body.len() != 2 + expected_bytes || body[0] != function
+            || body[1] as usize != expected_bytes {
+            return Err(ModbusError::Protocol("invalid Modbus response payload"));
         }
-        if body.len() != 2 + count as usize * 2 || body[0] != 3 || body[1] as usize != count as usize * 2 {
-            return Err(ModbusError::Protocol("invalid FC03 response payload"));
-        }
-        let mut registers = Vec::with_capacity(count as usize);
-        for pair in body[2..].chunks_exact(2) {
-            registers.push(u16::from_be_bytes([pair[0], pair[1]]));
-        }
-        Ok(registers)
+        Ok(body[2..].to_vec())
+    }
+
+    fn read_registers(&mut self, function: u8, address: u16, count: u16) -> Result<Vec<u16>, ModbusError> {
+        let expected = count as usize * 2;
+        let bytes = self.read_payload(function, address, count, 125, expected)?;
+        Ok(bytes.chunks_exact(2)
+            .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+            .collect())
+    }
+
+    fn read_bits(&mut self, function: u8, address: u16, count: u16) -> Result<Vec<bool>, ModbusError> {
+        let expected = (count as usize + 7) / 8;
+        let bytes = self.read_payload(function, address, count, 2000, expected)?;
+        Ok((0..count as usize)
+            .map(|index| (bytes[index / 8] & (1 << (index % 8))) != 0)
+            .collect())
+    }
+
+    /// Read coils (FC01). This API is read-only and sends no write requests.
+    pub fn read_coils(&mut self, address: u16, count: u16) -> Result<Vec<bool>, ModbusError> {
+        self.read_bits(1, address, count)
+    }
+
+    /// Read discrete inputs (FC02).
+    pub fn read_discrete_inputs(&mut self, address: u16, count: u16) -> Result<Vec<bool>, ModbusError> {
+        self.read_bits(2, address, count)
+    }
+
+    /// Read holding registers (FC03).
+    pub fn read_holding_registers(&mut self, address: u16, count: u16) -> Result<Vec<u16>, ModbusError> {
+        self.read_registers(3, address, count)
+    }
+
+    /// Read input registers (FC04).
+    pub fn read_input_registers(&mut self, address: u16, count: u16) -> Result<Vec<u16>, ModbusError> {
+        self.read_registers(4, address, count)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::TcpListener;
+    use std::thread::JoinHandle;
 
-    fn test_server(pdu: Vec<u8>, wrong_transaction_id: bool) -> (SocketAddr, std::thread::JoinHandle<()>) {
-        use std::net::TcpListener;
+    fn test_server(pdu: Vec<u8>, wrong_transaction_id: bool) -> (SocketAddr, JoinHandle<()>) {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let address = listener.local_addr().unwrap();
         let handle = std::thread::spawn(move || {
@@ -132,30 +163,56 @@ mod tests {
         (address, handle)
     }
 
+    fn client_for(address: SocketAddr) -> ModbusTcpClient {
+        ModbusTcpClient::new(ModbusTcpConfig {
+            address, unit_id: 1, timeout: Duration::from_secs(1),
+        })
+    }
+
     #[test]
-    fn reads_valid_fc03_response() {
+    fn reads_fc01_coils_lsb_first() {
+        let (address, server) = test_server(vec![1, 2, 0b0101_0101, 0b0000_0001], false);
+        let result = client_for(address).read_coils(0, 9).unwrap();
+        assert_eq!(result, vec![true, false, true, false, true, false, true, false, true]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn reads_fc02_discrete_inputs() {
+        let (address, server) = test_server(vec![2, 1, 0b0000_0010], false);
+        let result = client_for(address).read_discrete_inputs(0, 3).unwrap();
+        assert_eq!(result, vec![false, true, false]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn reads_fc03_holding_registers() {
         let (address, server) = test_server(vec![3, 4, 0, 10, 0, 20], false);
-        let config = ModbusTcpConfig { address, unit_id: 1, timeout: Duration::from_secs(1) };
-        let mut client = ModbusTcpClient::new(config);
-        assert_eq!(client.read_holding_registers(0, 2).unwrap(), vec![10, 20]);
+        let result = client_for(address).read_holding_registers(0, 2).unwrap();
+        assert_eq!(result, vec![10, 20]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn reads_fc04_input_registers() {
+        let (address, server) = test_server(vec![4, 2, 0x12, 0x34], false);
+        let result = client_for(address).read_input_registers(10, 1).unwrap();
+        assert_eq!(result, vec![0x1234]);
         server.join().unwrap();
     }
 
     #[test]
     fn parses_fc03_exception_response() {
         let (address, server) = test_server(vec![0x83, 2], false);
-        let config = ModbusTcpConfig { address, unit_id: 1, timeout: Duration::from_secs(1) };
-        let mut client = ModbusTcpClient::new(config);
-        assert!(matches!(client.read_holding_registers(0, 2), Err(ModbusError::Exception(2))));
+        assert!(matches!(client_for(address).read_holding_registers(0, 2), Err(ModbusError::Exception(2))));
         server.join().unwrap();
     }
 
     #[test]
     fn rejects_wrong_transaction_id() {
         let (address, server) = test_server(vec![3, 4, 0, 10, 0, 20], true);
-        let config = ModbusTcpConfig { address, unit_id: 1, timeout: Duration::from_secs(1) };
-        let mut client = ModbusTcpClient::new(config);
-        assert!(matches!(client.read_holding_registers(0, 2), Err(ModbusError::Protocol("invalid MBAP header"))));
+        assert!(matches!(client_for(address).read_holding_registers(0, 2),
+            Err(ModbusError::Protocol("invalid MBAP header"))));
         server.join().unwrap();
     }
 
@@ -173,5 +230,6 @@ mod tests {
         assert!(matches!(client.read_holding_registers(0, 0), Err(ModbusError::InvalidArgument(_))));
         assert!(matches!(client.read_holding_registers(65535, 2), Err(ModbusError::InvalidArgument(_))));
         assert!(matches!(client.read_holding_registers(0, 126), Err(ModbusError::InvalidArgument(_))));
+        assert!(matches!(client.read_coils(0, 2001), Err(ModbusError::InvalidArgument(_))));
     }
 }
