@@ -17,8 +17,8 @@
 |---|---|---|---|
 | Modbus TCP | libmodbus | C Worker, динамическая библиотека | Первый C-порт. Сначала FC01/02/03/04, batching, reconnect и diagnostics; RTU — отдельный этап с serial manager. |
 | Modbus RTU | libmodbus | C Worker | Использовать ту же библиотеку, но отдельные тесты RS-485, таймингов, parity, stop bits, bus contention и recovery. |
-| BACnet/IP | Steve Karg BACnet Stack | C Worker | Кандидат №1; проверить ReadProperty, RPM, Who-Is/I-Am, segmentation, BBMD, vendor/device behavior и совместимость с текущими профилями. Репозиторий содержит каталог нескольких лицензий: обязательна проверка SPDX/лицензии каждого используемого исходного файла, а не только примеров. |
-| BACnet MS/TP | Steve Karg BACnet Stack | C Worker + serial | Кандидат; требуется полноценный MS/TP token-passing, serial timing и реальные RS-485 тесты. Не считать готовым вслед за BACnet/IP. Лицензии исходных файлов проверять поштучно. |
+| BACnet/IP | Steve Karg BACnet Stack | C Worker | Основной кандидат для POC. Зафиксирован upstream commit 45f9831996f1a17504a790da91a4113f2974595c; проверен license/readme.txt: GPL-2.0-or-later WITH GCC-exception-2.0 разрешает link с proprietary code; в репозитории также MIT/Apache-2.0 файлы. Выборочно проверены Win32/Linux BIP и MS/TP порты; перед production обязателен полный SPDX/SBOM только по реально компилируемому source set. Функционально: сначала ReadProperty, RPM, Who-Is/I-Am, segmentation, BBMD и Trend. |
+| BACnet MS/TP | Steve Karg BACnet Stack | C Worker + serial | Тот же стек и закреплённый commit; Linux/Win32 port files включают GCC exception и MIT файлы. Требуется полноценный MS/TP token-passing, serial timing и реальные RS-485 тесты. Не считать готовым вслед за BACnet/IP. |
 | BACnet/SC | Сначала отдельная проверка Steve Karg / CAS BACnet Stack | Изолированный C Worker | Не включать в первую поставку без проверки полноценного TLS, сертификатов, Hub/Node, failover и лицензии. CAS v6 заявляет BACnet/SC, MS/TP и IP в одной C/C++ библиотеке, но это платный/коммерческий кандидат, не обязательная покупка. |
 | KNX | KNX Falcon .NET SDK | .NET Worker | Официальный публичный SDK доступен через NuGet; проверить runtime, redistributable, ETS-интеграцию, лицензирование и Windows deployment. Текущий Rust KNX путь сохраняется до parity. |
 | OPC UA Client/Server | open62541 | C Worker | Основной открытый кандидат; MPL-2.0. Развести client и server профили, security policies, certificates, subscriptions, browse и namespace mapping. |
@@ -45,7 +45,8 @@
 - Fault injection и сравнение Python/Rust/C на одинаковых сценариях.
 
 ### DEV225 — BACnet C evaluation / integration
-- Проверка стека Steve Karg и минимальный прототип Worker.
+- Лицензионный аудит Steve Karg выполнен: см. BACNET_STACK_LICENSE_AND_INTEGRATION_AUDIT_RU.md.
+- Следующий шаг: pinned upstream CMake build на Windows/Linux с BACDL_BIP, затем минимальный Worker discovery + ReadProperty.
 - Сначала discovery + ReadProperty, затем RPM; COV только после тестов подписок и восстановления.
 - Сравнение с существующим BACnet/IP путем на Trend-контроллере.
 
