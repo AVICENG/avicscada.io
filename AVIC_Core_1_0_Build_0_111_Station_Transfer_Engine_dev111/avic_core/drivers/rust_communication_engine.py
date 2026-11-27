@@ -74,12 +74,19 @@ class RustModbusTcpClient:
     def _terminate_locked(self) -> None:
         process, self._process = self._process, None
         self._healthy = False
-        if process is not None and process.poll() is None:
-            process.kill()
-            try:
-                process.wait(timeout=1.0)
-            except subprocess.TimeoutExpired:
-                pass
+        if process is not None:
+            if process.poll() is None:
+                process.kill()
+                try:
+                    process.wait(timeout=1.0)
+                except subprocess.TimeoutExpired:
+                    pass
+            for pipe in (process.stdin, process.stdout):
+                if pipe is not None:
+                    try:
+                        pipe.close()
+                    except OSError:
+                        pass
 
     def _exchange_locked(self, payload: dict[str, Any]) -> dict[str, Any]:
         process = self._process

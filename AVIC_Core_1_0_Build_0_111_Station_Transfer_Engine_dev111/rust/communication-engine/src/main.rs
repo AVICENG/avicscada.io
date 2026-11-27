@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpStream};
 use std::time::Duration;
 

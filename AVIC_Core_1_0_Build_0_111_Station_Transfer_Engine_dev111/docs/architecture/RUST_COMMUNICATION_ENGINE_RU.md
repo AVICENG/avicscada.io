@@ -34,8 +34,8 @@
 Сначала соберите бинарный файл в каталоге `rust/communication-engine`:
 
 ```powershell
-cargo test --locked
-cargo build --release --locked
+cargo test
+cargo build --release
 ```
 
 Windows executable:
