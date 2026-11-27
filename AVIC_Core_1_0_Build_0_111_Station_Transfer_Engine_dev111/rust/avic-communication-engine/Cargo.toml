@@ -32,5 +32,4 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 # experimental upstream; AVIC acceptance tests remain mandatory before field use.
 bacnet-rs = "=0.3.2"
 knxide = "=0.1.0"
-tokio-s7 = "=0.1.7"
 tokio = { version = "1.40", features = ["rt-multi-thread", "net", "time"] }
