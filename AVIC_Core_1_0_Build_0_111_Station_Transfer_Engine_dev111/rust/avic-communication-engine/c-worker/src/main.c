@@ -393,10 +393,8 @@ int main(void) {
         int status = read_frame(&request);
         if (status == 0) break;
         if (status < 0) {
-#ifdef _WIN32
             fprintf(stderr, "C Worker: invalid or truncated IPC frame (errno=%d)\\n", errno);
             fflush(stderr);
-#endif
             close_modbus(&worker); return 2;
         }
         int should_exit = 0;
@@ -405,12 +403,10 @@ int main(void) {
         (void)command;
         int ok = process(&worker, request, &should_exit);
         if (!ok) {
-#ifdef _WIN32
             fprintf(stderr, "C Worker: IPC command rejected or response failed (command=%s, initialized=%d, incoming_sequence=%llu)\\n",
                     command ? command : "<missing>", worker.initialized,
                     (unsigned long long)worker.incoming_sequence);
             fflush(stderr);
-#endif
         }
         json_decref(request);
         if (!ok) { close_modbus(&worker); return 3; }
