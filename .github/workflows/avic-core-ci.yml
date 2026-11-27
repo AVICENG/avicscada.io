@@ -150,3 +150,53 @@ jobs:
         env:
           AVIC_C_MODBUS_WORKER: ${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/c-modbus-worker/avic-modbus-c-worker
         run: python -m pytest -q tests/test_c_modbus_worker_dev223.py
+
+  c-libmodbus-worker-windows:
+    name: C libmodbus Worker / Windows UCRT64
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install MSYS2 UCRT64 C dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-libmodbus
+            mingw-w64-ucrt-x86_64-jansson
+
+      - name: Configure Windows C Worker
+        shell: msys2 {0}
+        run: cmake -S rust/avic-communication-engine/c-worker -B build/c-modbus-worker -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Windows C Worker
+        shell: msys2 {0}
+        run: cmake --build build/c-modbus-worker --parallel 2
+
+      - name: Set up Python for Windows IPC and protocol acceptance
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install AVIC Core test dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run compiled Windows C Worker IPC and Modbus simulator tests
+        shell: pwsh
+        env:
+          AVIC_C_MODBUS_WORKER: ${{ github.workspace }}\\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\\build\\c-modbus-worker\\avic-modbus-c-worker.exe
+        run: |
+          $env:PATH = "C:\\msys64\\ucrt64\\bin;$env:PATH"
+          python -m pytest -q tests/test_c_modbus_worker_dev223.py
