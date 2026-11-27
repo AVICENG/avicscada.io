@@ -256,6 +256,36 @@ mod tests {
     }
 
     #[test]
+    fn reconnects_after_broken_session_on_next_read() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            // First accepted connection is deliberately dropped without a response.
+            let (mut broken, _) = listener.accept().unwrap();
+            let mut request = [0u8; 12];
+            broken.read_exact(&mut request).unwrap();
+            drop(broken);
+
+            // The next read must establish a fresh TCP connection.
+            let (mut recovered, _) = listener.accept().unwrap();
+            recovered.read_exact(&mut request).unwrap();
+            let tid = u16::from_be_bytes([request[0], request[1]]);
+            let pdu = vec![3, 2, 0, 42];
+            let mut response = Vec::with_capacity(11);
+            response.extend_from_slice(&tid.to_be_bytes());
+            response.extend_from_slice(&0u16.to_be_bytes());
+            response.extend_from_slice(&5u16.to_be_bytes());
+            response.push(request[6]);
+            response.extend_from_slice(&pdu);
+            recovered.write_all(&response).unwrap();
+        });
+        let mut client = client_for(address);
+        assert!(client.read_holding_registers(0, 1).is_err());
+        assert_eq!(client.read_holding_registers(0, 1).unwrap(), vec![42]);
+        server.join().unwrap();
+    }
+
+    #[test]
     fn rejects_wrong_transaction_id() {
         let (address, server) = test_server(vec![3, 4, 0, 10, 0, 20], true);
         assert!(matches!(client_for(address).read_holding_registers(0, 2),
