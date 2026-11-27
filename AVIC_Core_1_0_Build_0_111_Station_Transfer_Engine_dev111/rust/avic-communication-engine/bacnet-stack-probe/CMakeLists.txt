@@ -27,3 +27,6 @@ FetchContent_MakeAvailable(bacnet_stack)
 
 add_executable(avic-bacnet-stack-probe src/main.c)
 target_link_libraries(avic-bacnet-stack-probe PRIVATE bacnet-stack)
+
+enable_testing()
+add_test(NAME avic_bacnet_stack_version_probe COMMAND avic-bacnet-stack-probe)
