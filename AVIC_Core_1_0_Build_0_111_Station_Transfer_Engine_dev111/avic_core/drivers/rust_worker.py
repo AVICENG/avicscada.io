@@ -17,7 +17,7 @@ from typing import Any, Sequence
 from uuid import uuid4
 
 from avic_core.drivers.ipc import (
-    DriverEnvelope, DriverIpcError, SequenceGuard, encode_frame, read_frame, write_frame,
+    DriverEnvelope, DriverIpcError, SequenceGuard, read_frame, write_frame,
 )
 
 
