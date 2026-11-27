@@ -20,6 +20,7 @@ from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
 from avic_core.network.knx_tunneling import KnxTunnelingSession
 from avic_core.drivers.rust_point_adapter import RustDriverPointAdapter
+from avic_core.drivers.serial_port_lease import SerialPortLease
 
 
 def _now():
@@ -88,6 +89,7 @@ class DriverManagerService:
         }
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
+        self._serial_leases: dict[str, SerialPortLease] = {}
         self._point_runtime_scheduler = PointRuntimeScheduler(core.point_runtime)
         self._scheduler_lifecycle_lock = RLock()
 
@@ -521,6 +523,9 @@ class DriverManagerService:
             adapter = None
             session = None
             try:
+                if item.driver_id == "modbus-rtu":
+                    lease = SerialPortLease(item.config.get("serial_port", "")).acquire()
+                    self._serial_leases[instance_id] = lease
                 adapter = factory(self.core, item)
                 interval = float(poll_interval_seconds if poll_interval_seconds is not None
                                  else item.config.get("poll_interval_seconds", 5.0))
@@ -553,6 +558,12 @@ class DriverManagerService:
                         pass
                 self._sessions.pop(instance_id, None)
                 self._adapters.pop(instance_id, None)
+                lease = self._serial_leases.pop(instance_id, None)
+                if lease is not None:
+                    try:
+                        lease.release()
+                    except Exception:
+                        pass
                 try:
                     failed, current_version = self._load(instance_id)
                     self._save_state(failed, current_version, "ERROR", False)
@@ -581,6 +592,16 @@ class DriverManagerService:
                         close()
                     except Exception as exc:
                         close_error = exc
+
+                # Keep the serial lease if the adapter failed to close: another
+                # Worker must not open the line while the old process may own it.
+                if close_error is None:
+                    lease = self._serial_leases.pop(instance_id, None)
+                    if lease is not None:
+                        try:
+                            lease.release()
+                        except Exception as exc:
+                            close_error = exc
 
                 # Once the worker has stopped, never retain a dead session in the
                 # manager: it would make later start_instance() report a stale session.
