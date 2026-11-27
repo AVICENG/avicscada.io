@@ -14,6 +14,7 @@ pub struct BacnetDeviceSnapshot {
     pub vendor_name: String,
     pub max_apdu: u32,
     pub segmentation: String,
+    pub route: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -32,12 +33,14 @@ pub struct BacnetPointSnapshot {
 pub enum BacnetDriverError {
     Stack(String),
     InvalidAddress,
+    DeviceInstanceMismatch,
 }
 impl std::fmt::Display for BacnetDriverError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Stack(v) => write!(f, "BACnet stack: {v}"),
             Self::InvalidAddress => write!(f, "invalid BACnet/IP socket address"),
+            Self::DeviceInstanceMismatch => write!(f, "BACnet Device Instance mismatch"),
         }
     }
 }
@@ -64,28 +67,51 @@ impl BacnetIpReadOnlyClient {
             vendor_name: info.vendor_name,
             max_apdu: info.max_apdu,
             segmentation: format!("{:?}", info.segmentation),
+            route: info.route.map(|v| format!("{:?}", v)),
         })
     }
 
-    /// Enumerate the device object list and read the stack's common object
-    /// properties (including Present_Value where supported by the object).
-    pub fn read_object_snapshots(
+    /// Discover a device and read its object list using the target returned by I-Am.
+    /// This preserves routed BACnet destination network/address metadata.
+    pub fn read_device_snapshot(
         &self, address: SocketAddr, device_instance: u32,
-    ) -> Result<Vec<BacnetPointSnapshot>, BacnetDriverError> {
-        let identifiers = self.client.read_object_list(address, device_instance)
+    ) -> Result<(BacnetDeviceSnapshot, Vec<BacnetPointSnapshot>), BacnetDriverError> {
+        if address.port() == 0 { return Err(BacnetDriverError::InvalidAddress); }
+        let info = self.client.discover_device(address)
             .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
-        let objects = self.client.read_objects_properties(address, &identifiers)
+        if info.device_id != device_instance {
+            return Err(BacnetDriverError::DeviceInstanceMismatch);
+        }
+        let identifiers = self.client.read_object_list(info.target(), device_instance)
             .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
-        Ok(objects.into_iter().map(|item| BacnetPointSnapshot {
+        let objects = self.client.read_objects_properties(info.target(), &identifiers)
+            .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
+        let device = BacnetDeviceSnapshot {
+            address: info.address.to_string(),
+            device_instance: info.device_id,
+            vendor_id: info.vendor_id,
+            vendor_name: info.vendor_name,
+            max_apdu: info.max_apdu,
+            segmentation: format!("{:?}", info.segmentation),
+            route: info.route.map(|v| format!("{:?}", v)),
+        };
+        let snapshots = objects.into_iter().map(|item| BacnetPointSnapshot {
             object_identifier: format!("{:?}", item.object_identifier),
             object_type_name: format!("{:?}", item.object_identifier.object_type),
             object_instance: item.object_identifier.instance,
             object_name: item.object_name,
             description: item.description,
             present_value: item.present_value.as_ref().map(property_value_to_json),
-            units: item.units,
+            units: item.units.map(|v| format!("{:?}", v)),
             status_flags: item.status_flags,
-        }).collect())
+        }).collect();
+        Ok((device, snapshots))
+    }
+
+    pub fn read_object_snapshots(
+        &self, address: SocketAddr, device_instance: u32,
+    ) -> Result<Vec<BacnetPointSnapshot>, BacnetDriverError> {
+        self.read_device_snapshot(address, device_instance).map(|(_, objects)| objects)
     }
 }
 
