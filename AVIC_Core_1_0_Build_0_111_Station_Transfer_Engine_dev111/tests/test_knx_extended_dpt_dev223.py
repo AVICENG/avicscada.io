@@ -63,15 +63,17 @@ class Session:
     connected = True
     individual_address = 0x1101
 
+    timeout_seconds = 0.2
+
     def __init__(self, frame):
-        self.frame = frame
+        self.frames = list(frame) if isinstance(frame, list) else [frame]
         self.sent = []
 
     def send_cemi(self, frame):
         self.sent.append(frame)
 
     def poll_cemi(self):
-        return self.frame
+        return self.frames.pop(0) if self.frames else None
 
     def disconnect(self):
         self.connected = False
@@ -131,3 +133,17 @@ def test_knx_active_poll_marks_requested_point_bad_on_response_timeout():
     result = adapter.poll_once()
     assert result["failure_count"] == 1
     assert runtime.qualities[0][0:2] == ("point-bool", PointQuality.BAD_COMMUNICATION)
+
+
+def test_knx_active_poll_ignores_unrelated_group_telegram_until_matching_response():
+    runtime = Runtime()
+    unrelated = bytes((0x29, 0, 0, 0x80, 0x11, 0x01, 0x0A, 0x04,
+                       0x01, 0x00, (0x01 << 6) | 0))
+    session = Session([unrelated, group_response_frame(1)])
+    adapter = KnxPointAdapter(
+        session, runtime, "knx-poll-correlation",
+        [KnxPointBinding("point-bool", "1/2/3", "1.001")], read_mode="poll",
+    )
+    result = adapter.poll_once()
+    assert result["success_count"] == 1
+    assert runtime.values[0][0:2] == ("point-bool", True)
