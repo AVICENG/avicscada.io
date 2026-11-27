@@ -81,6 +81,7 @@ class DriverManagerService:
         self._c_worker_command: str | None = None
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
+            "modbus-rtu": self._build_modbus_rtu_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
             "knxnet-ip": self._build_knx_adapter,
             "mqtt": self._build_mqtt_adapter,
@@ -136,7 +137,8 @@ class DriverManagerService:
             self._c_worker_command = resolved
         return resolved
 
-    def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings):
+    def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings,
+                                protocol: str = "modbus-tcp"):
         if not self._c_worker_command:
             raise RuntimeError("C libmodbus Worker is not registered by the AVIC administrator")
         station = core.repository.get_record(instance.station_id)
@@ -156,7 +158,7 @@ class DriverManagerService:
         worker_config["station_id"] = instance.station_id
         return RustDriverPointAdapter(
             worker_command=[self._c_worker_command], core=core,
-            driver_instance_id=instance.id, protocol="modbus-tcp",
+            driver_instance_id=instance.id, protocol=protocol,
             config=worker_config, bindings=bindings,
             installation_id=str(installation_id), project_id=str(project_id),
             station_id=instance.station_id,
@@ -231,6 +233,56 @@ class DriverManagerService:
             unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
         )
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
+
+    def _build_modbus_rtu_adapter(self, core, instance: DriverInstance):
+        cfg = dict(instance.config)
+        allowed = {
+            "serial_port", "baud_rate", "parity", "data_bits", "stop_bits",
+            "unit_id", "timeout", "rts_mode", "poll_interval_seconds",
+            "bindings", "engine",
+        }
+        unknown = set(cfg) - allowed
+        if unknown:
+            raise ValueError(f"Неизвестные параметры Modbus RTU: {sorted(unknown)}")
+        if cfg.get("engine", "c") != "c":
+            raise ValueError("Modbus RTU AVIC runtime requires the libmodbus C Worker")
+        serial_port = cfg.get("serial_port")
+        if not isinstance(serial_port, str) or not serial_port.strip():
+            raise ValueError("Для Modbus RTU требуется serial_port")
+        baud_rate = cfg.get("baud_rate", 9600)
+        if isinstance(baud_rate, bool) or baud_rate not in {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200}:
+            raise ValueError("Недопустимая скорость Modbus RTU")
+        parity = cfg.get("parity", "N")
+        if parity not in {"N", "E", "O"}:
+            raise ValueError("parity должна быть N, E или O")
+        data_bits = cfg.get("data_bits", 8)
+        stop_bits = cfg.get("stop_bits", 1)
+        if isinstance(data_bits, bool) or data_bits not in {5, 6, 7, 8}:
+            raise ValueError("data_bits должна быть от 5 до 8")
+        if isinstance(stop_bits, bool) or stop_bits not in {1, 2}:
+            raise ValueError("stop_bits должна быть 1 или 2")
+        unit_id = cfg.get("unit_id", 1)
+        if isinstance(unit_id, bool) or not isinstance(unit_id, int) or not 1 <= unit_id <= 247:
+            raise ValueError("Modbus RTU Unit ID должен быть от 1 до 247")
+        rts_mode = cfg.get("rts_mode", "none")
+        if rts_mode not in {"none", "up", "down"}:
+            raise ValueError("rts_mode должна быть none, up или down")
+        timeout = cfg.get("timeout", 2.0)
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0.1 <= timeout <= 10.0:
+            raise ValueError("timeout должен быть от 0.1 до 10 секунд")
+        if not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
+            raise ValueError("Для Modbus RTU требуется непустой bindings")
+        bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
+        worker_cfg = dict(cfg)
+        worker_cfg.update({
+            "serial_port": serial_port.strip(), "baud_rate": int(baud_rate),
+            "parity": parity, "data_bits": int(data_bits), "stop_bits": int(stop_bits),
+            "unit_id": unit_id, "timeout": float(timeout), "rts_mode": rts_mode,
+        })
+        return self._build_c_modbus_adapter(
+            core, instance, worker_cfg, [asdict(item) for item in bindings],
+            protocol="modbus-rtu",
+        )
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
