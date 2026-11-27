@@ -2,6 +2,7 @@
 #include <jansson.h>
 #include <modbus.h>
 #include <stdint.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,8 +50,10 @@ static int write_exact(FILE *stream, const uint8_t *buffer, size_t length) {
 
 static int read_frame(json_t **out) {
     uint8_t header[4];
-    if (fread(header, 1, 4, stdin) == 0 && feof(stdin)) return 0;
-    if (feof(stdin) || ferror(stdin)) return -1;
+    int first = fgetc(stdin);
+    if (first == EOF) return feof(stdin) ? 0 : -1;
+    header[0] = (uint8_t)first;
+    if (!read_exact(stdin, header + 1, 3)) return -1;
     uint32_t length = ((uint32_t)header[0] << 24) | ((uint32_t)header[1] << 16)
                     | ((uint32_t)header[2] << 8) | (uint32_t)header[3];
     if (length == 0 || length > MAX_FRAME) return -1;
