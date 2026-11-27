@@ -17,7 +17,7 @@ FAKE_WORKER = textwrap.dedent(r"""
     for request in iter(lambda: read_frame(sys.stdin.buffer), None):
         seq += 1
         if request.kind == "initialize":
-            kind, payload, stop = "initialized", {"version": 1}, False
+            kind, payload, stop = "initialized", {"protocol": "avic.driver.ipc", "version": 1, "worker_version": "test"}, False
         elif request.kind == "configure":
             kind, payload, stop = "configured", {"configured": True}, False
         elif request.kind == "start":
