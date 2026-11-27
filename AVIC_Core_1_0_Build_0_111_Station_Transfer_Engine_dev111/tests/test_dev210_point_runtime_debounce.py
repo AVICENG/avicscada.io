@@ -116,7 +116,7 @@ def test_debounce_configuration_is_persisted_and_rejects_analog_or_output_points
     assert stored.debounce_on_ms == 35
     assert stored.debounce_off_ms == 80
 
-    with pytest.raises(ValueError, match="отрицательным"):
+    with pytest.raises(ValueError, match="non-negative"):
         runtime.configure_debounce(point.id, on_ms=-1)
     app.state.core.close()
 
@@ -146,4 +146,27 @@ def test_debounce_is_rejected_for_analog_and_output_points(tmp_path):
     app.state.core.repository.save(output)
     with pytest.raises(ValueError, match="OUTPUT"):
         app.state.core.point_runtime.configure_debounce(output.id, on_ms=10)
+    app.state.core.close()
+
+
+
+def test_wrong_driver_cannot_cancel_another_drivers_pending_debounce(tmp_path):
+    app, point = _setup(tmp_path)
+    runtime = app.state.core.point_runtime
+    runtime.configure_debounce(point.id, on_ms=100, off_ms=100)
+    runtime.publish(point.id, False, timestamp=T0, source_driver_id=DRIVER_ID)
+    runtime.publish(
+        point.id, True, timestamp=T0 + timedelta(milliseconds=10),
+        source_driver_id=DRIVER_ID,
+    )
+
+    with pytest.raises(ValueError, match="не совпадает"):
+        runtime.mark_quality(
+            point.id, PointQuality.BAD_COMMUNICATION,
+            source_driver_id="00000000-0000-4000-8000-000000000999",
+        )
+
+    committed = runtime.flush_debounce(now=T0 + timedelta(milliseconds=110))
+    assert len(committed) == 1
+    assert committed[0].value is True
     app.state.core.close()
