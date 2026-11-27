@@ -1,0 +1,103 @@
+"""Cross-process exclusive leases for AVIC serial field buses."""
+from __future__ import annotations
+
+import hashlib
+import os
+from pathlib import Path
+import tempfile
+from threading import RLock
+
+
+class SerialPortBusyError(RuntimeError):
+    """Raised when another AVIC runtime owns the requested serial port."""
+
+
+class SerialPortLease:
+    """OS-backed advisory lock held for the complete lifetime of a serial driver.
+
+    The lock is process-safe on supported Windows and POSIX hosts. Lock files are
+    deliberately persistent: the kernel releases the lock when a process exits,
+    so deleting the file is unnecessary and could introduce inode races.
+    """
+
+    _registry_lock = RLock()
+    _registry: set[str] = set()
+
+    def __init__(self, serial_port: str) -> None:
+        if not isinstance(serial_port, str) or not serial_port.strip():
+            raise ValueError("serial_port is required")
+        raw = serial_port.strip()
+        if os.name == "nt":
+            self.identity = raw.replace("/", "\\").casefold()
+        else:
+            self.identity = os.path.realpath(os.path.abspath(raw))
+        digest = hashlib.sha256(self.identity.encode("utf-8")).hexdigest()
+        self.lock_dir = Path(tempfile.gettempdir()) / "avic-core-serial-locks"
+        self.lock_path = self.lock_dir / f"{digest}.lock"
+        self._stream = None
+        self._held = False
+
+    def acquire(self) -> "SerialPortLease":
+        with self._registry_lock:
+            if self.identity in self._registry:
+                raise SerialPortBusyError(f"Serial port is already owned by AVIC: {self.identity}")
+            self._registry.add(self.identity)
+        try:
+            self.lock_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+            self._stream = self.lock_path.open("a+b")
+            if self._stream.seek(0, os.SEEK_END) == 0:
+                self._stream.write(b"\0")
+                self._stream.flush()
+            self._stream.seek(0)
+            if os.name == "nt":
+                import msvcrt
+                try:
+                    msvcrt.locking(self._stream.fileno(), msvcrt.LK_NBLCK, 1)
+                except OSError as exc:
+                    raise SerialPortBusyError(
+                        f"Serial port is locked by another AVIC process: {self.identity}"
+                    ) from exc
+            else:
+                import fcntl
+                try:
+                    fcntl.flock(self._stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError as exc:
+                    raise SerialPortBusyError(
+                        f"Serial port is locked by another AVIC process: {self.identity}"
+                    ) from exc
+            self._held = True
+            return self
+        except Exception:
+            if self._stream is not None:
+                self._stream.close()
+                self._stream = None
+            with self._registry_lock:
+                self._registry.discard(self.identity)
+            raise
+
+    def release(self) -> None:
+        if not self._held:
+            return
+        stream = self._stream
+        self._held = False
+        try:
+            if stream is not None:
+                stream.seek(0)
+                if os.name == "nt":
+                    import msvcrt
+                    msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+        finally:
+            if stream is not None:
+                stream.close()
+            self._stream = None
+            with self._registry_lock:
+                self._registry.discard(self.identity)
+
+    def __enter__(self) -> "SerialPortLease":
+        return self.acquire()
+
+    def __exit__(self, *_: object) -> None:
+        self.release()
