@@ -93,6 +93,15 @@ Current Rust backend binds BACnet socket to station `local_address:udp_port`. Su
 
 Current Rust backend performs GroupValue_Read using the commissioned group address and configured DPT. It does not send GroupValue_Write.
 
+## BACnet quality mapping
+
+BACnet Status_Flags order is interpreted as inAlarm, fault, overridden, outOfService:
+- fault → AVIC BAD_COMMUNICATION;
+- outOfService → AVIC DISABLED;
+- overridden → AVIC UNCERTAIN;
+- absent/malformed Status_Flags → AVIC UNCERTAIN;
+- inAlarm does not by itself change data quality; Alarm Manager remains responsible for alarm semantics.
+
 ## Security and limitations
 
 - Never place passwords, tokens, certificates or private keys in DriverInstance config or IPC payloads.
