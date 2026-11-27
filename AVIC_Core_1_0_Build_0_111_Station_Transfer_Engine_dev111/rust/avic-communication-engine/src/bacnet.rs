@@ -119,7 +119,8 @@ fn property_value_to_json(value: &PropertyValue) -> Value {
     match value {
         PropertyValue::Null => Value::Null,
         PropertyValue::Boolean(v) => json!(v),
-        PropertyValue::Unsigned(v) | PropertyValue::Enumerated(v) => json!(v),
+        PropertyValue::Unsigned(v) => json!(v),
+        PropertyValue::Enumerated(v) => json!(v),
         PropertyValue::Signed(v) => json!(v),
         PropertyValue::Real(v) => if v.is_finite() { json!(v) } else { Value::Null },
         PropertyValue::Double(v) => if v.is_finite() { json!(v) } else { Value::Null },
