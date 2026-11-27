@@ -537,6 +537,128 @@ class BacnetIpClient:
 
 
     @_serialized_io
+    def read_property_multiple(self, address: tuple[str, int], device_instance: int,
+                               object_type: int, object_instance: int,
+                               property_ids: list[int] | tuple[int, ...],
+                               timeout_seconds: float | None = None) -> dict[int, Any]:
+        """Read several properties of one object in one confirmed RPM transaction.
+
+        This bounded read-only profile deliberately supports one object per
+        request. Segmented ComplexACK is rejected explicitly; callers can fall
+        back to individual ReadProperty requests without silently truncating data.
+        Per-property BACnet Error results are returned as structured error values.
+        """
+        if self._socket is None:
+            self.open()
+        assert self._socket is not None
+        requested = tuple(property_ids)
+        if not requested:
+            raise ValueError("property_ids must not be empty")
+        if len(requested) > 64:
+            raise ValueError("ReadPropertyMultiple is limited to 64 properties per request")
+        if len(set(requested)) != len(requested):
+            raise ValueError("duplicate property id in ReadPropertyMultiple request")
+        if any(not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 0xFFFFFFFF
+               for value in requested):
+            raise ValueError("property ids must be unsigned 32-bit integers")
+
+        invoke = self._invoke_id
+        self._invoke_id = (self._invoke_id % 255) + 1
+        spec = _context_tag(0, _object_id(object_type, object_instance)) + b"\\x1e"
+        for property_id in requested:
+            width = max(1, (property_id.bit_length() + 7) // 8)
+            spec += _context_tag(0, property_id.to_bytes(width, "big"))
+        spec += b"\\x1f"
+        request = _bvll(bytes((0x00, 0x05, invoke, 0x0E)) + spec, 0x0A)
+        self._socket.sendto(request, address)
+        timeout = timeout_seconds or self.policy.request_timeout_seconds
+        deadline = time.monotonic() + timeout
+
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("BACnet ReadPropertyMultiple timeout")
+            self._socket.settimeout(remaining)
+            packet, source = self._socket.recvfrom(65535)
+            if source != address or len(packet) < 9 or packet[0] != 0x81:
+                continue
+            if int.from_bytes(packet[2:4], "big") != len(packet) or packet[1] not in (0x0A, 0x0B):
+                continue
+            try:
+                pos, _ = _parse_npdu_header(packet, 4)
+            except BacnetProtocolError:
+                continue
+            apdu = packet[pos:]
+            if len(apdu) < 3 or apdu[1] != invoke:
+                continue
+            if apdu[0] == 0x38:
+                raise BacnetProtocolError("segmented ReadPropertyMultiple ComplexACK is not supported")
+            if apdu[0] == 0x50:
+                raise BacnetProtocolError(f"BACnet Error response: {apdu[2:].hex()}")
+            if apdu[0] == 0x70:
+                raise BacnetProtocolError(f"BACnet Reject response: {apdu[2:].hex()}")
+            if apdu[0] != 0x30 or apdu[2] != 0x0E:
+                continue
+
+            data = apdu[3:]
+            context, number, length, start, end = _tag(data, 0)
+            if not context or number != 0 or length != 4:
+                raise BacnetProtocolError("ReadPropertyMultiple ACK has invalid object identifier")
+            if data[start:end] != _object_id(object_type, object_instance):
+                raise BacnetProtocolError("ReadPropertyMultiple ACK object identifier does not match request")
+            pos = end
+            if data[pos:pos + 1] != b"\\x1e":
+                raise BacnetProtocolError("ReadPropertyMultiple ACK missing property-list opening tag")
+            pos += 1
+            results: dict[int, Any] = {}
+            while pos < len(data) and data[pos:pos + 1] != b"\\x1f":
+                context, number, length, start, end = _tag(data, pos)
+                if not context or number != 2 or not 1 <= length <= 4:
+                    raise BacnetProtocolError("ReadPropertyMultiple ACK has invalid property identifier")
+                property_id = int.from_bytes(data[start:end], "big")
+                if property_id not in requested or property_id in results:
+                    raise BacnetProtocolError("ReadPropertyMultiple ACK contains an unexpected or duplicate property")
+                pos = end
+                if pos < len(data) and data[pos] >> 4 == 3 and data[pos] & 0x08:
+                    raise BacnetProtocolError("ReadPropertyMultiple array-index results are not supported by this profile")
+                if data[pos:pos + 1] == b"\\x4e":
+                    pos += 1
+                    value_start = pos
+                    while pos < len(data) and data[pos:pos + 1] != b"\\x4f":
+                        _, _, _, _, value_end = _tag(data, pos)
+                        if value_end <= pos or value_end > len(data):
+                            raise BacnetProtocolError("invalid RPM application value length")
+                        pos = value_end
+                    if pos >= len(data):
+                        raise BacnetProtocolError("ReadPropertyMultiple ACK missing value closing tag")
+                    values = _application_values(data[value_start:pos])
+                    pos += 1
+                    if not values:
+                        raise BacnetProtocolError("ReadPropertyMultiple ACK contains empty property value")
+                    results[property_id] = values[0][1] if len(values) == 1 else [v for _, v in values]
+                elif data[pos:pos + 1] == b"\\x5e":
+                    pos += 1
+                    error_start = pos
+                    while pos < len(data) and data[pos:pos + 1] != b"\\x5f":
+                        _, _, _, _, error_end = _tag(data, pos)
+                        if error_end <= pos or error_end > len(data):
+                            raise BacnetProtocolError("invalid RPM error value length")
+                        pos = error_end
+                    if pos >= len(data):
+                        raise BacnetProtocolError("ReadPropertyMultiple ACK missing error closing tag")
+                    error_values = _application_values(data[error_start:pos])
+                    pos += 1
+                    results[property_id] = {"error": [value for _, value in error_values]}
+                else:
+                    raise BacnetProtocolError("ReadPropertyMultiple ACK missing property value or error")
+            if pos >= len(data) or data[pos:pos + 1] != b"\\x1f":
+                raise BacnetProtocolError("ReadPropertyMultiple ACK missing property-list closing tag")
+            if set(results) != set(requested):
+                missing = sorted(set(requested) - set(results))
+                raise BacnetProtocolError(f"ReadPropertyMultiple ACK omitted requested properties: {missing}")
+            return results
+
+    @_serialized_io
     def read_object_list(self, address: tuple[str, int], device_instance: int,
                          timeout_seconds: float | None = None, max_objects: int = 4096) -> list[BacnetObjectIdentifier]:
         """Read Device.Object_List using BACnet array-index reads (index 0 = item count).
