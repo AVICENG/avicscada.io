@@ -693,6 +693,13 @@ class FBDService:
             if typ == "POINT_INPUT":
                 from avic_core.domain.models import Point
                 point, _ = self.core.repository.get(str(params.get("point_id") or ""), Point)
+                point_device = self.core.repository.get_record(point.device_id)
+                if point_device.get("entity_type") != "Device":
+                    raise ValueError(f"Точка «{point.name}» не имеет корректного устройства")
+                if point_device.get("payload", {}).get("station_id") != graph.get("station_id"):
+                    raise ValueError(
+                        f"Нарушена изоляция станции: точка «{point.name}» принадлежит другой станции"
+                    )
                 live = self.core.point_runtime.read(point.id)
                 if live.quality != "GOOD":
                     raise ValueError(f"Точка «{point.name}» имеет качество {live.quality}; сигнал не допускается в расчёт")
