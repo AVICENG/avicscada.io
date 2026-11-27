@@ -403,3 +403,21 @@ ADR-001 не считается принятым и не означает гот
 | ADR-004 | Command arbitration / physical write boundary | PROPOSED |
 | ADR-005 | Data ownership / outbox-inbox / backup-restore | PROPOSED |
 
+
+
+### 16.8 Rust Communication Engine — важное уточнение масштаба
+
+Проверены `RustDriverWorker`, Rust IPC envelope, `avic_driver_worker.rs`, `RustDriverPointAdapter` и DriverManager:
+- текущая интеграция уже поддерживает per-DriverInstance выбор Python/Rust для Modbus TCP, BACnet/IP и KNXnet/IP;
+- Rust worker изолирован по installation/project/station/driver_instance, worker_id и generation;
+- IPC framed JSON имеет лимит 1 MiB, проверяет contract/version/scope/correlation/sequence;
+- Rust worker запрещает write/write_point и не публикует данные в Point Runtime напрямую;
+- Python adapter выполняет binding resolution, scaling, quality mapping и публикацию в PointRuntime;
+- Modbus TCP session reuse присутствует внутри Rust worker.
+
+Обнаружено принципиальное ограничение benchmark: `avic_modbus_bench.rs` делает один FC03 read на 100 регистров на устройство за цикл. Это полезный protocol microbenchmark, но он не измеряет реальную цепочку AVIC Driver Manager → IPC → binding mapping → PointRuntime publish.
+
+В реальном `RustDriverPointAdapter._read_modbus()` выполняется один worker read на каждый binding. Следовательно, текущая реализация не доказывает batch polling для большого количества точек и может генерировать слишком много IPC/Modbus transactions. BACnet Rust adapter получает snapshot один раз на уникальное устройство за poll; стоимость полного snapshot и возможность RPM/COV требуют отдельного подтверждения. Эти пункты внесены в ADR-006.
+
+Создан ADR-006 `ADR-006_RUST_COMMUNICATION_ENGINE_BOUNDARY_RU.md`: Python остаётся владельцем SCADA/engineering/data/security, Rust — протокольного I/O; определены batch strategies, IPC compatibility, worker signing, restart/fencing, parity tests и end-to-end benchmark.
+
