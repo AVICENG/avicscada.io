@@ -28,7 +28,7 @@ def test_excluded_proprietary_families_are_not_in_catalog():
 
 
 def test_only_existing_read_only_transports_advertise_read_capability():
-    expected = {"bacnet-ip", "modbus-tcp", "knxnet-ip"}
+    expected = {"bacnet-ip", "modbus-tcp", "knxnet-ip", "mqtt"}
     actual = {entry.driver_id for entry in BUILTIN_DRIVERS if entry.read_supported}
     assert actual == expected
     assert all(not entry.write_supported for entry in BUILTIN_DRIVERS)
