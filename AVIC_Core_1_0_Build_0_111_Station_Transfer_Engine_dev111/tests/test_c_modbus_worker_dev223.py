@@ -221,11 +221,16 @@ def test_compiled_c_worker_fails_closed_on_replayed_ipc_sequence():
             "port": 502, "unit_id": 1, "timeout": 2.0,
         }).kind == "configured"
         assert send("start", 3, {}).kind == "status"
+        write_response = send("write", 4, {
+            "protocol": "modbus-tcp", "address": 7, "value": 99,
+        })
+        assert write_response.kind == "error"
+        assert write_response.payload["code"] == "WRITE_DISABLED"
 
         # A replayed sequence must terminate the worker before any new action.
         process.stdin.write(encode_frame(DriverEnvelope(
             contract="avic.driver.ipc", version=1, message_id=str(uuid4()),
-            kind="get_status", **scope, sequence=3,
+            kind="get_status", **scope, sequence=4,
             sent_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             correlation_id=None, payload={},
         )))
