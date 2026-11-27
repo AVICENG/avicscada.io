@@ -113,3 +113,30 @@ jobs:
 
       - name: Run Python BACnet/IP ReadProperty baseline (10,000 points)
         run: python tools/bacnet_load_baseline.py --points 10000
+
+  c-libmodbus-worker-linux:
+    name: C libmodbus Worker / Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install C build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libmodbus-dev libjansson-dev uuid-dev
+
+      - name: Configure C Worker
+        run: cmake -S rust/avic-communication-engine/c-worker -B build/c-modbus-worker -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build C Worker
+        run: cmake --build build/c-modbus-worker --config Release --parallel 2
+
+      - name: Verify C Worker executable
+        run: build/c-modbus-worker/avic-modbus-c-worker --version
