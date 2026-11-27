@@ -169,7 +169,7 @@ RBAC, лицензия, staged publish, audit и разрешения на уп�
 
 ## 13. Текущий статус
 
-Спецификация описывает целевое поведение. На момент DEV215 уже существует Python `DriverManifest`/`DriverContext` Protocol и отдельный Rust Modbus transport pilot, но нет versioned IPC wire implementation, Rust worker supervisor или production Point Runtime bridge. Не считать пункты плана реализованными до появления кода, тестов и CI evidence.
+Статус на DEV244: versioned IPC wire implementation присутствует в Rust (`rust/avic-communication-engine/src/ipc.rs`) и Python (`avic_core/drivers/ipc.py`); Rust worker binary и Python `RustDriverWorker` реализуют изолированный процесс, handshake, конфигурацию, lifecycle, scope/generation fencing и bounded framing. `RustDriverPointAdapter` передаёт результаты read-only адаптеров через общий Core Point Runtime. Это интеграционный пилот, а не production acceptance: Rust-native Point Runtime/FBD Runtime не заявляются готовыми, нет полной аппаратной приёмки всех протоколов, подписанных worker-пакетов и завершённой промышленной сертификации. Реализованные пункты подтверждаются только кодом, тестами и CI evidence конкретного HEAD.
 
 
 ## DEV244 — Строгая проверка временной метки IPC
