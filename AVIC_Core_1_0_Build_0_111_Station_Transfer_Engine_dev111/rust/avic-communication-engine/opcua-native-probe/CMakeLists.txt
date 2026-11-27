@@ -15,7 +15,10 @@ set(UA_ENABLE_AMALGAMATION OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(open62541
   GIT_REPOSITORY https://github.com/open62541/open62541.git
   GIT_TAG v1.4.21
-  GIT_SHALLOW TRUE)
+  GIT_SHALLOW TRUE
+  # The OPC UA client library does not need the large UA-Nodeset submodule.
+  # Avoid Windows MAX_PATH failures while keeping the upstream source pinned.
+  GIT_SUBMODULES "")
 FetchContent_MakeAvailable(open62541)
 
 add_executable(avic-opcua-native-probe src/main.c)
