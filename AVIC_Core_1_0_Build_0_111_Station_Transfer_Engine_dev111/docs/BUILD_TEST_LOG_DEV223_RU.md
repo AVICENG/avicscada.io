@@ -208,3 +208,12 @@
 - Теперь первый ожидаемый sequence равен 0, последующие номера проверяются с wraparound 255→0. Дубликат получает успешный ACK без повторной доставки; out-of-order кадр получает TUNNELING_ACK со статусом E_SEQUENCE_NUMBER (0x04), состояние rx_sequence не изменяется, кадр не публикуется.
 - Добавлены тесты на error ACK и wraparound; существующий тест duplicate suppression сохранён.
 - **Проверка:** изменения и тесты в ветке; CI ещё ожидает выполнения. Не объявлять KNX приёмку завершённой: ETS import, полное DPT покрытие, reconnect/soak и физический KNX IP gateway остаются обязательными.
+
+
+## DEV232 — OPC UA Browse resource bounds (27.11.2026)
+
+- Заменён UA_Client_forEachChildNodeCall на явный UA_Client_Service_browse: requestedMaxReferencesPerNode=500, browseDirection=Forward, HierarchicalReferences + subtypes, resultMask DisplayName/NodeClass.
+- JSON Browse result теперь включает NodeId, DisplayName, NodeClass, Namespace URI (если предоставлен ExpandedNodeId) и ServerIndex. При наличии ContinuationPoint он освобождается через UA_Client_Service_browseNext(releaseContinuationPoints=true); результат явно содержит has_more=true, а следующая страница не загружается.
+- Это устраняет прежнюю проблему: callback limit ограничивал только локальную обработку после того, как библиотека могла получить полный Browse response. Теперь лимит передаётся серверу в запросе, а continuation state не оставляется висеть.
+- Driver catalog note обновлён: secure native probe read/Browse существует, но OPC UA остаётся PLANNED, поскольку AVIC IPC worker, namespace URI lifecycle, Browse paging, subscriptions, reconnect и безопасная SecretStore key handoff не готовы.
+- **Проверка:** source/docs/catalog отправлены в ветку. Текущая компиляция open62541 1.4.21 на Linux/Windows и C self-test не подтверждены CI; не считать DEV232 passed до green CI. Независимый OPC UA server test пока отсутствует.
