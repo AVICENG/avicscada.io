@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from threading import RLock
 
-from avic_core.domain.models import Point, PointQuality
+from avic_core.domain.models import Point, PointDirection, PointQuality
 from .debounce import DebounceConfig, DebounceEngine
 from .runtime import PointRuntimeService, PointRuntimeValue
 
@@ -44,6 +44,9 @@ class DebouncedPointRuntimeService(PointRuntimeService):
             point, version = self.repository.get(str(point_id), Point)
             if not self._is_binary(point):
                 raise ValueError("Дребезг можно настраивать только для бинарной точки")
+            direction = getattr(point.direction, "value", str(point.direction)).lower()
+            if direction == PointDirection.OUTPUT.value:
+                raise ValueError("Дребезг нельзя настраивать для OUTPUT-точки")
             point.debounce_on_ms = config.on_ms
             point.debounce_off_ms = config.off_ms
             self.repository.save(point, expected_version=version)
@@ -86,10 +89,7 @@ class DebouncedPointRuntimeService(PointRuntimeService):
             if q != PointQuality.GOOD:
                 self._debounce.cancel_pending(point.id)
                 self._debounce_sources.pop(point.id, None)
-                return super().publish(
-                    point_id, value, quality=q, timestamp=timestamp,
-                    source_driver_id=source_driver_id,
-                ) if False else super().mark_quality(
+                return super().mark_quality(
                     point_id, q, source_driver_id=source_driver_id
                 )
 
