@@ -1,5 +1,5 @@
-//! AVIC Communication Engine read-only Modbus TCP transport pilot.
-//! This crate is not yet the production Driver SDK/IPC worker.
+//! AVIC Communication Engine protocol kernels and Driver SDK primitives.
+//! Network workers and Core IPC supervision are introduced incrementally; do not bypass Core validation.
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
