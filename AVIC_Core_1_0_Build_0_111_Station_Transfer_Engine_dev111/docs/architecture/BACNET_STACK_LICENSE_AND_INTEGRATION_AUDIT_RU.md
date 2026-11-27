@@ -100,3 +100,16 @@ CI run `46057725369` выявил:
 - Python full-suite на Linux: 31513 passed, 8 skipped, 1 failed (повторяется на Python 3.11/3.12/3.13). Единственный failure: `tests/test_driver_manager_dev57.py::test_stop_instance_close_failure_keeps_session`; assertion ожидает удаление session, фактически session остаётся в `_sessions`. Это не BACnet/Modbus C Worker test; выделено как отдельная регрессия менеджера драйверов.
 - Windows Python jobs ещё выполнялись на момент проверки.
 - BACnet статус остаётся 🟧 до подтверждения Windows/Linux POC, реализации AVIC BACnet/IP Worker, IPC и сетевого симулятора.
+
+
+## DEV254 — первый сетевой путь BACnet/IP через upstream Stack
+
+В native C probe добавлен отдельный режим `--discover-ms 100..30000`:
+- инициализация BACnet Device и datalink через upstream `dlenv_init()`;
+- регистрация upstream `handler_i_am_add` на I-Am;
+- отправка Who-Is через `Send_WhoIs_To_Network()`;
+- приём кадров через `datalink_receive()` и обработка `npdu_handler()`;
+- периодическое обслуживание datalink и ограниченный таймаут;
+- вывод найденных Device Instance, Max APDU, MAC length и BACnet network number.
+
+Это уже использует сетевые datalink/NPDU/APDU механизмы Steve Karg Stack, но пока остаётся отдельным диагностическим probe: не AVIC IPC Worker, не полноценный AVIC discovery result model, не ReadProperty и не runtime polling. Режим требует BACnet/IP интерфейс и сеть, поэтому аппаратно-сетевое подтверждение отдельно от обычного CI.
