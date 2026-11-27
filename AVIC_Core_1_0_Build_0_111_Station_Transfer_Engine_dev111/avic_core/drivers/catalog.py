@@ -95,10 +95,11 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         notes="Read-only KNXnet/IP tunnelling and passive GroupValue monitor with explicit group-address/DPT bindings; no GroupValueWrite transmit, ETS import or Routing yet.",
         category=DriverCategory.BUILDING_AUTOMATION, license_feature="driver.knxnet-ip",
     ),
-    _planned(
+    DriverCatalogEntry(
         "mqtt", "MQTT", "MQTT 3.1.1 / 5.0",
-        DriverCategory.INTEGRATION,
-        "Read-only adapter code exists, but production runtime factory, SecretStore credential wiring, TLS policy and broker acceptance tests are not complete.",
+        DriverLifecycle.READ_ONLY_TRANSPORT, True,
+        notes="Subscribe-only Paho runtime with JSON/raw topic bindings and optional CA-validated TLS; broker credentials/SecretStore integration and live broker acceptance remain outstanding.",
+        category=DriverCategory.INTEGRATION, license_feature="driver.mqtt",
     ),
     _planned(
         "opc-ua-client", "OPC UA Client", "OPC UA",
