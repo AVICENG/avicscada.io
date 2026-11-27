@@ -528,6 +528,6 @@ class DriverManagerService:
             "driver_id": p["driver_id"], "protocol": p["protocol"], "state": runtime["state"],
             "persisted_state": p["state"], "enabled": runtime["enabled"],
             "package_trust": p["package_trust"], "config": p.get("config", {}),
-            "version": int(row["version"]), "runtime_generation": int(p.get("runtime_generation", 0)),
+            "version": int(row["version"]),
             "field_io_enabled": False, "field_read_enabled": runtime["field_read_enabled"],
             "field_write_enabled": False, "start_supported": p["driver_id"] in self._factories}
