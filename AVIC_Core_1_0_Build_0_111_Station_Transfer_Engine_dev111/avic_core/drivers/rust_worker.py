@@ -10,13 +10,14 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 import queue
+import os
 import subprocess
 import threading
 from typing import Any, Sequence
 from uuid import uuid4
 
 from avic_core.drivers.ipc import (
-    DriverEnvelope, DriverIpcError, SequenceGuard, encode_frame, read_frame,
+    DriverEnvelope, DriverIpcError, SequenceGuard, read_frame, write_frame,
 )
 
 
@@ -64,6 +65,7 @@ class RustDriverWorker:
         self._responses: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=128)
         self._request_sequence = 0
         self._response_guard = SequenceGuard()
+        self._response_sequence_gaps = 0
         self._lock = threading.RLock()
         self._exchange_lock = threading.RLock()
         self._reader: threading.Thread | None = None
@@ -78,9 +80,16 @@ class RustDriverWorker:
                 raise RustWorkerError("worker process has already been created")
             if not isinstance(config, dict):
                 raise TypeError("worker config must be an object")
+            inherited = os.environ
+            safe_env = {
+                key: inherited[key] for key in (
+                    "PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL",
+                ) if key in inherited
+            }
             self._process = subprocess.Popen(
                 self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, bufsize=0, shell=False,
+                stderr=subprocess.PIPE, bufsize=0, shell=False, env=safe_env,
+                close_fds=True,
             )
             self._reader = threading.Thread(target=self._read_stdout, name="avic-rust-worker-stdout", daemon=True)
             self._stderr_reader = threading.Thread(target=self._read_stderr, name="avic-rust-worker-stderr", daemon=True)
@@ -153,16 +162,17 @@ class RustDriverWorker:
                 raise RustWorkerError("Rust worker stdin is unavailable")
             request = self._envelope(kind, payload)
             try:
-                process.stdin.write(encode_frame(request))
-                process.stdin.flush()
+                write_frame(process.stdin, request)
             except (BrokenPipeError, OSError) as exc:
                 raise RustWorkerError(f"failed to send IPC request: {exc}") from exc
 
         try:
             ok, response = self._responses.get(timeout=self.timeout_seconds)
         except queue.Empty as exc:
+            self._terminate()
             raise RustWorkerError(f"Rust worker timed out handling {kind}") from exc
         if not ok:
+            self._terminate()
             raise RustWorkerError(f"Rust worker IPC closed: {response}; stderr={list(self._stderr_tail)[-10:]}")
         if not isinstance(response, DriverEnvelope):
             raise RustWorkerError("Rust worker returned an invalid IPC frame")
@@ -178,7 +188,8 @@ class RustDriverWorker:
             self._terminate()
             raise RustWorkerError("Rust worker response identity/correlation mismatch")
         try:
-            self._response_guard.accept(response.generation, response.sequence)
+            if self._response_guard.accept(response.generation, response.sequence):
+                self._response_sequence_gaps += 1
         except DriverIpcError as exc:
             self._terminate()
             raise RustWorkerError(f"Rust worker response sequence rejected: {exc}") from exc
@@ -204,6 +215,7 @@ class RustDriverWorker:
             "worker_id": self.worker_id,
             "worker_version": self._worker_version,
             "generation": self.generation,
+            "response_sequence_gaps": self._response_sequence_gaps,
             "started": self._started,
             "process_alive": process is not None and process.poll() is None,
             "exit_code": process.poll() if process is not None else None,

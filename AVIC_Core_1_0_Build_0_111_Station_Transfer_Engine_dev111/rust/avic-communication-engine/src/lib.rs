@@ -51,9 +51,14 @@ impl ModbusTcpConfig {
 pub struct ModbusTcpClient {
     config: ModbusTcpConfig,
     transaction_id: u16,
+    // One TCP session is retained across reads. A failed exchange discards it;
+    // the next read reconnects lazily, so callers never reuse a broken socket.
+    stream: Option<TcpStream>,
 }
 impl ModbusTcpClient {
-    pub fn new(config: ModbusTcpConfig) -> Self { Self { config, transaction_id: 0 } }
+    pub fn new(config: ModbusTcpConfig) -> Self {
+        Self { config, transaction_id: 0, stream: None }
+    }
 
     fn read_payload(&mut self, function: u8, address: u16, count: u16,
                     maximum: u16, expected_bytes: usize) -> Result<Vec<u8>, ModbusError> {
@@ -71,36 +76,47 @@ impl ModbusTcpClient {
         request.extend_from_slice(&address.to_be_bytes());
         request.extend_from_slice(&count.to_be_bytes());
 
-        let mut stream = TcpStream::connect_timeout(&self.config.address, self.config.timeout)?;
-        stream.set_read_timeout(Some(self.config.timeout))?;
-        stream.set_write_timeout(Some(self.config.timeout))?;
-        stream.write_all(&request)?;
-
-        let mut header = [0u8; 7];
-        stream.read_exact(&mut header)?;
-        let response_tid = u16::from_be_bytes([header[0], header[1]]);
-        let protocol = u16::from_be_bytes([header[2], header[3]]);
-        let length = u16::from_be_bytes([header[4], header[5]]);
-        let unit = header[6];
-        if response_tid != tid || protocol != 0 || unit != self.config.unit_id || !(2..=254).contains(&length) {
-            return Err(ModbusError::Protocol("invalid MBAP header"));
+        if self.stream.is_none() {
+            let stream = TcpStream::connect_timeout(&self.config.address, self.config.timeout)?;
+            stream.set_read_timeout(Some(self.config.timeout))?;
+            stream.set_write_timeout(Some(self.config.timeout))?;
+            self.stream = Some(stream);
         }
+        let exchange = (|| -> Result<Vec<u8>, ModbusError> {
+            let stream = self.stream.as_mut().expect("session established");
+            stream.write_all(&request)?;
 
-        // MBAP length includes Unit Identifier + PDU. A Modbus exception
-        // response has a two-byte PDU and therefore MBAP length 3.
-        let mut body = vec![0u8; length as usize - 1];
-        stream.read_exact(&mut body)?;
-        if body.first() == Some(&(function | 0x80)) {
-            if length != 3 || body.len() != 2 {
-                return Err(ModbusError::Protocol("invalid Modbus exception response length"));
+            let mut header = [0u8; 7];
+            stream.read_exact(&mut header)?;
+            let response_tid = u16::from_be_bytes([header[0], header[1]]);
+            let protocol = u16::from_be_bytes([header[2], header[3]]);
+            let length = u16::from_be_bytes([header[4], header[5]]);
+            let unit = header[6];
+            if response_tid != tid || protocol != 0 || unit != self.config.unit_id || !(2..=254).contains(&length) {
+                return Err(ModbusError::Protocol("invalid MBAP header"));
             }
-            return Err(ModbusError::Exception(body[1]));
+
+            // MBAP length includes Unit Identifier + PDU. A Modbus exception
+            // response has a two-byte PDU and therefore MBAP length 3.
+            let mut body = vec![0u8; length as usize - 1];
+            stream.read_exact(&mut body)?;
+            if body.first() == Some(&(function | 0x80)) {
+                if length != 3 || body.len() != 2 {
+                    return Err(ModbusError::Protocol("invalid Modbus exception response length"));
+                }
+                return Err(ModbusError::Exception(body[1]));
+            }
+            if body.len() != 2 + expected_bytes || body[0] != function
+                || body[1] as usize != expected_bytes {
+                return Err(ModbusError::Protocol("invalid Modbus response payload"));
+            }
+            Ok(body[2..].to_vec())
+        })();
+        if exchange.is_err() {
+            // Never keep a socket after a timeout, short frame or protocol error.
+            self.stream = None;
         }
-        if body.len() != 2 + expected_bytes || body[0] != function
-            || body[1] as usize != expected_bytes {
-            return Err(ModbusError::Protocol("invalid Modbus response payload"));
-        }
-        Ok(body[2..].to_vec())
+        exchange
     }
 
     fn read_registers(&mut self, function: u8, address: u16, count: u16) -> Result<Vec<u16>, ModbusError> {
@@ -209,6 +225,63 @@ mod tests {
     fn parses_fc03_exception_response() {
         let (address, server) = test_server(vec![0x83, 2], false);
         assert!(matches!(client_for(address).read_holding_registers(0, 2), Err(ModbusError::Exception(2))));
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn reuses_one_tcp_session_for_multiple_reads() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            for value in [10u16, 20u16] {
+                let mut request = [0u8; 12];
+                stream.read_exact(&mut request).unwrap();
+                let tid = u16::from_be_bytes([request[0], request[1]]);
+                let function = request[7];
+                let pdu = vec![function, 2, (value >> 8) as u8, value as u8];
+                let mut response = Vec::with_capacity(11);
+                response.extend_from_slice(&tid.to_be_bytes());
+                response.extend_from_slice(&0u16.to_be_bytes());
+                response.extend_from_slice(&5u16.to_be_bytes());
+                response.push(request[6]);
+                response.extend_from_slice(&pdu);
+                stream.write_all(&response).unwrap();
+            }
+        });
+        let mut client = client_for(address);
+        assert_eq!(client.read_holding_registers(0, 1).unwrap(), vec![10]);
+        assert_eq!(client.read_holding_registers(1, 1).unwrap(), vec![20]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn reconnects_after_broken_session_on_next_read() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            // First accepted connection is deliberately dropped without a response.
+            let (mut broken, _) = listener.accept().unwrap();
+            let mut request = [0u8; 12];
+            broken.read_exact(&mut request).unwrap();
+            drop(broken);
+
+            // The next read must establish a fresh TCP connection.
+            let (mut recovered, _) = listener.accept().unwrap();
+            recovered.read_exact(&mut request).unwrap();
+            let tid = u16::from_be_bytes([request[0], request[1]]);
+            let pdu = vec![3, 2, 0, 42];
+            let mut response = Vec::with_capacity(11);
+            response.extend_from_slice(&tid.to_be_bytes());
+            response.extend_from_slice(&0u16.to_be_bytes());
+            response.extend_from_slice(&5u16.to_be_bytes());
+            response.push(request[6]);
+            response.extend_from_slice(&pdu);
+            recovered.write_all(&response).unwrap();
+        });
+        let mut client = client_for(address);
+        assert!(client.read_holding_registers(0, 1).is_err());
+        assert_eq!(client.read_holding_registers(0, 1).unwrap(), vec![42]);
         server.join().unwrap();
     }
 

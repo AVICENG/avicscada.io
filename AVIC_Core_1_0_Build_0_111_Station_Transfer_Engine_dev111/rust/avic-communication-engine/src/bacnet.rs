@@ -2,9 +2,10 @@
 //! BACnet-RS upstream is actively developed and is not production-certified.
 //! This module intentionally exposes discovery and property reads only.
 use bacnet_rs::client::BacnetClient;
-use bacnet_rs::object::PropertyValue;
+use bacnet_rs::property::PropertyValue;
 use serde_json::{json, Value};
 use std::net::SocketAddr;
+use std::time::Duration;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BacnetDeviceSnapshot {
@@ -50,9 +51,16 @@ pub struct BacnetIpReadOnlyClient {
     client: BacnetClient,
 }
 impl BacnetIpReadOnlyClient {
-    pub fn new(local_bind: SocketAddr) -> Result<Self, BacnetDriverError> {
-        if local_bind.port() == 0 { return Err(BacnetDriverError::InvalidAddress); }
-        let client = BacnetClient::new_with_local_addr(local_bind).map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
+    pub fn new(local_bind: SocketAddr, timeout: Duration) -> Result<Self, BacnetDriverError> {
+        if local_bind.port() == 0 || timeout.is_zero() || timeout > Duration::from_secs(30) {
+            return Err(BacnetDriverError::InvalidAddress);
+        }
+        let client = BacnetClient::builder()
+            .local_addr(local_bind.ip().to_string())
+            .port(local_bind.port())
+            .timeout(timeout)
+            .build()
+            .map_err(|e| BacnetDriverError::Stack(e.to_string()))?;
         Ok(Self { client })
     }
 
@@ -119,18 +127,18 @@ fn property_value_to_json(value: &PropertyValue) -> Value {
     match value {
         PropertyValue::Null => Value::Null,
         PropertyValue::Boolean(v) => json!(v),
-        PropertyValue::UnsignedInteger(v) | PropertyValue::Enumerated(v) => json!(v),
-        PropertyValue::SignedInt(v) => json!(v),
+        PropertyValue::Unsigned(v) => json!(v),
+        PropertyValue::Enumerated(v) => json!(v),
+        PropertyValue::Signed(v) => json!(v),
         PropertyValue::Real(v) => if v.is_finite() { json!(v) } else { Value::Null },
         PropertyValue::Double(v) => if v.is_finite() { json!(v) } else { Value::Null },
         PropertyValue::CharacterString(v) => json!(v),
         PropertyValue::BitString(v) => json!(v),
         PropertyValue::OctetString(v) => json!(v),
         PropertyValue::ObjectIdentifier(v) => json!(format!("{:?}", v)),
-        PropertyValue::Date(v) => json!(format!("{:?}", v)),
-        PropertyValue::Time(v) => json!(format!("{:?}", v)),
-        PropertyValue::Array(v) | PropertyValue::List(v) =>
-            Value::Array(v.iter().map(property_value_to_json).collect()),
+        PropertyValue::Date(year, month, day, weekday) => json!({"year":year,"month":month,"day":day,"weekday":weekday}),
+        PropertyValue::Time(hour, minute, second, hundredths) => json!({"hour":hour,"minute":minute,"second":second,"hundredths":hundredths}),
+        PropertyValue::Unknown(v) => json!(v),
     }
 }
 
@@ -141,7 +149,7 @@ mod tests {
     fn bacnet_values_keep_numeric_and_boolean_types() {
         assert_eq!(property_value_to_json(&PropertyValue::Real(21.5)), json!(21.5));
         assert_eq!(property_value_to_json(&PropertyValue::Boolean(true)), json!(true));
-        assert_eq!(property_value_to_json(&PropertyValue::UnsignedInteger(7)), json!(7));
+        assert_eq!(property_value_to_json(&PropertyValue::Unsigned(7)), json!(7));
         assert_eq!(property_value_to_json(&PropertyValue::Null), Value::Null);
     }
     #[test]

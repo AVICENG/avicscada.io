@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+import ipaddress
 from threading import RLock
 from typing import Callable, Any
 from uuid import UUID, uuid4
@@ -38,6 +39,7 @@ class DriverInstance:
     package_trust: str = "BUILTIN"
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
+    runtime_generation: int = 0
 
     def __post_init__(self):
         UUID(self.id)
@@ -50,6 +52,8 @@ class DriverInstance:
         active = self.state in {"STARTING", "RUNNING", "DEGRADED", "STOPPING"}
         if self.enabled != active:
             raise ValueError("Флаг enabled не соответствует состоянию драйвера")
+        if isinstance(self.runtime_generation, bool) or not isinstance(self.runtime_generation, int) or self.runtime_generation < 0:
+            raise ValueError("runtime_generation must be a non-negative integer")
         if self.package_trust not in {"BUILTIN", "VERIFIED", "UNVERIFIED", "REJECTED"}:
             raise ValueError("Недопустимый статус доверия пакету")
 
@@ -138,6 +142,7 @@ class DriverManagerService:
             config=worker_config, bindings=bindings,
             installation_id=str(installation_id), project_id=str(project_id),
             station_id=instance.station_id,
+            generation=max(1, int(instance.runtime_generation)),
         )
 
     def register_adapter_factory(self, driver_id: str, factory: Callable[[Any, DriverInstance], Any]) -> None:
@@ -166,12 +171,12 @@ class DriverManagerService:
         if not cfg.get("host") or not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
             raise ValueError("Для Modbus TCP требуются host и непустой bindings")
         bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
-        if engine == "rust":
-            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         client = ModbusTcpClient(
             cfg["host"], port=int(cfg.get("port", 502)),
             unit_id=int(cfg.get("unit_id", 1)), timeout=float(cfg.get("timeout", 2.0)),
         )
+        if engine == "rust":
+            return self._build_rust_adapter(core, instance, cfg, "modbus-tcp", [asdict(item) for item in bindings])
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
@@ -237,7 +242,8 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "rust_engine_available": self._rust_worker_command is not None,
+                 "supported_engines": ["python", "rust"] if x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"} else ["python"],
+                 "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
@@ -253,7 +259,7 @@ class DriverManagerService:
                 "state": runtime["state"], "persisted_state": p["state"],
                 "enabled": runtime["enabled"], "field_read_enabled": runtime["field_read_enabled"],
                 "field_write_enabled": False, "package_trust": p["package_trust"],
-                "config": p.get("config", {})})
+                "engine": p.get("config", {}).get("engine", "python"), "config": p.get("config", {})})
         return result
 
     def assert_driver_entitlement(self, driver_id: str) -> None:
@@ -361,7 +367,9 @@ class DriverManagerService:
                 raise RuntimeError(f"Для {item.driver_id} runtime adapter factory не зарегистрирована")
             if item.package_trust == "REJECTED":
                 raise RuntimeError("Пакет драйвера помечен как REJECTED")
+            item.runtime_generation += 1
             self._save_state(item, version, "STARTING", True)
+            version += 1
             adapter = None
             session = None
             try:
@@ -375,7 +383,7 @@ class DriverManagerService:
                 item.state = "RUNNING"
                 item.enabled = True
                 item.updated_at = _now()
-                self.core.repository.save(item, expected_version=version + 1)
+                self.core.repository.save(item, expected_version=version)
                 self.core.audit.append(actor_id="local-engineer", action="driver.instance_started",
                     resource_type="driver_instance", resource_id=instance_id,
                     details={"driver_id": item.driver_id, "poll_interval_seconds": interval})
@@ -473,6 +481,7 @@ class DriverManagerService:
             "field_write_enabled": False,
             "polling": polling,
             "point_runtime_scheduler": self._point_runtime_scheduler.diagnostics(),
+            "runtime_generation": int(item.runtime_generation),
             "adapter": adapter.diagnostics() if adapter and callable(getattr(adapter, "diagnostics", None)) else None}
 
     def stop_station(self, station_id: str) -> dict:

@@ -67,11 +67,12 @@ impl KnxIpReadOnlyClient {
             .map_err(|_| KnxDriverError::InvalidDpt(dpt.into()))?;
         let value = self.runtime.block_on(self.client.group_read_value(address, dpt_id, timeout))
             .map_err(|e| KnxDriverError::Read(e.to_string()))?;
+        let display_value = dpt_id.format(&value).to_string();
         Ok(KnxGroupSample {
             group_address: address.to_string(),
             dpt: dpt.into(),
             value: dpt_value_to_json(&value),
-            display_value: dpt_id.format(&value).to_string(),
+            display_value,
         })
     }
 }

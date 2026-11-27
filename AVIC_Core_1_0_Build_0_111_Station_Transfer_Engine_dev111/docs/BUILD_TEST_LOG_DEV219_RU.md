@@ -10,11 +10,12 @@
 - Для Rust backend создаётся отдельный worker на каждый DriverInstance; контекст установки/проекта/станции/драйвера передаётся из Core repository, не из произвольных IPC данных.
 - PollingSession управляет тем же жизненным циклом, что и Python adapters; остановка DriverInstance вызывает stop/shutdown worker.
 - Каждый sample проходит через Point Runtime с source_driver_id текущего DriverInstance. Ошибки связи переводят качество в BAD_COMMUNICATION; неподдерживаемые BACnet bindings — BAD_CONFIGURATION.
-- Modbus Rust backend использует FC01/02/03/04 и существующий AVIC decode_registers; значения и scaling публикуются только после проверки.
+- Modbus Rust backend использует FC01/02/03/04 и существующий AVIC decode_registers; значения и scaling публикуются только после проверки. Modbus configuration validates address/function/count/timeout before read.
 - BACnet Rust backend группирует object-list/property reads по устройству за один poll cycle, сопоставляет object type/instance, ограничен Present_Value (property 85) без array index. BACnet socket привязан к явно настроенному station local address/UDP port.
-- KNX Rust backend делает GroupValue_Read по каждой configured group address и DPT через KNXnet/IP tunnelling; адрес и DPT берутся из AVIC point bindings.
-- Worker запрещает write/write_point, проверяет один protocol на worker, секреты в IPC config запрещены.
-- Добавлены тесты Rust adapter mapping и DriverManager backend selection.
+- KNX Rust backend делает GroupValue_Read по каждой configured group address и DPT через KNXnet/IP tunnelling; адрес и DPT берутся из AVIC point bindings. Gateway/local endpoints and timeout are validated; IPv4/IPv6 socket formatting is supported.
+- Worker запрещает write/write_point, проверяет один protocol на worker, секреты в IPC config запрещены; процесс запускается с минимальным очищенным environment, stdout/stderr разведены, pipe framing поддерживает partial reads/writes.
+- Worker сообщает build version и счётчики sequence gaps; Python supervisor проверяет handshake, correlation ID, scope, generation и sequence.
+- Добавлены тесты Rust adapter mapping, BACnet Status_Flags quality propagation, DriverManager backend selection и worker generation.
 
 ## Как включить Rust backend
 
@@ -28,7 +29,7 @@
 
 ## Ограничения — не production acceptance
 - В этом рабочем окружении Cargo отсутствует; Rust compile/test не запускались.
-- CI для текущих коммитов пока не получен.
+- Первый CI запуск обнаружил две Rust compile errors (BACnet PropertyValue import/type и KNX DPT display lifetime); они исправлены. Новый CI для исправленного head ещё ожидает запуска/завершения.
 - Worker пока создаёт протокольное соединение на каждый read; постоянные сессии, batch polling для Modbus, COV subscriptions и reconnect orchestration ещё не готовы.
 - BACnet использует BACnet-RS 0.3.2, upstream прямо указывает статус not production-ready; segmentation/reassembly, alarms/events, trend logs, schedules/calendars, BACnet/SC не реализованы upstream.
 - BACnet worker возвращает общие объектные свойства и поддерживает только Present_Value (85), без array index. Нужны проверки типов object list, RPM и vendor-specific property behavior.
@@ -40,3 +41,36 @@
 ## Проверки
 - Добавлены tests: fake worker lifecycle, Modbus decoding, BACnet object mapping/batch-per-device, KNX group address/DPT mapping, unsupported BACnet property fail-closed, Core/DriverManager backend selection.
 - Эти тесты добавлены, но не объявляются пройденными до CI.
+
+## DEV220 — Исправление optimistic concurrency при запуске драйвера
+
+### Причина отказа CI (27.11.2026)
+- Rust unit tests и Rust release/build jobs прошли на Ubuntu и Windows.
+- Все шесть Python matrix jobs выявили одну общую регрессию в Driver Manager: после сохранения состояния STARTING локальная переменная версии уже соответствовала новой версии записи, но финальное сохранение RUNNING ошибочно ожидало ещё одну дополнительную версию (expected_version=version+1).
+- SQLiteRepository корректно отклонял запись как ConcurrencyConflict; API запускa возвращал 409 вместо 200. Это не ошибка SQLite и не проблема конкретной ОС.
+
+### Исправление
+- После перехода STARTING -> RUNNING финальное сохранение использует текущую версию, возвращённую логикой предыдущего перехода, без лишнего инкремента.
+- Проверка оптимистической блокировки, защита от конкурентного изменения и fail-closed поведение не ослаблялись.
+- Существующие тесты запуска/остановки драйверов и HTTP lifecycle должны подтвердить исправление на Linux и Windows.
+
+### Статус
+- Исправление внесено в commit 787494483b61a199cf7a71f7060dd16294343200.
+- Полный CI для нового HEAD обязателен; до его завершения DEV220 не считается принятым.
+- Rust драйверы остаются READ-ONLY пилотом; подключение физических контроллеров и нагрузочная приёмка 1k/10k ещё впереди.
+
+
+## DEV221 — Постоянные Modbus TCP-сессии (первый проход реализации)
+
+### Изменения
+- ModbusTcpClient теперь удерживает одно TCP-соединение между последовательными чтениями одного клиента.
+- При ошибке I/O, таймауте, коротком/некорректном ответе соединение сбрасывается; следующий запрос выполняет новое подключение автоматически.
+- Rust worker кэширует Modbus-клиенты по endpoint + Unit ID + timeout. Все точки одного такого устройства используют одну сессию в рамках DriverInstance.
+- Stop/shutdown очищают кэш сессий. Разные станции/DriverInstance не разделяют worker и TCP-соединения.
+- Добавлен loopback regression test: два последовательных чтения проходят через одно принятое сервером TCP-соединение.
+
+### Ограничения текущего прохода
+- Запросы одного worker пока сериализованы IPC; параллельные pipeline-запросы и batch-range planner ещё не добавлены.
+- Повторная попытка после обрыва происходит при следующем цикле polling; автоматического retry в том же poll пока нет.
+- Код ещё требует Rust CI и fault-injection тестов (обрыв между запросом и ответом, timeout, reconnect).
+- Это не аппаратная приёмка и не разрешение на запись в контроллеры.

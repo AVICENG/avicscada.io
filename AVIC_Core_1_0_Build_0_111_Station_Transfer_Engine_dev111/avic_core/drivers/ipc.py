@@ -145,3 +145,16 @@ class SequenceGuard:
         gap = sequence > self.last_sequence + 1
         self.last_sequence = sequence
         return gap
+
+
+def write_frame(stream: BinaryIO, envelope: DriverEnvelope) -> None:
+    """Write one complete frame to a binary stream, handling partial writes."""
+    view = memoryview(encode_frame(envelope))
+    while view:
+        written = stream.write(view)
+        if written is None or written <= 0:
+            raise DriverIpcError("IPC stream write did not make progress")
+        view = view[written:]
+    flush = getattr(stream, "flush", None)
+    if callable(flush):
+        flush()

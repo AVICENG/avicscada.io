@@ -8,7 +8,7 @@ import uuid
 import pytest
 
 from avic_core.drivers.ipc import (
-    DriverEnvelope, DriverIpcError, SequenceGuard, encode_frame, read_frame,
+    DriverEnvelope, DriverIpcError, SequenceGuard, encode_frame, read_frame, write_frame,
     MAX_FRAME_BYTES,
 )
 
@@ -67,3 +67,17 @@ def test_sequence_guard_fences_generations_and_reports_gaps():
     with pytest.raises(DriverIpcError, match="stale"):
         guard.accept(3, 4)
     assert guard.accept(5, 1) is False
+
+
+def test_write_frame_matches_encode_frame():
+    import io
+    item = DriverEnvelope(
+        contract="avic.driver.ipc", version=1, message_id=str(uuid.uuid4()),
+        kind="sample", installation_id="install-1", project_id="project-1",
+        station_id="station-1", driver_instance_id="driver-1",
+        worker_id=str(uuid.uuid4()), generation=1, sequence=1,
+        sent_at="2026-11-27T10:00:00Z", correlation_id=None, payload={"value": 1},
+    )
+    stream = io.BytesIO()
+    write_frame(stream, item)
+    assert stream.getvalue() == encode_frame(item)

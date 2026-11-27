@@ -24,7 +24,7 @@ class FakeWorker:
                 "device": {"device_instance": request["device_instance"]},
                 "objects": [{
                     "object_type_name": "AnalogInput", "object_instance": 2,
-                    "present_value": 21.5,
+                    "present_value": 21.5, "status_flags": [False, False, False, False],
                 }],
             }}
         if protocol == "knxnet-ip":
@@ -127,3 +127,68 @@ def test_rust_bacnet_rejects_unsupported_property_before_publish(fake_worker):
     assert result["failure_count"] == 1
     assert core.point_runtime.published == []
     assert core.point_runtime.bad[0][0] == "point-1"
+
+
+def test_rust_bacnet_status_fault_is_published_with_bad_quality(fake_worker):
+    from avic_core.domain.models import PointQuality
+    fake_worker.read = lambda request: {"result": {
+        "device": {"device_instance": request["device_instance"]},
+        "objects": [{
+            "object_type_name": "AnalogInput", "object_instance": 2,
+            "present_value": 21.5, "status_flags": [False, True, False, False],
+        }],
+    }}
+    core = FakeCore()
+    adapter = make_adapter(core, "bacnet-ip",
+        {"timeout": 3.0, "local_address": "192.0.2.10", "udp_port": 47808},
+        [{"point_id": "point-1", "address": ("192.0.2.20", 47808),
+          "device_instance": 1234, "object_type": 0, "object_instance": 2,
+          "property_id": 85, "array_index": None, "scale": 1.0, "offset": 0.0}],
+    )
+    adapter.poll_once()
+    assert core.point_runtime.published[0][2] == PointQuality.BAD_COMMUNICATION
+
+
+def test_rust_bacnet_out_of_service_maps_to_disabled_quality(fake_worker):
+    from avic_core.domain.models import PointQuality
+    fake_worker.read = lambda request: {"result": {
+        "device": {"device_instance": request["device_instance"]},
+        "objects": [{
+            "object_type_name": "AnalogInput", "object_instance": 2,
+            "present_value": 21.5, "status_flags": [False, False, False, True],
+        }],
+    }}
+    core = FakeCore()
+    adapter = make_adapter(core, "bacnet-ip",
+        {"timeout": 3.0, "local_address": "192.0.2.10", "udp_port": 47808},
+        [{"point_id": "point-1", "address": ("192.0.2.20", 47808),
+          "device_instance": 1234, "object_type": 0, "object_instance": 2,
+          "property_id": 85, "array_index": None, "scale": 1.0, "offset": 0.0}],
+    )
+    adapter.poll_once()
+    assert core.point_runtime.published[0][2] == PointQuality.DISABLED
+
+
+def test_rust_knx_formats_ipv6_gateway_and_local_bind(fake_worker):
+    core = FakeCore()
+    adapter = make_adapter(core, "knxnet-ip",
+        {"gateway_host": "2001:db8::20", "gateway_port": 3671,
+         "local_host": "2001:db8::10", "local_port": 0, "timeout": 1.0},
+        [{"point_id": "point-1", "group_address": 0x0A03, "datapoint_type": "9.001"}],
+    )
+    adapter.poll_once()
+    assert fake_worker.requests[0]["gateway"] == "[2001:db8::20]:3671"
+    assert fake_worker.requests[0]["local_bind"] == "[2001:db8::10]:0"
+
+
+def test_rust_adapter_close_marks_owned_points_stale(fake_worker):
+    from avic_core.domain.models import PointQuality
+    core = FakeCore()
+    adapter = make_adapter(core, "modbus-tcp",
+        {"host": "192.0.2.10", "port": 502, "unit_id": 1, "timeout": 2.0},
+        [{"point_id": "point-1", "function": 3, "address": 100,
+          "count": 1, "data_type": "uint16"}],
+    )
+    adapter.close()
+    assert core.point_runtime.bad[0][0:2] == ("point-1", PointQuality.STALE)
+    assert fake_worker.closed is True
