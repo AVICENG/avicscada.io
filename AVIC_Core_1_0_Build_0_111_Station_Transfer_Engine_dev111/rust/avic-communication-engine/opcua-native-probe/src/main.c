@@ -68,12 +68,12 @@ static int endpoint_allowed(const char *endpoint) {
 
     const char *port_text = NULL;
     if(authority[0] == '[') {
-        const char *close = memchr(authority, ']', length);
+        const char *close = (const char *)memchr(authority, ']', length);
         if(!close || close + 1 >= authority + length || close[1] != ':')
             return 0;
         port_text = close + 2;
     } else {
-        const char *colon = memchr(authority, ':', length);
+        const char *colon = (const char *)memchr(authority, ':', length);
         if(!colon || memchr(colon + 1, ':',
                             (size_t)((authority + length) - (colon + 1))))
             return 0;
@@ -339,8 +339,8 @@ static int connect_and_execute(int argc, char **argv, int browse) {
     UA_String_clear(&config->clientDescription.applicationUri);
     config->clientDescription.applicationUri = UA_String_fromChars(app_uri);
     config->timeout = 5000;
-    config->localConnectionConfig.maxMessageSize = 4u * 1024u * 1024u;
-    config->localConnectionConfig.maxChunkCount = 64u;
+    config->localConnectionConfig.localMaxMessageSize = 4u * 1024u * 1024u;
+    config->localConnectionConfig.localMaxChunkCount = 64u;
 
     status = UA_Client_connect(client, endpoint);
     if(status != UA_STATUSCODE_GOOD) {
