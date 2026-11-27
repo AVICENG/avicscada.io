@@ -191,11 +191,7 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
                 .map_err(|_| "invalid BACnet device instance".to_string())?;
             let local_bind: SocketAddr = required_str(p, "local_bind")?.parse().map_err(|_| "invalid BACnet local bind".to_string())?;
             let client = BacnetIpReadOnlyClient::new(local_bind).map_err(|e| e.to_string())?;
-            let device = client.discover(address).map_err(|e| e.to_string())?;
-            if device.device_instance != device_instance {
-                return Err("BACnet Device Instance does not match requested device".into());
-            }
-            let objects = client.read_object_snapshots(address, device_instance).map_err(|e| e.to_string())?;
+            let (device, objects) = client.read_device_snapshot(address, device_instance).map_err(|e| e.to_string())?;
             let rows: Vec<Value> = objects.into_iter().map(|o| json!({
                 "object_identifier":o.object_identifier, "object_type_name":o.object_type_name,
                 "object_instance":o.object_instance, "object_name":o.object_name,
@@ -204,7 +200,7 @@ fn read_protocol(p: &Value) -> Result<Value, String> {
             })).collect();
             Ok(json!({"device":{"address":device.address,"device_instance":device.device_instance,
                 "vendor_id":device.vendor_id,"vendor_name":device.vendor_name,
-                "max_apdu":device.max_apdu,"segmentation":device.segmentation},"objects":rows}))
+                "max_apdu":device.max_apdu,"segmentation":device.segmentation,"route":device.route},"objects":rows}))
         }
         "knxnet-ip" => {
             let gateway: SocketAddr = required_str(p, "gateway")?.parse().map_err(|_| "invalid KNX gateway".to_string())?;
