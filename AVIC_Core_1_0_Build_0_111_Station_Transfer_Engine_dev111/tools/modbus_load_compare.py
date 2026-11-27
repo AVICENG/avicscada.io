@@ -56,7 +56,7 @@ class ModbusHandler(socketserver.BaseRequestHandler):
                 payload = bytes([3, count * 2]) + b"".join(
                     ((address + i) & 0xffff).to_bytes(2, "big") for i in range(count)
                 )
-                response = (tid.to_bytes(2, "big") + b"\\x00\\x00" +
+                response = (tid.to_bytes(2, "big") + b"\x00\x00" +
                             (len(payload) + 1).to_bytes(2, "big") + bytes([unit]) + payload)
                 self.request.sendall(response)
             except (OSError, ConnectionError):
