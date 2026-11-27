@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import socketserver
+import threading
 
 from avic_core.application import CoreApplication
 from avic_core.domain.models import Platform, Project, Station
@@ -88,3 +90,87 @@ def test_compiled_c_worker_ipc_handshake_when_enabled():
     finally:
         worker.close()
     assert worker.diagnostics()["process_alive"] is False
+
+
+
+def test_compiled_c_worker_reads_modbus_tcp_register_range_when_enabled():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    def recv_exact(sock, size):
+        data = bytearray()
+        while len(data) < size:
+            chunk = sock.recv(size - len(data))
+            if not chunk:
+                raise ConnectionError("client closed Modbus test socket")
+            data.extend(chunk)
+        return bytes(data)
+
+    class ModbusSimulatorHandler(socketserver.BaseRequestHandler):
+        def handle(self):
+            while True:
+                try:
+                    header = recv_exact(self.request, 7)
+                    transaction_id = header[:2]
+                    protocol_id = header[2:4]
+                    length = int.from_bytes(header[4:6], "big")
+                    unit_id = header[6]
+                    if protocol_id != b"\\x00\\x00" or not 2 <= length <= 254:
+                        return
+                    pdu = recv_exact(self.request, length - 1)
+                    if len(pdu) != 5 or pdu[0] != 3:
+                        return
+                    address = int.from_bytes(pdu[1:3], "big")
+                    count = int.from_bytes(pdu[3:5], "big")
+                    if not 1 <= count <= 125 or address + count > 65536:
+                        return
+                    data = b"".join(
+                        (address + offset).to_bytes(2, "big")
+                        for offset in range(count)
+                    )
+                    response_pdu = bytes((3, len(data))) + data
+                    response = (
+                        transaction_id + b"\\x00\\x00"
+                        + (len(response_pdu) + 1).to_bytes(2, "big")
+                        + bytes((unit_id,)) + response_pdu
+                    )
+                    self.request.sendall(response)
+                except (OSError, ConnectionError):
+                    return
+
+    class ModbusSimulator(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+        request_queue_size = 16
+
+    with ModbusSimulator(("127.0.0.1", 0), ModbusSimulatorHandler) as server:
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        host, port = server.server_address
+        from avic_core.drivers.rust_worker import RustDriverWorker
+
+        worker = RustDriverWorker(
+            [str(__import__("pathlib").Path(worker_path).resolve())],
+            installation_id="install-c-modbus-test", project_id="project-c-modbus-test",
+            station_id="station-c-modbus-test", driver_instance_id="driver-c-modbus-test",
+            generation=1, timeout_seconds=5.0,
+        )
+        try:
+            worker.start({
+                "protocol": "modbus-tcp", "host": host,
+                "port": port, "unit_id": 7, "timeout": 2.0,
+            })
+            response = worker.read({
+                "protocol": "modbus-tcp", "host": host, "port": port,
+                "unit_id": 7, "timeout_ms": 2000,
+                "function": 3, "address": 7, "count": 3,
+            })
+            assert response["transport_ok"] is True
+            assert response["result"]["function"] == 3
+            assert response["result"]["values"] == [7, 8, 9]
+        finally:
+            worker.close()
+            server.shutdown()
+            server_thread.join(timeout=2)
