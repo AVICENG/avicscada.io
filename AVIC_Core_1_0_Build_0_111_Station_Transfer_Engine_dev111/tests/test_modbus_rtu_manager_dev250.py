@@ -262,3 +262,44 @@ def test_driver_manager_holds_and_releases_rtu_serial_lease(tmp_path):
             pass
     finally:
         core.close()
+
+
+def test_driver_manager_retains_rtu_lease_when_worker_close_fails(tmp_path):
+    from avic_core.drivers.serial_port_lease import SerialPortBusyError, SerialPortLease
+
+    core, station, _ = _core_with_project(tmp_path, monkeypatch=None)
+    port = str(tmp_path / "failed-close-rs485")
+    attempts = {"close": 0}
+
+    class Adapter:
+        def poll_once(self):
+            return {"results": []}
+        def close(self):
+            attempts["close"] += 1
+            if attempts["close"] == 1:
+                raise RuntimeError("simulated worker shutdown failure")
+
+    instance = DriverInstance(
+        name="Failed close RS485", station_id=station.id,
+        driver_id="modbus-rtu", protocol="Modbus RTU",
+        config={"serial_port": port, "poll_interval_seconds": 0.1},
+    )
+    core.repository.save(instance)
+    core.driver_manager.register_adapter_factory("modbus-rtu", lambda _core, _item: Adapter())
+    try:
+        core.driver_manager.start_instance(instance.id)
+        with pytest.raises(RuntimeError, match="не освободил ресурсы"):
+            core.driver_manager.stop_instance(instance.id)
+        assert instance.id in core.driver_manager._adapters
+        assert instance.id in core.driver_manager._serial_leases
+        with pytest.raises(SerialPortBusyError):
+            SerialPortLease(port).acquire()
+
+        core.driver_manager.stop_instance(instance.id)
+        assert attempts["close"] == 2
+        assert instance.id not in core.driver_manager._adapters
+        assert instance.id not in core.driver_manager._serial_leases
+        with SerialPortLease(port):
+            pass
+    finally:
+        core.close()
