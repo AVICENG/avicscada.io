@@ -350,8 +350,20 @@ configure_done:
     }
     if (!response_payload) return 0;
     json_t *response = make_response(w, request, response_kind, response_payload);
-    if (!response) return 0;
+    if (!response) {
+#ifdef _WIN32
+        fprintf(stderr, "C Worker: response construction failed for command=%s\\n", kind);
+        fflush(stderr);
+#endif
+        return 0;
+    }
     int ok = write_frame(response);
+    if (!ok) {
+#ifdef _WIN32
+        fprintf(stderr, "C Worker: response frame write failed for command=%s\\n", kind);
+        fflush(stderr);
+#endif
+    }
     json_decref(response);
     return ok;
 }
@@ -388,7 +400,16 @@ int main(void) {
             close_modbus(&worker); return 2;
         }
         int should_exit = 0;
+        const char *command = get_string(request, "kind");
         int ok = process(&worker, request, &should_exit);
+        if (!ok) {
+#ifdef _WIN32
+            fprintf(stderr, "C Worker: IPC command rejected or response failed (command=%s, initialized=%d, incoming_sequence=%llu)\\n",
+                    command ? command : "<missing>", worker.initialized,
+                    (unsigned long long)worker.incoming_sequence);
+            fflush(stderr);
+#endif
+        }
         json_decref(request);
         if (!ok) { close_modbus(&worker); return 3; }
         if (should_exit) break;
