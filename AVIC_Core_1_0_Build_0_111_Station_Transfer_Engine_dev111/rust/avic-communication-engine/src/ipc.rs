@@ -179,7 +179,7 @@ mod tests {
         assert!(matches!(e.validate(), Err(IpcError::InvalidEnvelope(_))));
     }
     #[test] fn rejects_oversized_frame_before_allocation() {
-        let mut bytes = ((MAX_FRAME_BYTES as u32) + 1).to_be_bytes().to_vec();
+        let bytes = ((MAX_FRAME_BYTES as u32) + 1).to_be_bytes().to_vec();
         assert!(matches!(read_frame(&mut bytes.as_slice()), Err(IpcError::FrameTooLarge(_))));
     }
     #[test] fn sequence_guard_fences_old_worker_and_detects_gaps() {
