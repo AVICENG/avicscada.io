@@ -160,9 +160,16 @@ def decode_datapoint(payload: bytes, datapoint_type: str):
             if len(payload) != 14: raise KnxProtocolError("DPT 16.000 requires fourteen bytes")
             return payload.rstrip(b"\x00").decode("latin-1")
         if dpt == "17.001":
-            if len(payload) != 1 or not 1 <= payload[0] <= 64:
-                raise KnxProtocolError("DPT 17.001 scene number must be in range 1..64")
-            return payload[0]
+            if len(payload) != 1 or payload[0] & 0xC0:
+                raise KnxProtocolError("DPT 17.001 requires reserved bits 7..6 to be zero")
+            return payload[0] & 0x3F
+        if dpt == "18.001":
+            if len(payload) != 1 or payload[0] & 0x40:
+                raise KnxProtocolError("DPT 18.001 requires reserved bit 6 to be zero")
+            return {
+                "command": "learn" if payload[0] & 0x80 else "activate",
+                "scene_number": payload[0] & 0x3F,
+            }
     except (OverflowError, struct.error) as exc:
         raise KnxProtocolError(f"invalid {dpt} payload") from exc
     raise KnxProtocolError(f"unsupported KNX datapoint type: {datapoint_type}")
