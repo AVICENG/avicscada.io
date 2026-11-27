@@ -57,7 +57,8 @@ class CoreApplication:
     """
 
     def __init__(self, data_dir: str | Path, *, license_service=None, license_file: str | Path | None = None,
-                 rust_worker_command: str | Path | None = None,\n                 c_worker_command: str | Path | None = None):
+                 rust_worker_command: str | Path | None = None,
+                 c_worker_command: str | Path | None = None):
         self.paths = CorePaths.under(data_dir)
         for directory in (self.paths.root, self.paths.databases, self.paths.configuration, self.paths.backups):
             directory.mkdir(parents=True, exist_ok=True)
