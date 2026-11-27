@@ -220,6 +220,7 @@ fn main() {
             Err(_) => break,
         };
         let (kind, payload, should_exit) = worker.handle(request.clone());
+        if worker.scope.is_none() { break; }
         let response = worker.response(&request, kind, payload);
         if write_frame(&mut output, &response).is_err() { break; }
         if should_exit { break; }
