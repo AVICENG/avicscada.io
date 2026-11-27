@@ -50,9 +50,9 @@ def test_modbus_adapter_publishes_scaled_values_into_runtime(tmp_path):
 
 
 def test_modbus_adapter_retains_value_and_marks_communication_failure(tmp_path):
-    app, pts = _setup(tmp_path, 1)
+    app, pts, driver_id = _setup(tmp_path, 1)
     client = FakeModbusClient({0: [2150]})
-    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test",
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, driver_id,
         [ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16", scale=0.1)])
     adapter.poll_once(); before = app.state.core.point_runtime.read(pts[0].id)
     client.fail_addresses.add(0); result = adapter.poll_once()
@@ -71,7 +71,7 @@ def test_modbus_binding_refuses_write_functions_and_invalid_ranges():
 
 
 def test_modbus_adapter_checks_driver_ownership(tmp_path):
-    app, pts = _setup(tmp_path, 1)
+    app, pts, driver_id = _setup(tmp_path, 1)
     adapter = ModbusTcpPointAdapter(FakeModbusClient({0:[10]}), app.state.core.point_runtime,
         "wrong-owner", [ModbusTcpPointBinding(pts[0].id, 3, 0)])
     result = adapter.poll_once()
@@ -81,9 +81,9 @@ def test_modbus_adapter_checks_driver_ownership(tmp_path):
 
 
 def test_modbus_adapter_coalesces_adjacent_register_bindings(tmp_path):
-    app, pts = _setup(tmp_path, 2)
+    app, pts, driver_id = _setup(tmp_path, 2)
     client = FakeModbusClient({0: [100, 200]})
-    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, "driver-modbus-test", [
+    adapter = ModbusTcpPointAdapter(client, app.state.core.point_runtime, driver_id, [
         ModbusTcpPointBinding(pts[0].id, 3, 0, data_type="uint16"),
         ModbusTcpPointBinding(pts[1].id, 3, 1, data_type="uint16"),
     ])
