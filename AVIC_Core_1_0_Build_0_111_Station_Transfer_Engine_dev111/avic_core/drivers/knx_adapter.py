@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 
 from avic_core.domain.models import PointQuality
 from avic_core.network.knx_cemi import CemiMessageCode, KnxGroupService, parse_cemi_frame
@@ -100,7 +101,26 @@ class KnxPointAdapter:
                     0x01, 0x00, 0x00,
                 ))
                 self.session.send_cemi(read_request)
-            cemi = self.session.poll_cemi()
+            if requested_binding is None:
+                cemi = self.session.poll_cemi()
+            else:
+                # Tunnelling can deliver unrelated group telegrams before the
+                # response to our GroupValueRead. Keep receiving until the
+                # requested GroupValueResponse or the session timeout expires.
+                timeout = max(0.05, float(getattr(self.session, "timeout_seconds", 1.0)))
+                deadline = time.monotonic() + timeout
+                cemi = None
+                while time.monotonic() < deadline:
+                    candidate = self.session.poll_cemi()
+                    if candidate is None:
+                        break
+                    candidate_frame = parse_cemi_frame(candidate)
+                    if (candidate_frame.message_code is CemiMessageCode.L_DATA_INDICATION
+                        and candidate_frame.destination_is_group
+                        and candidate_frame.destination_address == int(requested_binding.group_address)
+                        and candidate_frame.service is KnxGroupService.GROUP_VALUE_RESPONSE):
+                        cemi = candidate
+                        break
         except Exception as exc:
             message = f"{type(exc).__name__}: {exc}"
             if requested_binding is None:
