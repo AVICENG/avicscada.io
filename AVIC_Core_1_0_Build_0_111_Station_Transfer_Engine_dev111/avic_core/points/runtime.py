@@ -149,8 +149,17 @@ class PointRuntimeService:
             values.append(self.read(row["entity_id"]))
         return values
 
-    def publish_fbd(self, point_id: str, value: Any, *, quality: str = "GOOD", timestamp: datetime | None = None) -> PointRuntimeValue:
-        """Publish a validated FBD output to its virtual point; this never writes a field device."""
+    def _assert_fbd_station(self, point: FBDExposedPoint, station_id: str) -> None:
+        if not station_id or point.station_id != station_id:
+            raise ValueError("Нарушена изоляция станции FBD: виртуальная точка принадлежит другой станции")
+        document = self.repository.get_record(point.fbd_document_id)
+        if (document.get("entity_type") != "LogicDocument"
+                or document.get("payload", {}).get("station_id") != station_id):
+            raise ValueError("FBD virtual point is not owned by a LogicDocument in the same station")
+
+    def publish_fbd(self, point_id: str, value: Any, *, station_id: str,
+                    quality: str = "GOOD", timestamp: datetime | None = None) -> PointRuntimeValue:
+        """Publish a validated FBD output only inside its owning station; never writes field I/O."""
         q = str(quality).upper()
         if q not in {"GOOD", "UNCERTAIN", "BAD", "STALE", "COMM_LOST", "BAD_COMMUNICATION", "BAD_CONFIGURATION"}:
             raise ValueError("Недопустимое качество FBD-точки")
@@ -160,6 +169,7 @@ class PointRuntimeService:
             point, version, _ = self._read_entity(point_id)
             if not isinstance(point, FBDExposedPoint):
                 raise ValueError("Публикация FBD разрешена только в виртуальную FBD-точку")
+            self._assert_fbd_station(point, station_id)
             checked = self._validate_value(point, value)
             point.update_value(checked, q, timestamp or _utcnow())
             new_version = self.repository.save(point, expected_version=version)
@@ -235,7 +245,7 @@ class PointRuntimeService:
                     self._subscriber_errors = self._subscriber_errors[-100:]
         return result
 
-    def mark_fbd_quality(self, point_id: str, quality: str) -> PointRuntimeValue:
+    def mark_fbd_quality(self, point_id: str, quality: str, *, station_id: str) -> PointRuntimeValue:
         q = str(quality).upper()
         if q not in {"UNCERTAIN", "BAD", "STALE", "COMM_LOST", "BAD_CONFIGURATION"}:
             raise ValueError("Недопустимое качество FBD-точки")
@@ -243,6 +253,7 @@ class PointRuntimeService:
             point, version, _ = self._read_entity(point_id)
             if not isinstance(point, FBDExposedPoint):
                 raise ValueError("Качество можно менять только у FBD virtual point")
+            self._assert_fbd_station(point, station_id)
             point.quality = q
             point.updated_at = _utcnow()
             new_version = self.repository.save(point, expected_version=version)
