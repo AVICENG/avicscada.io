@@ -169,8 +169,10 @@ class RustDriverWorker:
         try:
             ok, response = self._responses.get(timeout=self.timeout_seconds)
         except queue.Empty as exc:
+            self._terminate()
             raise RustWorkerError(f"Rust worker timed out handling {kind}") from exc
         if not ok:
+            self._terminate()
             raise RustWorkerError(f"Rust worker IPC closed: {response}; stderr={list(self._stderr_tail)[-10:]}")
         if not isinstance(response, DriverEnvelope):
             raise RustWorkerError("Rust worker returned an invalid IPC frame")
