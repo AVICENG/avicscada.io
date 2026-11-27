@@ -1,3 +1,5 @@
+pub mod ipc;
+
 //! AVIC Communication Engine protocol kernels and Driver SDK primitives.
 //! Network workers and Core IPC supervision are introduced incrementally; do not bypass Core validation.
 
