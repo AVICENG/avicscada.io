@@ -54,6 +54,8 @@ class RustDriverPointAdapter:
         self._last_errors: dict[str, str] = {}
         self._success_count = 0
         self._failure_count = 0
+        self._modbus_batch_requests = 0
+        self._modbus_batches_last_poll = 0
         self._closed = False
         self._PointQuality = PointQuality
         self._worker = RustDriverWorker(
@@ -100,30 +102,99 @@ class RustDriverPointAdapter:
             raise ValueError("scale/offset requires numeric protocol values")
         return value
 
-    def _read_modbus(self, binding: dict[str, Any]) -> Any:
+    @staticmethod
+    def _plan_modbus_batches(bindings: tuple[dict[str, Any], ...] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Merge only overlapping/adjacent reads with the same function code.
+
+        Modbus limits are 2,000 bits (FC01/02) and 125 registers (FC03/04).
+        Gaps are never read speculatively: this avoids touching undocumented or
+        side-effectful device address ranges.
+        """
+        limits = {1: 2000, 2: 2000, 3: 125, 4: 125}
+        ordered = []
+        for binding in bindings:
+            function = int(binding["function"])
+            address = int(binding["address"])
+            count = int(binding.get("count", 1))
+            if function not in limits or address < 0 or count < 1 or address + count > 65536:
+                raise RustDriverConfigurationError("Invalid Modbus function/address/count")
+            if function in (1, 2) and count != 1:
+                raise RustDriverConfigurationError("A point binding for FC01/02 must request exactly one bit")
+            if count > limits[function]:
+                raise RustDriverConfigurationError("Modbus point binding exceeds protocol read limit")
+            ordered.append((function, address, address + count, binding))
+        ordered.sort(key=lambda item: (item[0], item[1], item[2]))
+        batches: list[dict[str, Any]] = []
+        for function, start, end, binding in ordered:
+            limit = limits[function]
+            if (batches and batches[-1]["function"] == function
+                    and start <= batches[-1]["address"] + batches[-1]["count"]
+                    and max(batches[-1]["address"] + batches[-1]["count"], end)
+                        - batches[-1]["address"] <= limit):
+                batch = batches[-1]
+                batch["count"] = max(batch["address"] + batch["count"], end) - batch["address"]
+                batch["bindings"].append(binding)
+            else:
+                batches.append({
+                    "function": function, "address": start, "count": end - start,
+                    "bindings": [binding],
+                })
+        return batches
+
+    def _read_modbus_range(self, function: int, address: int, count: int) -> list[Any]:
         response = self._worker.read({
             "protocol": "modbus-tcp",
             "host": self._config["host"], "port": int(self._config.get("port", 502)),
             "unit_id": int(self._config.get("unit_id", 1)),
             "timeout_ms": int(float(self._config.get("timeout", 2.0)) * 1000),
-            "function": int(binding["function"]), "address": int(binding["address"]),
-            "count": int(binding.get("count", 1)),
+            "function": function, "address": address, "count": count,
         })
-        result = response.get("result", {})
-        values = result.get("values")
-        if not isinstance(values, list):
-            raise ValueError("Rust Modbus worker returned no values")
+        values = response.get("result", {}).get("values")
+        if not isinstance(values, list) or len(values) != count:
+            raise ValueError("Modbus worker returned an invalid range length")
+        if function in (1, 2) and any(not isinstance(value, bool) for value in values):
+            raise ValueError("Modbus worker returned non-boolean bit values")
+        if function in (3, 4) and any(isinstance(value, bool) or not isinstance(value, int)
+                                     or value < 0 or value > 65535 for value in values):
+            raise ValueError("Modbus worker returned invalid register values")
+        return values
+
+    def _decode_modbus_binding(self, binding: dict[str, Any], batch: dict[str, Any],
+                               values: list[Any]) -> Any:
+        offset = int(binding["address"]) - int(batch["address"])
+        count = int(binding.get("count", 1))
+        selected = values[offset:offset + count]
+        if len(selected) != count:
+            raise ValueError("Modbus batch did not cover the configured point")
         function = int(binding["function"])
         if function in (1, 2):
-            if len(values) != 1 or not isinstance(values[0], bool):
-                raise ValueError("Rust Modbus bit read returned an invalid shape")
-            return values[0]
+            return selected[0]
         value = decode_registers(
-            values, binding.get("data_type", "uint16"),
+            selected, binding.get("data_type", "uint16"),
             byte_order=binding.get("byte_order", "big"),
             word_order=binding.get("word_order", "big"),
         )
-        return self._scaled(value, float(binding.get("scale", 1.0)), float(binding.get("offset", 0.0)))
+        return self._scaled(value, float(binding.get("scale", 1.0)),
+                            float(binding.get("offset", 0.0)))
+
+    def _poll_modbus_batches(self) -> tuple[dict[str, Any], dict[str, str]]:
+        values_by_point: dict[str, Any] = {}
+        errors_by_point: dict[str, str] = {}
+        batches = self._plan_modbus_batches(self.bindings)
+        self._modbus_batches_last_poll = len(batches)
+        for batch in batches:
+            self._modbus_batch_requests += 1
+            try:
+                values = self._read_modbus_range(
+                    batch["function"], batch["address"], batch["count"])
+                for binding in batch["bindings"]:
+                    point_id = binding["point_id"]
+                    values_by_point[point_id] = self._decode_modbus_binding(binding, batch, values)
+            except Exception as exc:
+                message = f"{type(exc).__name__}: {exc}"
+                for binding in batch["bindings"]:
+                    errors_by_point[binding["point_id"]] = message
+        return values_by_point, errors_by_point
 
     def _read_bacnet_batch(self, address: tuple[str, int], device_instance: int) -> dict[tuple[str, int, int], Any]:
         result = self._worker.read({
@@ -187,12 +258,25 @@ class RustDriverPointAdapter:
                 except Exception as exc:
                     bacnet_errors[key] = f"{type(exc).__name__}: {exc}"
 
+        modbus_values_by_point: dict[str, Any] = {}
+        modbus_errors_by_point: dict[str, str] = {}
+        if self.protocol == "modbus-tcp":
+            try:
+                modbus_values_by_point, modbus_errors_by_point = self._poll_modbus_batches()
+            except Exception as exc:
+                message = f"{type(exc).__name__}: {exc}"
+                modbus_errors_by_point = {binding["point_id"]: message for binding in self.bindings}
+
         rows = []
         for binding in self.bindings:
             point_id = binding["point_id"]
             try:
                 if self.protocol == "modbus-tcp":
-                    value = self._read_modbus(binding)
+                    if point_id in modbus_errors_by_point:
+                        raise RuntimeError(modbus_errors_by_point[point_id])
+                    if point_id not in modbus_values_by_point:
+                        raise ValueError("Modbus batch did not return this point")
+                    value = modbus_values_by_point[point_id]
                 elif self.protocol == "bacnet-ip":
                     address = tuple(binding["address"])
                     device_instance = int(binding["device_instance"])
@@ -250,6 +334,8 @@ class RustDriverPointAdapter:
         return {"driver_id": self.protocol, "mode": self.worker_mode,
                 "write_supported": False, "configured_points": len(self.bindings),
                 "success_count": self._success_count, "failure_count": self._failure_count,
+                "modbus_batch_requests": self._modbus_batch_requests,
+                "modbus_batches_last_poll": self._modbus_batches_last_poll,
                 "last_errors": dict(self._last_errors), "worker": self._worker.diagnostics()}
 
     def close(self) -> None:
