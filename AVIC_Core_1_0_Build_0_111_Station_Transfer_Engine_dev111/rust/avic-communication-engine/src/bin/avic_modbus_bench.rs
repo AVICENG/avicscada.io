@@ -24,7 +24,7 @@ fn main() {
         return;
     }
     if args.len() != 7 { eprintln!("expected 6 arguments; use --help"); std::process::exit(2); }
-    let host = &args[1];
+    let host = args[1].clone();
     let port: u16 = arg(&args, 2, 502, "port");
     let devices: usize = arg(&args, 3, 100, "devices");
     let points: u16 = arg(&args, 4, 100, "points_per_device");
