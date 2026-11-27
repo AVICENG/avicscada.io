@@ -15,6 +15,9 @@
 - Для Windows добавлена нормализация COM10–COM99 к device namespace libmodbus.
 - Для чтения сохранён read-only scope FC01/02/03/04 с прежними ограничениями PDU/range.
 - RTU read request повторно сверяет serial endpoint и все параметры линии с конфигурацией Worker до обращения к libmodbus.
+- DEV250 follow-up: `modbus-rtu` зарегистрирован во встроенном каталоге и Driver Manager; RTU конфигурация валидируется в Core и направляется в тот же libmodbus C Worker.
+- Общий Point Runtime adapter расширен на `modbus-rtu`: batching, FC01/02/03/04, decode/scaling, quality и публикация используют тот же путь, что и TCP.
+- Добавлены DEV250 тесты Driver Manager, serial config validation и RTU point-poll IPC contract; они добавлены в репозиторий, но ещё не имеют подтверждённого CI результата.
 - TCP путь оставлен на прежнем `modbus_new_tcp()`; общие IPC framing, identity, sequence, secret rejection и lifecycle сохранены.
 - Добавлены native-worker tests на принятие корректной RTU конфигурации, отказ при несовпадении serial settings и отказ при некорректной parity.
 
@@ -22,13 +25,15 @@
 
 <badge color="warning">🟧 Частичная реализация — CI не подтверждён</badge>
 
+DEV250 устранил функциональный разрыв: RTU больше не ограничен прямым запуском бинарника в тесте, его можно выбрать как отдельный встроенный драйвер в AVIC Driver Manager и связать с точками. Это пока кодовая интеграция, не подтверждённая сборкой/регрессией.
+
 Кодовый RTU путь добавлен, но DEV249 нельзя объявлять зелёным до Windows/Linux CI и полноценного RTU round-trip.
 
 ## Что ещё не закрыто
 
 1. Linux pseudo-terminal round-trip test добавлен в native-worker suite; ждёт фактического CI запуска. Windows virtual COM round-trip ещё не реализован.
 2. Отдельные CRC/short-frame/timeout/late-response/wrong-slave negative tests ещё не закрыты.
-3. Serial Port Manager с эксклюзивным владением и обнаружением конфликта нескольких Worker.
+3. Serial Port Manager с эксклюзивным владением и обнаружением конфликта нескольких Worker. В текущем DEV250 интеграция ещё не блокирует параллельное открытие одного COM/TTY из разных DriverInstance.
 4. Проверка unplug/replug, reconnect/backoff и bus contention.
 5. RS-485 adapter tests, RTS polarity/timing и несколько физических устройств.
 6. Soak/load и latency p95/p99.
@@ -58,7 +63,7 @@
 
 ## Проверки
 
-На момент обновления отчёта добавлен Linux PTY round-trip test с проверкой CRC запроса и ответа FC03. Фактический запуск CMake/pytest и CI DEV249 ещё ожидается; тест не помечается Passed до получения результата. Никакие новые тесты не помечаются Passed. Исторические Windows/Linux результаты DEV245/DEV247 сохраняются как отдельные результаты старых commit.
+На момент обновления отчёта добавлен Linux PTY round-trip test с проверкой CRC запроса и ответа FC03, а также DEV250 тесты Driver Manager и Point Runtime RTU пути. Фактический запуск CMake/pytest и CI текущего HEAD ещё ожидается; тесты не помечаются Passed до получения результата. Никакие новые тесты не помечаются Passed. Исторические Windows/Linux результаты DEV245/DEV247 сохраняются как отдельные результаты старых commit.
 
 ## Источник API
 
