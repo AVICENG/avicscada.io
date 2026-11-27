@@ -265,7 +265,7 @@ class DriverManagerService:
         cfg = dict(instance.config)
         allowed = {
             "gateway_host", "gateway_port", "local_host", "local_port", "timeout",
-            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings", "engine",
+            "retries", "heartbeat_interval_seconds", "poll_interval_seconds", "bindings", "engine", "read_mode",
         }
         unknown = set(cfg) - allowed
         if unknown:
@@ -285,7 +285,7 @@ class DriverManagerService:
             timeout_seconds=float(cfg.get("timeout", 1.0)), retries=int(cfg.get("retries", 2)),
             heartbeat_interval_seconds=float(cfg.get("heartbeat_interval_seconds", 60.0)),
         )
-        return KnxPointAdapter(session, core.point_runtime, instance.id, bindings)
+        return KnxPointAdapter(session, core.point_runtime, instance.id, bindings, read_mode=str(cfg.get("read_mode", "passive")))
 
     def _build_mqtt_adapter(self, core, instance: DriverInstance):
         """Create a subscribe-only Paho client; credentials never live in driver config."""
