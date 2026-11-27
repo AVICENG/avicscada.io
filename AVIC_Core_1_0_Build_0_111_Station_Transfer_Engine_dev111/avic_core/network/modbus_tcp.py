@@ -114,8 +114,8 @@ class ModbusTcpClient:
         objects: dict[str, str] = {}
         next_id = 0
         for _ in range(max_objects):
-            self._transaction_id = (self._transaction_id + 1) & 0xffff
-            tid = self._transaction_id
+            # Share the atomic MBAP allocator with normal reads during concurrent polling.
+            tid = self._next_transaction_id()
             pdu = bytes((0x2B, 0x0E, read_code, next_id))
             request = struct.pack(">HHHB", tid, 0, len(pdu) + 1, self.unit_id) + pdu
             with socket.create_connection((self.host, self.port), timeout=self.timeout) as sock:
@@ -127,11 +127,16 @@ class ModbusTcpClient:
                     raise ModbusProtocolError("invalid Modbus device-identification MBAP header")
                 body = self._recv_exact(sock, length - 1)
             if body and body[0] == 0xAB:
-                code = body[1] if len(body) > 1 else -1
-                raise ModbusProtocolError(f"Modbus device-identification exception: {code}")
-            if len(body) < 7 or body[0:2] != b"\x2b\x0e":
+                if len(body) != 2:
+                    raise ModbusProtocolError("malformed Modbus device-identification exception")
+                raise ModbusProtocolError(f"Modbus device-identification exception: {body[1]}")
+            if len(body) < 7 or body[0:2] != b"\\x2b\\x0e":
                 raise ModbusProtocolError("invalid Modbus MEI 0x0E response")
+            if body[2] != read_code:
+                raise ModbusProtocolError("Modbus MEI response read-code mismatch")
             more_follows = body[4]
+            if more_follows not in (0x00, 0xFF):
+                raise ModbusProtocolError("invalid Modbus MEI more-follows flag")
             next_object = body[5]
             count = body[6]
             pos = 7
@@ -142,8 +147,12 @@ class ModbusTcpClient:
                 pos += 2
                 if pos + size > len(body):
                     raise ModbusProtocolError("truncated Modbus device-identification value")
+                if str(object_id) in objects:
+                    raise ModbusProtocolError("duplicate Modbus device-identification object")
                 objects[str(object_id)] = body[pos:pos + size].decode("utf-8", errors="replace")
                 pos += size
+            if pos != len(body):
+                raise ModbusProtocolError("unexpected trailing bytes in Modbus device-identification response")
             if more_follows == 0:
                 return objects
             if next_object <= next_id:
