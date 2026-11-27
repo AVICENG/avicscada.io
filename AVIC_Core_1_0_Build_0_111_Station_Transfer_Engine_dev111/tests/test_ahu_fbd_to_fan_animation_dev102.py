@@ -62,11 +62,12 @@ def test_real_point_to_fbd_bool_output_drives_ahu_fan_binding_and_persists(tmp_p
         assert evaluated["mode"] == "SIMULATION_ONLY"
         assert evaluated["runtime_published"] is False
 
-        app.state.core.point_runtime.publish(point.id, False, quality="GOOD", source_driver_id=device.driver_instance_id)
+        driver_id = app.state.core.repository.get_record(point.device_id)["payload"]["driver_instance_id"]
+        app.state.core.point_runtime.publish(point.id, False, quality="GOOD", source_driver_id=driver_id)
         stopped = app.state.fbd.evaluate_graphic_bindings(graphic["id"])["bindings"][binding["id"]]
         assert stopped["quality"] == "GOOD" and stopped["value"] is False
 
-        app.state.core.point_runtime.publish(point.id, True, quality="UNCERTAIN", source_driver_id=device.driver_instance_id)
+        app.state.core.point_runtime.publish(point.id, True, quality="UNCERTAIN", source_driver_id=driver_id)
         degraded = app.state.fbd.evaluate_graphic_bindings(graphic["id"])["bindings"][binding["id"]]
         assert degraded["quality"] == "BAD" and degraded["value"] is None
     finally:
