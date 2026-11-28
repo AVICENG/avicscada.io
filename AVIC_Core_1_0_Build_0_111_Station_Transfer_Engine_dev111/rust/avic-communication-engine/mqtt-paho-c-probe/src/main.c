@@ -53,7 +53,7 @@ static int self_test(void)
     }
 
     printf("paho_mqtt_c=%s async_create=ok callbacks=ok destroy=ok mqtt311=%d mqtt5=%d\\n",
-           MQTTAsync_getVersionInfo()[0].value,
+           MQTTAsync_getVersionInfo()[1].value,
            MQTTVERSION_3_1_1, MQTTVERSION_5);
     return 0;
 }
