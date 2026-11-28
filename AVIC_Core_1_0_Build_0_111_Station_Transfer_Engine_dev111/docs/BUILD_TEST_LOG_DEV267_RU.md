@@ -95,3 +95,8 @@ Windows MQTT CI расширен: после MSVC build устанавливае
 ## DEV268g CI finding — reconnect test broker startup
 
 В run `46132872138` Linux Worker build и основной Mosquitto-to-Point-Runtime тест прошли, но новый reconnect test завершился до запуска Worker: отдельный Mosquitto с временным конфигурационным файлом завершился с exit code 3. Тестовый broker helper переведён на тот же проверенный CLI режим `mosquitto -p <port> -v`, который уже используется основным Linux CI broker. Повторный Linux/Windows reconnect acceptance обязателен.
+
+
+## DEV268l — Windows Mosquitto provisioning
+
+Chocolatey Community feed не содержит пакета `mosquitto` (`package was not found`). CI переведён на официальный Windows installer Mosquitto 2.1.4 с pinned URL и обязательной SHA-256 проверкой `034017C8F8E3B5B86BDBD971F6C5184370311058E4DE7B96A0F10204BBB9E7C8`. Установка выполняется в silent mode; затем `C:\Program Files\mosquitto` добавляется в PATH для broker и publisher acceptance.

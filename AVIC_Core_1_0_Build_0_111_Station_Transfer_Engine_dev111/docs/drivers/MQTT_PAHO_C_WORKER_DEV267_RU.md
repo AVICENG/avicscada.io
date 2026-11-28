@@ -42,7 +42,7 @@
 
 ## DEV268d — расширение Windows acceptance
 
-Windows CI теперь устанавливает Mosquitto, запускает изолированный localhost broker и выполняет полный `tests/test_mqtt_c_worker_dev267.py`, включая MQTT publish → native C Worker → IPC → Point Runtime. Это закрывает разрыв, при котором Windows ранее проверял только handshake.
+Windows CI теперь устанавливает закреплённый Mosquitto 2.1.4 из официального Windows installer с SHA-256 verification, запускает изолированный localhost broker и выполняет полный `tests/test_mqtt_c_worker_dev267.py`, включая MQTT publish → native C Worker → IPC → Point Runtime. Это закрывает разрыв, при котором Windows ранее проверял только handshake.
 
 ## CI gates
 

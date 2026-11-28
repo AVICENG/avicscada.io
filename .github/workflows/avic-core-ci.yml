@@ -344,9 +344,18 @@ jobs:
         run: cmake --build build/mqtt-c-worker --config Release --parallel 2
       - name: Install AVIC Core test dependencies
         run: python -m pip install -e ".[dev]"
-      - name: Install Mosquitto broker and clients
+      - name: Install pinned Mosquitto broker and clients
         shell: pwsh
-        run: choco install mosquitto --yes --no-progress
+        run: |
+          $version = "2.1.4"
+          $installer = Join-Path $env:RUNNER_TEMP "mosquitto-$version-install-windows-x64.exe"
+          $url = "https://mosquitto.org/files/binary/win64/mosquitto-$version-install-windows-x64.exe"
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          $actualHash = (Get-FileHash -Path $installer -Algorithm SHA256).Hash
+          $expectedHash = "034017C8F8E3B5B86BDBD971F6C5184370311058E4DE7B96A0F10204BBB9E7C8"
+          if ($actualHash -ne $expectedHash) { throw "Mosquitto installer SHA256 mismatch: $actualHash" }
+          $install = Start-Process -FilePath $installer -ArgumentList "/S" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Mosquitto installer failed with exit code $($install.ExitCode)" }
       - name: Start isolated Mosquitto broker
         shell: pwsh
         run: |
