@@ -118,3 +118,8 @@ Chocolatey Community feed не содержит пакета `mosquitto` (`packa
 - Linux и Windows CI переходят на одинаковую явную конфигурацию Mosquitto: loopback listener, anonymous access только для изолированного тестового брокера, persistence off.
 
 Проверка DEV268m ожидает новый Linux+Windows CI. До успешного round-trip, reconnect/resubscribe и lifecycle/negative tests MQTT остаётся 🟧.
+
+
+## DEV268n — исправление формата Linux broker config
+
+Во время ревью DEV268m до завершения CI обнаружено, что shell `printf` получил экранированные последовательности `\\n` как буквальные символы, а не как переводы строк. Это могло сформировать некорректный однострочный Mosquitto config. Исправлено на однозначный heredoc с отдельными строками директив. Также нормализованы newline escape в диагностических строках C Worker. DEV268m CI не считать итоговой проверкой этой корректировки; новый HEAD должен пройти повторный прогон.

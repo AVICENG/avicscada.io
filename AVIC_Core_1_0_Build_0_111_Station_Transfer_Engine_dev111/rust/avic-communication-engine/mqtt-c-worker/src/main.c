@@ -267,7 +267,7 @@ static void subscribe_topics(worker_t *w) {
         opts.context=w;
         int rc=MQTTAsync_subscribe(w->client,w->bindings[i].topic,w->bindings[i].qos,&opts);
         if(rc!=MQTTASYNC_SUCCESS) {
-            fprintf(stderr,"MQTT C Worker: subscribe request failed (rc=%d)\\n",rc);
+            fprintf(stderr,"MQTT C Worker: subscribe request failed (rc=%d)\n",rc);
             enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT subscribe request failed"));
         }
     }
@@ -288,7 +288,7 @@ static void on_connect_failure(void *context,MQTTAsync_failureData *response) {
     worker_t *w=context; set_connected(w,0);
     int code=response?response->code:0;
     const char *detail=(response&&response->message)?response->message:"no broker diagnostic";
-    fprintf(stderr,"MQTT C Worker: broker connection failed (code=%d, detail=%s)\\n",code,detail);
+    fprintf(stderr,"MQTT C Worker: broker connection failed (code=%d, detail=%s)\n",code,detail);
     enqueue_event(w,"status",json_pack("{s:b}","connected",0));
     enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT broker connection failed"));
 }
