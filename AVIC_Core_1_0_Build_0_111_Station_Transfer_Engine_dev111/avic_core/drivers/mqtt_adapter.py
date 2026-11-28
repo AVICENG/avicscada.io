@@ -196,7 +196,7 @@ class MqttPointAdapter:
             "last_message_at": dict(self._last_message_at),
             "last_errors": dict(self._last_errors),
         }
- (MQTT-3.3.2- દ).
+ (MQTT-3.3.2-1).
     if topic.startswith("$") and topic_filter[0] in {"+", "#"}:
         return False
     filters = topic_filter.split("/")
