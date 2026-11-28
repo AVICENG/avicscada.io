@@ -90,3 +90,8 @@ Windows MQTT CI расширен: после MSVC build устанавливае
 ## Дополнение DEV268g — negative config и reconnect acceptance
 
 Добавлены тесты нативного C Worker: отказ от MQTT 5.0/TLS/недопустимого QoS/порта с проверкой завершения процесса; перезапуск Mosquitto с проверкой connection-lost, automatic reconnect, повторной подписки и доставки нового sample в Point Runtime. Эти тесты запускаются в Linux и Windows native broker jobs и пока ожидают CI.
+
+
+## DEV268g CI finding — reconnect test broker startup
+
+В run `46132872138` Linux Worker build и основной Mosquitto-to-Point-Runtime тест прошли, но новый reconnect test завершился до запуска Worker: отдельный Mosquitto с временным конфигурационным файлом завершился с exit code 3. Тестовый broker helper переведён на тот же проверенный CLI режим `mosquitto -p <port> -v`, который уже используется основным Linux CI broker. Повторный Linux/Windows reconnect acceptance обязателен.

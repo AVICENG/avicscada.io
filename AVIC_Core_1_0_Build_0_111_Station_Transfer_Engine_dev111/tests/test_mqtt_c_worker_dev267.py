@@ -92,13 +92,10 @@ def _start_local_mosquitto(tmp_path, port):
     executable = shutil.which("mosquitto")
     if not executable:
         pytest.fail("mosquitto executable is required for reconnect acceptance")
-    config = tmp_path / f"mosquitto-{port}.conf"
-    config.write_text(
-        f"listener {port} 127.0.0.1\nallow_anonymous true\npersistence false\n",
-        encoding="utf-8",
-    )
+    # Match the exact CLI mode used by the primary CI broker job. With no
+    # config file Mosquitto 2.x creates its loopback-only default listener.
     process = subprocess.Popen(
-        [executable, "-c", str(config)],
+        [executable, "-p", str(port), "-v"],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
     )
     deadline = time.monotonic() + 10
