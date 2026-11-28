@@ -92,14 +92,28 @@ def _start_local_mosquitto(tmp_path, port):
     executable = shutil.which("mosquitto")
     if not executable:
         pytest.fail("mosquitto executable is required for reconnect acceptance")
-    config = tmp_path / f"mosquitto-{port}.conf"
+    config_dir = os.environ.get("AVIC_MQTT_BROKER_CONFIG_DIR")
+    if os.name != "nt" and config_dir:
+        # Ubuntu's Mosquitto AppArmor profile permits configuration files
+        # under /etc/mosquitto, not pytest's private /tmp directories.
+        config = Path(config_dir) / f"avic-reconnect-{port}.conf"
+    else:
+        config = tmp_path / f"mosquitto-{port}.conf"
     log = tmp_path / f"mosquitto-{port}.log"
-    config.write_text(
-        f"listener {port} 127.0.0.1\nallow_anonymous true\npersistence false\n",
-        encoding="ascii",
+    config_text = (
+        f"listener {port} 127.0.0.1\nallow_anonymous true\npersistence false\n"
     )
-    if os.name != "nt":
-        config.chmod(0o644)
+    if os.name != "nt" and config_dir:
+        subprocess.run(
+            ["sudo", "tee", str(config)],
+            input=config_text, text=True, check=True,
+            stdout=subprocess.DEVNULL,
+        )
+        subprocess.run(["sudo", "chmod", "644", str(config)], check=True)
+    else:
+        config.write_text(config_text, encoding="ascii")
+        if os.name != "nt":
+            config.chmod(0o644)
     stream = log.open("wb")
     process = subprocess.Popen(
         [executable, "-c", str(config), "-v"],
