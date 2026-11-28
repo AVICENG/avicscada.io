@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from types import ModuleType, SimpleNamespace
 from uuid import uuid4
 
