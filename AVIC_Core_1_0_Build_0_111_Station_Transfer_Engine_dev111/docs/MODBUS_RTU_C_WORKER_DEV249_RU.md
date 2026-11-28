@@ -12,7 +12,7 @@
 - RTU context создаётся штатной функцией `modbus_new_rtu()` из libmodbus.
 - Реализована конфигурация serial port, baud rate, parity (N/E/O), data bits (5–8), stop bits (1/2), Unit ID (1–247), timeout (0.1–10 s).
 - Поддержаны опциональные RTS direction modes `none/up/down`; по умолчанию `none`.
-- Для Windows добавлена нормализация COM10–COM99 к device namespace libmodbus.
+- Для Windows добавлена нормализация COM-имён без учёта регистра: `com12`, `COM012` и `\\.\com12` приводятся к каноническому имени; для COM10 и выше используется Win32 device namespace libmodbus. Ограничение прежней реализации на номера COM10–COM99 устранено; поддерживаются и COM100+.
 - Для чтения сохранён read-only scope FC01/02/03/04 с прежними ограничениями PDU/range.
 - RTU read request повторно сверяет serial endpoint и все параметры линии с конфигурацией Worker до обращения к libmodbus.
 - DEV250 follow-up: `modbus-rtu` зарегистрирован во встроенном каталоге и Driver Manager; RTU конфигурация валидируется в Core и направляется в тот же libmodbus C Worker.
