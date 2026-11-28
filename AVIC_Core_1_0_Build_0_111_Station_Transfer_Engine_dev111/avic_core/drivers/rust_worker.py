@@ -29,6 +29,10 @@ class RustDriverWorker:
     """One isolated worker process, one DriverInstance, one generation."""
 
     EVENT_QUEUE_CAPACITY = 256
+    ASYNC_EVENT_KINDS = frozenset({
+        "event", "sample", "device_discovered", "point_discovered",
+        "fault", "diagnostics", "status",
+    })
     REPLACEABLE_EVENT_CLASSES = frozenset({"sample", "telemetry"})
 
     def __init__(
@@ -169,22 +173,27 @@ class RustDriverWorker:
                     raise RustWorkerError("worker returned an invalid IPC frame")
                 self._validate_inbound_identity(frame)
 
-                if frame.kind == "event":
-                    if frame.correlation_id is not None:
-                        raise RustWorkerError("asynchronous IPC event must not have a correlation_id")
+                if frame.kind in self.ASYNC_EVENT_KINDS and frame.correlation_id is not None and frame.kind != "status":
+                    raise RustWorkerError("asynchronous IPC event must not have a correlation_id")
+                if frame.kind in self.ASYNC_EVENT_KINDS and frame.correlation_id is None:
                     self._event_received_count += 1
                     try:
                         self._events.put_nowait(frame)
                     except queue.Full:
                         self._event_overflow_count += 1
                         event_class = frame.payload.get("event_class")
-                        if event_class not in self.REPLACEABLE_EVENT_CLASSES:
+                        replaceable_sample = (
+                            event_class in self.REPLACEABLE_EVENT_CLASSES
+                            and frame.kind in {"event", "sample"}
+                        ) or (
+                            frame.kind == "sample" and event_class is None
+                        )
+                        if not replaceable_sample:
                             raise RustWorkerError(
                                 "critical asynchronous event queue overflow; worker fenced"
                             )
-                        # Explicit drop-newest policy applies ONLY to replaceable
-                        # telemetry samples. Alarm/lifecycle/fault/discovery events
-                        # fail closed rather than disappear from the event stream.
+                        # Drop-newest is allowed only for explicitly typed sample
+                        # telemetry. Critical discovery/fault/lifecycle events fail closed.
                     continue
 
                 if frame.correlation_id is None:
@@ -271,6 +280,18 @@ class RustDriverWorker:
             except queue.Empty:
                 break
         return events
+
+    def next_event(self, timeout_seconds: float = 0.0) -> DriverEnvelope | None:
+        """Wait briefly for one asynchronous worker event; return None on timeout."""
+        if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)):
+            raise ValueError("timeout_seconds must be a number between 0 and 30")
+        timeout = float(timeout_seconds)
+        if not 0.0 <= timeout <= 30.0:
+            raise ValueError("timeout_seconds must be between 0 and 30")
+        try:
+            return self._events.get(timeout=timeout)
+        except queue.Empty:
+            return None
 
     def read(self, request: dict[str, Any]) -> dict[str, Any]:
         if not self._started:

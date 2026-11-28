@@ -12,6 +12,10 @@ static int message_arrived(void *context, char *topic_name, int topic_len,
     if (message != NULL) {
         MQTTAsync_freeMessage(&message);
     }
+    /* Paho transfers ownership of both callback arguments to the application. */
+    if (topic_name != NULL) {
+        MQTTAsync_free(topic_name);
+    }
     return 1;
 }
 

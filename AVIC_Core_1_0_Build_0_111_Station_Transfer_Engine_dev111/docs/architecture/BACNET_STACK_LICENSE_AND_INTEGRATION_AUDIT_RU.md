@@ -185,3 +185,18 @@ CI run `46121086036` завершился со следующими резуль
 - добавлены unit tests для route parsing, отсутствующего интерфейса/IPv4 и ошибок команд.
 
 **Статус проверки DEV259:** код и тесты добавлены в ветку; новый CI ещё не выполнен. ACK и BACnet Error через simulator остаются неподтверждёнными до успешного нового Ubuntu job. Hardware acceptance не выполнялась.
+
+
+## DEV261 — unicast ReadProperty separation from discovery
+
+DEV260 CI run `46122912454` completed on all matrix jobs. Linux Python 3.11/3.12/3.13: 31 524 passed, 8 skipped each. Windows Python 3.11/3.12/3.13: 31 521 passed, 11 skipped each. Native BACnet Windows build/codec passed; Ubuntu simulator integration failed with `BACnet ReadProperty overall timeout device_id=123` after the corrected interface name was successfully selected and `bacserv` remained running.
+
+The next diagnostic separates two independent protocol paths:
+1. direct BACnet/IP unicast ReadProperty to the known simulator endpoint (validates UDP endpoint, NPDU/APDU, TSM invoke ID, ACK/Error handlers and source-address match);
+2. Who-Is/I-Am broadcast discovery (still a separate unresolved network gate).
+
+The new probe option `--read-property-at` adds a static address-cache entry for the known device and bypasses Who-Is. It does not claim discovery success. The integration script targets local runner IPv4 → simulator UDP 47808, while client listens on 47809. It validates a Present_Value ACK and a deliberately unsupported property Error. Debug output is captured for diagnosis.
+
+Additional parser self-tests cover IPv4 octet bounds, malformed address, trailing characters and invalid UDP port. The seven old C diagnostic strings with escaped literal backslash-n were corrected to emit line breaks.
+
+**DEV261 is not yet compiled or CI-tested.** Do not promote BACnet/IP to green or blue from this diagnostic patch. If direct unicast succeeds, retain broadcast discovery as an explicit open gate; if it fails, use BIP trace and server logs to isolate addressing/port/NPDU/TSM behavior.

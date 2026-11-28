@@ -27,3 +27,12 @@
 4. Ограничение payload, bounded callback queue, backpressure, reconnect/backoff.
 5. Mosquitto/EMQX integration tests и сопоставление статусов с Point Runtime.
 6. Удалять Python Paho runtime только после parity, regression и rollback acceptance.
+
+
+## DEV262 — callback ownership correction
+
+Paho `MQTTAsync_messageArrived` transfers ownership of both callback arguments to the application. The callback now releases both resources:
+- `MQTTAsync_freeMessage(&message)`;
+- `MQTTAsync_free(topic_name)`.
+
+Upstream header v1.3.16 explicitly documents these release functions. When the full Worker is implemented, it must first copy topic and payload bytes into a bounded internal queue, then release both Paho allocations. The callback must not write IPC stdout or block on Point Runtime.

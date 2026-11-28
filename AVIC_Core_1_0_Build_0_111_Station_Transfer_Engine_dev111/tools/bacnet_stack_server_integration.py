@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import os
-import re
 import subprocess
 import sys
 import time
@@ -72,10 +71,10 @@ def local_interface() -> tuple[str, str]:
 
 
 def run_probe(probe: Path, env: dict[str, str], property_id: int,
-              timeout_seconds: float) -> subprocess.CompletedProcess[str]:
+              target_ipv4: str, timeout_seconds: float) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [str(probe), "--read-property", "123", "0", "0",
-         str(property_id), "5000"],
+        [str(probe), "--read-property-at", "123", target_ipv4, "47808",
+         "0", "0", str(property_id), "5000"],
         env=env,
         text=True,
         stdout=subprocess.PIPE,
@@ -102,6 +101,7 @@ def main() -> int:
         "BACNET_IFACE": iface,
         "BACNET_IP_PORT": "47808",
         "BACNET_IP_BROADCAST_PORT": "47808",
+        "BACNET_IP_DEBUG": "1",
     })
     client_env = os.environ.copy()
     client_env.update({
@@ -126,7 +126,7 @@ def main() -> int:
                 f"bacserv exited during startup ({process.returncode}):\n{output}"
             )
 
-        ack = run_probe(probe, client_env, 85, 10.0)
+        ack = run_probe(probe, client_env, 85, local_ipv4, 10.0)
         if ack.returncode != 0 or "bacnet_read_property=ack" not in ack.stdout:
             raise RuntimeError(
                 "ReadProperty ACK integration test failed "
@@ -137,7 +137,7 @@ def main() -> int:
 
         # Property identifier 511 is deliberately unsupported by the example
         # server and must return a BACnet Error, not be misreported as an ACK.
-        error = run_probe(probe, client_env, 511, 10.0)
+        error = run_probe(probe, client_env, 511, local_ipv4, 10.0)
         if error.returncode == 0 or "bacnet_read_property_error" not in error.stderr:
             raise RuntimeError(
                 "ReadProperty Error integration test failed "
@@ -147,11 +147,14 @@ def main() -> int:
         print(error.stderr.strip())
         return 0
     finally:
-        process.terminate()
+        if process.poll() is None:
+            process.terminate()
         try:
             server_output, _ = process.communicate(timeout=5)
         except subprocess.TimeoutExpired:
             process.kill()
+            server_output, _ = process.communicate(timeout=5)
+        except ProcessLookupError:
             server_output, _ = process.communicate(timeout=5)
         if server_output:
             print("bacserv_log_begin", file=sys.stderr)

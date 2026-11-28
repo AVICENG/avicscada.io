@@ -75,8 +75,9 @@ EVENT_WORKER = textwrap.dedent(r"""
         elif request.kind == "read":
             count = int(request.payload.get("event_count", 1))
             event_class = request.payload.get("event_class", "sample")
+            event_kind = request.payload.get("event_kind", "event")
             for index in range(count):
-                send(request, "event", {"event_class":event_class,"topic":"plant/temperature","value":index}, None)
+                send(request, event_kind, {"event_class":event_class,"topic":"plant/temperature","value":index}, None)
             send(request, "read_result", {"result":{"value":42}}, request.message_id)
         elif request.kind == "stop":
             send(request, "status", {"state":"STOPPED"}, request.message_id)
@@ -196,3 +197,39 @@ def test_event_drain_limit_is_validated():
     worker = make_worker()
     with pytest.raises(ValueError, match="max_items"):
         worker.drain_events(0)
+
+
+
+@pytest.mark.parametrize(
+    "event_kind",
+    ["sample", "device_discovered", "point_discovered", "fault", "diagnostics", "status"],
+)
+def test_documented_async_event_kinds_are_routed(event_kind):
+    worker = make_worker(EVENT_WORKER)
+    worker.start({"protocol": "mqtt"})
+    worker.read({"event_count": 1, "event_kind": event_kind})
+    event = worker.next_event(timeout_seconds=1.0)
+    assert event is not None
+    assert event.kind == event_kind
+    assert event.correlation_id is None
+    assert worker.next_event(timeout_seconds=0.01) is None
+    worker.close()
+
+
+def test_next_event_rejects_unbounded_or_invalid_timeout():
+    worker = make_worker()
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        worker.next_event(timeout_seconds=31)
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        worker.next_event(timeout_seconds=-1)
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        worker.next_event(timeout_seconds=True)
+
+
+def test_critical_event_cannot_claim_replaceable_sample_class_to_avoid_fencing():
+    worker = make_worker(EVENT_WORKER)
+    worker.start({"protocol": "mqtt"})
+    with pytest.raises(RustWorkerError, match="critical asynchronous event queue overflow"):
+        worker.read({"event_count": 300, "event_kind": "fault", "event_class": "sample"})
+    assert worker.diagnostics()["process_alive"] is False
+    assert worker.diagnostics()["event_overflow_count"] == 1

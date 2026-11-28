@@ -91,7 +91,7 @@ static int iam_codec_self_test(void)
     offset += encode_application_unsigned(invalid_segmentation + offset, expected_vendor);
     if (bacnet_iam_request_decode(
             invalid_segmentation, (unsigned)offset, NULL, NULL, NULL, NULL) >= 0) {
-        fprintf(stderr, "BACnet I-Am decoder accepted out-of-range segmentation\\n");
+        fprintf(stderr, "BACnet I-Am decoder accepted out-of-range segmentation\n");
         return 1;
     }
 
@@ -105,11 +105,11 @@ static int iam_codec_self_test(void)
     offset += encode_application_unsigned(invalid_vendor + offset, 65536u);
     if (bacnet_iam_request_decode(
             invalid_vendor, (unsigned)offset, NULL, NULL, NULL, NULL) >= 0) {
-        fprintf(stderr, "BACnet I-Am decoder accepted vendor ID > 65535\\n");
+        fprintf(stderr, "BACnet I-Am decoder accepted vendor ID > 65535\n");
         return 1;
     }
 
-    printf("bacnet_iam_codec=ok device=%u max_apdu=%u segmentation=%d vendor=%u truncated_payloads_rejected=%d wrong_object_rejected=1 invalid_segmentation_rejected=1 invalid_vendor_rejected=1\\n",
+    printf("bacnet_iam_codec=ok device=%u max_apdu=%u segmentation=%d vendor=%u truncated_payloads_rejected=%d wrong_object_rejected=1 invalid_segmentation_rejected=1 invalid_vendor_rejected=1\n",
            (unsigned)device, max_apdu, segmentation, (unsigned)vendor, length);
     return 0;
 }
@@ -125,7 +125,7 @@ static int read_property_codec_self_test(void)
 
     int length = read_property_request_encode(encoded, &request);
     if (length <= 0 || (size_t)length > sizeof(encoded)) {
-        fprintf(stderr, "BACnet ReadProperty request encoder returned invalid length: %d\\n",
+        fprintf(stderr, "BACnet ReadProperty request encoder returned invalid length: %d\n",
                 length);
         return 1;
     }
@@ -138,7 +138,7 @@ static int read_property_codec_self_test(void)
         decoded.object_instance != request.object_instance ||
         decoded.object_property != request.object_property ||
         decoded.array_index != request.array_index) {
-        fprintf(stderr, "BACnet ReadProperty request round-trip mismatch\\n");
+        fprintf(stderr, "BACnet ReadProperty request round-trip mismatch\n");
         return 1;
     }
 
@@ -146,13 +146,13 @@ static int read_property_codec_self_test(void)
         BACNET_READ_PROPERTY_DATA partial = { 0 };
         if (rp_decode_service_request(
                 encoded, (unsigned)truncated, &partial) >= 0) {
-            fprintf(stderr, "BACnet ReadProperty decoder accepted truncated payload: %d/%d\\n",
+            fprintf(stderr, "BACnet ReadProperty decoder accepted truncated payload: %d/%d\n",
                     truncated, length);
             return 1;
         }
     }
 
-    printf("bacnet_read_property_codec=ok object_type=%u instance=%u property=%u truncated_payloads_rejected=%d\\n",
+    printf("bacnet_read_property_codec=ok object_type=%u instance=%u property=%u truncated_payloads_rejected=%d\n",
            (unsigned)decoded.object_type, (unsigned)decoded.object_instance,
            (unsigned)decoded.object_property, length);
     return 0;
@@ -228,7 +228,8 @@ static int read_property_transaction(
     BACNET_OBJECT_TYPE object_type,
     uint32_t object_instance,
     BACNET_PROPERTY_ID property,
-    unsigned timeout_ms)
+    unsigned timeout_ms,
+    const BACNET_ADDRESS *direct_target)
 {
     uint8_t rx_buffer[MAX_MPDU] = { 0 };
     BACNET_ADDRESS source = { 0 };
@@ -255,7 +256,14 @@ static int read_property_transaction(
     dlenv_init();
 
     mstimer_set(&deadline, timeout_ms);
-    Send_WhoIs(device_id, device_id);
+    if (direct_target != NULL) {
+        Read_Target_Address = *direct_target;
+        address_add(device_id, MAX_APDU, direct_target);
+        address_set_device_TTL(device_id, 0u, true);
+        bound = true;
+    } else {
+        Send_WhoIs(device_id, device_id);
+    }
 
     while (!mstimer_expired(&deadline) && Read_Result_State == 0) {
         uint16_t received = datalink_receive(
@@ -331,12 +339,62 @@ static int parse_unsigned(const char *text, unsigned long minimum,
     return 1;
 }
 
+static int parse_ipv4_target(const char *text, unsigned long port,
+                             BACNET_ADDRESS *target)
+{
+    unsigned octets[4] = { 0 };
+    const char *cursor = text;
+    if (cursor == NULL || target == NULL || port < 1u || port > 65535u) return 0;
+    for (unsigned i = 0; i < 4u; ++i) {
+        unsigned digits = 0;
+        while (*cursor >= '0' && *cursor <= '9') {
+            octets[i] = octets[i] * 10u + (unsigned)(*cursor - '0');
+            if (octets[i] > 255u) return 0;
+            ++cursor;
+            ++digits;
+        }
+        if (digits == 0u) return 0;
+        if (i < 3u) {
+            if (*cursor != '.') return 0;
+            ++cursor;
+        } else if (*cursor != '\0') return 0;
+    }
+    memset(target, 0, sizeof(*target));
+    target->mac[0] = (uint8_t)octets[0];
+    target->mac[1] = (uint8_t)octets[1];
+    target->mac[2] = (uint8_t)octets[2];
+    target->mac[3] = (uint8_t)octets[3];
+    target->mac[4] = (uint8_t)((port >> 8) & 0xffu);
+    target->mac[5] = (uint8_t)(port & 0xffu);
+    target->mac_len = 6u;
+    target->net = 0u;
+    target->len = 0u;
+    return 1;
+}
+
+static int ipv4_target_self_test(void)
+{
+    BACNET_ADDRESS target = { 0 };
+    if (!parse_ipv4_target("192.0.2.1", 47808u, &target) ||
+        target.mac_len != 6u || target.mac[0] != 192u ||
+        target.mac[1] != 0u || target.mac[2] != 2u ||
+        target.mac[3] != 1u || target.mac[4] != 0xbau ||
+        target.mac[5] != 0xc0u || target.net != 0u || target.len != 0u) return 1;
+    if (parse_ipv4_target("256.0.0.1", 47808u, &target) ||
+        parse_ipv4_target("192.0.2", 47808u, &target) ||
+        parse_ipv4_target("192.0.2.1junk", 47808u, &target) ||
+        parse_ipv4_target("192.0.2.1", 0u, &target)) return 1;
+    printf("bacnet_direct_endpoint_codec=ok ipv4=192.0.2.1 port=47808 invalid_inputs_rejected=4\n");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     const char *device_object = bactext_object_type_name(OBJECT_DEVICE);
     if (device_object == NULL) return 2;
     if (iam_codec_self_test() != 0) return 3;
     if (read_property_codec_self_test() != 0) return 4;
+    if (ipv4_target_self_test() != 0) return 5;
     printf("AVIC BACnet Stack C probe: %s; object=%s; codec=self-test-passed\n",
            BACNET_VERSION_TEXT, device_object);
 
@@ -400,11 +458,28 @@ int main(int argc, char **argv)
         return read_property_transaction(
             (uint32_t)device_id, (BACNET_OBJECT_TYPE)object_type,
             (uint32_t)object_instance, (BACNET_PROPERTY_ID)property,
-            (unsigned)timeout_ms);
+            (unsigned)timeout_ms, NULL);
+    }
+    if (argc == 9 && strcmp(argv[1], "--read-property-at") == 0) {
+        unsigned long device_id = 0, port = 0, object_type = 0;
+        unsigned long object_instance = 0, property = 0, timeout_ms = 0;
+        BACNET_ADDRESS target = { 0 };
+        if (!parse_unsigned(argv[2], 0, BACNET_MAX_INSTANCE, &device_id) ||
+            !parse_unsigned(argv[4], 1, 65535, &port) ||
+            !parse_unsigned(argv[5], 0, MAX_BACNET_OBJECT_TYPE - 1, &object_type) ||
+            !parse_unsigned(argv[6], 0, BACNET_MAX_INSTANCE, &object_instance) ||
+            !parse_unsigned(argv[7], 0, MAX_BACNET_PROPERTY_ID - 1, &property) ||
+            !parse_unsigned(argv[8], 100, 30000, &timeout_ms) ||
+            !parse_ipv4_target(argv[3], port, &target)) return 64;
+        return read_property_transaction(
+            (uint32_t)device_id, (BACNET_OBJECT_TYPE)object_type,
+            (uint32_t)object_instance, (BACNET_PROPERTY_ID)property,
+            (unsigned)timeout_ms, &target);
     }
     fprintf(stderr,
         "Usage: %s [--discover-ms 100..30000] | "
-        "--read-property DEVICE_ID OBJECT_TYPE OBJECT_INSTANCE PROPERTY TIMEOUT_MS\n",
+        "--read-property DEVICE_ID OBJECT_TYPE OBJECT_INSTANCE PROPERTY TIMEOUT_MS | "
+        "--read-property-at DEVICE_ID IPV4 PORT OBJECT_TYPE OBJECT_INSTANCE PROPERTY TIMEOUT_MS\n",
         argv[0]);
     return 64;
 }

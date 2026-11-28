@@ -4,7 +4,9 @@ import subprocess
 
 import pytest
 
-from tools.bacnet_stack_server_integration import local_interface
+from pathlib import Path
+
+from tools.bacnet_stack_server_integration import local_interface, run_probe
 
 
 def _completed(stdout: str = "", *, returncode: int = 0, stderr: str = ""):
@@ -60,3 +62,18 @@ def test_local_interface_reports_address_command_failure(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
     with pytest.raises(RuntimeError, match="device not found"):
         local_interface()
+
+
+def test_run_probe_uses_direct_unicast_endpoint(monkeypatch):
+    captured = {}
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        return _completed()
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    run_probe(Path("probe"), {"BACNET_IFACE": "eth0"}, 85, "10.1.1.4", 10.0)
+    assert captured["command"] == [
+        "probe", "--read-property-at", "123", "10.1.1.4", "47808",
+        "0", "0", "85", "5000",
+    ]
+    assert captured["kwargs"]["timeout"] == 10.0
