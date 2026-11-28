@@ -119,7 +119,9 @@ static const char *js(const json_t *o, const char *k) {
 }
 static int ji(const json_t *o, const char *k, json_int_t *n) {
     json_t *v = json_object_get((json_t *)o, k);
-    if (!json_is_integer(v)) return 0; *n = json_integer_value(v); return 1;
+    if (!json_is_integer(v)) { return 0; }
+    *n = json_integer_value(v);
+    return 1;
 }
 static int copy_string(char *dst, size_t cap, const char *src) {
     if (!src || !*src || strlen(src) >= cap) return 0;
@@ -152,7 +154,8 @@ static int enqueue_event(worker_t *w,const char *kind,json_t *payload) {
     char *encoded=json_dumps(payload,JSON_COMPACT); size_t bytes=encoded?strlen(encoded):0; free(encoded);
     event_node_t *node=calloc(1,sizeof(*node));
     if(!node){json_decref(payload);return 0;}
-    strncpy(node->kind,kind,sizeof(node->kind)-1); node->payload=payload; node->bytes=bytes;
+    snprintf(node->kind, sizeof(node->kind), "%s", kind);
+    node->payload=payload; node->bytes=bytes;
     pthread_mutex_lock(&w->queue_lock);
     if(w->queue_count>=EVENT_CAP||bytes>MAX_FRAME||w->queue_bytes+bytes>QUEUE_BYTES_CAP) {
         w->fatal=1; pthread_cond_signal(&w->queue_cond); pthread_mutex_unlock(&w->queue_lock);
@@ -239,7 +242,7 @@ static int on_message(void *context,char *topic,int topic_len,MQTTAsync_message 
         else {
             char topic_copy[MAX_TOPIC]; memcpy(topic_copy,topic,tn); topic_copy[tn]=0;
             const char *payload=(const char *)message->payload;
-            if(memchr(payload,0,(size_t)message->payloadlen)!=NULL) {
+            if (message->payloadlen > 0 && (!payload || memchr(payload,0,(size_t)message->payloadlen)!=NULL)) {
                 enqueue_event(w,"fault",json_pack("{s:s}","message","Binary MQTT payload is unsupported; UTF-8 text required"));
             } else {
                 json_t *p=json_pack("{s:s,s:s,s:i,s:s,s:s}",
@@ -258,6 +261,7 @@ static void connect_client(worker_t *w) {
     MQTTAsync_connectOptions opts=MQTTAsync_connectOptions_initializer;
     opts.keepAliveInterval=w->keepalive; opts.cleansession=1;
     opts.MQTTVersion=w->mqtt_version; opts.context=w;
+    opts.automaticReconnect=1; opts.minRetryInterval=1; opts.maxRetryInterval=30;
     opts.onSuccess=on_connect_success; opts.onFailure=on_connect_failure;
     MQTTAsync_connect(w->client,&opts);
 }
@@ -332,7 +336,8 @@ static int process(worker_t *w,json_t *r,int *quit) {
        ||!ji(r,"sequence",&seq)||seq<=0||!json_is_object(p)||!valid_uuid(js(r,"message_id")))return 0;
     if(!w->initialized){if(strcmp(kind,"initialize")||!scope_init(w,r))return 0;w->initialized=1;}
     else if(!scope_check(w,r))return 0;
-    if((uint64_t)seq<=w->incoming_sequence)return 0;w->incoming_sequence=(uint64_t)seq;
+    if ((uint64_t)seq <= w->incoming_sequence) { return 0; }
+    w->incoming_sequence=(uint64_t)seq;
     const char *reply="error"; json_t *out=NULL;
     if(!strcmp(kind,"initialize")){reply="initialized";out=json_pack("{s:s,s:i,s:s}","protocol","avic.driver.ipc","version",1,"worker_version","0.1.0");}
     else if(!strcmp(kind,"configure")) {
@@ -359,7 +364,9 @@ static int process(worker_t *w,json_t *r,int *quit) {
         w->started=0;close_client(w);reply="status";*quit=1;out=json_pack("{s:s,s:b}","state","STOPPED","shutdown",1);
     } else if(!strcmp(kind,"write")||!strcmp(kind,"publish"))out=err_payload("WRITE_DISABLED","MQTT publish is disabled in AVIC read-only Worker v1");
     else out=err_payload("UNKNOWN_COMMAND","Unsupported MQTT C Worker command");
-    if(!out)return 0;int ok=send_response(w,r,reply,out);return ok;
+    if (!out) { return 0; }
+    int ok=send_response(w,r,reply,out);
+    return ok;
 }
 int main(void) {
 #ifdef _WIN32
@@ -367,10 +374,11 @@ int main(void) {
 #endif
     worker_t w;memset(&w,0,sizeof(w));
     pthread_mutex_init(&w.queue_lock,NULL);pthread_mutex_init(&w.output_lock,NULL);pthread_cond_init(&w.queue_cond,NULL);
-    if(pthread_create(&w.writer_thread,NULL,writer_main,&w)!=0)return 5;w.writer_started=1;
+    if (pthread_create(&w.writer_thread,NULL,writer_main,&w) != 0) { return 5; }
+    w.writer_started=1;
     for(;;) {
         json_t *r=NULL;int status=read_frame(&r);
-        if(status==0)break;if(status<0){fprintf(stderr,"MQTT C Worker: invalid IPC frame\n");break;}
+        if (status == 0) { break; }if (status < 0) { fprintf(stderr,"MQTT C Worker: invalid IPC frame\n"); break; }
         int quit=0,ok=process(&w,r,&quit);json_decref(r);
         if(!ok){fprintf(stderr,"MQTT C Worker: rejected IPC command or failed response\n");break;}
         if(quit)break;
