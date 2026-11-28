@@ -316,6 +316,7 @@ jobs:
           AVIC_MQTT_C_WORKER: ${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/mqtt-c-worker/avic-mqtt-paho-c-worker
           AVIC_MQTT_C_BROKER_TEST: "1"
           AVIC_MQTT_BROKER_LOG: ${{ github.workspace }}/avic-mosquitto-ci.log
+          AVIC_MQTT_BROKER_CONFIG_DIR: /etc/mosquitto
         run: |
           # Keep broker startup and tests in one step; runner cleanup kills
           # orphan background processes between separate steps.
