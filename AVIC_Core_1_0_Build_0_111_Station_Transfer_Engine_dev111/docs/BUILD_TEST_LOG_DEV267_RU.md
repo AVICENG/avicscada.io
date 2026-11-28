@@ -85,3 +85,8 @@ PR: #11 — drivers/modbus-rtu-c-worker-dev249
 ## Дополнение DEV268d — Windows broker acceptance
 
 Windows MQTT CI расширен: после MSVC build устанавливается Mosquitto, поднимается локальный broker на 127.0.0.1:18883, затем выполняются оба native test: IPC handshake/shutdown и broker-to-Point-Runtime round-trip. Это изменение ещё ожидает CI; результат будет записан после прогона.
+
+
+## Дополнение DEV268g — negative config и reconnect acceptance
+
+Добавлены тесты нативного C Worker: отказ от MQTT 5.0/TLS/недопустимого QoS/порта с проверкой завершения процесса; перезапуск Mosquitto с проверкой connection-lost, automatic reconnect, повторной подписки и доставки нового sample в Point Runtime. Эти тесты запускаются в Linux и Windows native broker jobs и пока ожидают CI.

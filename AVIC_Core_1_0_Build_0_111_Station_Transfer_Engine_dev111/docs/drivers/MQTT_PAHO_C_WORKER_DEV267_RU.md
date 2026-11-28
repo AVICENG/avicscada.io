@@ -28,7 +28,8 @@
 - Anonymous TCP only; TLS/username/password не поддерживаются.
 - Бинарные MQTT payloads не публикуются в Point Runtime; требуется UTF-8 текст.
 - Discovery и MQTT publish/control отсутствуют.
-- Reconnect/queue overflow fault injection, TLS, broker soak и hardware broker acceptance остаются незакрыты.
+- Добавлены native negative-config checks (MQTT 5.0, TLS, QoS/port range) и Mosquitto broker restart → automatic reconnect → resubscribe → Point Runtime sample acceptance для Linux/Windows CI.
+- Queue overflow fault injection, TLS, long broker soak и hardware broker acceptance остаются незакрыты.
 - Завершение Paho disconnect lifecycle под интенсивным трафиком требует отдельного soak/fault-injection подтверждения.
 - Наличие сборки не означает готовность драйвера; MQTT остаётся 🟧 до завершения CI и дополнительных негативных тестов.
 
