@@ -123,3 +123,15 @@ Chocolatey Community feed не содержит пакета `mosquitto` (`packa
 ## DEV268n — исправление формата Linux broker config
 
 Во время ревью DEV268m до завершения CI обнаружено, что shell `printf` получил экранированные последовательности `\\n` как буквальные символы, а не как переводы строк. Это могло сформировать некорректный однострочный Mosquitto config. Исправлено на однозначный heredoc с отдельными строками директив. Также нормализованы newline escape в диагностических строках C Worker. DEV268m CI не считать итоговой проверкой этой корректировки; новый HEAD должен пройти повторный прогон.
+
+
+## DEV268o — broker diagnostics and deterministic CI listener
+
+Результаты DEV268n (run 46147345856):
+- Linux: native C Worker configure/build прошли; broker startup failed до запуска MQTT tests. Mosquitto сообщил `Unable to open config file /tmp/avic-mosquitto.conf`; первопричина — путь/доступность конфигурационного файла в job, не протокольный тест.
+- Windows: MSVC build и Mosquitto startup/readiness прошли; 6 tests passed, Point Runtime round-trip failed. Paho stderr: `TCP/TLS connect failure` (code -1). Это реальная нерешённая интеграционная ошибка; readiness через mosquitto_pub не доказывает доступность того же listener для C Worker.
+- DEV268o меняет Linux config path на GITHUB_WORKSPACE, выставляет mode 0644, проверяет читаемость, PID и сохраняет broker log.
+- Вторичный broker в reconnect test запускается с тем же явным listener/anonymous/persistence config, лог сохраняется; добавлен прямой TCP preflight.
+- При Windows round-trip failure тест приложит broker log к AssertionError, чтобы отличить отказ TCP listener от отказа Paho-клиента.
+
+Эта версия диагностическая. Ни MQTT reconnect, ни round-trip не считаются принятыми до успешного CI на обеих ОС.

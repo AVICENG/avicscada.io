@@ -313,17 +313,27 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: Start isolated Mosquitto broker
         run: |
-          cat > /tmp/avic-mosquitto.conf <<'AVIC_MOSQUITTO_EOF'
+          config="$GITHUB_WORKSPACE/.avic-mosquitto-ci.conf"
+          log="$GITHUB_WORKSPACE/avic-mosquitto-ci.log"
+          cat > "$config" <<'AVIC_MOSQUITTO_EOF'
           listener 18883 127.0.0.1
           allow_anonymous true
           persistence false
           AVIC_MOSQUITTO_EOF
-          mosquitto -c /tmp/avic-mosquitto.conf -v > /tmp/avic-mosquitto.log 2>&1 &
+          chmod 644 "$config"
+          test -r "$config"
+          cat "$config"
+          mosquitto -c "$config" -v > "$log" 2>&1 &
+          broker_pid=$!
           for i in $(seq 1 30); do
-            if mosquitto_pub -h 127.0.0.1 -p 18883 -t avic/ci/ready -m ready; then exit 0; fi
+            if ! kill -0 "$broker_pid" 2>/dev/null; then cat "$log"; exit 1; fi
+            if mosquitto_pub -h 127.0.0.1 -p 18883 -t avic/ci/ready -m ready; then
+              echo "Mosquitto ready: pid=$broker_pid"
+              exit 0
+            fi
             sleep 1
           done
-          cat /tmp/avic-mosquitto.log
+          cat "$log"
           exit 1
       - name: Run MQTT C Worker IPC and broker round-trip tests
         env:

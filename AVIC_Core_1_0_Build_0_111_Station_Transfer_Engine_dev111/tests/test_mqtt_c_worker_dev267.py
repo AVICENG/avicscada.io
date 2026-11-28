@@ -92,16 +92,24 @@ def _start_local_mosquitto(tmp_path, port):
     executable = shutil.which("mosquitto")
     if not executable:
         pytest.fail("mosquitto executable is required for reconnect acceptance")
-    # Match the exact CLI mode used by the primary CI broker job. With no
-    # config file Mosquitto 2.x creates its loopback-only default listener.
-    process = subprocess.Popen(
-        [executable, "-p", str(port), "-v"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+    config = tmp_path / f"mosquitto-{port}.conf"
+    log = tmp_path / f"mosquitto-{port}.log"
+    config.write_text(
+        f"listener {port} 127.0.0.1\nallow_anonymous true\npersistence false\n",
+        encoding="ascii",
     )
+    if os.name != "nt":
+        config.chmod(0o644)
+    stream = log.open("wb")
+    process = subprocess.Popen(
+        [executable, "-c", str(config), "-v"],
+        stdout=stream, stderr=subprocess.STDOUT,
+    )
+    stream.close()
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
         if process.poll() is not None:
-            pytest.fail(f"Mosquitto exited early with code {process.returncode}")
+            pytest.fail(f"Mosquitto exited early with code {process.returncode}; log={log.read_text(encoding='utf-8', errors='replace') if log.exists() else ''}")
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=0.2):
                 return process
@@ -109,7 +117,7 @@ def _start_local_mosquitto(tmp_path, port):
             time.sleep(0.1)
     process.terminate()
     process.wait(timeout=3)
-    pytest.fail("Mosquitto did not start listening")
+    pytest.fail(f"Mosquitto did not start listening; log={log.read_text(encoding='utf-8', errors='replace') if log.exists() else ''}")
 
 
 @pytest.mark.skipif(
@@ -144,6 +152,8 @@ def test_mqtt_paho_c_worker_reconnects_and_resubscribes(tmp_path):
     )
     replacement = None
     try:
+        with socket.create_connection(("127.0.0.1", port), timeout=2):
+            pass
         adapter.start()
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline and not adapter.diagnostics()["connected"]:
@@ -221,6 +231,8 @@ def test_mqtt_paho_c_worker_mosquitto_to_point_runtime():
         station_id="station-ci", generation=1,
     )
     try:
+        with socket.create_connection(("127.0.0.1", 18883), timeout=2):
+            pass
         adapter.start()
         deadline = time.monotonic() + 8
         connected = False
@@ -229,7 +241,10 @@ def test_mqtt_paho_c_worker_mosquitto_to_point_runtime():
                 connected = True
                 break
             time.sleep(0.05)
-        assert connected, "Paho C Worker did not connect to local Mosquitto: " + repr(adapter.diagnostics())
+        if not connected:
+            broker_log = os.environ.get("AVIC_MQTT_BROKER_LOG")
+            detail = Path(broker_log).read_text(encoding="utf-8", errors="replace") if broker_log and Path(broker_log).exists() else "broker log unavailable"
+            raise AssertionError("Paho C Worker did not connect to local Mosquitto: " + repr(adapter.diagnostics()) + "; broker_log=" + detail)
         time.sleep(0.25)
         subprocess.run(
             [publisher, "-h", "127.0.0.1", "-p", "18883",
