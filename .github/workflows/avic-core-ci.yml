@@ -339,6 +339,7 @@ jobs:
         env:
           AVIC_MQTT_C_WORKER: ${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/mqtt-c-worker/avic-mqtt-paho-c-worker
           AVIC_MQTT_C_BROKER_TEST: "1"
+          AVIC_MQTT_BROKER_LOG: ${{ github.workspace }}/avic-mosquitto-ci.log
         run: python -m pytest -q tests/test_mqtt_c_worker_dev267.py
 
   mqtt-paho-c-worker-windows:
@@ -400,6 +401,7 @@ jobs:
         env:
           AVIC_MQTT_C_WORKER: ${{ github.workspace }}\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\build\mqtt-c-worker\Release\avic-mqtt-paho-c-worker.exe
           AVIC_MQTT_C_BROKER_TEST: "1"
+          AVIC_MQTT_BROKER_LOG: ${{ runner.temp }}\avic-mosquitto.log
         run: python -m pytest -q tests/test_mqtt_c_worker_dev267.py
 
   opcua-open62541-native-probe:
