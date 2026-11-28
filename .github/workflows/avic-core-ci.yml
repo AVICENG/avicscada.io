@@ -321,7 +321,7 @@ jobs:
           # orphan background processes between separate steps.
           config="/etc/mosquitto/avic-ci.conf"
           log="$GITHUB_WORKSPACE/avic-mosquitto-ci.log"
-          printf '%s\\n' \
+          printf '%s\n' \
             'listener 18883 127.0.0.1' \
             'allow_anonymous true' \
             'persistence false' | sudo tee "$config" >/dev/null
