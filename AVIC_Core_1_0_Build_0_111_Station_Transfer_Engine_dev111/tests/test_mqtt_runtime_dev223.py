@@ -184,8 +184,9 @@ def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypat
             "bindings": [{"point_id": "p1", "topic": "plant/temp", "qos": 2}],
         },
     )
+    service = object.__new__(DriverManagerService)
     result = DriverManagerService._build_mqtt_adapter(
-        object(), SimpleNamespace(point_runtime=FakePointRuntime()), instance,
+        service, SimpleNamespace(point_runtime=FakePointRuntime()), instance,
     )
     assert result == "native-mqtt-adapter"
     assert called["engine"] == "c"
