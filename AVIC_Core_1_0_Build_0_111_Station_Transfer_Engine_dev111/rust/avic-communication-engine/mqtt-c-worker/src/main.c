@@ -110,7 +110,7 @@ static int make_uuid(char out[37]) {
     UUID id; RPC_CSTR text = NULL;
     RPC_STATUS s = UuidCreate(&id);
     if ((s != RPC_S_OK && s != RPC_S_UUID_LOCAL_ONLY) || UuidToStringA(&id, &text) != RPC_S_OK || !text) return 0;
-    strncpy(out, (const char *)text, 36); out[36] = 0; RpcStringFreeA(&text);
+    memcpy(out, (const char *)text, 36); out[36] = 0; RpcStringFreeA(&text);
 #else
     uuid_t id; uuid_generate_random(id); uuid_unparse_lower(id, out);
 #endif
@@ -213,7 +213,11 @@ static void *writer_main(void *arg) {
             w->stopping=1;
             pthread_mutex_unlock(&w->queue_lock);
             send_event(w,"fault",json_pack("{s:s}","message","MQTT event queue capacity exceeded; worker fenced"));
+#ifdef _WIN32
+            ExitProcess(3);
+#else
             _Exit(3);
+#endif
         }
         if(!w->queue_head&&w->stopping){pthread_mutex_unlock(&w->queue_lock);return NULL;}
         event_node_t *n=w->queue_head; w->queue_head=n->next;
@@ -224,6 +228,13 @@ static void *writer_main(void *arg) {
         free(n);
     }
 }
+#ifdef _WIN32
+static DWORD WINAPI writer_main_win(LPVOID arg) {
+    (void)writer_main(arg);
+    return 0;
+}
+#endif
+
 static void on_connect_success(void *context,MQTTAsync_successData *response) {
     (void)response; worker_t *w=context; w->connected=1;
     enqueue_event(w,"status",json_pack("{s:b}","connected",1));
@@ -402,7 +413,7 @@ int main(void) {
     worker_t w;memset(&w,0,sizeof(w));
     pthread_mutex_init(&w.queue_lock,NULL);pthread_mutex_init(&w.output_lock,NULL);pthread_cond_init(&w.queue_cond,NULL);
 #ifdef _WIN32
-    w.writer_thread=CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)writer_main,&w,0,NULL);
+    w.writer_thread=CreateThread(NULL,0,writer_main_win,&w,0,NULL);
     if (!w.writer_thread) { return 5; }
 #else
     if (pthread_create(&w.writer_thread,NULL,writer_main,&w) != 0) { return 5; }

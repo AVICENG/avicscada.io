@@ -422,6 +422,10 @@ class DriverManagerService:
         if isinstance(keepalive, bool) or not isinstance(keepalive, int) or not 10 <= keepalive <= 3600:
             raise ValueError("MQTT keepalive must be an integer from 10 to 3600 seconds")
         if engine == "c":
+            if protocol_name != "3.1.1":
+                raise ValueError("MQTT C Worker currently supports MQTT 3.1.1 only")
+            if ca_file:
+                raise ValueError("MQTT C Worker TLS is not enabled until the AVIC credential handoff is implemented")
             return self._build_mqtt_c_worker_adapter(core, instance, cfg, bindings)
         try:
             import paho.mqtt.client as mqtt

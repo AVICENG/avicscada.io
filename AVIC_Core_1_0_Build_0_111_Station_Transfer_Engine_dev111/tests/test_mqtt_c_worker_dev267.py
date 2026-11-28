@@ -4,11 +4,16 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import threading
 import time
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
+from avic_core.domain.models import PointQuality
+from avic_core.drivers.mqtt_adapter import MqttPointBinding
+from avic_core.drivers.mqtt_c_worker_adapter import MqttCWorkerPointAdapter
 from avic_core.drivers.rust_worker import RustDriverWorker
 
 WORKER = os.environ.get("AVIC_MQTT_C_WORKER")
@@ -50,28 +55,56 @@ def test_mqtt_paho_c_worker_ipc_handshake_and_shutdown():
         worker.close()
 
 
+class _PointRuntime:
+    def __init__(self):
+        self.samples = []
+        self.qualities = []
+        self.sample_event = threading.Event()
+
+    def publish(self, point_id, value, *, quality, timestamp, source_driver_id):
+        self.samples.append((point_id, value, quality, timestamp, source_driver_id))
+        self.sample_event.set()
+        return SimpleNamespace(timestamp=timestamp, value=value, quality=quality)
+
+    def mark_quality(self, point_id, quality, *, source_driver_id):
+        self.qualities.append((point_id, quality, source_driver_id))
+
+
 @pytest.mark.skipif(
     os.environ.get("AVIC_MQTT_C_BROKER_TEST") != "1",
     reason="Mosquitto round-trip is enabled only in the Linux native integration job",
 )
-def test_mqtt_paho_c_worker_receives_mosquitto_publish():
+def test_mqtt_paho_c_worker_mosquitto_to_point_runtime():
     publisher = shutil.which("mosquitto_pub")
     if not publisher:
         pytest.fail("mosquitto_pub is required for MQTT native round-trip")
-    worker = RustDriverWorker(
-        [str(_worker())], installation_id="install-ci",
-        project_id="project-ci", station_id="station-ci",
-        driver_instance_id="driver-ci", generation=1, timeout_seconds=5,
+    runtime = _PointRuntime()
+    adapter = MqttCWorkerPointAdapter(
+        worker_command=[str(_worker())],
+        core=SimpleNamespace(point_runtime=runtime),
+        driver_instance_id="driver-ci-point-runtime",
+        config={
+            "host": "127.0.0.1", "port": 18883, "keepalive": 30,
+            "client_id": f"avic-ci-{uuid4().hex[:12]}", "protocol": "3.1.1",
+        },
+        bindings=[
+            MqttPointBinding(
+                "point-ci", "avic/ci/telemetry", qos=1,
+                payload_format="json", value_path="value",
+            )
+        ],
+        installation_id="install-ci", project_id="project-ci",
+        station_id="station-ci", generation=1,
     )
     try:
-        worker.start(_config(18883))
+        adapter.start()
         deadline = time.monotonic() + 8
         connected = False
         while time.monotonic() < deadline:
-            event = worker.next_event(timeout_seconds=0.25)
-            if event and event.kind == "status" and event.payload.get("connected") is True:
+            if adapter.diagnostics()["connected"]:
                 connected = True
                 break
+            time.sleep(0.05)
         assert connected, "Paho C Worker did not connect to local Mosquitto"
         time.sleep(0.25)
         subprocess.run(
@@ -79,18 +112,11 @@ def test_mqtt_paho_c_worker_receives_mosquitto_publish():
              "-t", "avic/ci/telemetry", "-q", "1", "-m", '{"value":23.75}'],
             check=True, timeout=5, capture_output=True,
         )
-        deadline = time.monotonic() + 8
-        sample = None
-        while time.monotonic() < deadline:
-            event = worker.next_event(timeout_seconds=0.25)
-            if event and event.kind == "sample":
-                sample = event
-                break
-        assert sample is not None, "No MQTT sample event arrived over AVIC IPC"
-        assert sample.payload["topic"] == "avic/ci/telemetry"
-        assert sample.payload["payload"] == '{"value":23.75}'
-        assert sample.payload["qos"] == 1
-        assert sample.payload["event_class"] == "sample"
-        assert sample.payload["received_at"].endswith("Z")
+        assert runtime.sample_event.wait(8), "No MQTT sample reached Point Runtime"
+        assert len(runtime.samples) == 1
+        point_id, value, quality, timestamp, source = runtime.samples[0]
+        assert (point_id, value, quality) == ("point-ci", 23.75, PointQuality.GOOD)
+        assert timestamp.tzinfo is not None
+        assert source == "driver-ci-point-runtime"
     finally:
-        worker.close()
+        adapter.stop()
