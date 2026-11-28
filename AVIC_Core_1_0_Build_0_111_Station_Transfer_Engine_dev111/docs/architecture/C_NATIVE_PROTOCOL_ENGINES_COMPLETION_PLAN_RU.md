@@ -1,6 +1,6 @@
 # AVIC — план завершения нативных C-движков протоколов
 
-Дата: 27.11.2026
+Дата: 28.11.2026
 
 ## Жёсткое правило реализации
 
@@ -10,12 +10,12 @@
 
 | Порядок | Драйвер | Целевая открытая библиотека | Язык | Фактическое состояние на дату документа |
 |---:|---|---|---|---|
-| 1 | Modbus TCP | libmodbus | C11 | C Worker существует; read-only FC01/02/03/04. TCP/RTU общий runtime. Приёмка не завершена: Linux PTY round-trip ранее падал с ETIMEDOUT; свежий CI для актуального HEAD ещё не дал зелёного результата. |
-| 2 | Modbus RTU | libmodbus | C11 | RTU transport добавлен в тот же C Worker; параметры serial/RTS и serial lease добавлены. Нужны подтверждённые Windows/Linux CI, отрицательные RTU тесты, reconnect/ownership и аппаратные испытания. |
-| 3 | BACnet/IP | Steve Karg BACnet Stack | C11 | В репозитории только stack probe (версия и имя Device object), не AVIC driver. C Worker отсутствует. Существующий Python стек — legacy/regression reference, не целевой runtime. |
-| 4 | BACnet MS/TP | Steve Karg BACnet Stack | C11 | Полноценного C Worker нет. Нужны serial datalink, token lifecycle, RS-485, timing, diagnostics и аппаратные тесты. |
+| 1 | Modbus TCP | libmodbus | C11 | 🟨 C Worker и read-only FC01/02/03/04 интегрированы. CI run `46114373550` на HEAD `8392a972` завершён: 20/20 jobs успешно; Linux C Worker suite — 10 passed. Нужны расширенная negative/soak матрица и hardware acceptance. |
+| 2 | Modbus RTU | libmodbus | C11 | 🟨 RTU transport в том же C Worker, serial settings/RTS и эксклюзивная serial lease интегрированы. В run `46114373550` все jobs успешны; Linux C Worker suite — 10 passed, включая PTY round-trip. Остаются Windows virtual-COM round-trip, negative frame/CRC/timeout/late-response tests, reconnect/soak и hardware acceptance. |
+| 3 | BACnet/IP | Steve Karg BACnet Stack | C11 | 🟧 Native probe: I-Am codec, ReadProperty request codec, Who-Is/I-Am discovery. Добавлен реальный transaction path через upstream `Send_Read_Property_Request`, ACK/Error/Abort/Reject handlers и TSM timeout; CLI `--read-property`. Изменения `c77d081`/`6f781d7` ещё требуют Windows/Linux CI; нет simulator ACK test и AVIC IPC Worker. Python стек — legacy/regression reference, не целевой runtime. |
+| 4 | BACnet MS/TP | Steve Karg BACnet Stack | C11 | ⬜ C Worker отсутствует. Использовать тот же upstream stack; нужны serial datalink, token lifecycle, RS-485 timing, diagnostics, Windows/Linux serial tests и hardware acceptance. |
 | 5 | Siemens S7 / S7comm | Кандидат не утверждён | строго чистый C | C Worker отсутствует. Snap7 требует C++ toolchain; libnodave — beta/legacy и не принят для промышленного runtime. Не включать драйвер до отдельного технического решения. |
-| 6 | MQTT | Eclipse Paho MQTT C | C | Есть Python runtime; C Worker отсутствует. |
+| 6 | MQTT | Eclipse Paho MQTT C | C | 🟧 Paho C async API/lifecycle probe прошёл Windows/Linux в run `46114373550`. Нет broker connect/subscribe/receive/TLS и AVIC IPC Worker; Python runtime пока legacy. |
 | 7 | OPC UA Client | open62541 | C | Native C probe существует; полноценного AVIC IPC Worker, paging/subscriptions/reconnect и SecretStore lifecycle нет. |
 | 8 | Wired M-Bus | libmbus | C | Спецификация есть; Worker отсутствует. Только проводной M-Bus, не Wireless M-Bus. |
 
@@ -47,4 +47,4 @@ KNXnet/IP (XKNX/Python) не относится к списку C-драйвер
 
 ## Рабочий порядок
 
-Закрываем Modbus TCP+RTU полностью, затем BACnet/IP, затем BACnet MS/TP, S7, MQTT, OPC UA Client и Wired M-Bus. Не начинаем полноценный следующий Worker, пока предыдущий не прошёл все программные gates и не зафиксированы отдельно оставшиеся аппаратные gates. Не заявлять «промышленно готов» при отсутствии hardware acceptance.
+Работа идёт циклически по всей C-очереди. Если конкретный протокол блокируется внешней зависимостью, отсутствующим оборудованием или неготовым тестовым стендом, фиксируем точную причину/тест/статус и переходим к следующему драйверу; к отложенному gate возвращаемся в следующем цикле. Не терять незавершённый код и не понижать требования безопасности. Программные gates Windows/Linux закрываются независимо от hardware acceptance; 🟦 присваивается только после реального оборудования. Не заявлять «промышленно готов» без hardware acceptance.
