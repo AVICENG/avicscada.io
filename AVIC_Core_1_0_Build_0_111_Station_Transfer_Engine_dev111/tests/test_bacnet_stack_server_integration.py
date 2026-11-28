@@ -71,9 +71,10 @@ def test_run_probe_uses_direct_unicast_endpoint(monkeypatch):
         captured["kwargs"] = kwargs
         return _completed()
     monkeypatch.setattr(subprocess, "run", fake_run)
-    run_probe(Path("probe"), {"BACNET_IFACE": "eth0"}, 85, "10.1.1.4", 10.0)
+    run_probe(Path("probe"), {"BACNET_IFACE": "eth0"}, 8, 123, 77,
+              "10.1.1.4", 10.0)
     assert captured["command"] == [
         "probe", "--read-property-at", "123", "10.1.1.4", "47808",
-        "0", "0", "85", "5000",
+        "8", "123", "77", "5000",
     ]
     assert captured["kwargs"]["timeout"] == 10.0

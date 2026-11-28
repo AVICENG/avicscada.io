@@ -70,11 +70,12 @@ def local_interface() -> tuple[str, str]:
     return interface, ipv4
 
 
-def run_probe(probe: Path, env: dict[str, str], property_id: int,
-              target_ipv4: str, timeout_seconds: float) -> subprocess.CompletedProcess[str]:
+def run_probe(probe: Path, env: dict[str, str], object_type: int,
+              object_instance: int, property_id: int, target_ipv4: str,
+              timeout_seconds: float) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [str(probe), "--read-property-at", "123", target_ipv4, "47808",
-         "0", "0", str(property_id), "5000"],
+         str(object_type), str(object_instance), str(property_id), "5000"],
         env=env,
         text=True,
         stdout=subprocess.PIPE,
@@ -126,7 +127,10 @@ def main() -> int:
                 f"bacserv exited during startup ({process.returncode}):\n{output}"
             )
 
-        ack = run_probe(probe, client_env, 85, local_ipv4, 10.0)
+        # bacserv exposes its configured Device object (instance 123). Read
+        # Object_Name (property 77), rather than assuming an Analog Input
+        # object exists in the example server's default object database.
+        ack = run_probe(probe, client_env, 8, 123, 77, local_ipv4, 10.0)
         if ack.returncode != 0 or "bacnet_read_property=ack" not in ack.stdout:
             raise RuntimeError(
                 "ReadProperty ACK integration test failed "
@@ -135,9 +139,9 @@ def main() -> int:
         print("bacnet_read_property_ack=passed")
         print(ack.stdout.strip())
 
-        # Property identifier 511 is deliberately unsupported by the example
-        # server and must return a BACnet Error, not be misreported as an ACK.
-        error = run_probe(probe, client_env, 511, local_ipv4, 10.0)
+        # Property identifier 511 is deliberately unsupported by the Device
+        # object and must return a BACnet Error, not be misreported as an ACK.
+        error = run_probe(probe, client_env, 8, 123, 511, local_ipv4, 10.0)
         if error.returncode == 0 or "bacnet_read_property_error" not in error.stderr:
             raise RuntimeError(
                 "ReadProperty Error integration test failed "
