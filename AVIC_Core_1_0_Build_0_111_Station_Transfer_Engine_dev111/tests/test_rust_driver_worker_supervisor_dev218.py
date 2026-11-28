@@ -163,7 +163,9 @@ def test_async_event_before_response_does_not_consume_command_response():
 
 
 def test_async_event_queue_overflow_drops_only_replaceable_samples_and_counts_them():
-    worker = make_worker(EVENT_WORKER)
+    # This deliberately serializes 300 IPC frames; allow slower Windows CI runners
+    # enough time without changing the production worker timeout.
+    worker = make_worker(EVENT_WORKER, timeout=10)
     worker.start({"protocol": "mqtt"})
     result = worker.read({"event_count": 300, "event_class": "sample"})
     diagnostics = worker.diagnostics()
