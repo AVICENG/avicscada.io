@@ -47,3 +47,10 @@ Windows CI теперь устанавливает закреплённый Mosq
 ## CI gates
 
 Linux job строит Worker и запускает Mosquitto round-trip до Point Runtime. Windows job строит MSVC executable и проверяет IPC handshake/shutdown. Полные результаты фиксируются в DEV267 build test log после завершения workflow.
+
+
+## DEV268p — CI broker lifecycle correction
+
+The DEV268o CI attempt exposed that a background Mosquitto process cannot be started in one workflow step and relied upon in a later step: GitHub-hosted runner cleanup terminates orphan processes between steps. Windows readiness passed, but the following TCP preflight failed with connection refused. Linux also could not open a broker config stored under the workspace path.
+
+The workflow now keeps broker startup, readiness checks, native Worker tests, log collection and broker shutdown in one step on both operating systems. Linux broker config is moved to `/etc/mosquitto/avic-ci.conf` with readable permissions. This is a CI harness correction, not a promotion of MQTT driver status. Reconnect, subscription rejection and soak/fault-injection gates remain open.

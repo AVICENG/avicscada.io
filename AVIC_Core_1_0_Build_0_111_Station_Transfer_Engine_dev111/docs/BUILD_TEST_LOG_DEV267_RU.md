@@ -135,3 +135,17 @@ Chocolatey Community feed не содержит пакета `mosquitto` (`packa
 - При Windows round-trip failure тест приложит broker log к AssertionError, чтобы отличить отказ TCP listener от отказа Paho-клиента.
 
 Эта версия диагностическая. Ни MQTT reconnect, ни round-trip не считаются принятыми до успешного CI на обеих ОС.
+
+
+## DEV268p — исправление жизненного цикла CI Mosquitto
+
+Run `46148774566`, HEAD `5d2cb5e5f1f8c9f517459e16c611c349ef7ca4cf` выявил две инфраструктурные причины, из-за которых MQTT acceptance не доходил до протокольной проверки:
+
+- Linux: Mosquitto не смог открыть конфигурацию из каталога workspace. Лог: `Unable to open config file /home/runner/work/avicscada.io/avicscada.io/.avic-mosquitto-ci.conf`. Следующая версия переносит config в `/etc/mosquitto/avic-ci.conf` и выставляет читаемые права.
+- Windows: broker readiness через `mosquitto_pub` прошёл, но следующий pytest получил `ConnectionRefusedError [WinError 10061]` на TCP preflight 127.0.0.1:18883. Причина — broker был запущен в отдельном workflow step; GitHub Runner завершает оставшиеся фоновые процессы после шага. Запуск broker, readiness, pytest и гарантированное завершение перенесены в один step.
+
+В этом run Linux/Windows native MQTT acceptance не прошла; на Windows 6 тестов прошли, один round-trip остановился до запуска Worker из-за отсутствующего listener. Это не является доказательством дефекта Paho protocol path, но и не подтверждает работоспособность Worker.
+
+Linux Python 3.12 на этом HEAD: `31550 passed, 15 skipped`. Полная Windows Python matrix на момент подготовки дополнения ещё выполнялась; её итог будет записан отдельно.
+
+MQTT остаётся 🟧. Повторный Linux+Windows native acceptance обязателен.
