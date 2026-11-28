@@ -15,11 +15,13 @@ from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTc
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
 from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
+from avic_core.drivers.mqtt_c_worker_adapter import MqttCWorkerPointAdapter
 from avic_core.network.modbus_tcp import ModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
 from avic_core.network.knx_tunneling import KnxTunnelingSession
 from avic_core.drivers.rust_point_adapter import RustDriverPointAdapter
+from avic_core.drivers.serial_port_lease import SerialPortLease
 
 
 def _now():
@@ -79,14 +81,17 @@ class DriverManagerService:
         self._lock = RLock()
         self._rust_worker_command: str | None = None
         self._c_worker_command: str | None = None
+        self._mqtt_c_worker_command: str | None = None
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
+            "modbus-rtu": self._build_modbus_rtu_adapter,
             "bacnet-ip": self._build_bacnet_adapter,
             "knxnet-ip": self._build_knx_adapter,
             "mqtt": self._build_mqtt_adapter,
         }
         self._sessions: dict[str, PollingSession] = {}
         self._adapters: dict[str, Any] = {}
+        self._serial_leases: dict[str, SerialPortLease] = {}
         self._point_runtime_scheduler = PointRuntimeScheduler(core.point_runtime)
         self._scheduler_lifecycle_lock = RLock()
 
@@ -136,7 +141,49 @@ class DriverManagerService:
             self._c_worker_command = resolved
         return resolved
 
-    def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings):
+    def register_mqtt_c_worker_command(self, executable: str) -> str:
+        """Register the administrator-selected Paho MQTT C Worker binary."""
+        from pathlib import Path
+        import os
+        path = Path(executable).expanduser()
+        if not path.is_absolute() or not path.is_file():
+            raise ValueError("MQTT C Worker must be an existing absolute executable path")
+        resolved_path = path.resolve(strict=True)
+        if os.name != "nt" and not os.access(resolved_path, os.X_OK):
+            raise ValueError("MQTT C Worker file is not executable")
+        resolved = str(resolved_path)
+        with self._lock:
+            if self._sessions:
+                raise RuntimeError("MQTT C Worker executable cannot change while drivers are active")
+            self._mqtt_c_worker_command = resolved
+        return resolved
+
+    def _build_mqtt_c_worker_adapter(self, core, instance: DriverInstance, cfg: dict,
+                                     bindings: list[MqttPointBinding]):
+        if not self._mqtt_c_worker_command:
+            raise RuntimeError("Paho MQTT C Worker is not registered by the AVIC administrator")
+        station = core.repository.get_record(instance.station_id)
+        project_id = station["payload"].get("project_id")
+        if not project_id:
+            raise ValueError("Station has no owning Project; MQTT C Worker scope cannot be established")
+        project = core.repository.get_record(project_id)
+        platform_id = project["payload"].get("platform_id")
+        installation_id = None
+        if platform_id:
+            platform = core.repository.get_record(platform_id)
+            installation_id = platform["payload"].get("installation_id")
+        if not installation_id:
+            installation_id = str(core.paths.root.resolve())
+        return MqttCWorkerPointAdapter(
+            worker_command=[self._mqtt_c_worker_command], core=core,
+            driver_instance_id=instance.id, config=cfg, bindings=bindings,
+            installation_id=str(installation_id), project_id=str(project_id),
+            station_id=instance.station_id,
+            generation=max(1, int(instance.runtime_generation)),
+        )
+
+    def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings,
+                                protocol: str = "modbus-tcp"):
         if not self._c_worker_command:
             raise RuntimeError("C libmodbus Worker is not registered by the AVIC administrator")
         station = core.repository.get_record(instance.station_id)
@@ -156,7 +203,7 @@ class DriverManagerService:
         worker_config["station_id"] = instance.station_id
         return RustDriverPointAdapter(
             worker_command=[self._c_worker_command], core=core,
-            driver_instance_id=instance.id, protocol="modbus-tcp",
+            driver_instance_id=instance.id, protocol=protocol,
             config=worker_config, bindings=bindings,
             installation_id=str(installation_id), project_id=str(project_id),
             station_id=instance.station_id,
@@ -232,6 +279,56 @@ class DriverManagerService:
         )
         return ModbusTcpPointAdapter(client, core.point_runtime, instance.id, bindings)
 
+    def _build_modbus_rtu_adapter(self, core, instance: DriverInstance):
+        cfg = dict(instance.config)
+        allowed = {
+            "serial_port", "baud_rate", "parity", "data_bits", "stop_bits",
+            "unit_id", "timeout", "rts_mode", "poll_interval_seconds",
+            "bindings", "engine",
+        }
+        unknown = set(cfg) - allowed
+        if unknown:
+            raise ValueError(f"Неизвестные параметры Modbus RTU: {sorted(unknown)}")
+        if cfg.get("engine", "c") != "c":
+            raise ValueError("Modbus RTU AVIC runtime requires the libmodbus C Worker")
+        serial_port = cfg.get("serial_port")
+        if not isinstance(serial_port, str) or not serial_port.strip():
+            raise ValueError("Для Modbus RTU требуется serial_port")
+        baud_rate = cfg.get("baud_rate", 9600)
+        if isinstance(baud_rate, bool) or not isinstance(baud_rate, int) or baud_rate not in {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200}:
+            raise ValueError("Недопустимая скорость Modbus RTU")
+        parity = cfg.get("parity", "N")
+        if not isinstance(parity, str) or parity not in {"N", "E", "O"}:
+            raise ValueError("parity должна быть N, E или O")
+        data_bits = cfg.get("data_bits", 8)
+        stop_bits = cfg.get("stop_bits", 1)
+        if isinstance(data_bits, bool) or not isinstance(data_bits, int) or data_bits not in {5, 6, 7, 8}:
+            raise ValueError("data_bits должна быть от 5 до 8")
+        if isinstance(stop_bits, bool) or not isinstance(stop_bits, int) or stop_bits not in {1, 2}:
+            raise ValueError("stop_bits должна быть 1 или 2")
+        unit_id = cfg.get("unit_id", 1)
+        if isinstance(unit_id, bool) or not isinstance(unit_id, int) or not 1 <= unit_id <= 247:
+            raise ValueError("Modbus RTU Unit ID должен быть от 1 до 247")
+        rts_mode = cfg.get("rts_mode", "none")
+        if not isinstance(rts_mode, str) or rts_mode not in {"none", "up", "down"}:
+            raise ValueError("rts_mode должна быть none, up или down")
+        timeout = cfg.get("timeout", 2.0)
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0.1 <= timeout <= 10.0:
+            raise ValueError("timeout должен быть от 0.1 до 10 секунд")
+        if not isinstance(cfg.get("bindings"), list) or not cfg["bindings"]:
+            raise ValueError("Для Modbus RTU требуется непустой bindings")
+        bindings = [ModbusTcpPointBinding(**item) for item in cfg["bindings"]]
+        worker_cfg = dict(cfg)
+        worker_cfg.update({
+            "serial_port": serial_port.strip(), "baud_rate": int(baud_rate),
+            "parity": parity, "data_bits": int(data_bits), "stop_bits": int(stop_bits),
+            "unit_id": unit_id, "timeout": float(timeout), "rts_mode": rts_mode,
+        })
+        return self._build_c_modbus_adapter(
+            core, instance, worker_cfg, [asdict(item) for item in bindings],
+            protocol="modbus-rtu",
+        )
+
     def _build_bacnet_adapter(self, core, instance: DriverInstance):
         cfg = dict(instance.config)
         allowed = {"network_id", "interface_name", "local_address", "subnet_cidr",
@@ -293,13 +390,17 @@ class DriverManagerService:
         return KnxPointAdapter(session, core.point_runtime, instance.id, bindings, read_mode=str(cfg.get("read_mode", "passive")))
 
     def _build_mqtt_adapter(self, core, instance: DriverInstance):
-        """Create a subscribe-only Paho client; credentials never live in driver config."""
+        """Create a subscribe-only MQTT adapter; credentials never live in driver config."""
         from pathlib import Path
         cfg = dict(instance.config)
-        allowed = {"host", "port", "keepalive", "bindings", "protocol", "client_id", "tls_ca_certs"}
+        allowed = {"host", "port", "keepalive", "bindings", "protocol", "client_id",
+                   "tls_ca_certs", "engine"}
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры MQTT: {sorted(unknown)}")
+        engine = cfg.get("engine", "python")
+        if engine not in {"python", "c"}:
+            raise ValueError("MQTT engine must be python or c")
         host = str(cfg.get("host", "")).strip()
         if not host:
             raise ValueError("Для MQTT требуется host")
@@ -307,29 +408,41 @@ class DriverManagerService:
             raise ValueError("Для MQTT требуется непустой bindings")
         bindings = [MqttPointBinding(**dict(item)) for item in cfg["bindings"]]
         protocol_name = str(cfg.get("protocol", "3.1.1"))
-        try:
-            import paho.mqtt.client as mqtt
-        except ImportError as exc:
-            raise RuntimeError("Для MQTT установите AVIC Core с extra [mqtt]") from exc
-        protocol = {"3.1.1": mqtt.MQTTv311, "5.0": mqtt.MQTTv5}.get(protocol_name)
-        if protocol is None:
+        if protocol_name not in {"3.1.1", "5.0"}:
             raise ValueError("MQTT protocol must be 3.1.1 or 5.0")
-        client_id = str(cfg.get("client_id") or f"avic-{instance.id[:12]}")
-        client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=client_id, protocol=protocol,
-        )
         ca_file = cfg.get("tls_ca_certs")
         if ca_file:
             ca_path = Path(str(ca_file)).expanduser()
             if not ca_path.is_file():
                 raise ValueError("MQTT TLS CA certificate file does not exist")
+        port = cfg.get("port", 8883 if ca_file else 1883)
+        keepalive = cfg.get("keepalive", 60)
+        if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+            raise ValueError("MQTT port must be an integer from 1 to 65535")
+        if isinstance(keepalive, bool) or not isinstance(keepalive, int) or not 10 <= keepalive <= 3600:
+            raise ValueError("MQTT keepalive must be an integer from 10 to 3600 seconds")
+        if engine == "c":
+            if protocol_name != "3.1.1":
+                raise ValueError("MQTT C Worker currently supports MQTT 3.1.1 only")
+            if ca_file:
+                raise ValueError("MQTT C Worker TLS is not enabled until the AVIC credential handoff is implemented")
+            return self._build_mqtt_c_worker_adapter(core, instance, cfg, bindings)
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise RuntimeError("Для MQTT установите AVIC Core с extra [mqtt]") from exc
+        protocol = {"3.1.1": mqtt.MQTTv311, "5.0": mqtt.MQTTv5}[protocol_name]
+        client_id = str(cfg.get("client_id") or f"avic-{instance.id[:12]}")
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=client_id, protocol=protocol,
+        )
+        if ca_file:
             client.tls_set(ca_certs=str(ca_path))
             client.tls_insecure_set(False)
         return MqttPointAdapter(
             client, core.point_runtime, instance.id, bindings,
-            host=host, port=int(cfg.get("port", 8883 if ca_file else 1883)),
-            keepalive=int(cfg.get("keepalive", 60)),
+            host=host, port=port, keepalive=keepalive,
         )
 
     def catalog(self):
@@ -337,9 +450,9 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python"] if x.driver_id == "mqtt" else []),
+                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["c"] if x.driver_id == "modbus-rtu" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python", "c"] if x.driver_id == "mqtt" else []),
                  "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
-                 "c_engine_available": self._c_worker_command is not None and x.driver_id == "modbus-tcp",
+                 "c_engine_available": ((self._c_worker_command is not None and x.driver_id in {"modbus-tcp", "modbus-rtu"}) or (self._mqtt_c_worker_command is not None and x.driver_id == "mqtt")),
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
@@ -469,6 +582,9 @@ class DriverManagerService:
             adapter = None
             session = None
             try:
+                if item.driver_id == "modbus-rtu":
+                    lease = SerialPortLease(item.config.get("serial_port", "")).acquire()
+                    self._serial_leases[instance_id] = lease
                 adapter = factory(self.core, item)
                 interval = float(poll_interval_seconds if poll_interval_seconds is not None
                                  else item.config.get("poll_interval_seconds", 5.0))
@@ -488,27 +604,50 @@ class DriverManagerService:
                     details={"driver_id": item.driver_id, "poll_interval_seconds": interval})
                 return self.diagnostics(instance_id)
             except Exception as exc:
+                cleanup_error = None
                 if session is not None:
                     try:
                         session.stop(timeout=5.0)
-                    except Exception:
-                        pass
-                close = getattr(adapter, "close", None)
-                if callable(close):
-                    try:
-                        close()
-                    except Exception:
-                        pass
-                self._sessions.pop(instance_id, None)
-                self._adapters.pop(instance_id, None)
+                    except Exception as stop_exc:
+                        cleanup_error = stop_exc
+
+                # Never discard a Worker reference or release its serial lease if
+                # shutdown failed: the process/thread may still own the physical bus.
+                if cleanup_error is None:
+                    close = getattr(adapter, "close", None)
+                    if callable(close):
+                        try:
+                            close()
+                        except Exception as close_exc:
+                            cleanup_error = close_exc
+
+                if cleanup_error is None:
+                    self._sessions.pop(instance_id, None)
+                    self._adapters.pop(instance_id, None)
+                    lease = self._serial_leases.get(instance_id)
+                    if lease is not None:
+                        try:
+                            lease.release()
+                            self._serial_leases.pop(instance_id, None)
+                        except Exception as lease_exc:
+                            cleanup_error = lease_exc
+                else:
+                    if session is not None:
+                        self._sessions[instance_id] = session
+                    if adapter is not None:
+                        self._adapters[instance_id] = adapter
+
                 try:
                     failed, current_version = self._load(instance_id)
                     self._save_state(failed, current_version, "ERROR", False)
                 except Exception:
                     pass
+                details = {"error": f"{type(exc).__name__}: {exc}"}
+                if cleanup_error is not None:
+                    details["cleanup_error"] = f"{type(cleanup_error).__name__}: {cleanup_error}"
                 self.core.audit.append(actor_id="local-engineer", action="driver.instance_start_failed",
                     resource_type="driver_instance", resource_id=instance_id,
-                    outcome="error", details={"error": f"{type(exc).__name__}: {exc}"})
+                    outcome="error", details=details)
                 raise
 
     def stop_instance(self, instance_id: str, *, timeout: float = 5.0) -> dict:
@@ -530,11 +669,27 @@ class DriverManagerService:
                     except Exception as exc:
                         close_error = exc
 
-                # Once the worker has stopped, never retain a dead session in the
-                # manager: it would make later start_instance() report a stale session.
-                self._sessions.pop(instance_id, None)
-                self._adapters.pop(instance_id, None)
-                stop_scheduler = not self._sessions
+                # Keep both the adapter reference and serial lease when close
+                # fails. A later stop_instance() call can retry cleanup safely.
+                if close_error is None:
+                    lease = self._serial_leases.get(instance_id)
+                    if lease is not None:
+                        try:
+                            lease.release()
+                            self._serial_leases.pop(instance_id, None)
+                        except Exception as exc:
+                            close_error = exc
+
+                if close_error is None:
+                    self._sessions.pop(instance_id, None)
+                    self._adapters.pop(instance_id, None)
+
+                # The scheduler may stop when all retained sessions are already
+                # stopped, even if an adapter close is pending retry.
+                stop_scheduler = all(
+                    current.diagnostics().get("state") == "STOPPED"
+                    for current in self._sessions.values()
+                )
 
             # Do not join the scheduler while holding DriverManager's registry lock:
             # subscriber callbacks may inspect driver diagnostics during a final tick.

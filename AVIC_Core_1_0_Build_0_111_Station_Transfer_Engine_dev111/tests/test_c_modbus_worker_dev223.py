@@ -278,42 +278,43 @@ def test_compiled_c_worker_reads_all_read_only_modbus_functions_when_enabled():
 
     class ModbusReadFunctionSimulator(socketserver.BaseRequestHandler):
         def handle(self):
-            try:
-                header = recv_exact(self.request, 7)
-                tid, protocol_id = header[:2], header[2:4]
-                length, unit_id = int.from_bytes(header[4:6], "big"), header[6]
-                if protocol_id != b"\x00\x00" or not 2 <= length <= 254:
+            while True:
+                try:
+                    header = recv_exact(self.request, 7)
+                    tid, protocol_id = header[:2], header[2:4]
+                    length, unit_id = int.from_bytes(header[4:6], "big"), header[6]
+                    if protocol_id != b"\x00\x00" or not 2 <= length <= 254:
+                        return
+                    pdu = recv_exact(self.request, length - 1)
+                    if len(pdu) != 5:
+                        return
+                    function = pdu[0]
+                    address = int.from_bytes(pdu[1:3], "big")
+                    count = int.from_bytes(pdu[3:5], "big")
+                    if function == 1 and (count < 1 or count > 2000):
+                        return
+                    if function == 2 and (count < 1 or count > 2000):
+                        return
+                    if function in (3, 4) and (count < 1 or count > 125):
+                        return
+                    if function not in (1, 2, 3, 4) or address + count > 65536:
+                        return
+                    if function == 1:
+                        data = bytes((0x55, 0x01))[:(count + 7) // 8]
+                    elif function == 2:
+                        data = bytes((0x02,))[:(count + 7) // 8]
+                    elif function == 3:
+                        data = b"".join((address + i).to_bytes(2, "big") for i in range(count))
+                    else:
+                        values = (0x1234, 0xABCD, 0x0102)
+                        data = b"".join(values[i].to_bytes(2, "big") for i in range(count))
+                    response_pdu = bytes((function, len(data))) + data
+                    response = (tid + b"\x00\x00"
+                        + (len(response_pdu) + 1).to_bytes(2, "big")
+                        + bytes((unit_id,)) + response_pdu)
+                    self.request.sendall(response)
+                except (OSError, ConnectionError, IndexError):
                     return
-                pdu = recv_exact(self.request, length - 1)
-                if len(pdu) != 5:
-                    return
-                function = pdu[0]
-                address = int.from_bytes(pdu[1:3], "big")
-                count = int.from_bytes(pdu[3:5], "big")
-                if function == 1 and (count < 1 or count > 2000):
-                    return
-                if function == 2 and (count < 1 or count > 2000):
-                    return
-                if function in (3, 4) and (count < 1 or count > 125):
-                    return
-                if function not in (1, 2, 3, 4) or address + count > 65536:
-                    return
-                if function == 1:
-                    data = bytes((0x55, 0x01))[:(count + 7) // 8]
-                elif function == 2:
-                    data = bytes((0x02,))[:(count + 7) // 8]
-                elif function == 3:
-                    data = b"".join((address + i).to_bytes(2, "big") for i in range(count))
-                else:
-                    values = (0x1234, 0xABCD, 0x0102)
-                    data = b"".join(values[i].to_bytes(2, "big") for i in range(count))
-                response_pdu = bytes((function, len(data))) + data
-                response = (tid + b"\x00\x00"
-                    + (len(response_pdu) + 1).to_bytes(2, "big")
-                    + bytes((unit_id,)) + response_pdu)
-                self.request.sendall(response)
-            except (OSError, ConnectionError, IndexError):
-                return
 
     class ModbusSimulator(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
@@ -382,3 +383,176 @@ def test_compiled_c_worker_rejects_oversized_modbus_read_when_enabled():
             })
     finally:
         worker.close()
+
+
+def test_compiled_c_worker_accepts_modbus_rtu_configuration_and_rejects_read_scope_mismatch():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from pathlib import Path
+    from avic_core.drivers.rust_worker import RustDriverWorker, RustWorkerError
+
+    worker = RustDriverWorker(
+        [str(Path(worker_path).resolve())],
+        installation_id="install-c-modbus-rtu", project_id="project-c-modbus-rtu",
+        station_id="station-c-modbus-rtu", driver_instance_id="driver-c-modbus-rtu",
+        generation=1, timeout_seconds=5.0,
+    )
+    worker.start({
+        "protocol": "modbus-rtu",
+        "serial_port": "/dev/avic-test-serial",
+        "baud_rate": 9600,
+        "parity": "E",
+        "data_bits": 8,
+        "stop_bits": 1,
+        "unit_id": 7,
+        "timeout": 1.5,
+        "rts_mode": "none",
+    })
+    try:
+        with __import__("pytest").raises(RustWorkerError, match="serial settings"):
+            worker.read({
+                "protocol": "modbus-rtu",
+                "serial_port": "/dev/avic-test-serial",
+                "baud_rate": 19200,
+                "parity": "E",
+                "data_bits": 8,
+                "stop_bits": 1,
+                "unit_id": 7,
+                "timeout_ms": 1500,
+                "function": 3,
+                "address": 0,
+                "count": 1,
+            })
+    finally:
+        worker.close()
+
+
+def test_compiled_c_worker_rejects_invalid_modbus_rtu_configuration_when_enabled():
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        import pytest
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    from pathlib import Path
+    from avic_core.drivers.rust_worker import RustDriverWorker, RustWorkerError
+
+    worker = RustDriverWorker(
+        [str(Path(worker_path).resolve())],
+        installation_id="install-c-modbus-rtu-invalid", project_id="project-c-modbus-rtu-invalid",
+        station_id="station-c-modbus-rtu-invalid", driver_instance_id="driver-c-modbus-rtu-invalid",
+        generation=1, timeout_seconds=5.0,
+    )
+    with __import__("pytest").raises(RustWorkerError, match="Invalid Modbus TCP/RTU configuration"):
+        worker.start({
+            "protocol": "modbus-rtu",
+            "serial_port": "/dev/avic-test-serial",
+            "baud_rate": 9600,
+            "parity": "X",
+            "data_bits": 8,
+            "stop_bits": 1,
+            "unit_id": 7,
+            "timeout": 1.5,
+        })
+    worker.close()
+
+
+def test_compiled_c_worker_modbus_rtu_read_roundtrip_over_linux_pty_when_enabled():
+    import pytest
+    if os.name == "nt":
+        pytest.skip("Linux PTY round-trip is exercised by the Linux native C job")
+    worker_path = os.environ.get("AVIC_C_MODBUS_WORKER")
+    if not worker_path:
+        pytest.skip("C Worker binary is supplied only by the native C build job")
+
+    import os as os_module
+    import pty
+    import select
+    import time
+    import tty
+    from pathlib import Path
+    from avic_core.drivers.rust_worker import RustDriverWorker
+
+    master_fd, slave_fd = pty.openpty()
+    serial_port = os_module.ttyname(slave_fd)
+    tty.setraw(slave_fd)
+    # Keep the PTY slave open until the C Worker has opened it. Otherwise
+    # the master can report EIO before the worker starts, and the simulator
+    # exits without ever seeing the RTU request.
+
+    def crc16(data: bytes) -> int:
+        crc = 0xFFFF
+        for byte in data:
+            crc ^= byte
+            for _ in range(8):
+                crc = (crc >> 1) ^ (0xA001 if crc & 1 else 0)
+        return crc
+
+    simulator_error = []
+
+    def simulator():
+        try:
+            ready, _, _ = select.select([master_fd], [], [], 5.0)
+            if not ready:
+                raise TimeoutError("RTU simulator did not receive a request")
+            request = bytearray()
+            while len(request) < 8:
+                ready, _, _ = select.select([master_fd], [], [], 2.0)
+                if not ready:
+                    raise TimeoutError("RTU request frame was truncated")
+                request.extend(os_module.read(master_fd, 8 - len(request)))
+            if request[0] != 7 or request[1] != 3 or crc16(request[:-2]) != int.from_bytes(request[-2:], "little"):
+                raise AssertionError(f"invalid Modbus RTU request: {bytes(request).hex()}")
+            # Emulate the turnaround gap of a half-duplex RS-485 responder.
+            # Sending immediately at the final request byte can race the
+            # libmodbus serial write/receive transition on a PTY.
+            time.sleep(0.05)
+            body = bytes((7, 3, 2, 0x12, 0x34))
+            crc = crc16(body)
+            os_module.write(master_fd, body + crc.to_bytes(2, "little"))
+        except Exception as exc:
+            simulator_error.append(exc)
+
+    simulator_thread = threading.Thread(target=simulator, daemon=True)
+    simulator_thread.start()
+    worker = RustDriverWorker(
+        [str(Path(worker_path).resolve())],
+        installation_id="install-c-modbus-rtu-pty", project_id="project-c-modbus-rtu-pty",
+        station_id="station-c-modbus-rtu-pty", driver_instance_id="driver-c-modbus-rtu-pty",
+        generation=1, timeout_seconds=5.0,
+    )
+    try:
+        worker.start({
+            "protocol": "modbus-rtu", "serial_port": serial_port,
+            "baud_rate": 9600, "parity": "N", "data_bits": 8,
+            "stop_bits": 1, "unit_id": 7, "timeout": 1.5,
+        })
+        read_error = None
+        response = None
+        try:
+            response = worker.read({
+                "protocol": "modbus-rtu", "serial_port": serial_port,
+                "baud_rate": 9600, "parity": "N", "data_bits": 8,
+                "stop_bits": 1, "unit_id": 7, "timeout_ms": 1500,
+                "function": 3, "address": 0, "count": 1,
+            })
+        except Exception as exc:
+            read_error = exc
+
+        # Always collect the simulator side before reporting the libmodbus
+        # error. This distinguishes "no request", malformed request/CRC and
+        # a valid request whose response was not accepted by the C worker.
+        simulator_thread.join(timeout=3.5)
+        assert not simulator_thread.is_alive(), "RTU simulator did not terminate"
+        assert not simulator_error, f"RTU simulator rejected traffic: {simulator_error!r}"
+        if read_error is not None:
+            raise read_error
+        assert response is not None
+        assert response["transport_ok"] is True
+        assert response["result"] == {"function": 3, "values": [0x1234]}
+    finally:
+        worker.close()
+        os_module.close(slave_fd)
+        os_module.close(master_fd)

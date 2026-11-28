@@ -59,7 +59,7 @@ Worker не может сам назначить себе другую стан�
 - `worker_id`, `generation`
 - `sequence`: монотонный номер сообщения в пределах generation
 - `sent_at`: UTC RFC 3339 timestamp
-- `correlation_id`: идентификатор запроса для ответа/события
+- `correlation_id`: UUID исходного запроса для ответа; `null` для unsolicited asynchronous event с `kind="event"`
 - `payload`: типизированное содержимое
 
 Неизвестная major-версия, обязательное неизвестное поле, некорректный UUID, превышение размера, неверная последовательность или чужая идентичность приводят к отклонению сообщения и диагностике. Совместимые дополнительные поля minor-версии игнорируются только если они не влияют на безопасность и смысл данных.
@@ -183,3 +183,12 @@ RBAC, лицензия, staged publish, audit и разрешения на уп�
 - Добавлены регрессионные тесты для невозможных дат и значений времени.
 
 Это защищает IPC-контракт от синтаксически похожих, но невозможных временных меток. Результат CI для DEV244 фиксируется отдельно после завершения workflow.
+
+
+## DEV261 — asynchronous event kinds and consumer API
+
+Документированные unsolicited event kinds: `event`, `sample`, `device_discovered`, `point_discovered`, `fault`, `diagnostics`, `status`. Для unsolicited events `correlation_id=null`; correlated response kind `status` остаётся в response path.
+
+Supervisor предоставляет `drain_events(max_items)` и `next_event(timeout_seconds)` с ограниченным timeout 0..30 секунд. Очередь bounded (256). Drop-newest допускается только для явно заменяемых sample/telemetry; критические discovery/fault/lifecycle events при переполнении приводят к fail-closed.
+
+Эта очередь не является Point Runtime интеграцией: consumer обязан валидировать schema, binding, identity/generation, timestamp и quality, а затем передавать значения через общий Point Runtime publish path.

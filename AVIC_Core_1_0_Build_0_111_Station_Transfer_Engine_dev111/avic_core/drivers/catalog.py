@@ -79,10 +79,11 @@ BUILTIN_DRIVERS: tuple[DriverCatalogEntry, ...] = (
         notes="Read-only FC01/02/03/04 and one-shot Point Runtime adapter; managed polling/map importer/commands are not implemented.",
         category=DriverCategory.INDUSTRIAL, license_feature="driver.modbus-tcp",
     ),
-    _planned(
+    DriverCatalogEntry(
         "modbus-rtu", "Modbus RTU", "Modbus RTU over RS-485",
-        DriverCategory.INDUSTRIAL,
-        "Requires serial bus manager, framing/CRC, timing and hardware acceptance.",
+        DriverLifecycle.READ_ONLY_TRANSPORT, True,
+        notes="libmodbus C Worker supports read-only FC01/02/03/04 over RTU; AVIC Driver Manager, shared Point Runtime adapter and cross-process serial-port lease are integrated. Extended protocol negative tests and physical hardware acceptance remain outstanding.",
+        category=DriverCategory.INDUSTRIAL, license_feature="driver.modbus-rtu",
     ),
     _planned(
         "lonworks", "LonWorks", "LonTalk / LonWorks",

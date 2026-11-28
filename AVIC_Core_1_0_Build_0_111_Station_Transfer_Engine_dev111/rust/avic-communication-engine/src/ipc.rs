@@ -196,6 +196,20 @@ mod tests {
         let bytes = ((MAX_FRAME_BYTES as u32) + 1).to_be_bytes().to_vec();
         assert!(matches!(read_frame(&mut bytes.as_slice()), Err(IpcError::FrameTooLarge(_))));
     }
+    #[test] fn rejects_truncated_header_and_body() {
+        let header_only = [0u8, 0u8];
+        assert!(matches!(read_frame(&mut header_only.as_slice()), Err(IpcError::Io(_))));
+
+        let truncated_body = [0u8, 0u8, 0u8, 8, b'{', b'}'];
+        assert!(matches!(read_frame(&mut truncated_body.as_slice()), Err(IpcError::Io(_))));
+    }
+    #[test] fn rejects_oversized_payload_before_writing_frame() {
+        let mut e = envelope();
+        e.payload = serde_json::json!({"large":"x".repeat(MAX_FRAME_BYTES)});
+        let mut bytes = Vec::new();
+        assert!(matches!(write_frame(&mut bytes, &e), Err(IpcError::FrameTooLarge(_))));
+        assert!(bytes.is_empty());
+    }
     #[test] fn sequence_guard_fences_old_worker_and_detects_gaps() {
         let mut g = SequenceGuard::default();
         assert!(!g.accept(4, 1).unwrap());

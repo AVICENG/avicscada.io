@@ -13,6 +13,26 @@ from typing import Any
 _MAX_PAYLOAD_BYTES = 1_048_576
 
 
+def mqtt_topic_matches(topic_filter: str, topic: str) -> bool:
+    """Match an MQTT Topic Filter according to MQTT 3.1.1/5.0 level rules."""
+    if not isinstance(topic_filter, str) or not topic_filter:
+        return False
+    if not isinstance(topic, str) or not topic:
+        return False
+    if topic.startswith("$") and topic_filter[0] in {"+", "#"}:
+        return False
+    filters = topic_filter.split("/")
+    levels = topic.split("/")
+    for index, level_filter in enumerate(filters):
+        if level_filter == "#":
+            return index == len(filters) - 1
+        if index >= len(levels):
+            return False
+        if level_filter != "+" and level_filter != levels[index]:
+            return False
+    return len(filters) == len(levels)
+
+
 @dataclass(frozen=True, slots=True)
 class MqttPointBinding:
     point_id: str
@@ -26,6 +46,10 @@ class MqttPointBinding:
     def __post_init__(self) -> None:
         if not self.point_id.strip() or not self.topic.strip():
             raise ValueError("point_id and topic are required")
+        levels = self.topic.split("/")
+        if any(("#" in level and level != "#") or ("+" in level and level != "+")
+               for level in levels) or ("#" in levels and levels[-1] != "#"):
+            raise ValueError("MQTT wildcards must occupy a complete level and # must be final")
         if self.qos not in (0, 1, 2):
             raise ValueError("MQTT QoS must be 0, 1 or 2")
         if self.payload_format not in ("json", "raw"):
@@ -151,7 +175,7 @@ class MqttPointAdapter:
         from datetime import datetime, timezone
         from avic_core.domain.models import PointQuality
         topic = str(message.topic)
-        matched = [b for b in self.bindings if b.topic == topic]
+        matched = [b for b in self.bindings if mqtt_topic_matches(b.topic, topic)]
         for binding in matched:
             try:
                 value = self._extract(bytes(message.payload), binding)

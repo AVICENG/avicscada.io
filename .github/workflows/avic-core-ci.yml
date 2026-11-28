@@ -246,8 +246,188 @@ jobs:
       - name: Build BACnet Stack and AVIC probe
         run: cmake --build build/bacnet-stack-probe --config Release --parallel 2
 
-      - name: Run BACnet Stack version probe test
+      - name: Run BACnet Stack codec probe tests
         run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
+
+      - name: Set up Python for BACnet simulator integration
+        if: runner.os == 'Linux'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build upstream Steve Karg BACnet/IP server simulator
+        if: runner.os == 'Linux'
+        run: make -C build/bacnet-stack-probe/_deps/bacnet_stack-src/apps BACDL=bip server.all
+
+      - name: Test AVIC ReadProperty ACK and Error against upstream simulator
+        if: runner.os == 'Linux'
+        run: >-
+          python tools/bacnet_stack_server_integration.py
+          --server build/bacnet-stack-probe/_deps/bacnet_stack-src/bin/bacserv
+          --probe build/bacnet-stack-probe/avic-bacnet-stack-probe
+
+  paho-mqtt-c-native-probe:
+    name: Eclipse Paho MQTT C native probe / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure pinned Eclipse Paho MQTT C
+        run: cmake -S rust/avic-communication-engine/mqtt-paho-c-probe -B build/mqtt-paho-c-probe -DCMAKE_BUILD_TYPE=Release
+      - name: Build Paho async C probe
+        run: cmake --build build/mqtt-paho-c-probe --config Release --parallel 2
+      - name: Run Paho async lifecycle self-test
+        run: ctest --test-dir build/mqtt-paho-c-probe -C Release --output-on-failure
+
+  mqtt-paho-c-worker-linux:
+    name: Paho MQTT C Worker / Ubuntu Mosquitto
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install native dependencies and Mosquitto
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libjansson-dev uuid-dev mosquitto mosquitto-clients
+      - name: Configure Paho MQTT C Worker
+        run: cmake -S rust/avic-communication-engine/mqtt-c-worker -B build/mqtt-c-worker -DCMAKE_BUILD_TYPE=Release
+      - name: Build Paho MQTT C Worker
+        run: cmake --build build/mqtt-c-worker --config Release --parallel 2
+      - name: Install AVIC Core test dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Run MQTT C Worker acceptance with isolated Mosquitto broker
+        env:
+          AVIC_MQTT_C_WORKER: ${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/mqtt-c-worker/avic-mqtt-paho-c-worker
+          AVIC_MQTT_C_BROKER_TEST: "1"
+          AVIC_MQTT_BROKER_LOG: ${{ github.workspace }}/avic-mosquitto-ci.log
+          AVIC_MQTT_BROKER_CONFIG_DIR: /etc/mosquitto
+        run: |
+          # Keep broker startup and tests in one step; runner cleanup kills
+          # orphan background processes between separate steps.
+          config="/etc/mosquitto/avic-ci.conf"
+          log="$GITHUB_WORKSPACE/avic-mosquitto-ci.log"
+          printf '%s\n' \
+            'listener 18883 127.0.0.1' \
+            'allow_anonymous true' \
+            'persistence false' | sudo tee "$config" >/dev/null
+          sudo chmod 644 "$config"
+          sudo mosquitto -c "$config" -v > "$log" 2>&1 &
+          broker_pid=$!
+          cleanup_broker() {
+            if kill -0 "$broker_pid" 2>/dev/null; then
+              sudo kill "$broker_pid" 2>/dev/null || true
+            fi
+            wait "$broker_pid" 2>/dev/null || true
+          }
+          trap cleanup_broker EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if ! kill -0 "$broker_pid" 2>/dev/null; then cat "$log"; exit 1; fi
+            if mosquitto_pub -h 127.0.0.1 -p 18883 -t avic/ci/ready -m ready; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat "$log"; exit 1; fi
+          python -m pytest -q tests/test_mqtt_c_worker_dev267.py
+
+  mqtt-paho-c-worker-windows:
+    name: Paho MQTT C Worker / Windows MSVC
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure Paho MQTT C Worker with MSVC
+        run: cmake -S rust/avic-communication-engine/mqtt-c-worker -B build/mqtt-c-worker -A x64
+      - name: Build Paho MQTT C Worker
+        run: cmake --build build/mqtt-c-worker --config Release --parallel 2
+      - name: Install AVIC Core test dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Install pinned Mosquitto broker and clients
+        shell: pwsh
+        run: |
+          $version = "2.1.4"
+          $installer = Join-Path $env:RUNNER_TEMP "mosquitto-$version-install-windows-x64.exe"
+          $url = "https://mosquitto.org/files/binary/win64/mosquitto-$version-install-windows-x64.exe"
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          $actualHash = (Get-FileHash -Path $installer -Algorithm SHA256).Hash
+          $expectedHash = "034017C8F8E3B5B86BDBD971F6C5184370311058E4DE7B96A0F10204BBB9E7C8"
+          if ($actualHash -ne $expectedHash) { throw "Mosquitto installer SHA256 mismatch: $actualHash" }
+          $install = Start-Process -FilePath $installer -ArgumentList "/S" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Mosquitto installer failed with exit code $($install.ExitCode)" }
+      - name: Run MQTT C Worker acceptance with isolated Mosquitto broker
+        shell: pwsh
+        env:
+          AVIC_MQTT_C_WORKER: ${{ github.workspace }}\\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\\build\\mqtt-c-worker\\Release\\avic-mqtt-paho-c-worker.exe
+          AVIC_MQTT_C_BROKER_TEST: "1"
+          AVIC_MQTT_BROKER_LOG: ${{ runner.temp }}\\avic-mosquitto.log
+        run: |
+          # Keep broker startup and tests in one step; runner cleanup kills
+          # orphan background processes between separate steps.
+          $mosquittoDir = Join-Path $env:ProgramFiles "mosquitto"
+          $mosquitto = Join-Path $mosquittoDir "mosquitto.exe"
+          $publisher = Join-Path $mosquittoDir "mosquitto_pub.exe"
+          $env:PATH = "$mosquittoDir;$env:PATH"
+          if (!(Test-Path $mosquitto) -or !(Test-Path $publisher)) {
+            throw "Mosquitto executable or mosquitto_pub.exe was not installed at $mosquittoDir"
+          }
+          $config = Join-Path $env:RUNNER_TEMP "avic-mosquitto.conf"
+          $stdoutLog = Join-Path $env:RUNNER_TEMP "avic-mosquitto.log"
+          $stderrLog = Join-Path $env:RUNNER_TEMP "avic-mosquitto.err"
+          @("listener 18883 127.0.0.1", "allow_anonymous true", "persistence false") |
+            Set-Content -Path $config -Encoding ascii
+          $broker = $null
+          try {
+            $broker = Start-Process -FilePath $mosquitto -ArgumentList @("-c", $config, "-v") -PassThru -WindowStyle Hidden `
+              -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              if ($broker.HasExited) { throw "Mosquitto exited early with code $($broker.ExitCode)" }
+              & $publisher -h 127.0.0.1 -p 18883 -t avic/ci/ready -m ready 2>$null
+              if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+              Start-Sleep -Seconds 1
+            }
+            if (!$ready) {
+              Get-Content $stdoutLog -ErrorAction SilentlyContinue
+              Get-Content $stderrLog -ErrorAction SilentlyContinue
+              throw "Mosquitto broker did not become ready"
+            }
+            python -m pytest -q tests/test_mqtt_c_worker_dev267.py
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content $stdoutLog -ErrorAction SilentlyContinue
+              Get-Content $stderrLog -ErrorAction SilentlyContinue
+              throw "MQTT C Worker acceptance failed with exit code $LASTEXITCODE"
+            }
+          }
+          finally {
+            if ($broker -and !$broker.HasExited) {
+              Stop-Process -Id $broker.Id -Force
+              $broker.WaitForExit(5000) | Out-Null
+            }
+          }
 
   opcua-open62541-native-probe:
     name: OPC UA open62541 native probe / Ubuntu

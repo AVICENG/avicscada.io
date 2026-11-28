@@ -128,7 +128,6 @@ impl Worker {
             "shutdown" => {
                 self.started = false;
                 self.modbus_clients.clear();
-                self.s7_clients.clear();
                 ("status".into(), json!({"state":"STOPPED","shutdown":true}), true)
             }
             _ => ("error".into(), json!({"code":"UNSUPPORTED_COMMAND"}), false),
@@ -262,7 +261,21 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::is_supported_protocol;
+    use super::{is_supported_protocol, Worker};
+    use avic_communication_engine::ipc::{DriverEnvelope, IPC_CONTRACT, IPC_VERSION};
+    use serde_json::{json, Value};
+    use uuid::Uuid;
+
+    fn request(kind: &str, sequence: u64, payload: Value) -> DriverEnvelope {
+        DriverEnvelope {
+            contract: IPC_CONTRACT.into(), version: IPC_VERSION,
+            message_id: Uuid::new_v4(), kind: kind.into(),
+            installation_id: "install-1".into(), project_id: "project-1".into(),
+            station_id: "station-1".into(), driver_instance_id: "driver-1".into(),
+            worker_id: Uuid::from_u128(42), generation: 1, sequence,
+            sent_at: "2026-11-28T00:00:00Z".into(), correlation_id: None, payload,
+        }
+    }
 
     #[test]
     fn rust_worker_does_not_advertise_siemens_s7() {
@@ -275,5 +288,81 @@ mod tests {
         assert!(is_supported_protocol("modbus-tcp"));
         assert!(is_supported_protocol("bacnet-ip"));
         assert!(is_supported_protocol("knxnet-ip"));
+    }
+
+    #[test]
+    fn worker_requires_initialize_before_accepting_commands() {
+        let mut worker = Worker::new();
+        let (kind, payload, _) = worker.handle(request("configure", 1, json!({"protocol":"modbus-tcp"})));
+        assert_eq!(kind, "error");
+        assert_eq!(payload["code"], "INITIALIZE_REQUIRED");
+        assert!(worker.scope.is_none());
+    }
+
+    #[test]
+    fn worker_rejects_scope_mismatch_before_dispatch() {
+        let mut worker = Worker::new();
+        assert_eq!(worker.handle(request("initialize", 1, json!({}))).0, "initialized");
+        let mut foreign = request("get_status", 2, json!({}));
+        foreign.station_id = "another-station".into();
+        let (kind, payload, _) = worker.handle(foreign);
+        assert_eq!(kind, "error");
+        assert_eq!(payload["code"], "SCOPE_MISMATCH");
+    }
+
+    #[test]
+    fn worker_enforces_configure_start_stop_read_lifecycle() {
+        let mut worker = Worker::new();
+        worker.handle(request("initialize", 1, json!({})));
+        let (_, payload, _) = worker.handle(request("start", 2, json!({})));
+        assert_eq!(payload["code"], "CONFIGURE_REQUIRED");
+
+        assert_eq!(worker.handle(request("configure", 3, json!({"protocol":"modbus-tcp"}))).0, "configured");
+        assert_eq!(worker.handle(request("start", 4, json!({}))).0, "status");
+        assert_eq!(worker.handle(request("stop", 5, json!({}))).0, "status");
+
+        let (_, payload, _) = worker.handle(request("read", 6, json!({"protocol":"modbus-tcp"})));
+        assert_eq!(payload["code"], "DRIVER_NOT_RUNNING");
+    }
+
+    #[test]
+    fn worker_rejects_nested_secrets_and_unsupported_protocols() {
+        let mut worker = Worker::new();
+        worker.handle(request("initialize", 1, json!({})));
+        let (_, payload, _) = worker.handle(request(
+            "configure", 2, json!({"protocol":"modbus-tcp","nested":{"ApiToken":"must-not-pass"}})
+        ));
+        assert_eq!(payload["code"], "SECRET_IN_CONFIG");
+
+        let (_, payload, _) = worker.handle(request("configure", 3, json!({"protocol":"s7comm"})));
+        assert_eq!(payload["code"], "UNSUPPORTED_PROTOCOL");
+    }
+
+    #[test]
+    fn worker_reports_sequence_gaps_and_rejects_replays() {
+        let mut worker = Worker::new();
+        worker.handle(request("initialize", 1, json!({})));
+        let (kind, payload, _) = worker.handle(request("get_status", 3, json!({})));
+        assert_eq!(kind, "status");
+        assert_eq!(payload["sequence_gaps"], 1);
+
+        let (_, payload, _) = worker.handle(request("get_status", 3, json!({})));
+        assert_eq!(payload["code"], "SEQUENCE_REJECTED");
+    }
+
+    #[test]
+    fn worker_only_allows_reconfiguration_after_stop() {
+        let mut worker = Worker::new();
+        worker.handle(request("initialize", 1, json!({})));
+        worker.handle(request("configure", 2, json!({"protocol":"modbus-tcp"})));
+        worker.handle(request("start", 3, json!({})));
+
+        let (_, payload, _) = worker.handle(request("configure", 4, json!({"protocol":"bacnet-ip"})));
+        assert_eq!(payload["code"], "STOP_REQUIRED_BEFORE_CONFIGURE");
+
+        worker.handle(request("stop", 5, json!({})));
+        let (kind, payload, _) = worker.handle(request("configure", 6, json!({"protocol":"bacnet-ip"})));
+        assert_eq!(kind, "configured");
+        assert_eq!(payload["protocol"], "bacnet-ip");
     }
 }

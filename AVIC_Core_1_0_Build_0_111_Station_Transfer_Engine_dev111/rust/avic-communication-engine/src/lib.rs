@@ -184,9 +184,22 @@ mod tests {
     }
 
     fn client_for(address: SocketAddr) -> ModbusTcpClient {
-        ModbusTcpClient::new(ModbusTcpConfig {
-            address, unit_id: 1, timeout: Duration::from_secs(1),
-        })
+        client_for_with_timeout(address, Duration::from_secs(1))
+    }
+
+    fn client_for_with_timeout(address: SocketAddr, timeout: Duration) -> ModbusTcpClient {
+        ModbusTcpClient::new(ModbusTcpConfig { address, unit_id: 1, timeout })
+    }
+
+    fn success_response(request: &[u8; 12], value: u16) -> Vec<u8> {
+        let pdu = [3u8, 2, (value >> 8) as u8, value as u8];
+        let mut response = Vec::with_capacity(11);
+        response.extend_from_slice(&request[0..2]);
+        response.extend_from_slice(&0u16.to_be_bytes());
+        response.extend_from_slice(&5u16.to_be_bytes());
+        response.push(request[6]);
+        response.extend_from_slice(&pdu);
+        response
     }
 
     #[test]
@@ -309,4 +322,83 @@ mod tests {
         assert!(matches!(client.read_holding_registers(0, 126), Err(ModbusError::InvalidArgument(_))));
         assert!(matches!(client.read_coils(0, 2001), Err(ModbusError::InvalidArgument(_))));
     }
+
+    #[test]
+    fn reconnects_after_timeout_and_discards_late_response() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut stale, _) = listener.accept().unwrap();
+            let mut first_request = [0u8; 12];
+            stale.read_exact(&mut first_request).unwrap();
+
+            // The client must time out and open a different TCP session.
+            let (mut fresh, _) = listener.accept().unwrap();
+            std::thread::sleep(Duration::from_millis(180));
+            let late = success_response(&first_request, 11);
+            let _ = stale.write_all(&late);
+            let mut second_request = [0u8; 12];
+            fresh.read_exact(&mut second_request).unwrap();
+            fresh.write_all(&success_response(&second_request, 42)).unwrap();
+        });
+        let mut client = client_for_with_timeout(address, Duration::from_millis(100));
+        assert!(matches!(client.read_holding_registers(0, 1), Err(ModbusError::Io(_))));
+        assert_eq!(client.read_holding_registers(0, 1).unwrap(), vec![42]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn reconnects_after_truncated_mbap_header() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut truncated, _) = listener.accept().unwrap();
+            let mut first_request = [0u8; 12];
+            truncated.read_exact(&mut first_request).unwrap();
+            truncated.write_all(&[first_request[0], first_request[1], 0]).unwrap();
+            drop(truncated);
+
+            let (mut recovered, _) = listener.accept().unwrap();
+            let mut second_request = [0u8; 12];
+            recovered.read_exact(&mut second_request).unwrap();
+            recovered.write_all(&success_response(&second_request, 77)).unwrap();
+        });
+        let mut client = client_for(address);
+        assert!(matches!(client.read_holding_registers(0, 1), Err(ModbusError::Io(_))));
+        assert_eq!(client.read_holding_registers(0, 1).unwrap(), vec![77]);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn rejects_wrong_unit_identifier_and_byte_count() {
+        for malformed in ["unit", "byte_count"] {
+            let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+            let address = listener.local_addr().unwrap();
+            let malformed = malformed.to_string();
+            let expected = if malformed == "unit" {
+                "invalid MBAP header"
+            } else {
+                "invalid Modbus response payload"
+            };
+            let server_mode = malformed.clone();
+            let server = std::thread::spawn(move || {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = [0u8; 12];
+                stream.read_exact(&mut request).unwrap();
+                let mut response = success_response(&request, 42);
+                if server_mode == "unit" {
+                    response[6] = 2;
+                } else {
+                    response[8] = 4;
+                }
+                stream.write_all(&response).unwrap();
+            });
+            assert!(matches!(
+                client_for(address).read_holding_registers(0, 1),
+                Err(ModbusError::Protocol(message)) if message == expected
+            ));
+            server.join().unwrap();
+        }
+    }
+
 }

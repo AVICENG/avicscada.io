@@ -40,7 +40,7 @@ class RustDriverPointAdapter:
                  generation: int = 1, timeout_seconds: float = 5.0, worker_mode: str = "RUST_WORKER_READ_ONLY") -> None:
         from avic_core.domain.models import PointQuality
 
-        if protocol not in {"modbus-tcp", "bacnet-ip", "knxnet-ip"}:
+        if protocol not in {"modbus-tcp", "modbus-rtu", "bacnet-ip", "knxnet-ip"}:
             raise ValueError("unsupported Rust driver protocol")
         if not bindings:
             raise ValueError("Rust driver requires at least one point binding")
@@ -142,13 +142,27 @@ class RustDriverPointAdapter:
         return batches
 
     def _read_modbus_range(self, function: int, address: int, count: int) -> list[Any]:
-        response = self._worker.read({
-            "protocol": "modbus-tcp",
-            "host": self._config["host"], "port": int(self._config.get("port", 502)),
+        request = {
+            "protocol": self.protocol,
             "unit_id": int(self._config.get("unit_id", 1)),
             "timeout_ms": int(float(self._config.get("timeout", 2.0)) * 1000),
             "function": function, "address": address, "count": count,
-        })
+        }
+        if self.protocol == "modbus-tcp":
+            request.update({
+                "host": self._config["host"],
+                "port": int(self._config.get("port", 502)),
+            })
+        else:
+            request.update({
+                "serial_port": self._config["serial_port"],
+                "baud_rate": int(self._config["baud_rate"]),
+                "parity": self._config["parity"],
+                "data_bits": int(self._config["data_bits"]),
+                "stop_bits": int(self._config["stop_bits"]),
+                "rts_mode": self._config.get("rts_mode", "none"),
+            })
+        response = self._worker.read(request)
         values = response.get("result", {}).get("values")
         if not isinstance(values, list) or len(values) != count:
             raise ValueError("Modbus worker returned an invalid range length")
@@ -259,7 +273,7 @@ class RustDriverPointAdapter:
 
         modbus_values_by_point: dict[str, Any] = {}
         modbus_errors_by_point: dict[str, Exception] = {}
-        if self.protocol == "modbus-tcp":
+        if self.protocol in {"modbus-tcp", "modbus-rtu"}:
             try:
                 modbus_values_by_point, modbus_errors_by_point = self._poll_modbus_batches()
             except Exception as exc:
@@ -269,7 +283,7 @@ class RustDriverPointAdapter:
         for binding in self.bindings:
             point_id = binding["point_id"]
             try:
-                if self.protocol == "modbus-tcp":
+                if self.protocol in {"modbus-tcp", "modbus-rtu"}:
                     if point_id in modbus_errors_by_point:
                         raise modbus_errors_by_point[point_id]
                     if point_id not in modbus_values_by_point:
@@ -308,7 +322,7 @@ class RustDriverPointAdapter:
                 else:
                     value = self._read_knx(binding)
                     sample_quality = self._PointQuality.GOOD
-                if self.protocol == "modbus-tcp":
+                if self.protocol in {"modbus-tcp", "modbus-rtu"}:
                     sample_quality = self._PointQuality.GOOD
                 sample = self.point_runtime.publish(
                     point_id, value, quality=sample_quality,

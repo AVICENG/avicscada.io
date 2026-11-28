@@ -364,14 +364,22 @@ def test_driver_config_update_requires_current_feature_entitlement(tmp_path):
     core.close()
 
 
-def test_driver_stop_close_failure_does_not_leave_stale_session(tmp_path):
+def test_driver_stop_close_failure_retains_session_for_safe_retry(tmp_path):
     from avic_core.drivers.manager import DriverInstance
 
     class BrokenCloseAdapter:
+        def __init__(self):
+            self.close_attempts = 0
+            self.closed = False
+
         def poll_once(self):
             return {"results": []}
+
         def close(self):
-            raise OSError("socket close failed")
+            self.close_attempts += 1
+            if self.close_attempts == 1:
+                raise OSError("socket close failed")
+            self.closed = True
 
     class GoodAdapter:
         def poll_once(self):
@@ -390,11 +398,19 @@ def test_driver_stop_close_failure_does_not_leave_stale_session(tmp_path):
     with pytest.raises(RuntimeError, match="не освободил ресурсы"):
         service.stop_instance(created["id"])
 
-    assert created["id"] not in service._sessions
-    assert created["id"] not in service._adapters
-    assert service.diagnostics(created["id"])["state"] == "ERROR"
+    # A failed close must retain the adapter/session so the resource can be
+    # retried; silently dropping it could orphan a process or keep a serial bus
+    # locked without any owner capable of releasing it.
+    assert created["id"] in service._sessions
+    assert created["id"] in service._adapters
+    assert service.diagnostics(created["id"])["state"] == "STOPPED"
     persisted, _ = core.repository.get(created["id"], DriverInstance)
     assert persisted.state == "ERROR" and persisted.enabled is False
+
+    service.stop_instance(created["id"])
+    assert broken.close_attempts == 2 and broken.closed is True
+    assert created["id"] not in service._sessions
+    assert created["id"] not in service._adapters
 
     replacement = GoodAdapter()
     service.register_adapter_factory("modbus-tcp", lambda _core, _item: replacement)

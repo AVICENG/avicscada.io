@@ -28,7 +28,7 @@ def test_excluded_proprietary_families_are_not_in_catalog():
 
 
 def test_only_existing_read_only_transports_advertise_read_capability():
-    expected = {"bacnet-ip", "modbus-tcp", "knxnet-ip", "mqtt"}
+    expected = {"bacnet-ip", "modbus-tcp", "modbus-rtu", "knxnet-ip", "mqtt"}
     actual = {entry.driver_id for entry in BUILTIN_DRIVERS if entry.read_supported}
     assert actual == expected
     assert all(not entry.write_supported for entry in BUILTIN_DRIVERS)
@@ -44,7 +44,7 @@ def test_trend_ip_is_native_vcnc_not_bacnet():
 
 
 def test_existing_bacnet_modbus_foundations_remain_honest():
-    for driver_id in ("bacnet-ip", "modbus-tcp"):
+    for driver_id in ("bacnet-ip", "modbus-tcp", "modbus-rtu"):
         item = get_driver(driver_id)
         assert item is not None
         assert item.lifecycle == DriverLifecycle.READ_ONLY_TRANSPORT

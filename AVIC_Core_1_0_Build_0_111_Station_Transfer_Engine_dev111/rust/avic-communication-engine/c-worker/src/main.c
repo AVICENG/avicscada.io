@@ -2,6 +2,7 @@
 #include <jansson.h>
 #include <modbus.h>
 #include <stdint.h>
+#include <limits.h>
 #include <errno.h>
 #include <stdio.h>
 #ifdef _WIN32
@@ -29,7 +30,11 @@ typedef struct {
     int initialized, configured, started;
     char protocol[32];
     char host[256];
+    char serial_port[256];
+    char parity;
+    char rts_mode[8];
     int port, unit_id, timeout_ms;
+    int baud_rate, data_bits, stop_bits;
     modbus_t *modbus;
 } worker_t;
 
@@ -156,16 +161,84 @@ static int contains_secret_key(json_t *value) {
 static void close_modbus(worker_t *w) {
     if (w->modbus) { modbus_close(w->modbus); modbus_free(w->modbus); w->modbus = NULL; }
 }
+#ifdef _WIN32
+static int ascii_prefix_equal(const char *value, const char *prefix) {
+    while (*prefix) {
+        char a = *value++;
+        char b = *prefix++;
+        if (a >= 'a' && a <= 'z') a = (char)(a - ('a' - 'A'));
+        if (b >= 'a' && b <= 'z') b = (char)(b - ('a' - 'A'));
+        if (a != b) return 0;
+    }
+    return 1;
+}
+
+/* Canonicalize COM aliases and apply the Win32 device namespace for COM10+. */
+static const char *normalize_windows_com_port(const char *port_name,
+                                               char *device, size_t device_size) {
+    if (!port_name || !*port_name) return port_name;
+    const char *name = port_name;
+    if (ascii_prefix_equal(name, "\\\\.\\") ) name += 4;
+    if (!ascii_prefix_equal(name, "COM")) return port_name;
+
+    const char *digits = name + 3;
+    if (!*digits) return port_name;
+    unsigned long number = 0;
+    for (const char *p = digits; *p; ++p) {
+        if (*p < '0' || *p > '9') return port_name;
+        unsigned long digit = (unsigned long)(*p - '0');
+        if (number > (ULONG_MAX - digit) / 10UL) return port_name;
+        number = number * 10UL + digit;
+    }
+    if (number == 0) return port_name;
+
+    int written;
+    if (number >= 10)
+        written = snprintf(device, device_size, "\\\\.\\COM%lu", number);
+    else
+        written = snprintf(device, device_size, "COM%lu", number);
+    if (written < 0 || (size_t)written >= device_size) return port_name;
+    return device;
+}
+#endif
+
 static int connect_modbus(worker_t *w) {
     if (w->modbus) return 1;
-    w->modbus = modbus_new_tcp(w->host, w->port);
+    if (strcmp(w->protocol, "modbus-tcp") == 0) {
+        w->modbus = modbus_new_tcp(w->host, w->port);
+    } else if (strcmp(w->protocol, "modbus-rtu") == 0) {
+        const char *port_name = w->serial_port;
+#ifdef _WIN32
+        char device[sizeof(w->serial_port) + 16];
+        port_name = normalize_windows_com_port(port_name, device, sizeof(device));
+#endif
+        w->modbus = modbus_new_rtu(port_name, w->baud_rate, w->parity,
+                                   w->data_bits, w->stop_bits);
+    } else {
+        return 0;
+    }
     if (!w->modbus) return 0;
+    /* Optional wire-level diagnostics are stderr-only; IPC stdout stays framed. */
+    const char *debug_enabled = getenv("AVIC_C_MODBUS_DEBUG");
+    if (debug_enabled && strcmp(debug_enabled, "1") == 0)
+        modbus_set_debug(w->modbus, 1);
     uint32_t sec = (uint32_t)(w->timeout_ms / 1000);
     uint32_t usec = (uint32_t)(w->timeout_ms % 1000) * 1000u;
     if (modbus_set_slave(w->modbus, w->unit_id) == -1
-        || modbus_set_response_timeout(w->modbus, sec, usec) == -1
-        || modbus_connect(w->modbus) == -1) {
+        || modbus_set_response_timeout(w->modbus, sec, usec) == -1) {
         close_modbus(w); return 0;
+    }
+    if (modbus_connect(w->modbus) == -1) {
+        close_modbus(w); return 0;
+    }
+    /* libmodbus applies RTS through the already-open serial descriptor. */
+    if (strcmp(w->protocol, "modbus-rtu") == 0
+        && strcmp(w->rts_mode, "none") != 0) {
+        int mode = strcmp(w->rts_mode, "up") == 0
+            ? MODBUS_RTU_RTS_UP : MODBUS_RTU_RTS_DOWN;
+        if (modbus_rtu_set_rts(w->modbus, mode) == -1) {
+            close_modbus(w); return 0;
+        }
     }
     return 1;
 }
@@ -180,12 +253,28 @@ static json_t *error_payload(const char *code, const char *message) {
 static json_t *handle_read(worker_t *w, json_t *payload, const char **kind) {
     json_int_t port, unit, timeout, function, address, count;
     const char *protocol = get_string(payload, "protocol");
-    const char *host = get_string(payload, "host");
-    if (!protocol || strcmp(protocol, "modbus-tcp") != 0 || strcmp(w->protocol, "modbus-tcp") != 0)
-        return error_payload("PROTOCOL_SCOPE_MISMATCH", "Only configured modbus-tcp is supported");
-    if (!host || strcmp(host, w->host) != 0
-        || !get_int(payload, "port", &port) || port != w->port
-        || !get_int(payload, "unit_id", &unit) || unit != w->unit_id
+    if (!protocol || strcmp(protocol, w->protocol) != 0
+        || (strcmp(w->protocol, "modbus-tcp") != 0 && strcmp(w->protocol, "modbus-rtu") != 0))
+        return error_payload("PROTOCOL_SCOPE_MISMATCH", "Read transport does not match configured Modbus worker");
+    if (strcmp(w->protocol, "modbus-tcp") == 0) {
+        const char *host = get_string(payload, "host");
+        if (!host || strcmp(host, w->host) != 0
+            || !get_int(payload, "port", &port) || port != w->port)
+            return error_payload("INVALID_READ", "TCP endpoint does not match worker configuration");
+    } else {
+        const char *serial_port = get_string(payload, "serial_port");
+        const char *parity = get_string(payload, "parity");
+        const char *rts_mode = get_string(payload, "rts_mode");
+        if (!rts_mode) rts_mode = "none";
+        if (!serial_port || strcmp(serial_port, w->serial_port) != 0
+            || !get_int(payload, "baud_rate", &port) || port != w->baud_rate
+            || !parity || parity[0] != w->parity || parity[1] != '\0'
+            || !get_int(payload, "data_bits", &port) || port != w->data_bits
+            || !get_int(payload, "stop_bits", &port) || port != w->stop_bits
+            || !rts_mode || strcmp(rts_mode, w->rts_mode) != 0)
+            return error_payload("INVALID_READ", "RTU serial settings do not match worker configuration");
+    }
+    if (!get_int(payload, "unit_id", &unit) || unit != w->unit_id
         || !get_int(payload, "timeout_ms", &timeout) || timeout != w->timeout_ms
         || !get_int(payload, "function", &function)
         || !get_int(payload, "address", &address)
@@ -302,26 +391,50 @@ static int process(worker_t *w, json_t *request, int *exit_after) {
             response_payload = error_payload("INVALID_CONFIGURATION", "Worker running or secret field present");
         } else {
             const char *protocol = get_string(payload, "protocol");
+            int valid = 0;
+            w->configured = 0;
+            w->timeout_ms = 2000;
+            json_t *timeout_value = json_object_get(payload, "timeout");
+            if (json_is_number(timeout_value)) {
+                double timeout_seconds = json_number_value(timeout_value);
+                if (timeout_seconds < 0.1 || timeout_seconds > 10.0) {
+                    response_payload = error_payload("INVALID_CONFIGURATION", "timeout must be between 0.1 and 10 seconds");
+                    goto configure_done;
+                }
+                w->timeout_ms = (int)(timeout_seconds * 1000.0);
+            }
             if (protocol && strcmp(protocol, "modbus-tcp") == 0
                 && copy_required(w->host, sizeof(w->host), payload, "host")
                 && get_int(payload, "port", &version) && version > 0 && version <= 65535
                 && get_int(payload, "unit_id", &sequence) && sequence >= 0 && sequence <= 247) {
-                w->port = (int)version; w->unit_id = (int)sequence;
-                w->timeout_ms = 2000;
-                json_t *timeout_value = json_object_get(payload, "timeout");
-                if (json_is_number(timeout_value)) {
-                    double timeout_seconds = json_number_value(timeout_value);
-                    if (timeout_seconds < 0.1 || timeout_seconds > 10.0) {
-                        response_payload = error_payload("INVALID_CONFIGURATION", "timeout must be between 0.1 and 10 seconds");
-                        w->configured = 0;
-                        goto configure_done;
-                    }
-                    w->timeout_ms = (int)(timeout_seconds * 1000.0);
+                w->port = (int)version; w->unit_id = (int)sequence; valid = 1;
+            } else if (protocol && strcmp(protocol, "modbus-rtu") == 0
+                && copy_required(w->serial_port, sizeof(w->serial_port), payload, "serial_port")
+                && get_int(payload, "baud_rate", &version)
+                && (version == 1200 || version == 2400 || version == 4800 || version == 9600
+                    || version == 19200 || version == 38400 || version == 57600 || version == 115200)
+                && get_int(payload, "unit_id", &sequence) && sequence >= 1 && sequence <= 247) {
+                const char *parity = get_string(payload, "parity");
+                const char *rts = get_string(payload, "rts_mode");
+                json_int_t data_bits, stop_bits;
+                if (parity && strlen(parity) == 1
+                    && (parity[0] == 'N' || parity[0] == 'E' || parity[0] == 'O')
+                    && get_int(payload, "data_bits", &data_bits) && data_bits >= 5 && data_bits <= 8
+                    && get_int(payload, "stop_bits", &stop_bits) && (stop_bits == 1 || stop_bits == 2)
+                    && (!rts || strcmp(rts, "none") == 0 || strcmp(rts, "up") == 0 || strcmp(rts, "down") == 0)) {
+                    w->baud_rate = (int)version; w->unit_id = (int)sequence;
+                    w->parity = parity[0]; w->data_bits = (int)data_bits; w->stop_bits = (int)stop_bits;
+                    snprintf(w->rts_mode, sizeof(w->rts_mode), "%s", rts ? rts : "none");
+                    valid = 1;
                 }
+            }
+            if (valid) {
                 memcpy(w->protocol, protocol, strlen(protocol) + 1); w->configured = 1;
                 response_kind = "configured";
                 response_payload = json_pack("{s:b,s:s}", "configured", 1, "protocol", protocol);
-            } else response_payload = error_payload("INVALID_CONFIGURATION", "Invalid Modbus TCP configuration");
+            } else if (!response_payload) {
+                response_payload = error_payload("INVALID_CONFIGURATION", "Invalid Modbus TCP/RTU configuration");
+            }
         }
 configure_done:
         ;
