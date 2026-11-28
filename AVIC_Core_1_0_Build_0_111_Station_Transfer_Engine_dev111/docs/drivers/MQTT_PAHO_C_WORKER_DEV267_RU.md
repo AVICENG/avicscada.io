@@ -14,6 +14,9 @@
 - Callback не пишет в IPC stdout: события идут через bounded queue (256 событий, 8 MiB) и отдельный writer thread.
 - Максимальный MQTT payload 256 KiB; начальный профиль принимает только UTF-8 text.
 - Один сериализованный IPC stdout writer для ответов и событий; общий monotonic sequence.
+- Ответы получают собственный UTC `sent_at`, а не копируют время запроса.
+- Состояние подключения синхронизируется отдельной блокировкой между Paho callbacks и IPC-потоком.
+- Ошибки выделения памяти, сериализации и отправки критических IPC-событий приводят к fail-closed завершению процесса; протокольные ошибки main loop возвращают ненулевой exit code.
 - MQTT publish/write команды отвергаются.
 - Linux Mosquitto round-trip test target: C Worker → IPC → MqttCWorkerPointAdapter → Point Runtime.
 - Windows build target переведён на MSVC; worker использует Windows-native critical sections/condition variables/thread, Linux — pthread.
@@ -26,6 +29,7 @@
 - Бинарные MQTT payloads не публикуются в Point Runtime; требуется UTF-8 текст.
 - Discovery и MQTT publish/control отсутствуют.
 - Reconnect/queue overflow fault injection, TLS, broker soak и hardware broker acceptance остаются незакрыты.
+- Завершение Paho disconnect lifecycle под интенсивным трафиком требует отдельного soak/fault-injection подтверждения.
 - Наличие сборки не означает готовность драйвера; MQTT остаётся 🟧 до завершения CI и дополнительных негативных тестов.
 
 ## CI gates

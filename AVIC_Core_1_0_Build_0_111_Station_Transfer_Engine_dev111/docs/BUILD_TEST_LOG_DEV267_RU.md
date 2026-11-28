@@ -46,3 +46,22 @@ PR: #11 — drivers/modbus-rtu-c-worker-dev249
 - Обновлены manager regression tests для действительной границы MQTT 3.1.1 / 5.0.
 
 Повторный CI на новом HEAD обязателен. До его завершения MQTT остаётся 🟧.
+
+
+## Дополнение DEV268 — IPC hardening и результаты DEV267 CI
+
+Предыдущий run `46130256822` завершился с ошибками на HEAD `72ef85462f1bfd07246e201d38b55eb263fcf0c1`:
+- Linux Python 3.11/3.12/3.13: по 31 548 passed, 10 skipped, 1 failed — старый тест ожидал MQTT 5.0 для native C engine.
+- Windows Python 3.11/3.12/3.13: по 31 545 passed, 13 skipped, 1 failed — тот же устаревший тест. JUnit artifact Windows Python 3.11 подтверждает точную причину.
+- Linux Mosquitto C Worker и Windows MSVC C Worker не дошли до компиляции worker: CMake 4.x отверг legacy `cmake_minimum_required(VERSION 2.8)` в Jansson 2.14.1.
+- OPC UA open62541 probes, Modbus C Workers, Rust Communication Engine, BACnet POC/codec и S7 C-only policy jobs прошли.
+
+В DEV268/DEV268a/DEV268b:
+- Добавлена блокировка состояния connected для синхронизации callback-потоков Paho с IPC-потоком.
+- Добавлен fail-closed путь при отказе сериализации/выделения памяти и ошибке IPC writer.
+- Невалидный IPC frame и ошибка обработки/ответа теперь дают ненулевой exit code.
+- IPC response получает собственный актуальный UTC sent_at.
+- Исправлена проверка connected во всех callback/close/status путях.
+- Добавлен regression gate для свежести response sent_at, состояния connected и корректного завершения worker.
+
+Эти изменения пока не имеют подтверждённого CI на новом HEAD. MQTT остаётся 🟧.

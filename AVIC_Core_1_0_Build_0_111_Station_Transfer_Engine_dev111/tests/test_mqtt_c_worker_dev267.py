@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from datetime import datetime, timezone
 import shutil
 import subprocess
 import threading
@@ -51,8 +52,15 @@ def test_mqtt_paho_c_worker_ipc_handshake_and_shutdown():
     try:
         worker.start(_config(18884))
         assert worker.diagnostics()["worker_version"] == "0.1.0"
+        status = worker._request("get_status", {})
+        assert status.kind == "status"
+        assert status.payload["connected"] is False
+        response_time = datetime.fromisoformat(status.sent_at.replace("Z", "+00:00"))
+        assert abs((datetime.now(timezone.utc) - response_time).total_seconds()) < 5
     finally:
         worker.close()
+    assert worker.diagnostics()["process_alive"] is False
+    assert worker.diagnostics()["exit_code"] == 0
 
 
 class _PointRuntime:
