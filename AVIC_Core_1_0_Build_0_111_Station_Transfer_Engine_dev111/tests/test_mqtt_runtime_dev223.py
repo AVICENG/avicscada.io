@@ -160,3 +160,32 @@ def test_driver_manager_builds_mqtt_runtime_with_optional_paho_and_verified_tls(
     assert adapter.port == 8883
     assert client.ca_certs == str(ca_file)
     assert client.tls_insecure is False
+
+
+
+def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypatch, tmp_path):
+    from pathlib import Path
+    from avic_core.drivers.manager import DriverManagerService
+
+    called = {}
+    def build(self, core, instance, cfg, bindings):
+        called["engine"] = cfg["engine"]
+        called["host"] = cfg["host"]
+        called["bindings"] = bindings
+        return "native-mqtt-adapter"
+
+    monkeypatch.setattr(DriverManagerService, "_build_mqtt_c_worker_adapter", build)
+    instance = DriverInstance(
+        name="MQTT native", station_id=str(uuid4()), driver_id="mqtt",
+        protocol="MQTT 5.0", config={
+            "engine": "c", "host": "broker.local", "protocol": "5.0",
+            "bindings": [{"point_id": "p1", "topic": "plant/temp", "qos": 2}],
+        },
+    )
+    result = DriverManagerService._build_mqtt_adapter(
+        object(), SimpleNamespace(point_runtime=FakePointRuntime()), instance,
+    )
+    assert result == "native-mqtt-adapter"
+    assert called["engine"] == "c"
+    assert called["host"] == "broker.local"
+    assert called["bindings"][0].qos == 2

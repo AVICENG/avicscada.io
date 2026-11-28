@@ -15,6 +15,7 @@ from avic_core.drivers.modbus_tcp_adapter import ModbusTcpPointAdapter, ModbusTc
 from avic_core.drivers.bacnet_ip_adapter import BacnetIpPointAdapter, BacnetIpPointBinding
 from avic_core.drivers.knx_adapter import KnxPointAdapter, KnxPointBinding
 from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
+from avic_core.drivers.mqtt_c_worker_adapter import MqttCWorkerPointAdapter
 from avic_core.network.modbus_tcp import ModbusTcpClient
 from avic_core.network.bacnet_ip import BacnetIpClient
 from avic_core.network.contracts import BacnetIpNetworkConfig, DiscoveryPolicy
@@ -80,6 +81,7 @@ class DriverManagerService:
         self._lock = RLock()
         self._rust_worker_command: str | None = None
         self._c_worker_command: str | None = None
+        self._mqtt_c_worker_command: str | None = None
         self._factories: dict[str, Callable[[Any, DriverInstance], Any]] = {
             "modbus-tcp": self._build_modbus_adapter,
             "modbus-rtu": self._build_modbus_rtu_adapter,
@@ -138,6 +140,47 @@ class DriverManagerService:
                 raise RuntimeError("C Worker executable cannot change while drivers are active")
             self._c_worker_command = resolved
         return resolved
+
+    def register_mqtt_c_worker_command(self, executable: str) -> str:
+        """Register the administrator-selected Paho MQTT C Worker binary."""
+        from pathlib import Path
+        import os
+        path = Path(executable).expanduser()
+        if not path.is_absolute() or not path.is_file():
+            raise ValueError("MQTT C Worker must be an existing absolute executable path")
+        resolved_path = path.resolve(strict=True)
+        if os.name != "nt" and not os.access(resolved_path, os.X_OK):
+            raise ValueError("MQTT C Worker file is not executable")
+        resolved = str(resolved_path)
+        with self._lock:
+            if self._sessions:
+                raise RuntimeError("MQTT C Worker executable cannot change while drivers are active")
+            self._mqtt_c_worker_command = resolved
+        return resolved
+
+    def _build_mqtt_c_worker_adapter(self, core, instance: DriverInstance, cfg: dict,
+                                     bindings: list[MqttPointBinding]):
+        if not self._mqtt_c_worker_command:
+            raise RuntimeError("Paho MQTT C Worker is not registered by the AVIC administrator")
+        station = core.repository.get_record(instance.station_id)
+        project_id = station["payload"].get("project_id")
+        if not project_id:
+            raise ValueError("Station has no owning Project; MQTT C Worker scope cannot be established")
+        project = core.repository.get_record(project_id)
+        platform_id = project["payload"].get("platform_id")
+        installation_id = None
+        if platform_id:
+            platform = core.repository.get_record(platform_id)
+            installation_id = platform["payload"].get("installation_id")
+        if not installation_id:
+            installation_id = str(core.paths.root.resolve())
+        return MqttCWorkerPointAdapter(
+            worker_command=[self._mqtt_c_worker_command], core=core,
+            driver_instance_id=instance.id, config=cfg, bindings=bindings,
+            installation_id=str(installation_id), project_id=str(project_id),
+            station_id=instance.station_id,
+            generation=max(1, int(instance.runtime_generation)),
+        )
 
     def _build_c_modbus_adapter(self, core, instance: DriverInstance, cfg: dict, bindings,
                                 protocol: str = "modbus-tcp"):
@@ -347,13 +390,17 @@ class DriverManagerService:
         return KnxPointAdapter(session, core.point_runtime, instance.id, bindings, read_mode=str(cfg.get("read_mode", "passive")))
 
     def _build_mqtt_adapter(self, core, instance: DriverInstance):
-        """Create a subscribe-only Paho client; credentials never live in driver config."""
+        """Create a subscribe-only MQTT adapter; credentials never live in driver config."""
         from pathlib import Path
         cfg = dict(instance.config)
-        allowed = {"host", "port", "keepalive", "bindings", "protocol", "client_id", "tls_ca_certs"}
+        allowed = {"host", "port", "keepalive", "bindings", "protocol", "client_id",
+                   "tls_ca_certs", "engine"}
         unknown = set(cfg) - allowed
         if unknown:
             raise ValueError(f"Неизвестные параметры MQTT: {sorted(unknown)}")
+        engine = cfg.get("engine", "python")
+        if engine not in {"python", "c"}:
+            raise ValueError("MQTT engine must be python or c")
         host = str(cfg.get("host", "")).strip()
         if not host:
             raise ValueError("Для MQTT требуется host")
@@ -361,23 +408,26 @@ class DriverManagerService:
             raise ValueError("Для MQTT требуется непустой bindings")
         bindings = [MqttPointBinding(**dict(item)) for item in cfg["bindings"]]
         protocol_name = str(cfg.get("protocol", "3.1.1"))
-        try:
-            import paho.mqtt.client as mqtt
-        except ImportError as exc:
-            raise RuntimeError("Для MQTT установите AVIC Core с extra [mqtt]") from exc
-        protocol = {"3.1.1": mqtt.MQTTv311, "5.0": mqtt.MQTTv5}.get(protocol_name)
-        if protocol is None:
+        if protocol_name not in {"3.1.1", "5.0"}:
             raise ValueError("MQTT protocol must be 3.1.1 or 5.0")
-        client_id = str(cfg.get("client_id") or f"avic-{instance.id[:12]}")
-        client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=client_id, protocol=protocol,
-        )
         ca_file = cfg.get("tls_ca_certs")
         if ca_file:
             ca_path = Path(str(ca_file)).expanduser()
             if not ca_path.is_file():
                 raise ValueError("MQTT TLS CA certificate file does not exist")
+        if engine == "c":
+            return self._build_mqtt_c_worker_adapter(core, instance, cfg, bindings)
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise RuntimeError("Для MQTT установите AVIC Core с extra [mqtt]") from exc
+        protocol = {"3.1.1": mqtt.MQTTv311, "5.0": mqtt.MQTTv5}[protocol_name]
+        client_id = str(cfg.get("client_id") or f"avic-{instance.id[:12]}")
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=client_id, protocol=protocol,
+        )
+        if ca_file:
             client.tls_set(ca_certs=str(ca_path))
             client.tls_insecure_set(False)
         return MqttPointAdapter(
@@ -391,9 +441,9 @@ class DriverManagerService:
                  "lifecycle": x.lifecycle.value, "read_supported": x.read_supported,
                  "write_supported": False, "discovery_supported": x.discovery_supported,
                  "runtime_start_supported": x.driver_id in self._factories,
-                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["c"] if x.driver_id == "modbus-rtu" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python"] if x.driver_id == "mqtt" else []),
+                 "supported_engines": (["python", "rust", "c"] if x.driver_id == "modbus-tcp" else ["c"] if x.driver_id == "modbus-rtu" else ["python", "rust"] if x.driver_id in {"bacnet-ip", "knxnet-ip"} else ["python", "c"] if x.driver_id == "mqtt" else []),
                  "rust_engine_available": self._rust_worker_command is not None and x.driver_id in {"modbus-tcp", "bacnet-ip", "knxnet-ip"},
-                 "c_engine_available": self._c_worker_command is not None and x.driver_id in {"modbus-tcp", "modbus-rtu"},
+                 "c_engine_available": ((self._c_worker_command is not None and x.driver_id in {"modbus-tcp", "modbus-rtu"}) or (self._mqtt_c_worker_command is not None and x.driver_id == "mqtt")),
                  "license_feature": x.license_feature, "notes": x.notes} for x in list_builtin_drivers()]
 
     def list_instances(self, station_id: str):
