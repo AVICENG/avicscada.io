@@ -113,3 +113,14 @@ CI run `46057725369` выявил:
 - вывод найденных Device Instance, Max APDU, MAC length и BACnet network number.
 
 Это уже использует сетевые datalink/NPDU/APDU механизмы Steve Karg Stack, но пока остаётся отдельным диагностическим probe: не AVIC IPC Worker, не полноценный AVIC discovery result model, не ReadProperty и не runtime polling. Режим требует BACnet/IP интерфейс и сеть, поэтому аппаратно-сетевое подтверждение отдельно от обычного CI.
+
+
+## DEV256 — ReadProperty codec через Steve Karg Stack
+
+В BACnet native probe добавлен offline round-trip для ReadProperty request:
+- кодирование Analog Input / instance 42 / Present Value;
+- декодирование штатным `rp_decode_service_request()`;
+- проверка полного совпадения object type, instance, property и array index;
+- проверка отклонения всех усечённых вариантов.
+
+Проверка валидирует именно upstream ReadProperty service codec. Она ещё не отправляет подтверждённый запрос устройству и не проверяет APDU transaction state/timeout. Следующий шаг — transaction lifecycle через `Send_Read_Property_Request()`, `apdu_set_confirmed_ack_handler()`, TSM invoke ID и контролируемый ответ в simulator.
