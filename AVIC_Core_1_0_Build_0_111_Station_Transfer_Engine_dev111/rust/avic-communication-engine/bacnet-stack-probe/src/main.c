@@ -273,7 +273,12 @@ static int read_property_transaction(
                 tsm_timer_milliseconds(step);
                 elapsed_ms -= step;
             }
-            datalink_maintenance_timer((unsigned)elapsed);
+            while (elapsed > 0u) {
+                uint16_t maintenance_step = elapsed > 65535u
+                    ? UINT16_MAX : (uint16_t)elapsed;
+                datalink_maintenance_timer(maintenance_step);
+                elapsed -= maintenance_step;
+            }
             last_seconds = now;
         }
 
