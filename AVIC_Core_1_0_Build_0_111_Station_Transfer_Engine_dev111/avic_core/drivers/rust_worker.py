@@ -26,7 +26,10 @@ class RustWorkerError(RuntimeError):
 
 
 class RustDriverWorker:
-    """One isolated Rust worker process, one DriverInstance, one generation."""
+    """One isolated worker process, one DriverInstance, one generation."""
+
+    EVENT_QUEUE_CAPACITY = 256
+    REPLACEABLE_EVENT_CLASSES = frozenset({"sample", "telemetry"})
 
     def __init__(
         self,
@@ -63,9 +66,14 @@ class RustDriverWorker:
         self.timeout_seconds = float(timeout_seconds)
         self._process: subprocess.Popen[bytes] | None = None
         self._responses: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=128)
+        self._events: queue.Queue[DriverEnvelope] = queue.Queue(maxsize=self.EVENT_QUEUE_CAPACITY)
+        self._event_overflow_count = 0
+        self._event_received_count = 0
         self._request_sequence = 0
-        self._response_guard = SequenceGuard()
-        self._response_sequence_gaps = 0
+        # The stdout reader is the sole owner of this guard. It validates one
+        # monotonic sequence across BOTH asynchronous events and command replies.
+        self._inbound_guard = SequenceGuard()
+        self._inbound_sequence_gaps = 0
         self._lock = threading.RLock()
         self._exchange_lock = threading.RLock()
         self._reader: threading.Thread | None = None
@@ -111,6 +119,30 @@ class RustDriverWorker:
             self._terminate()
             raise
 
+    def _validate_inbound_identity(self, frame: DriverEnvelope) -> None:
+        if (
+            frame.installation_id != self.installation_id
+            or frame.project_id != self.project_id
+            or frame.station_id != self.station_id
+            or frame.driver_instance_id != self.driver_instance_id
+            or frame.worker_id != self.worker_id
+            or frame.generation != self.generation
+        ):
+            raise RustWorkerError("Rust worker inbound identity/generation mismatch")
+        try:
+            if self._inbound_guard.accept(frame.generation, frame.sequence):
+                self._inbound_sequence_gaps += 1
+        except DriverIpcError as exc:
+            raise RustWorkerError(f"Rust worker inbound sequence rejected: {exc}") from exc
+
+    def _reader_failure(self, detail: str) -> None:
+        # There is at most one outstanding request because exchanges are
+        # serialized. Never let a full response queue block the stdout reader.
+        try:
+            self._responses.put_nowait((False, detail))
+        except queue.Full:
+            pass
+
     def _read_stdout(self) -> None:
         process = self._process
         if process is None or process.stdout is None:
@@ -120,7 +152,6 @@ class RustDriverWorker:
                 frame = read_frame(process.stdout)
                 if frame is None:
                     # EOF can race the stderr-drain thread and process exit on Windows.
-                    # Wait briefly so startup/loader/IPC rejection diagnostics are retained.
                     try:
                         process.wait(timeout=0.5)
                     except subprocess.TimeoutExpired:
@@ -129,17 +160,50 @@ class RustDriverWorker:
                     if stderr_reader is not None and stderr_reader is not threading.current_thread():
                         stderr_reader.join(timeout=0.25)
                     detail = list(self._stderr_tail)[-10:]
-                    self._responses.put((
-                        False,
-                        f"worker stdout closed (exit_code={process.poll()}; stderr={detail})",
-                    ))
+                    self._reader_failure(
+                        f"worker stdout closed (exit_code={process.poll()}; stderr={detail})"
+                    )
                     return
-                self._responses.put((True, frame))
+
+                if not isinstance(frame, DriverEnvelope):
+                    raise RustWorkerError("worker returned an invalid IPC frame")
+                self._validate_inbound_identity(frame)
+
+                if frame.kind == "event":
+                    if frame.correlation_id is not None:
+                        raise RustWorkerError("asynchronous IPC event must not have a correlation_id")
+                    self._event_received_count += 1
+                    try:
+                        self._events.put_nowait(frame)
+                    except queue.Full:
+                        self._event_overflow_count += 1
+                        event_class = frame.payload.get("event_class")
+                        if event_class not in self.REPLACEABLE_EVENT_CLASSES:
+                            raise RustWorkerError(
+                                "critical asynchronous event queue overflow; worker fenced"
+                            )
+                        # Explicit drop-newest policy applies ONLY to replaceable
+                        # telemetry samples. Alarm/lifecycle/fault/discovery events
+                        # fail closed rather than disappear from the event stream.
+                    continue
+
+                if frame.correlation_id is None:
+                    raise RustWorkerError(
+                        f"non-event worker message {frame.kind!r} has no correlation_id"
+                    )
+                try:
+                    self._responses.put_nowait((True, frame))
+                except queue.Full:
+                    raise RustWorkerError("worker response queue overflow")
         except Exception as exc:
-            try:
-                self._responses.put((False, f"{type(exc).__name__}: {exc}"))
-            except Exception:
-                pass
+            self._reader_failure(f"{type(exc).__name__}: {exc}")
+            # A malformed or unrouteable stream is a protocol fault. Fence the
+            # process immediately; do not keep accepting frames after the fault.
+            if process.poll() is None:
+                try:
+                    process.terminate()
+                except OSError:
+                    pass
 
     def _read_stderr(self) -> None:
         process = self._process
@@ -189,26 +253,24 @@ class RustDriverWorker:
             raise RustWorkerError(f"Rust worker IPC closed: {response}; stderr={list(self._stderr_tail)[-10:]}")
         if not isinstance(response, DriverEnvelope):
             raise RustWorkerError("Rust worker returned an invalid IPC frame")
-        if (
-            response.installation_id != self.installation_id
-            or response.project_id != self.project_id
-            or response.station_id != self.station_id
-            or response.driver_instance_id != self.driver_instance_id
-            or response.worker_id != self.worker_id
-            or response.generation != self.generation
-            or response.correlation_id != request.message_id
-        ):
+        if response.correlation_id != request.message_id:
             self._terminate()
-            raise RustWorkerError("Rust worker response identity/correlation mismatch")
-        try:
-            if self._response_guard.accept(response.generation, response.sequence):
-                self._response_sequence_gaps += 1
-        except DriverIpcError as exc:
-            self._terminate()
-            raise RustWorkerError(f"Rust worker response sequence rejected: {exc}") from exc
+            raise RustWorkerError("Rust worker response correlation mismatch")
         if response.kind == "error":
             raise RustWorkerError(str(response.payload.get("message") or response.payload.get("code") or "worker error"))
         return response
+
+    def drain_events(self, max_items: int = EVENT_QUEUE_CAPACITY) -> list[DriverEnvelope]:
+        """Return queued asynchronous events without blocking the IPC reader."""
+        if isinstance(max_items, bool) or not isinstance(max_items, int) or not 1 <= max_items <= self.EVENT_QUEUE_CAPACITY:
+            raise ValueError(f"max_items must be between 1 and {self.EVENT_QUEUE_CAPACITY}")
+        events = []
+        for _ in range(max_items):
+            try:
+                events.append(self._events.get_nowait())
+            except queue.Empty:
+                break
+        return events
 
     def read(self, request: dict[str, Any]) -> dict[str, Any]:
         if not self._started:
@@ -228,7 +290,12 @@ class RustDriverWorker:
             "worker_id": self.worker_id,
             "worker_version": self._worker_version,
             "generation": self.generation,
-            "response_sequence_gaps": self._response_sequence_gaps,
+            # Kept for compatibility; gaps now cover the complete inbound stream.
+            "response_sequence_gaps": self._inbound_sequence_gaps,
+            "inbound_sequence_gaps": self._inbound_sequence_gaps,
+            "event_queue_depth": self._events.qsize(),
+            "event_received_count": self._event_received_count,
+            "event_overflow_count": self._event_overflow_count,
             "started": self._started,
             "process_alive": process is not None and process.poll() is None,
             "exit_code": process.poll() if process is not None else None,
@@ -253,6 +320,9 @@ class RustDriverWorker:
                     stream.close()
                 except OSError:
                     pass
+        reader = self._reader
+        if reader is not None and reader is not threading.current_thread():
+            reader.join(timeout=1)
 
     def close(self) -> None:
         process = self._process
@@ -272,6 +342,9 @@ class RustDriverWorker:
                     stream.close()
                 except OSError:
                     pass
+        reader = self._reader
+        if reader is not None and reader is not threading.current_thread():
+            reader.join(timeout=1)
 
     def __enter__(self) -> "RustDriverWorker":
         return self
