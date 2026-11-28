@@ -131,7 +131,7 @@ int main(int argc, char **argv)
     }
     char *end = NULL;
     unsigned long timeout_ms = strtoul(argv[2], &end, 10);
-    if (!end || *end != '\\0' || timeout_ms < 100 || timeout_ms > 30000) {
+    if (!end || *end != '\0' || timeout_ms < 100 || timeout_ms > 30000) {
         fprintf(stderr, "Discovery timeout must be 100..30000 ms\\n");
         return 64;
     }
