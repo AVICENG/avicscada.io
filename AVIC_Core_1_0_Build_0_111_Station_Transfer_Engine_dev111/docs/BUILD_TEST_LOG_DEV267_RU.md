@@ -73,7 +73,7 @@ PR: #11 — drivers/modbus-rtu-c-worker-dev249
 - Linux Python 3.11/3.12/3.13 завершились успешно.
 - Linux Paho MQTT C Worker build и Mosquitto → C Worker → IPC → Point Runtime: **2 passed**.
 - Windows MSVC configure и сборка Paho/Jansson зависимостей прошли; Worker compile остановился на `fatal error C1083: jansson.h: No such file or directory`.
-- Windows Python 3.11/3.12/3.13 на этом коммите проверяют старый вариант MQTT 5.0 unit test; исправленный тест включён в следующий HEAD.
+- Windows Python 3.11: **31 547 passed, 13 skipped**; Python 3.13: **31 547 passed, 13 skipped**. Python 3.12 ещё выполнялся на момент записи. В этих jobs уже проверялась исправленная граница MQTT 3.1.1/5.0.
 
 Исправление DEV268d:
 - Явно добавлены `jansson_BINARY_DIR/include` и `jansson_SOURCE_DIR/src` в include path Worker target.

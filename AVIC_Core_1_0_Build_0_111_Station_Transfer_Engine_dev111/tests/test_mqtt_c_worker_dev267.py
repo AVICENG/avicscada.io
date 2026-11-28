@@ -165,6 +165,7 @@ def test_mqtt_paho_c_worker_reconnects_and_resubscribes(tmp_path):
         while time.monotonic() < deadline and not adapter.diagnostics()["connected"]:
             time.sleep(0.1)
         assert adapter.diagnostics()["connected"], "Paho automatic reconnect did not restore connection"
+        time.sleep(0.5)  # allow the resubscribe request to be acknowledged
 
         subprocess.run(
             [publisher, "-h", "127.0.0.1", "-p", str(port),
