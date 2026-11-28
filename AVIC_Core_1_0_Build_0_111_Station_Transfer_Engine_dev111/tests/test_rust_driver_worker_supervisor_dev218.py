@@ -143,6 +143,59 @@ def test_stdout_eof_fences_worker_immediately_and_terminates_orphan():
     worker.close()
 
 
+MALFORMED_STREAM_LIVE_WORKER = textwrap.dedent(r"""
+    import signal, sys, time
+    from datetime import datetime, timezone
+    from uuid import uuid4
+    from avic_core.drivers.ipc import DriverEnvelope, read_frame, write_frame
+
+    try:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    except (AttributeError, OSError, ValueError):
+        pass
+
+    seq = 0
+    for request in iter(lambda: read_frame(sys.stdin.buffer), None):
+        seq += 1
+        if request.kind == "initialize":
+            kind, payload = "initialized", {"protocol":"avic.driver.ipc","version":1,"worker_version":"malformed-live"}
+        elif request.kind == "configure":
+            kind, payload = "configured", {"configured":True}
+        elif request.kind == "start":
+            kind, payload = "status", {"state":"RUNNING"}
+        else:
+            continue
+        frame = DriverEnvelope(
+            contract=request.contract, version=request.version, message_id=str(uuid4()),
+            kind=kind, installation_id=request.installation_id, project_id=request.project_id,
+            station_id=request.station_id, driver_instance_id=request.driver_instance_id,
+            worker_id=request.worker_id, generation=request.generation, sequence=seq,
+            sent_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            correlation_id=request.message_id, payload=payload,
+        )
+        write_frame(sys.stdout.buffer, frame)
+        if request.kind == "start":
+            # Corrupt the next frame and remain alive while ignoring graceful termination.
+            sys.stdout.buffer.write(b"\\x00\\x00\\x00\\x01{")
+            sys.stdout.buffer.flush()
+            time.sleep(30)
+""")
+
+
+def test_malformed_stdout_fences_and_kills_unresponsive_worker():
+    worker = make_worker(MALFORMED_STREAM_LIVE_WORKER, timeout=2)
+    worker.start({"protocol": "modbus-tcp"})
+    deadline = time.monotonic() + 6
+    while worker.diagnostics()["process_alive"] and time.monotonic() < deadline:
+        time.sleep(0.02)
+    diagnostics = worker.diagnostics()
+    assert diagnostics["reader_failed"] is True, diagnostics
+    assert diagnostics["started"] is False, diagnostics
+    assert diagnostics["process_alive"] is False, diagnostics
+    assert diagnostics["exit_code"] is not None, diagnostics
+    worker.close()
+
+
 def make_worker(program=FAKE_WORKER, *, timeout=2):
     return RustDriverWorker(
         [sys.executable, "-u", "-c", program],

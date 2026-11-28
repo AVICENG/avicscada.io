@@ -182,21 +182,7 @@ class RustDriverWorker:
                         process.wait(timeout=0.5)
                     except subprocess.TimeoutExpired:
                         self._reader_failure("worker stdout closed while process remained alive; terminating")
-                        try:
-                            process.terminate()
-                        except OSError:
-                            pass
-                        try:
-                            process.wait(timeout=2)
-                        except subprocess.TimeoutExpired:
-                            try:
-                                process.kill()
-                            except OSError:
-                                pass
-                            try:
-                                process.wait(timeout=2)
-                            except subprocess.TimeoutExpired:
-                                pass
+                        self._terminate_child(process)
                     stderr_reader = self._stderr_reader
                     if stderr_reader is not None and stderr_reader is not threading.current_thread():
                         stderr_reader.join(timeout=0.5)
@@ -244,10 +230,32 @@ class RustDriverWorker:
             # A malformed or unrouteable stream is a protocol fault. Fence the
             # process immediately; do not keep accepting frames after the fault.
             if process.poll() is None:
-                try:
-                    process.terminate()
-                except OSError:
-                    pass
+                self._terminate_child(process)
+
+    @staticmethod
+    def _terminate_child(process: subprocess.Popen[bytes]) -> None:
+        """Bounded terminate/kill escalation for a worker that lost its IPC stream."""
+        if process.poll() is not None:
+            return
+        try:
+            process.terminate()
+        except OSError:
+            # The child may have exited between poll() and terminate().
+            pass
+        try:
+            process.wait(timeout=2)
+            return
+        except subprocess.TimeoutExpired:
+            pass
+        try:
+            process.kill()
+        except OSError:
+            pass
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            # Keep the supervisor thread bounded even if the OS cannot reap it.
+            pass
 
     def _read_stderr(self) -> None:
         process = self._process
