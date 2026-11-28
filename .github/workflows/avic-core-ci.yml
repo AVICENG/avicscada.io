@@ -249,6 +249,29 @@ jobs:
       - name: Run BACnet Stack version probe test
         run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
 
+  paho-mqtt-c-native-probe:
+    name: Eclipse Paho MQTT C native probe / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    defaults:
+      run:
+        working-directory: AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure pinned Eclipse Paho MQTT C
+        run: cmake -S rust/avic-communication-engine/mqtt-paho-c-probe -B build/mqtt-paho-c-probe -DCMAKE_BUILD_TYPE=Release
+      - name: Build Paho async C probe
+        run: cmake --build build/mqtt-paho-c-probe --config Release --parallel 2
+      - name: Run Paho async lifecycle self-test
+        run: ctest --test-dir build/mqtt-paho-c-probe -C Release --output-on-failure
+
   opcua-open62541-native-probe:
     name: OPC UA open62541 native probe / Ubuntu
     runs-on: ubuntu-latest
