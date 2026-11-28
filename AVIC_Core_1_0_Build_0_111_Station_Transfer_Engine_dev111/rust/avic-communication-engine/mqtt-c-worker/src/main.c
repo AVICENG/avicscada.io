@@ -58,7 +58,7 @@ typedef struct {
     binding_t bindings[MAX_BINDINGS];
     size_t binding_count;
     MQTTAsync client;
-    pthread_mutex_t queue_lock, output_lock;
+    pthread_mutex_t queue_lock, output_lock, state_lock;
     pthread_cond_t queue_cond;
     event_node_t *queue_head, *queue_tail;
     size_t queue_count, queue_bytes;
@@ -156,16 +156,42 @@ static int contains_secret_key(json_t *v) {
             if(strstr(n,"password")||strstr(n,"secret")||strstr(n,"token")||strstr(n,"credential")||strstr(n,"privatekey")||strstr(n,"apikey")||contains_secret_key(child)) return 1;
         }
     } else if(json_is_array(v)) { size_t i; json_t *x; json_array_foreach(v,i,x) if(contains_secret_key(x)) return 1; }
-    return 0;
+    return exit_code;
 }
 static json_t *err_payload(const char *code,const char *msg) {
     return json_pack("{s:s,s:s}","code",code,"message",msg);
 }
+static void set_connected(worker_t *w, int value) {
+    pthread_mutex_lock(&w->state_lock);
+    w->connected = value;
+    pthread_mutex_unlock(&w->state_lock);
+}
+static int get_connected(worker_t *w) {
+    pthread_mutex_lock(&w->state_lock);
+    int value = w->connected;
+    pthread_mutex_unlock(&w->state_lock);
+    return value;
+}
+static void set_queue_fatal(worker_t *w) {
+    pthread_mutex_lock(&w->queue_lock);
+    w->fatal = 1;
+    pthread_cond_signal(&w->queue_cond);
+    pthread_mutex_unlock(&w->queue_lock);
+}
+static void worker_fail_fast(int code) {
+#ifdef _WIN32
+    ExitProcess((UINT)code);
+#else
+    _Exit(code);
+#endif
+}
 static int enqueue_event(worker_t *w,const char *kind,json_t *payload) {
-    if (!payload) return 0;
-    char *encoded=json_dumps(payload,JSON_COMPACT); size_t bytes=encoded?strlen(encoded):0; free(encoded);
+    if (!payload) { set_queue_fatal(w); return 0; }
+    char *encoded=json_dumps(payload,JSON_COMPACT);
+    if (!encoded) { json_decref(payload); set_queue_fatal(w); return 0; }
+    size_t bytes=strlen(encoded); free(encoded);
     event_node_t *node=calloc(1,sizeof(*node));
-    if(!node){json_decref(payload);return 0;}
+    if(!node){json_decref(payload);set_queue_fatal(w);return 0;}
     snprintf(node->kind, sizeof(node->kind), "%s", kind);
     node->payload=payload; node->bytes=bytes;
     pthread_mutex_lock(&w->queue_lock);
@@ -224,7 +250,7 @@ static void *writer_main(void *arg) {
         if(!w->queue_head)w->queue_tail=NULL;
         w->queue_count--; w->queue_bytes-=n->bytes;
         pthread_mutex_unlock(&w->queue_lock);
-        if(!send_event(w,n->kind,n->payload)){free(n);return NULL;}
+        if(!send_event(w,n->kind,n->payload)){free(n);worker_fail_fast(4);}
         free(n);
     }
 }
@@ -236,7 +262,7 @@ static DWORD WINAPI writer_main_win(LPVOID arg) {
 #endif
 
 static void on_connect_success(void *context,MQTTAsync_successData *response) {
-    (void)response; worker_t *w=context; w->connected=1;
+    (void)response; worker_t *w=context; set_connected(w,1);
     enqueue_event(w,"status",json_pack("{s:b}","connected",1));
     for(size_t i=0;i<w->binding_count;i++) {
         MQTTAsync_responseOptions opts=MQTTAsync_responseOptions_initializer;
@@ -246,7 +272,7 @@ static void on_connect_success(void *context,MQTTAsync_successData *response) {
     }
 }
 static void on_connect_failure(void *context,MQTTAsync_failureData *response) {
-    (void)response; worker_t *w=context; w->connected=0;
+    (void)response; worker_t *w=context; set_connected(w,0);
     enqueue_event(w,"status",json_pack("{s:b}","connected",0));
     enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT broker connection failed"));
 }
@@ -344,6 +370,8 @@ static int send_response(worker_t *w,json_t *request,const char *kind,json_t *pa
     json_object_set_new(e,"message_id",json_string(id));
     json_object_set_new(e,"kind",json_string(kind));
     json_object_set_new(e,"sequence",json_integer((json_int_t)++w->outgoing_sequence));
+    char stamp[32]; utc_now(stamp);
+    json_object_set_new(e,"sent_at",json_string(stamp));
     json_object_set_new(e,"correlation_id",json_deep_copy(json_object_get(request,"message_id")));
     json_object_set_new(e,"payload",payload?payload:json_object());
     int ok=write_frame_locked(e); json_decref(e);
@@ -397,7 +425,7 @@ static int process(worker_t *w,json_t *r,int *quit) {
     } else if(!strcmp(kind,"stop")) {
         w->started=0;close_client(w);reply="status";out=json_pack("{s:s,s:b}","state","STOPPED","write_supported",0);
     } else if(!strcmp(kind,"get_status")) {
-        reply="status";out=json_pack("{s:s,s:b,s:b,s:b}","state",w->started?"RUNNING":"STOPPED","configured",w->configured,"connected",w->connected,"write_supported",0);
+        reply="status";out=json_pack("{s:s,s:b,s:b,s:b}","state",w->started?"RUNNING":"STOPPED","configured",w->configured,"connected",get_connected(w),"write_supported",0);
     } else if(!strcmp(kind,"shutdown")) {
         w->started=0;close_client(w);reply="status";*quit=1;out=json_pack("{s:s,s:b}","state","STOPPED","shutdown",1);
     } else if(!strcmp(kind,"write")||!strcmp(kind,"publish"))out=err_payload("WRITE_DISABLED","MQTT publish is disabled in AVIC read-only Worker v1");
@@ -411,7 +439,7 @@ int main(void) {
     if(_setmode(_fileno(stdin),_O_BINARY)==-1||_setmode(_fileno(stdout),_O_BINARY)==-1)return 4;
 #endif
     worker_t w;memset(&w,0,sizeof(w));
-    pthread_mutex_init(&w.queue_lock,NULL);pthread_mutex_init(&w.output_lock,NULL);pthread_cond_init(&w.queue_cond,NULL);
+    pthread_mutex_init(&w.queue_lock,NULL);pthread_mutex_init(&w.output_lock,NULL);pthread_mutex_init(&w.state_lock,NULL);pthread_cond_init(&w.queue_cond,NULL);
 #ifdef _WIN32
     w.writer_thread=CreateThread(NULL,0,writer_main_win,&w,0,NULL);
     if (!w.writer_thread) { return 5; }
@@ -419,11 +447,13 @@ int main(void) {
     if (pthread_create(&w.writer_thread,NULL,writer_main,&w) != 0) { return 5; }
 #endif
     w.writer_started=1;
+    int exit_code = 0;
     for(;;) {
         json_t *r=NULL;int status=read_frame(&r);
-        if (status == 0) { break; }if (status < 0) { fprintf(stderr,"MQTT C Worker: invalid IPC frame\n"); break; }
+        if (status == 0) { break; }
+        if (status < 0) { fprintf(stderr,"MQTT C Worker: invalid IPC frame\\n"); exit_code=2; break; }
         int quit=0,ok=process(&w,r,&quit);json_decref(r);
-        if(!ok){fprintf(stderr,"MQTT C Worker: rejected IPC command or failed response\n");break;}
+        if(!ok){fprintf(stderr,"MQTT C Worker: rejected IPC command or failed response\\n");exit_code=4;break;}
         if(quit)break;
     }
     w.started=0;close_client(&w);
@@ -434,6 +464,6 @@ int main(void) {
     if (w.writer_started) { pthread_join(w.writer_thread,NULL); }
 #endif
     event_node_t *n=w.queue_head;while(n){event_node_t *next=n->next;json_decref(n->payload);free(n);n=next;}
-    pthread_cond_destroy(&w.queue_cond);pthread_mutex_destroy(&w.queue_lock);pthread_mutex_destroy(&w.output_lock);
+    pthread_cond_destroy(&w.queue_cond);pthread_mutex_destroy(&w.queue_lock);pthread_mutex_destroy(&w.output_lock);pthread_mutex_destroy(&w.state_lock);
     return 0;
 }
