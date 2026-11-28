@@ -7,13 +7,25 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <pthread.h>
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #include <windows.h>
 #include <rpc.h>
+typedef CRITICAL_SECTION pthread_mutex_t;
+typedef CONDITION_VARIABLE pthread_cond_t;
+typedef HANDLE pthread_t;
+static int pthread_mutex_init(pthread_mutex_t *m, const void *attr) { (void)attr; InitializeCriticalSection(m); return 0; }
+static int pthread_mutex_lock(pthread_mutex_t *m) { EnterCriticalSection(m); return 0; }
+static int pthread_mutex_unlock(pthread_mutex_t *m) { LeaveCriticalSection(m); return 0; }
+static int pthread_mutex_destroy(pthread_mutex_t *m) { DeleteCriticalSection(m); return 0; }
+static int pthread_cond_init(pthread_cond_t *c, const void *attr) { (void)attr; InitializeConditionVariable(c); return 0; }
+static int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m) { return SleepConditionVariableCS(c, m, INFINITE) ? 0 : -1; }
+static int pthread_cond_signal(pthread_cond_t *c) { WakeConditionVariable(c); return 0; }
+static int pthread_cond_broadcast(pthread_cond_t *c) { WakeAllConditionVariable(c); return 0; }
+static int pthread_cond_destroy(pthread_cond_t *c) { (void)c; return 0; }
 #else
+#include <pthread.h>
 #include <uuid/uuid.h>
 #endif
 
@@ -201,7 +213,7 @@ static void *writer_main(void *arg) {
             w->stopping=1;
             pthread_mutex_unlock(&w->queue_lock);
             send_event(w,"fault",json_pack("{s:s}","message","MQTT event queue capacity exceeded; worker fenced"));
-            return NULL;
+            _Exit(3);
         }
         if(!w->queue_head&&w->stopping){pthread_mutex_unlock(&w->queue_lock);return NULL;}
         event_node_t *n=w->queue_head; w->queue_head=n->next;
@@ -234,22 +246,32 @@ static void on_connection_lost(void *context,char *cause) {
 }
 static int on_message(void *context,char *topic,int topic_len,MQTTAsync_message *message) {
     worker_t *w=context;
-    if(!topic||!message||message->payloadlen<0||(size_t)message->payloadlen>MAX_PAYLOAD) {
+    if (!topic || !message || message->payloadlen < 0 || (size_t)message->payloadlen > MAX_PAYLOAD) {
         enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT message exceeds worker payload limit"));
     } else {
         size_t tn=topic_len>0?(size_t)topic_len:strlen(topic);
-        if(tn>=MAX_TOPIC) enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT topic exceeds worker topic limit"));
-        else {
+        if(tn>=MAX_TOPIC) {
+            enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT topic exceeds worker topic limit"));
+        } else {
             char topic_copy[MAX_TOPIC]; memcpy(topic_copy,topic,tn); topic_copy[tn]=0;
+            size_t payload_len=(size_t)message->payloadlen;
             const char *payload=(const char *)message->payload;
-            if (message->payloadlen > 0 && (!payload || memchr(payload,0,(size_t)message->payloadlen)!=NULL)) {
+            if (payload_len > 0 && (!payload || memchr(payload,0,payload_len)!=NULL)) {
                 enqueue_event(w,"fault",json_pack("{s:s}","message","Binary MQTT payload is unsupported; UTF-8 text required"));
             } else {
-                json_t *p=json_pack("{s:s,s:s,s:i,s:s,s:s}",
-                    "event_class","sample","topic",topic_copy,"qos",message->qos,
-                    "payload",payload?payload:"","received_at","");
-                char stamp[32]; utc_now(stamp); json_object_set_new(p,"received_at",json_string(stamp));
-                enqueue_event(w,"sample",p);
+                json_t *p=json_object();
+                char stamp[32]; utc_now(stamp);
+                json_object_set_new(p,"event_class",json_string("sample"));
+                json_object_set_new(p,"topic",json_string(topic_copy));
+                json_object_set_new(p,"qos",json_integer(message->qos));
+                json_object_set_new(p,"payload",json_stringn(payload?payload:"",payload_len));
+                json_object_set_new(p,"received_at",json_string(stamp));
+                if (!json_is_string(json_object_get(p,"payload"))) {
+                    json_decref(p);
+                    enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT payload is not valid UTF-8 text"));
+                } else {
+                    enqueue_event(w,"sample",p);
+                }
             }
         }
     }
@@ -263,7 +285,12 @@ static void connect_client(worker_t *w) {
     opts.MQTTVersion=w->mqtt_version; opts.context=w;
     opts.automaticReconnect=1; opts.minRetryInterval=1; opts.maxRetryInterval=30;
     opts.onSuccess=on_connect_success; opts.onFailure=on_connect_failure;
-    MQTTAsync_connect(w->client,&opts);
+    int rc=MQTTAsync_connect(w->client,&opts);
+    if (rc != MQTTASYNC_SUCCESS) {
+        w->connected=0;
+        enqueue_event(w,"status",json_pack("{s:b}","connected",0));
+        enqueue_event(w,"fault",json_pack("{s:s}","message","MQTTAsync_connect rejected the connection request"));
+    }
 }
 static void close_client(worker_t *w) {
     if(w->client) {
@@ -374,7 +401,12 @@ int main(void) {
 #endif
     worker_t w;memset(&w,0,sizeof(w));
     pthread_mutex_init(&w.queue_lock,NULL);pthread_mutex_init(&w.output_lock,NULL);pthread_cond_init(&w.queue_cond,NULL);
+#ifdef _WIN32
+    w.writer_thread=CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)writer_main,&w,0,NULL);
+    if (!w.writer_thread) { return 5; }
+#else
     if (pthread_create(&w.writer_thread,NULL,writer_main,&w) != 0) { return 5; }
+#endif
     w.writer_started=1;
     for(;;) {
         json_t *r=NULL;int status=read_frame(&r);
@@ -385,7 +417,11 @@ int main(void) {
     }
     w.started=0;close_client(&w);
     pthread_mutex_lock(&w.queue_lock);w.stopping=1;pthread_cond_broadcast(&w.queue_cond);pthread_mutex_unlock(&w.queue_lock);
-    if(w.writer_started)pthread_join(w.writer_thread,NULL);
+#ifdef _WIN32
+    if (w.writer_started) { WaitForSingleObject(w.writer_thread,INFINITE); CloseHandle(w.writer_thread); }
+#else
+    if (w.writer_started) { pthread_join(w.writer_thread,NULL); }
+#endif
     event_node_t *n=w.queue_head;while(n){event_node_t *next=n->next;json_decref(n->payload);free(n);n=next;}
     pthread_cond_destroy(&w.queue_cond);pthread_mutex_destroy(&w.queue_lock);pthread_mutex_destroy(&w.output_lock);
     return 0;

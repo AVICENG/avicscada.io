@@ -322,12 +322,12 @@ jobs:
           exit 1
       - name: Run MQTT C Worker IPC and broker round-trip tests
         env:
-          AVIC_MQTT_C_WORKER: \${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/mqtt-c-worker/avic-mqtt-paho-c-worker
+          AVIC_MQTT_C_WORKER: ${{ github.workspace }}/AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111/build/mqtt-c-worker/avic-mqtt-paho-c-worker
           AVIC_MQTT_C_BROKER_TEST: "1"
         run: python -m pytest -q tests/test_mqtt_c_worker_dev267.py
 
   mqtt-paho-c-worker-windows:
-    name: Paho MQTT C Worker / Windows UCRT64
+    name: Paho MQTT C Worker / Windows MSVC
     runs-on: windows-2025
     timeout-minutes: 45
     defaults:
@@ -338,34 +338,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Install MSYS2 UCRT64 C dependencies
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          install: >-
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-ninja
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-jansson
-      - name: Configure Paho MQTT C Worker
-        shell: msys2 {0}
-        run: cmake -S rust/avic-communication-engine/mqtt-c-worker -B build/mqtt-c-worker -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure Paho MQTT C Worker with MSVC
+        run: cmake -S rust/avic-communication-engine/mqtt-c-worker -B build/mqtt-c-worker -A x64
       - name: Build Paho MQTT C Worker
-        shell: msys2 {0}
-        run: cmake --build build/mqtt-c-worker --parallel 2
+        run: cmake --build build/mqtt-c-worker --config Release --parallel 2
       - name: Install AVIC Core test dependencies
         run: python -m pip install -e ".[dev]"
       - name: Run MQTT C Worker IPC handshake and shutdown
         shell: pwsh
         env:
-          AVIC_MQTT_C_WORKER: \${{ github.workspace }}\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\build\mqtt-c-worker\avic-mqtt-paho-c-worker.exe
-        run: |
-          $msysBin = Join-Path $env:RUNNER_TEMP "msys64\ucrt64\bin"
-          if (-not (Test-Path (Join-Path $msysBin "libjansson-4.dll"))) { throw "UCRT64 Jansson runtime DLL not found" }
-          $env:PATH = "$msysBin;$env:PATH"
-          python -m pytest -q tests/test_mqtt_c_worker_dev267.py -k handshake
+          AVIC_MQTT_C_WORKER: ${{ github.workspace }}\AVIC_Core_1_0_Build_0_111_Station_Transfer_Engine_dev111\build\mqtt-c-worker\Release\avic-mqtt-paho-c-worker.exe
+        run: python -m pytest -q tests/test_mqtt_c_worker_dev267.py -k handshake
+
   opcua-open62541-native-probe:
     name: OPC UA open62541 native probe / Ubuntu
     runs-on: ubuntu-latest
