@@ -353,6 +353,7 @@ jobs:
           $mosquittoDir = Join-Path $env:ProgramFiles "mosquitto"
           $mosquitto = Join-Path $mosquittoDir "mosquitto.exe"
           $publisher = Join-Path $mosquittoDir "mosquitto_pub.exe"
+          Add-Content -Path $env:GITHUB_PATH -Value $mosquittoDir
           if (!(Test-Path $mosquitto) -or !(Test-Path $publisher)) {
             throw "Mosquitto executable or mosquitto_pub.exe was not installed at $mosquittoDir"
           }
