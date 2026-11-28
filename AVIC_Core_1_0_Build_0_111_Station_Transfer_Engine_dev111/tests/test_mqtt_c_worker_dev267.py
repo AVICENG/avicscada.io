@@ -161,7 +161,7 @@ def test_mqtt_paho_c_worker_reconnects_and_resubscribes(tmp_path):
         deadline = time.monotonic() + 25
         while time.monotonic() < deadline and not adapter.diagnostics()["connected"]:
             time.sleep(0.1)
-        assert adapter.diagnostics()["connected"], "Paho automatic reconnect did not restore connection"
+        assert adapter.diagnostics()["connected"], "Paho automatic reconnect did not restore connection: " + repr(adapter.diagnostics())
         time.sleep(0.5)  # allow the resubscribe request to be acknowledged
 
         subprocess.run(
@@ -229,7 +229,7 @@ def test_mqtt_paho_c_worker_mosquitto_to_point_runtime():
                 connected = True
                 break
             time.sleep(0.05)
-        assert connected, "Paho C Worker did not connect to local Mosquitto"
+        assert connected, "Paho C Worker did not connect to local Mosquitto: " + repr(adapter.diagnostics())
         time.sleep(0.25)
         subprocess.run(
             [publisher, "-h", "127.0.0.1", "-p", "18883",

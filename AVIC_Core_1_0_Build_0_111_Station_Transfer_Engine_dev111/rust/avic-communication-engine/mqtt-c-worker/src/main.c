@@ -261,18 +261,34 @@ static DWORD WINAPI writer_main_win(LPVOID arg) {
 }
 #endif
 
-static void on_connect_success(void *context,MQTTAsync_successData *response) {
-    (void)response; worker_t *w=context; set_connected(w,1);
-    enqueue_event(w,"status",json_pack("{s:b}","connected",1));
+static void subscribe_topics(worker_t *w) {
     for(size_t i=0;i<w->binding_count;i++) {
         MQTTAsync_responseOptions opts=MQTTAsync_responseOptions_initializer;
         opts.context=w;
         int rc=MQTTAsync_subscribe(w->client,w->bindings[i].topic,w->bindings[i].qos,&opts);
-        if(rc!=MQTTASYNC_SUCCESS) enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT subscribe request failed"));
+        if(rc!=MQTTASYNC_SUCCESS) {
+            fprintf(stderr,"MQTT C Worker: subscribe request failed (rc=%d)\\n",rc);
+            enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT subscribe request failed"));
+        }
     }
 }
+static void on_connect_success(void *context,MQTTAsync_successData *response) {
+    (void)response; worker_t *w=context; set_connected(w,1);
+    enqueue_event(w,"status",json_pack("{s:b}","connected",1));
+    subscribe_topics(w);
+}
+/* Paho calls this after automatic reconnect; on_connect_success is the
+ * completion callback for the initial MQTTAsync_connect request. */
+static void on_reconnected(void *context,char *cause) {
+    (void)cause; worker_t *w=context; set_connected(w,1);
+    enqueue_event(w,"status",json_pack("{s:b}","connected",1));
+    subscribe_topics(w);
+}
 static void on_connect_failure(void *context,MQTTAsync_failureData *response) {
-    (void)response; worker_t *w=context; set_connected(w,0);
+    worker_t *w=context; set_connected(w,0);
+    int code=response?response->code:0;
+    const char *detail=(response&&response->message)?response->message:"no broker diagnostic";
+    fprintf(stderr,"MQTT C Worker: broker connection failed (code=%d, detail=%s)\\n",code,detail);
     enqueue_event(w,"status",json_pack("{s:b}","connected",0));
     enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT broker connection failed"));
 }
@@ -415,7 +431,8 @@ static int process(worker_t *w,json_t *r,int *quit) {
             char uri[320]; snprintf(uri,sizeof(uri),"tcp://%s:%d",w->host,w->port);
             int rc=MQTTAsync_create(&w->client,uri,w->client_id,MQTTCLIENT_PERSISTENCE_NONE,NULL);
             if(rc!=MQTTASYNC_SUCCESS||!w->client)out=err_payload("MQTT_CREATE_FAILED","MQTTAsync_create failed");
-            else if(MQTTAsync_setCallbacks(w->client,w,on_connection_lost,on_message,NULL)!=MQTTASYNC_SUCCESS) {
+            else if(MQTTAsync_setCallbacks(w->client,w,on_connection_lost,on_message,NULL)!=MQTTASYNC_SUCCESS
+              || MQTTAsync_setConnected(w->client,w,on_reconnected)!=MQTTASYNC_SUCCESS) {
                 close_client(w);out=err_payload("MQTT_CALLBACK_FAILED","MQTT callback registration failed");
             } else {
                 w->started=1; connect_client(w); reply="status";

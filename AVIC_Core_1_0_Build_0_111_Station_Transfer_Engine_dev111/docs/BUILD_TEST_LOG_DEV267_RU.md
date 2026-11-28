@@ -100,3 +100,21 @@ Windows MQTT CI расширен: после MSVC build устанавливае
 ## DEV268l — Windows Mosquitto provisioning
 
 Chocolatey Community feed не содержит пакета `mosquitto` (`package was not found`). CI переведён на официальный Windows installer Mosquitto 2.1.4 с pinned URL и обязательной SHA-256 проверкой `034017C8F8E3B5B86BDBD971F6C5184370311058E4DE7B96A0F10204BBB9E7C8`. Установка выполняется в silent mode; затем `C:\Program Files\mosquitto` добавляется в PATH для broker и publisher acceptance.
+
+
+## DEV268m — результаты повторной broker acceptance (run 46133101378)
+
+На HEAD `f8936d495404ac468bbba7b336f48e3776d32b2d`:
+- Полная Python matrix (Windows/Linux, Python 3.11/3.12/3.13) прошла.
+- Modbus C Worker, OPC UA native probes, BACnet Stack POC и Rust Communication Engine jobs прошли.
+- MQTT Linux native job: 6 тестов прошли, reconnect/resubscribe завершился ошибкой — после рестарта брокера Paho не восстановил connected за 25 секунд.
+- MQTT Windows native job: MSVC сборка и установка Mosquitto 2.1.4 прошли; reconnect не восстановился, а основной C Worker не подключился к брокеру, хотя readiness-проверка через mosquitto_pub прошла.
+- DEV268l не является успешной MQTT acceptance.
+
+Исправления DEV268m:
+- Добавлен отдельный Paho `MQTTAsync_setConnected` callback: автоматическое восстановление соединения обрабатывается отдельно от первоначального connect success; при reconnect повторно отправляются все topic subscriptions.
+- В connect-failure callback добавлен диагностический вывод кода и текста ошибки Paho в stderr.
+- При отказе round-trip/reconnect тест выводит полную диагностику adapter/worker.
+- Linux и Windows CI переходят на одинаковую явную конфигурацию Mosquitto: loopback listener, anonymous access только для изолированного тестового брокера, persistence off.
+
+Проверка DEV268m ожидает новый Linux+Windows CI. До успешного round-trip, reconnect/resubscribe и lifecycle/negative tests MQTT остаётся 🟧.
