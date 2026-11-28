@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <stdlib.h>
+#include <time.h>
 
 #include "bacnet/bacdef.h"
 #include "bacnet/bacdcode.h"
@@ -232,7 +233,6 @@ static int read_property_transaction(
     uint8_t rx_buffer[MAX_MPDU] = { 0 };
     BACNET_ADDRESS source = { 0 };
     struct mstimer deadline = { 0 };
-    struct mstimer maintenance = { 0 };
     unsigned max_apdu = 0;
     bool bound = false;
     time_t last_seconds = time(NULL);
@@ -255,7 +255,6 @@ static int read_property_transaction(
     dlenv_init();
 
     mstimer_set(&deadline, timeout_ms);
-    mstimer_set(&maintenance, 1000);
     Send_WhoIs(device_id, device_id);
 
     while (!mstimer_expired(&deadline) && Read_Result_State == 0) {
@@ -292,9 +291,6 @@ static int read_property_transaction(
                     (unsigned)Read_Invoke_ID);
             tsm_free_invoke_id(Read_Invoke_ID);
             Read_Result_State = -1;
-        }
-        if (mstimer_expired(&maintenance)) {
-            mstimer_reset(&maintenance);
         }
     }
 
