@@ -16,6 +16,8 @@
 #include "bacnet/basic/service/h_iam.h"
 #include "bacnet/basic/service/h_apdu.h"
 #include "bacnet/basic/service/s_whois.h"
+#include "bacnet/basic/service/s_rp.h"
+#include "bacnet/basic/tsm/tsm.h"
 #include "bacnet/basic/sys/mstimer.h"
 #include "bacnet/basic/npdu/h_npdu.h"
 #include "bacnet/datalink/datalink.h"
@@ -155,75 +157,253 @@ static int read_property_codec_self_test(void)
     return 0;
 }
 
-int main(int argc, char **argv)
+static BACNET_ADDRESS Read_Target_Address;
+static uint8_t Read_Invoke_ID;
+static int Read_Result_State;
+static uint8_t Read_Application_Data[1024];
+static unsigned Read_Application_Data_Length;
+
+static void read_property_ack_handler(
+    uint8_t *service_request,
+    uint16_t service_len,
+    BACNET_ADDRESS *src,
+    BACNET_CONFIRMED_SERVICE_ACK_DATA *service_data)
 {
-    const char *device_object = bactext_object_type_name(OBJECT_DEVICE);
-    if (device_object == NULL) {
-        return 2;
+    BACNET_READ_PROPERTY_DATA data = { 0 };
+    if (!address_match(&Read_Target_Address, src) ||
+        service_data->invoke_id != Read_Invoke_ID) {
+        return;
     }
-    if (iam_codec_self_test() != 0) {
-        return 3;
+    int decoded = rp_ack_decode_service_request(service_request, service_len, &data);
+    if (decoded < 0 || data.application_data_len < 0 ||
+        (unsigned)data.application_data_len > sizeof(Read_Application_Data)) {
+        Read_Result_State = -1;
+        return;
     }
-    if (read_property_codec_self_test() != 0) {
-        return 4;
+    if (data.application_data_len > 0) {
+        memcpy(Read_Application_Data, data.application_data,
+               (size_t)data.application_data_len);
     }
-    printf("AVIC BACnet Stack C probe: %s; object=%s; codec=self-test-passed\\n",
-           BACNET_VERSION_TEXT, device_object);
+    Read_Application_Data_Length = (unsigned)data.application_data_len;
+    Read_Result_State = 1;
+}
 
-    if (argc == 1) {
-        return 0;
+static void read_property_error_handler(
+    BACNET_ADDRESS *src,
+    uint8_t invoke_id,
+    BACNET_ERROR_CLASS error_class,
+    BACNET_ERROR_CODE error_code)
+{
+    if (address_match(&Read_Target_Address, src) && invoke_id == Read_Invoke_ID) {
+        fprintf(stderr, "bacnet_read_property_error class=%u code=%u\n",
+                (unsigned)error_class, (unsigned)error_code);
+        Read_Result_State = -1;
     }
-    if (argc != 3 || strcmp(argv[1], "--discover-ms") != 0) {
-        fprintf(stderr, "Usage: %s [--discover-ms 100..30000]\\n", argv[0]);
-        return 64;
-    }
-    char *end = NULL;
-    unsigned long timeout_ms = strtoul(argv[2], &end, 10);
-    if (!end || *end != '\0' || timeout_ms < 100 || timeout_ms > 30000) {
-        fprintf(stderr, "Discovery timeout must be 100..30000 ms\\n");
-        return 64;
-    }
+}
 
+static void read_property_abort_handler(
+    BACNET_ADDRESS *src, uint8_t invoke_id, uint8_t abort_reason, bool server)
+{
+    (void)server;
+    if (address_match(&Read_Target_Address, src) && invoke_id == Read_Invoke_ID) {
+        fprintf(stderr, "bacnet_read_property_abort reason=%u\n",
+                (unsigned)abort_reason);
+        Read_Result_State = -1;
+    }
+}
+
+static void read_property_reject_handler(
+    BACNET_ADDRESS *src, uint8_t invoke_id, uint8_t reject_reason)
+{
+    if (address_match(&Read_Target_Address, src) && invoke_id == Read_Invoke_ID) {
+        fprintf(stderr, "bacnet_read_property_reject reason=%u\n",
+                (unsigned)reject_reason);
+        Read_Result_State = -1;
+    }
+}
+
+static int read_property_transaction(
+    uint32_t device_id,
+    BACNET_OBJECT_TYPE object_type,
+    uint32_t object_instance,
+    BACNET_PROPERTY_ID property,
+    unsigned timeout_ms)
+{
     uint8_t rx_buffer[MAX_MPDU] = { 0 };
     BACNET_ADDRESS source = { 0 };
-    BACNET_ADDRESS destination = { 0 };
     struct mstimer deadline = { 0 };
     struct mstimer maintenance = { 0 };
+    unsigned max_apdu = 0;
+    bool bound = false;
+    time_t last_seconds = time(NULL);
+
+    Read_Invoke_ID = 0;
+    Read_Result_State = 0;
+    Read_Application_Data_Length = 0;
+    memset(&Read_Target_Address, 0, sizeof(Read_Target_Address));
 
     Device_Set_Object_Instance_Number(BACNET_MAX_INSTANCE);
     Device_Init(NULL);
     address_init();
-    apdu_set_unconfirmed_handler(SERVICE_UNCONFIRMED_I_AM, handler_i_am_add);
+    apdu_set_unconfirmed_handler(SERVICE_UNCONFIRMED_I_AM, handler_i_am_bind);
+    apdu_set_confirmed_ack_handler(
+        SERVICE_CONFIRMED_READ_PROPERTY, read_property_ack_handler);
+    apdu_set_error_handler(
+        SERVICE_CONFIRMED_READ_PROPERTY, read_property_error_handler);
+    apdu_set_abort_handler(read_property_abort_handler);
+    apdu_set_reject_handler(read_property_reject_handler);
     dlenv_init();
+
     mstimer_set(&deadline, timeout_ms);
     mstimer_set(&maintenance, 1000);
-    Send_WhoIs_To_Network(&destination, -1, -1);
+    Send_WhoIs(device_id, device_id);
 
-    while (!mstimer_expired(&deadline)) {
+    while (!mstimer_expired(&deadline) && Read_Result_State == 0) {
         uint16_t received = datalink_receive(
             &source, rx_buffer, MAX_MPDU, 100u);
         if (received > 0) {
             npdu_handler(&source, rx_buffer, received);
         }
+
+        time_t now = time(NULL);
+        if (now > last_seconds) {
+            unsigned long elapsed = (unsigned long)(now - last_seconds);
+            uint32_t elapsed_ms = (uint32_t)(elapsed * 1000u);
+            while (elapsed_ms > 0u) {
+                uint16_t step = elapsed_ms > 60000u ? 60000u : (uint16_t)elapsed_ms;
+                tsm_timer_milliseconds(step);
+                elapsed_ms -= step;
+            }
+            datalink_maintenance_timer((unsigned)elapsed);
+            last_seconds = now;
+        }
+
+        if (!bound) {
+            bound = address_bind_request(device_id, &max_apdu, &Read_Target_Address);
+        }
+        if (bound && Read_Invoke_ID == 0) {
+            Read_Invoke_ID = Send_Read_Property_Request(
+                device_id, object_type, object_instance, property, BACNET_ARRAY_ALL);
+            if (Read_Invoke_ID == 0) {
+                fprintf(stderr, "BACnet ReadProperty could not allocate/send transaction\n");
+            }
+        } else if (Read_Invoke_ID != 0 && tsm_invoke_id_failed(Read_Invoke_ID)) {
+            fprintf(stderr, "BACnet ReadProperty TSM timeout invoke_id=%u\n",
+                    (unsigned)Read_Invoke_ID);
+            tsm_free_invoke_id(Read_Invoke_ID);
+            Read_Result_State = -1;
+        }
         if (mstimer_expired(&maintenance)) {
-            datalink_maintenance_timer(1u);
             mstimer_reset(&maintenance);
         }
     }
 
-    unsigned count = address_count();
-    printf("bacnet_discovery=complete timeout_ms=%lu devices=%u\\n",
-           timeout_ms, count);
-    for (unsigned index = 0; index < count; ++index) {
-        uint32_t device_id = 0;
-        unsigned max_apdu = 0;
-        BACNET_ADDRESS address = { 0 };
-        if (address_get_by_index(index, &device_id, &max_apdu, &address)) {
-            printf("device_id=%u max_apdu=%u mac_len=%u network=%u\\n",
-                   (unsigned)device_id, max_apdu,
-                   (unsigned)address.mac_len, (unsigned)address.net);
+    if (Read_Result_State == 1) {
+        printf("bacnet_read_property=ack device_id=%u object_type=%u object_instance=%u property=%u application_data_len=%u value_hex=",
+               (unsigned)device_id, (unsigned)object_type,
+               (unsigned)object_instance, (unsigned)property,
+               Read_Application_Data_Length);
+        for (unsigned i = 0; i < Read_Application_Data_Length; ++i) {
+            printf("%02x", (unsigned)Read_Application_Data[i]);
+        }
+        printf("\n");
+    } else if (Read_Result_State == 0) {
+        fprintf(stderr, "BACnet ReadProperty overall timeout device_id=%u\n",
+                (unsigned)device_id);
+        if (Read_Invoke_ID != 0 && !tsm_invoke_id_free(Read_Invoke_ID)) {
+            tsm_free_invoke_id(Read_Invoke_ID);
         }
     }
+
     datalink_cleanup();
-    return 0;
+    return Read_Result_State == 1 ? 0 : 1;
+}
+
+static int parse_unsigned(const char *text, unsigned long minimum,
+                          unsigned long maximum, unsigned long *value)
+{
+    char *end = NULL;
+    if (!text || !*text) return 0;
+    unsigned long parsed = strtoul(text, &end, 10);
+    if (!end || *end != '\0' || parsed < minimum || parsed > maximum) return 0;
+    *value = parsed;
+    return 1;
+}
+
+int main(int argc, char **argv)
+{
+    const char *device_object = bactext_object_type_name(OBJECT_DEVICE);
+    if (device_object == NULL) return 2;
+    if (iam_codec_self_test() != 0) return 3;
+    if (read_property_codec_self_test() != 0) return 4;
+    printf("AVIC BACnet Stack C probe: %s; object=%s; codec=self-test-passed\n",
+           BACNET_VERSION_TEXT, device_object);
+
+    if (argc == 1) return 0;
+    if (argc == 3 && strcmp(argv[1], "--discover-ms") == 0) {
+        unsigned long timeout_ms = 0;
+        if (!parse_unsigned(argv[2], 100, 30000, &timeout_ms)) {
+            fprintf(stderr, "Discovery timeout must be 100..30000 ms\n");
+            return 64;
+        }
+        uint8_t rx_buffer[MAX_MPDU] = { 0 };
+        BACNET_ADDRESS source = { 0 };
+        BACNET_ADDRESS destination = { 0 };
+        struct mstimer deadline = { 0 };
+        struct mstimer maintenance = { 0 };
+        Device_Set_Object_Instance_Number(BACNET_MAX_INSTANCE);
+        Device_Init(NULL);
+        address_init();
+        apdu_set_unconfirmed_handler(SERVICE_UNCONFIRMED_I_AM, handler_i_am_add);
+        dlenv_init();
+        mstimer_set(&deadline, (uint32_t)timeout_ms);
+        mstimer_set(&maintenance, 1000);
+        Send_WhoIs_To_Network(&destination, -1, -1);
+        while (!mstimer_expired(&deadline)) {
+            uint16_t received = datalink_receive(&source, rx_buffer, MAX_MPDU, 100u);
+            if (received > 0) npdu_handler(&source, rx_buffer, received);
+            if (mstimer_expired(&maintenance)) {
+                datalink_maintenance_timer(1u);
+                mstimer_reset(&maintenance);
+            }
+        }
+        unsigned count = address_count();
+        printf("bacnet_discovery=complete timeout_ms=%lu devices=%u\n",
+               timeout_ms, count);
+        for (unsigned index = 0; index < count; ++index) {
+            uint32_t device_id = 0;
+            unsigned max_apdu = 0;
+            BACNET_ADDRESS address = { 0 };
+            if (address_get_by_index(index, &device_id, &max_apdu, &address)) {
+                printf("device_id=%u max_apdu=%u mac_len=%u network=%u\n",
+                       (unsigned)device_id, max_apdu,
+                       (unsigned)address.mac_len, (unsigned)address.net);
+            }
+        }
+        datalink_cleanup();
+        return 0;
+    }
+    if (argc == 7 && strcmp(argv[1], "--read-property") == 0) {
+        unsigned long device_id = 0, object_type = 0, object_instance = 0;
+        unsigned long property = 0, timeout_ms = 0;
+        if (!parse_unsigned(argv[2], 0, BACNET_MAX_INSTANCE, &device_id) ||
+            !parse_unsigned(argv[3], 0, MAX_BACNET_OBJECT_TYPE - 1, &object_type) ||
+            !parse_unsigned(argv[4], 0, BACNET_MAX_INSTANCE, &object_instance) ||
+            !parse_unsigned(argv[5], 0, MAX_BACNET_PROPERTY_ID - 1, &property) ||
+            !parse_unsigned(argv[6], 100, 30000, &timeout_ms)) {
+            fprintf(stderr,
+                "Usage: %s --read-property DEVICE_ID OBJECT_TYPE OBJECT_INSTANCE PROPERTY TIMEOUT_MS\n",
+                argv[0]);
+            return 64;
+        }
+        return read_property_transaction(
+            (uint32_t)device_id, (BACNET_OBJECT_TYPE)object_type,
+            (uint32_t)object_instance, (BACNET_PROPERTY_ID)property,
+            (unsigned)timeout_ms);
+    }
+    fprintf(stderr,
+        "Usage: %s [--discover-ms 100..30000] | "
+        "--read-property DEVICE_ID OBJECT_TYPE OBJECT_INSTANCE PROPERTY TIMEOUT_MS\n",
+        argv[0]);
+    return 64;
 }
