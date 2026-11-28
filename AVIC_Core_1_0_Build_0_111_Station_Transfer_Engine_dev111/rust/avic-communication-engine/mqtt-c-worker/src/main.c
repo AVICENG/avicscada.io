@@ -36,9 +36,12 @@ static int pthread_cond_destroy(pthread_cond_t *c) { (void)c; return 0; }
 #define MAX_BINDINGS 512u
 #define MAX_TOPIC 1024u
 
+typedef struct worker worker_t;
+
 typedef struct {
     char point_id[129], topic[MAX_TOPIC];
     int qos;
+    worker_t *worker;
 } binding_t;
 
 typedef struct event_node {
@@ -48,7 +51,7 @@ typedef struct event_node {
     struct event_node *next;
 } event_node_t;
 
-typedef struct {
+typedef struct worker {
     char installation_id[129], project_id[129], station_id[129];
     char driver_instance_id[129], worker_id[37];
     uint64_t generation, incoming_sequence, outgoing_sequence;
@@ -261,14 +264,30 @@ static DWORD WINAPI writer_main_win(LPVOID arg) {
 }
 #endif
 
+static void on_subscribe_failure(void *context,MQTTAsync_failureData *response) {
+    binding_t *binding=(binding_t *)context;
+    if(!binding||!binding->worker)return;
+    int code=response?response->code:0;
+    enqueue_event(binding->worker,"fault",json_pack(
+        "{s:s,s:s,s:s,s:i}",
+        "message","MQTT subscription rejected by broker",
+        "topic",binding->topic,
+        "point_id",binding->point_id,
+        "broker_code",code));
+}
 static void subscribe_topics(worker_t *w) {
     for(size_t i=0;i<w->binding_count;i++) {
         MQTTAsync_responseOptions opts=MQTTAsync_responseOptions_initializer;
-        opts.context=w;
+        opts.context=&w->bindings[i];
+        opts.onFailure=on_subscribe_failure;
         int rc=MQTTAsync_subscribe(w->client,w->bindings[i].topic,w->bindings[i].qos,&opts);
         if(rc!=MQTTASYNC_SUCCESS) {
-            fprintf(stderr,"MQTT C Worker: subscribe request failed (rc=%d)\n",rc);
-            enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT subscribe request failed"));
+            enqueue_event(w,"fault",json_pack(
+                "{s:s,s:s,s:s,s:i}",
+                "message","MQTT subscription request could not be queued",
+                "topic",w->bindings[i].topic,
+                "point_id",w->bindings[i].point_id,
+                "broker_code",rc));
         }
     }
 }
@@ -375,6 +394,7 @@ static int configure(worker_t *w,json_t *p) {
           ||!topic||!copy_string(w->bindings[i].topic,sizeof(w->bindings[i].topic),topic)
           ||!ji(b,"qos",&qos)||qos<0||qos>2)return 0;
         w->bindings[i].qos=(int)qos;
+        w->bindings[i].worker=w;
     }
     return 1;
 }
