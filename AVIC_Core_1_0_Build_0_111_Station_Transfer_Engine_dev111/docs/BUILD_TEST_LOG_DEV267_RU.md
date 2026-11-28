@@ -80,3 +80,8 @@ PR: #11 — drivers/modbus-rtu-c-worker-dev249
 - Отключена сборка тестового набора Jansson внутри product build (`JANSSON_WITHOUT_TESTS=ON`).
 
 Новый HEAD содержит также DEV268 IPC hardening и проверки актуального response timestamp/worker shutdown. Статус MQTT остаётся 🟧 до завершения нового Linux+Windows CI.
+
+
+## Дополнение DEV268d — Windows broker acceptance
+
+Windows MQTT CI расширен: после MSVC build устанавливается Mosquitto, поднимается локальный broker на 127.0.0.1:18883, затем выполняются оба native test: IPC handshake/shutdown и broker-to-Point-Runtime round-trip. Это изменение ещё ожидает CI; результат будет записан после прогона.

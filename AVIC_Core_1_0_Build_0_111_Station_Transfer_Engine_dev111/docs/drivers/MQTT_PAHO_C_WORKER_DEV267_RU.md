@@ -39,6 +39,10 @@
 - Отключена ненужная сборка upstream Jansson test suite в составе Worker build.
 - Новый CI на DEV268c должен подтвердить Windows build и свежие IPC lifecycle/timestamp checks.
 
+## DEV268d — расширение Windows acceptance
+
+Windows CI теперь устанавливает Mosquitto, запускает изолированный localhost broker и выполняет полный `tests/test_mqtt_c_worker_dev267.py`, включая MQTT publish → native C Worker → IPC → Point Runtime. Это закрывает разрыв, при котором Windows ранее проверял только handshake.
+
 ## CI gates
 
 Linux job строит Worker и запускает Mosquitto round-trip до Point Runtime. Windows job строит MSVC executable и проверяет IPC handshake/shutdown. Полные результаты фиксируются в DEV267 build test log после завершения workflow.
