@@ -149,3 +149,18 @@ CI run `46057725369` выявил:
 4. Реальный контроллер: модель, firmware, network configuration и полный журнал.
 
 Статус BACnet/IP остаётся 🟧 до завершения перечисленных gates. Сам факт наличия transaction path в исходнике не означает, что он уже собран, протестирован с simulator или принят на оборудовании.
+
+## DEV258 — интеграционный тест ReadProperty на upstream BACnet Server
+
+Добавлен тестовый стенд на официальном серверном примере Steve Karg Stack:
+- CI собирает `apps/server/main.c` как `bacserv` из того же pinned upstream revision `45f9831996f1a17504a790da91a4113f2974595c`, что и AVIC probe;
+- сервер запускается как Device Instance 123;
+- AVIC probe использует отдельный UDP port 47809, сервер — 47808; broadcast destination клиента направлен на порт сервера;
+- тест проверяет успешный ReadProperty ACK для Analog Input 0 / Present Value;
+- затем проверяет BACnet Error для заведомо неподдерживаемого Property ID 511;
+- протокольные кадры, Who-Is/I-Am, NPDU/APDU, ReadProperty request/response обрабатываются upstream Stack, отдельная самописная реализация BACnet в тесте не используется.
+
+Файл теста: `tools/bacnet_stack_server_integration.py`.
+CI: job `BACnet Stack POC / ubuntu-latest`; Windows продолжает проверять строгую native-сборку и codec tests.
+
+**Статус на момент добавления:** интеграционный gate добавлен, но ещё не подтверждён CI. До успешного выполнения нельзя считать ACK/Error simulator tests пройденными. Следующие обязательные проверки: Reject, Abort, TSM timeout/retry, неверные invoke/source, повреждённый ACK, затем AVIC IPC Worker и read-only Point Runtime.
