@@ -451,9 +451,9 @@ int main(void) {
     for(;;) {
         json_t *r=NULL;int status=read_frame(&r);
         if (status == 0) { break; }
-        if (status < 0) { fprintf(stderr,"MQTT C Worker: invalid IPC frame\\n"); exit_code=2; break; }
+        if (status < 0) { fprintf(stderr,"MQTT C Worker: invalid IPC frame\n"); exit_code=2; break; }
         int quit=0,ok=process(&w,r,&quit);json_decref(r);
-        if(!ok){fprintf(stderr,"MQTT C Worker: rejected IPC command or failed response\\n");exit_code=4;break;}
+        if(!ok){fprintf(stderr,"MQTT C Worker: rejected IPC command or failed response\n");exit_code=4;break;}
         if(quit)break;
     }
     w.started=0;close_client(&w);
@@ -465,5 +465,5 @@ int main(void) {
 #endif
     event_node_t *n=w.queue_head;while(n){event_node_t *next=n->next;json_decref(n->payload);free(n);n=next;}
     pthread_cond_destroy(&w.queue_cond);pthread_mutex_destroy(&w.queue_lock);pthread_mutex_destroy(&w.output_lock);pthread_mutex_destroy(&w.state_lock);
-    return 0;
+    return exit_code;
 }
