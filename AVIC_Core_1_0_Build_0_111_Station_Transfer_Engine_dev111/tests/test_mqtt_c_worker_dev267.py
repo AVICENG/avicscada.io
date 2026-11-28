@@ -94,7 +94,7 @@ def _start_local_mosquitto(tmp_path, port):
         pytest.fail("mosquitto executable is required for reconnect acceptance")
     config = tmp_path / f"mosquitto-{port}.conf"
     config.write_text(
-        f"listener {port} 127.0.0.1\\nallow_anonymous true\\npersistence false\\n",
+        f"listener {port} 127.0.0.1\nallow_anonymous true\npersistence false\n",
         encoding="utf-8",
     )
     process = subprocess.Popen(
