@@ -169,3 +169,41 @@ def test_mqtt_c_worker_routes_wildcard_topic_filters(monkeypatch):
     assert runtime.sample_event.wait(2.0)
     assert runtime.samples[0][0:3] == ("point-wild", 22.5, PointQuality.GOOD)
     adapter.stop()
+
+
+def test_mqtt_subscription_fault_is_scoped_to_affected_point(monkeypatch):
+    from avic_core.drivers import mqtt_c_worker_adapter as module
+
+    worker = FakeWorker()
+    monkeypatch.setattr(module, "RustDriverWorker", lambda *a, **k: worker)
+    runtime = FakeRuntime()
+    adapter = MqttCWorkerPointAdapter(
+        worker_command=["/absolute/avic-mqtt-c-worker"],
+        core=SimpleNamespace(point_runtime=runtime),
+        driver_instance_id="driver-subscription-fault",
+        config={"host": "broker.local", "port": 1883, "protocol": "3.1.1"},
+        bindings=[
+            MqttPointBinding("point-allowed", "plant/ahu/temp", qos=1),
+            MqttPointBinding("point-denied", "plant/ahu/pressure", qos=1),
+        ],
+        installation_id="install-1", project_id="project-1",
+        station_id="station-1", generation=1,
+    )
+    adapter.start()
+    worker.events.put(SimpleNamespace(kind="status", payload={"connected": True}))
+    worker.events.put(SimpleNamespace(kind="fault", payload={
+        "message": "MQTT subscription rejected by broker",
+        "topic": "plant/ahu/pressure",
+        "point_id": "point-denied",
+        "broker_code": 5,
+    }))
+    import time
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline and not runtime.qualities:
+        time.sleep(0.01)
+    assert runtime.qualities == [
+        ("point-denied", PointQuality.BAD_CONFIGURATION, "driver-subscription-fault")
+    ]
+    assert adapter.diagnostics()["connected"] is True
+    assert "point-denied" in adapter.diagnostics()["last_errors"]
+    adapter.stop()
