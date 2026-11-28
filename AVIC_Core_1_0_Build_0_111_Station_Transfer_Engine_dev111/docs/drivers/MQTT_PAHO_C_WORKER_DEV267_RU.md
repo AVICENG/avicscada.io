@@ -20,7 +20,7 @@
 
 ## Ограничения
 
-- MQTT 5.0 пока не включён в C Worker; для C engine разрешён только MQTT 3.1.1.
+- MQTT 5.0 пока не включён в C Worker; Driver Manager явно отклоняет MQTT 5.0 для C engine, а Python fallback остаётся доступен.
 - TLS и credential broker handoff не реализованы. tls_ca_file с C engine отклоняется. Пароли, токены и ключи не принимаются в worker config.
 - Anonymous TCP only; TLS/username/password не поддерживаются.
 - Бинарные MQTT payloads не публикуются в Point Runtime; требуется UTF-8 текст.

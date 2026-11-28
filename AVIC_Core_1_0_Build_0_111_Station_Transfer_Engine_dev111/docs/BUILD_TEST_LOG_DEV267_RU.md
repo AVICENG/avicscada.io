@@ -32,3 +32,17 @@ PR: #11 — drivers/modbus-rtu-c-worker-dev249
 ## Критерий следующего решения
 
 Не повышать статус до 🟨, пока новый Windows MSVC build, Linux Mosquitto-to-Point-Runtime round-trip, полный Python Windows/Linux matrix и negative/lifecycle tests не пройдут на одном HEAD.
+
+
+## Дополнение DEV267e — CI run 46130256822
+
+На HEAD `72ef85462f1bfd07246e201d38b55eb263fcf0c1` выявлено:
+- Linux CMake configure и Windows MSVC configure остановились на Jansson 2.14.1: upstream CMakeLists начинается с legacy minimum version 2.8, а CMake 4.x больше не поддерживает compatibility level ниже 3.5.
+- Linux Python 3.11/3.12/3.13: по 31 548 passed, 10 skipped и 1 failed. Единственный failure — прежний unit test ожидал MQTT 5.0 на C Worker, тогда как DEV267 явно ограничил native C engine MQTT 3.1.1. Исправлен тест: 3.1.1 проверяется как положительный путь, 5.0 — как ожидаемый отказ.
+- Windows Python jobs на момент дополнения ещё выполнялись; их результаты не приписываются этому журналу.
+
+Исправления:
+- В CMake добавлен `CMAKE_POLICY_VERSION_MINIMUM=3.5`, чтобы использовать Jansson 2.14.1 без патча стороннего исходного кода.
+- Обновлены manager regression tests для действительной границы MQTT 3.1.1 / 5.0.
+
+Повторный CI на новом HEAD обязателен. До его завершения MQTT остаётся 🟧.

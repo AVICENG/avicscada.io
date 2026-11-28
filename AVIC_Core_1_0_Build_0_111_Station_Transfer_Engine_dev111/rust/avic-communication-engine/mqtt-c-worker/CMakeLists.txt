@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.20)
 project(avic_mqtt_paho_c_worker VERSION 0.1.0 LANGUAGES C)
 
 include(FetchContent)
+
+# Jansson 2.14.1 uses the legacy cmake_minimum_required(VERSION 2.8).
+# CMake 4.x removed that compatibility level; keep the dependency buildable
+# without modifying upstream source.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)

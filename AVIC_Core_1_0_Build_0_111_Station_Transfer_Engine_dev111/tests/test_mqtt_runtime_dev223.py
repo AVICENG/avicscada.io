@@ -165,8 +165,7 @@ def test_driver_manager_builds_mqtt_runtime_with_optional_paho_and_verified_tls(
 
 
 
-def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypatch, tmp_path):
-    from pathlib import Path
+def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypatch):
     from avic_core.drivers.manager import DriverManagerService
 
     called = {}
@@ -179,8 +178,8 @@ def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypat
     monkeypatch.setattr(DriverManagerService, "_build_mqtt_c_worker_adapter", build)
     instance = DriverInstance(
         name="MQTT native", station_id=str(uuid4()), driver_id="mqtt",
-        protocol="MQTT 5.0", config={
-            "engine": "c", "host": "broker.local", "protocol": "5.0",
+        protocol="MQTT 3.1.1", config={
+            "engine": "c", "host": "broker.local", "protocol": "3.1.1",
             "bindings": [{"point_id": "p1", "topic": "plant/temp", "qos": 2}],
         },
     )
@@ -192,6 +191,28 @@ def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypat
     assert called["engine"] == "c"
     assert called["host"] == "broker.local"
     assert called["bindings"][0].qos == 2
+
+
+def test_driver_manager_rejects_mqtt5_for_native_c_worker(monkeypatch):
+    import pytest
+    from avic_core.drivers.manager import DriverManagerService
+
+    def unexpected_build(*args, **kwargs):
+        pytest.fail("MQTT 5.0 must be rejected before constructing the C Worker")
+
+    monkeypatch.setattr(DriverManagerService, "_build_mqtt_c_worker_adapter", unexpected_build)
+    instance = DriverInstance(
+        name="MQTT native", station_id=str(uuid4()), driver_id="mqtt",
+        protocol="MQTT 5.0", config={
+            "engine": "c", "host": "broker.local", "protocol": "5.0",
+            "bindings": [{"point_id": "p1", "topic": "plant/temp", "qos": 2}],
+        },
+    )
+    service = object.__new__(DriverManagerService)
+    with pytest.raises(ValueError, match="MQTT 3.1.1 only"):
+        DriverManagerService._build_mqtt_adapter(
+            service, SimpleNamespace(point_runtime=FakePointRuntime()), instance,
+        )
 
 
 
