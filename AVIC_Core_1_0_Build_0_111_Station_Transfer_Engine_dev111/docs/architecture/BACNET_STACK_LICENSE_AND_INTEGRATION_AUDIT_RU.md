@@ -164,3 +164,24 @@ CI run `46057725369` выявил:
 CI: job `BACnet Stack POC / ubuntu-latest`; Windows продолжает проверять строгую native-сборку и codec tests.
 
 **Статус на момент добавления:** интеграционный gate добавлен, но ещё не подтверждён CI. До успешного выполнения нельзя считать ACK/Error simulator tests пройденными. Следующие обязательные проверки: Reject, Abort, TSM timeout/retry, неверные invoke/source, повреждённый ACK, затем AVIC IPC Worker и read-only Point Runtime.
+
+
+## DEV259 — исправление BACnet simulator interface binding
+
+CI run `46121086036` завершился со следующими результатами:
+- BACnet Stack POC / Windows — passed (native build/codec scope);
+- BACnet Stack POC / Ubuntu — failed на старте `bacserv`;
+- все Python matrix jobs Windows/Linux — passed;
+- Modbus C Worker Windows/Linux, OPC UA native probe Windows/Linux, MQTT Paho C probe Windows/Linux, Rust Communication Engine Windows/Linux и S7 C-only policy Windows/Linux — passed в этом run.
+
+Причина BACnet failure установлена по логу и upstream Linux port: тестовый скрипт передавал IPv4-адрес `10.1.0.182` в `BACNET_IFACE`, тогда как Steve Karg `bip-init.c` трактует переменную как **имя сетевого интерфейса** и использует её как `ifr_name` в ioctl. Поэтому `bacserv` сообщал `Failed to get an IP address from 10.1.0.182`.
+
+Исправление DEV259:
+- интерфейс выбирается из `ip -o route get 192.0.2.1` по токену `dev`;
+- затем проверяется наличие корректного IPv4 на выбранном интерфейсе через `ip -o -4 addr show dev INTERFACE`;
+- в `BACNET_IFACE` обоих процессов передаётся имя интерфейса, а не IPv4;
+- IPv4 сохраняется только для диагностики;
+- сообщения об ошибках startup/ACK/Error используют реальные переводы строк, а не буквальные последовательности `\\n`;
+- добавлены unit tests для route parsing, отсутствующего интерфейса/IPv4 и ошибок команд.
+
+**Статус проверки DEV259:** код и тесты добавлены в ветку; новый CI ещё не выполнен. ACK и BACnet Error через simulator остаются неподтверждёнными до успешного нового Ubuntu job. Hardware acceptance не выполнялась.

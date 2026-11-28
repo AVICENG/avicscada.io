@@ -8,19 +8,67 @@ is used by this test.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import os
-import socket
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 
-def local_interface_address() -> str:
-    """Ask the OS routing table which local IPv4 address it would use."""
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.connect(("192.0.2.1", 9))
-        return str(sock.getsockname()[0])
+def local_interface() -> tuple[str, str]:
+    """Resolve the Linux route interface and verify that it owns an IPv4 address.
+
+    Steve Karg's Linux BACnet/IP port expects BACNET_IFACE to be an interface
+    name (for example eth0), not the interface's IPv4 address.
+    """
+    route = subprocess.run(
+        ["ip", "-o", "route", "get", "192.0.2.1"],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        timeout=5, check=False,
+    )
+    if route.returncode != 0:
+        raise RuntimeError(
+            f"cannot resolve BACnet route interface (ip route exit={route.returncode}): "
+            f"{route.stderr.strip()}"
+        )
+    tokens = route.stdout.split()
+    try:
+        index = tokens.index("dev")
+        interface = tokens[index + 1]
+    except (ValueError, IndexError) as exc:
+        raise RuntimeError(
+            f"route lookup did not report a device interface: {route.stdout.strip()}"
+        ) from exc
+    if not interface or any(char.isspace() for char in interface):
+        raise RuntimeError(f"invalid route interface name: {interface!r}")
+
+    addresses = subprocess.run(
+        ["ip", "-o", "-4", "addr", "show", "dev", interface],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        timeout=5, check=False,
+    )
+    if addresses.returncode != 0:
+        raise RuntimeError(
+            f"cannot inspect IPv4 address for interface {interface!r} "
+            f"(ip addr exit={addresses.returncode}): {addresses.stderr.strip()}"
+        )
+    ipv4 = None
+    address_tokens = addresses.stdout.split()
+    for position, token in enumerate(address_tokens[:-1]):
+        if token == "inet":
+            try:
+                ipv4 = str(ipaddress.ip_interface(address_tokens[position + 1]).ip)
+                break
+            except ValueError:
+                continue
+    if ipv4 is None:
+        raise RuntimeError(
+            f"route interface {interface!r} has no valid IPv4 address: "
+            f"{addresses.stdout.strip()}"
+        )
+    return interface, ipv4
 
 
 def run_probe(probe: Path, env: dict[str, str], property_id: int,
@@ -47,7 +95,8 @@ def main() -> int:
     if not server.is_file() or not probe.is_file():
         raise SystemExit(f"missing simulator or probe: server={server}, probe={probe}")
 
-    iface = local_interface_address()
+    iface, local_ipv4 = local_interface()
+    print(f"BACnet interface: {iface} ({local_ipv4})")
     server_env = os.environ.copy()
     server_env.update({
         "BACNET_IFACE": iface,
@@ -73,13 +122,15 @@ def main() -> int:
         time.sleep(0.75)
         if process.poll() is not None:
             output, _ = process.communicate()
-            raise RuntimeError(f"bacserv exited during startup ({process.returncode}):\\n{output}")
+            raise RuntimeError(
+                f"bacserv exited during startup ({process.returncode}):\n{output}"
+            )
 
         ack = run_probe(probe, client_env, 85, 10.0)
         if ack.returncode != 0 or "bacnet_read_property=ack" not in ack.stdout:
             raise RuntimeError(
                 "ReadProperty ACK integration test failed "
-                f"(exit={ack.returncode})\\nstdout:\\n{ack.stdout}\\nstderr:\\n{ack.stderr}"
+                f"(exit={ack.returncode})\nstdout:\n{ack.stdout}\nstderr:\n{ack.stderr}"
             )
         print("bacnet_read_property_ack=passed")
         print(ack.stdout.strip())
@@ -90,7 +141,7 @@ def main() -> int:
         if error.returncode == 0 or "bacnet_read_property_error" not in error.stderr:
             raise RuntimeError(
                 "ReadProperty Error integration test failed "
-                f"(exit={error.returncode})\\nstdout:\\n{error.stdout}\\nstderr:\\n{error.stderr}"
+                f"(exit={error.returncode})\nstdout:\n{error.stdout}\nstderr:\n{error.stderr}"
             )
         print("bacnet_read_property_error=passed")
         print(error.stderr.strip())
