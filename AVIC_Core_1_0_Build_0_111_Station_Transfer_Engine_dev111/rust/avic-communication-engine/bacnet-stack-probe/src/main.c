@@ -8,6 +8,7 @@
 #include "bacnet/bacdcode.h"
 #include "bacnet/bactext.h"
 #include "bacnet/iam.h"
+#include "bacnet/rp.h"
 #include "bacnet/version.h"
 #include "bacnet/apdu.h"
 #include "bacnet/basic/binding/address.h"
@@ -110,6 +111,50 @@ static int iam_codec_self_test(void)
     return 0;
 }
 
+static int read_property_codec_self_test(void)
+{
+    uint8_t encoded[BACNET_TEST_BUFFER] = { 0 };
+    BACNET_READ_PROPERTY_DATA request = { 0 };
+    request.object_type = OBJECT_ANALOG_INPUT;
+    request.object_instance = 42u;
+    request.object_property = PROP_PRESENT_VALUE;
+    request.array_index = BACNET_ARRAY_ALL;
+
+    int length = read_property_request_encode(encoded, &request);
+    if (length <= 0 || (size_t)length > sizeof(encoded)) {
+        fprintf(stderr, "BACnet ReadProperty request encoder returned invalid length: %d\\n",
+                length);
+        return 1;
+    }
+
+    BACNET_READ_PROPERTY_DATA decoded = { 0 };
+    int decoded_length = rp_decode_service_request(
+        encoded, (unsigned)length, &decoded);
+    if (decoded_length != length ||
+        decoded.object_type != request.object_type ||
+        decoded.object_instance != request.object_instance ||
+        decoded.object_property != request.object_property ||
+        decoded.array_index != request.array_index) {
+        fprintf(stderr, "BACnet ReadProperty request round-trip mismatch\\n");
+        return 1;
+    }
+
+    for (int truncated = 0; truncated < length; ++truncated) {
+        BACNET_READ_PROPERTY_DATA partial = { 0 };
+        if (rp_decode_service_request(
+                encoded, (unsigned)truncated, &partial) >= 0) {
+            fprintf(stderr, "BACnet ReadProperty decoder accepted truncated payload: %d/%d\\n",
+                    truncated, length);
+            return 1;
+        }
+    }
+
+    printf("bacnet_read_property_codec=ok object_type=%u instance=%u property=%u truncated_payloads_rejected=%d\\n",
+           (unsigned)decoded.object_type, (unsigned)decoded.object_instance,
+           (unsigned)decoded.object_property, length);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     const char *device_object = bactext_object_type_name(OBJECT_DEVICE);
@@ -118,6 +163,9 @@ int main(int argc, char **argv)
     }
     if (iam_codec_self_test() != 0) {
         return 3;
+    }
+    if (read_property_codec_self_test() != 0) {
+        return 4;
     }
     printf("AVIC BACnet Stack C probe: %s; object=%s; codec=self-test-passed\\n",
            BACNET_VERSION_TEXT, device_object);
