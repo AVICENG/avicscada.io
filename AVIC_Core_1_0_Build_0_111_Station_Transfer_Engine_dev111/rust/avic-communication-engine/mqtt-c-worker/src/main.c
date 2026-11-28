@@ -156,7 +156,7 @@ static int contains_secret_key(json_t *v) {
             if(strstr(n,"password")||strstr(n,"secret")||strstr(n,"token")||strstr(n,"credential")||strstr(n,"privatekey")||strstr(n,"apikey")||contains_secret_key(child)) return 1;
         }
     } else if(json_is_array(v)) { size_t i; json_t *x; json_array_foreach(v,i,x) if(contains_secret_key(x)) return 1; }
-    return exit_code;
+    return 0;
 }
 static json_t *err_payload(const char *code,const char *msg) {
     return json_pack("{s:s,s:s}","code",code,"message",msg);
@@ -277,7 +277,7 @@ static void on_connect_failure(void *context,MQTTAsync_failureData *response) {
     enqueue_event(w,"fault",json_pack("{s:s}","message","MQTT broker connection failed"));
 }
 static void on_connection_lost(void *context,char *cause) {
-    worker_t *w=context; w->connected=0;
+    worker_t *w=context; set_connected(w,0);
     (void)cause;
     enqueue_event(w,"status",json_pack("{s:b}","connected",0));
 }
@@ -324,20 +324,20 @@ static void connect_client(worker_t *w) {
     opts.onSuccess=on_connect_success; opts.onFailure=on_connect_failure;
     int rc=MQTTAsync_connect(w->client,&opts);
     if (rc != MQTTASYNC_SUCCESS) {
-        w->connected=0;
+        set_connected(w,0);
         enqueue_event(w,"status",json_pack("{s:b}","connected",0));
         enqueue_event(w,"fault",json_pack("{s:s}","message","MQTTAsync_connect rejected the connection request"));
     }
 }
 static void close_client(worker_t *w) {
     if(w->client) {
-        if(w->connected) {
+        if(get_connected(w)) {
             MQTTAsync_disconnectOptions d=MQTTAsync_disconnectOptions_initializer;
             d.timeout=1000; MQTTAsync_disconnect(w->client,&d);
         }
         MQTTAsync_destroy(&w->client);
     }
-    w->connected=0;
+    set_connected(w,0);
 }
 static int configure(worker_t *w,json_t *p) {
     const char *host=js(p,"host"),*cid=js(p,"client_id"),*version=js(p,"mqtt_version");
