@@ -16,7 +16,7 @@ import pytest
 from avic_core.domain.models import PointQuality
 from avic_core.drivers.mqtt_adapter import MqttPointBinding
 from avic_core.drivers.mqtt_c_worker_adapter import MqttCWorkerPointAdapter
-from avic_core.drivers.rust_worker import RustDriverWorker
+from avic_core.drivers.rust_worker import RustDriverWorker, RustWorkerError
 
 WORKER = os.environ.get("AVIC_MQTT_C_WORKER")
 
@@ -83,7 +83,7 @@ def test_mqtt_paho_c_worker_rejects_unsupported_or_invalid_configuration(field, 
         config["bindings"][0]["qos"] = value
     else:
         config[field] = value
-    with pytest.raises(Exception, match="MQTT|configuration|Worker"):
+    with pytest.raises(RustWorkerError, match="MQTT C Worker accepts"):
         worker.start(config)
     assert worker.diagnostics()["process_alive"] is False
 
@@ -198,7 +198,7 @@ class _PointRuntime:
 
 @pytest.mark.skipif(
     os.environ.get("AVIC_MQTT_C_BROKER_TEST") != "1",
-    reason="Mosquitto round-trip is enabled only in the Linux native integration job",
+    reason="Mosquitto round-trip is enabled only in native integration jobs",
 )
 def test_mqtt_paho_c_worker_mosquitto_to_point_runtime():
     publisher = shutil.which("mosquitto_pub")
