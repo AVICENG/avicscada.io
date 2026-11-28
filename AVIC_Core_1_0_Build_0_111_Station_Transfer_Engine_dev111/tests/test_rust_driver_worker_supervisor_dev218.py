@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import textwrap
 import time
@@ -89,7 +90,7 @@ EVENT_WORKER = textwrap.dedent(r"""
 
 
 EOF_LIVE_WORKER = textwrap.dedent(r"""
-    import sys, time
+    import os, sys, time
     from datetime import datetime, timezone
     from uuid import uuid4
     from avic_core.drivers.ipc import DriverEnvelope, read_frame, write_frame
@@ -116,7 +117,7 @@ EOF_LIVE_WORKER = textwrap.dedent(r"""
         elif request.kind == "start":
             send(request, "status", {"state":"RUNNING"})
             # Simulate a broken IPC channel while the child process stays alive.
-            sys.stdout.close()
+            os.close(1)
             time.sleep(30)
 """)
 
@@ -128,9 +129,10 @@ def test_stdout_eof_terminates_worker_that_remains_alive():
     while worker.diagnostics()["process_alive"] and time.monotonic() < deadline:
         time.sleep(0.02)
     diagnostics = worker.diagnostics()
-    assert diagnostics["process_alive"] is False
-    assert diagnostics["started"] is False
-    assert diagnostics["exit_code"] is not None
+    assert diagnostics["process_alive"] is False, diagnostics
+    assert diagnostics["started"] is False, diagnostics
+    assert diagnostics["reader_failed"] is True, diagnostics
+    assert diagnostics["exit_code"] is not None, diagnostics
     worker.close()
 
 

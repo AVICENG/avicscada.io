@@ -84,6 +84,7 @@ class RustDriverWorker:
         self._stderr_reader: threading.Thread | None = None
         self._stderr_tail: deque[str] = deque(maxlen=100)
         self._started = False
+        self._reader_failed = False
         self._worker_version: str | None = None
 
     def start(self, config: dict[str, Any]) -> None:
@@ -118,7 +119,10 @@ class RustDriverWorker:
             started = self._request("start", {})
             if started.kind != "status" or started.payload.get("state") != "RUNNING":
                 raise RustWorkerError("Rust worker did not enter RUNNING state")
-            self._started = True
+            with self._lock:
+                if self._reader_failed or self._process is None or self._process.poll() is not None:
+                    raise RustWorkerError("Rust worker IPC/process failed during startup")
+                self._started = True
         except Exception:
             self._terminate()
             raise
@@ -140,6 +144,11 @@ class RustDriverWorker:
             raise RustWorkerError(f"Rust worker inbound sequence rejected: {exc}") from exc
 
     def _reader_failure(self, detail: str) -> None:
+        # Any reader failure invalidates the IPC session, even when no command
+        # is currently waiting for a response. Keep lifecycle state fail-closed.
+        with self._lock:
+            self._reader_failed = True
+            self._started = False
         # There is at most one outstanding request because exchanges are
         # serialized. Never let a full response queue block the stdout reader.
         try:
@@ -163,8 +172,6 @@ class RustDriverWorker:
                         self._reader_failure(
                             "worker stdout closed while process remained alive; terminating"
                         )
-                        with self._lock:
-                            self._started = False
                         try:
                             process.terminate()
                         except OSError:
@@ -342,6 +349,7 @@ class RustDriverWorker:
             "event_received_count": self._event_received_count,
             "event_overflow_count": self._event_overflow_count,
             "started": self._started,
+            "reader_failed": self._reader_failed,
             "process_alive": process is not None and process.poll() is None,
             "exit_code": process.poll() if process is not None else None,
             "stderr_tail": list(self._stderr_tail)[-10:],

@@ -30,9 +30,11 @@ CI run #967 / `46154462621` завершился успешно:
 - Rust Communication Engine: Ubuntu и Windows success.
 - BACnet Stack POC, Modbus C Worker, MQTT C Worker и OPC UA native probe: jobs success.
 
-## Проверки DEV270
+## Проверки DEV270 — выявленная проблема
 
-Новая матрица CI запускается на коммите DEV270. Результаты будут внесены после завершения полного Windows/Linux прогона. До этого изменения не считаются принятыми.
+CI run #968 / `46155780523`: Rust Ubuntu/Windows и нативные C jobs прошли. Python 3.11/3.12/3.13 на Linux и Windows обнаружили одинаковый отказ нового теста `test_stdout_eof_terminates_worker_that_remains_alive`: дочерний тестовый процесс закрывал `sys.stdout`, но pipe не переходил в EOF в ожидаемом сценарии; `process_alive` оставался True. Остальной Python regression suite проходил.
+
+DEV270 не принят. DEV271 исправляет fault-injection: тест закрывает непосредственно fd 1 через `os.close(1)`. Дополнительно reader failure теперь атомарно сбрасывает `started`, выставляет `reader_failed`, а startup повторно проверяет состояние процесса/reader перед объявлением Worker запущенным. Это также закрывает гонку между получением start ACK и немедленным EOF.
 
 ## Ограничения
 
