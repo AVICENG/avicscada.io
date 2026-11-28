@@ -263,7 +263,7 @@ jobs:
         if: runner.os == 'Linux'
         run: >-
           python tools/bacnet_stack_server_integration.py
-          --server build/bacnet-stack-probe/_deps/bacnet_stack-src/apps/bin/bacserv
+          --server build/bacnet-stack-probe/_deps/bacnet_stack-src/bin/bacserv
           --probe build/bacnet-stack-probe/avic-bacnet-stack-probe
 
   paho-mqtt-c-native-probe:
