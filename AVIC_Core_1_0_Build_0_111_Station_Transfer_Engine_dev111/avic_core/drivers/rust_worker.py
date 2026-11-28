@@ -155,11 +155,35 @@ class RustDriverWorker:
             while True:
                 frame = read_frame(process.stdout)
                 if frame is None:
-                    # EOF can race the stderr-drain thread and process exit on Windows.
+                    # EOF is terminal for this IPC session. A child that closes
+                    # stdout but keeps running is an orphaned, unsupervised worker.
                     try:
                         process.wait(timeout=0.5)
                     except subprocess.TimeoutExpired:
-                        pass
+                        self._reader_failure(
+                            "worker stdout closed while process remained alive; terminating"
+                        )
+                        with self._lock:
+                            self._started = False
+                        try:
+                            process.terminate()
+                        except OSError:
+                            pass
+                        try:
+                            process.wait(timeout=2)
+                        except subprocess.TimeoutExpired:
+                            try:
+                                process.kill()
+                            except OSError:
+                                pass
+                            try:
+                                process.wait(timeout=2)
+                            except subprocess.TimeoutExpired:
+                                pass
+                        stderr_reader = self._stderr_reader
+                        if stderr_reader is not None and stderr_reader is not threading.current_thread():
+                            stderr_reader.join(timeout=0.5)
+                        return
                     stderr_reader = self._stderr_reader
                     if stderr_reader is not None and stderr_reader is not threading.current_thread():
                         stderr_reader.join(timeout=0.25)
@@ -329,12 +353,22 @@ class RustDriverWorker:
         if process is None:
             return
         if process.poll() is None:
-            process.terminate()
+            try:
+                process.terminate()
+            except OSError:
+                # The child may have exited between poll() and terminate().
+                pass
             try:
                 process.wait(timeout=2)
             except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=2)
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    pass
         for stream in (process.stdin, process.stdout, process.stderr):
             if stream is not None:
                 try:

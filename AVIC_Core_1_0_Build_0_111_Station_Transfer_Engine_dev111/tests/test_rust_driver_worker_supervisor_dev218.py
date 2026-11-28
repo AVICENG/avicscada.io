@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import textwrap
+import time
 
 import pytest
 
@@ -85,6 +86,52 @@ EVENT_WORKER = textwrap.dedent(r"""
             send(request, "status", {"shutdown":True}, request.message_id)
             break
 """)
+
+
+EOF_LIVE_WORKER = textwrap.dedent(r"""
+    import sys, time
+    from datetime import datetime, timezone
+    from uuid import uuid4
+    from avic_core.drivers.ipc import DriverEnvelope, read_frame, write_frame
+
+    seq = 0
+    def send(request, kind, payload):
+        global seq
+        seq += 1
+        frame = DriverEnvelope(
+            contract=request.contract, version=request.version, message_id=str(uuid4()),
+            kind=kind, installation_id=request.installation_id, project_id=request.project_id,
+            station_id=request.station_id, driver_instance_id=request.driver_instance_id,
+            worker_id=request.worker_id, generation=request.generation, sequence=seq,
+            sent_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            correlation_id=request.message_id, payload=payload,
+        )
+        write_frame(sys.stdout.buffer, frame)
+
+    for request in iter(lambda: read_frame(sys.stdin.buffer), None):
+        if request.kind == "initialize":
+            send(request, "initialized", {"protocol":"avic.driver.ipc","version":1,"worker_version":"eof-live"})
+        elif request.kind == "configure":
+            send(request, "configured", {"configured":True})
+        elif request.kind == "start":
+            send(request, "status", {"state":"RUNNING"})
+            # Simulate a broken IPC channel while the child process stays alive.
+            sys.stdout.close()
+            time.sleep(30)
+""")
+
+
+def test_stdout_eof_terminates_worker_that_remains_alive():
+    worker = make_worker(EOF_LIVE_WORKER, timeout=2)
+    worker.start({"protocol": "modbus-tcp"})
+    deadline = time.monotonic() + 4
+    while worker.diagnostics()["process_alive"] and time.monotonic() < deadline:
+        time.sleep(0.02)
+    diagnostics = worker.diagnostics()
+    assert diagnostics["process_alive"] is False
+    assert diagnostics["started"] is False
+    assert diagnostics["exit_code"] is not None
+    worker.close()
 
 
 def make_worker(program=FAKE_WORKER, *, timeout=2):
