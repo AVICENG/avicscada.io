@@ -124,3 +124,28 @@ CI run `46057725369` выявил:
 - проверка отклонения всех усечённых вариантов.
 
 Проверка валидирует именно upstream ReadProperty service codec. Она ещё не отправляет подтверждённый запрос устройству и не проверяет APDU transaction state/timeout. Следующий шаг — transaction lifecycle через `Send_Read_Property_Request()`, `apdu_set_confirmed_ack_handler()`, TSM invoke ID и контролируемый ответ в simulator.
+
+
+## DEV257 — подтверждённая ReadProperty transaction path (CI ожидается)
+
+В C probe добавлен отдельный диагностический режим:
+
+`avic-bacnet-stack-probe --read-property DEVICE_ID OBJECT_TYPE OBJECT_INSTANCE PROPERTY TIMEOUT_MS`
+
+Режим использует upstream API Steve Karg Stack:
+- `Send_WhoIs()` и штатную address binding table для обнаружения/привязки устройства;
+- `Send_Read_Property_Request()` для формирования и отправки confirmed ReadProperty request;
+- `apdu_set_confirmed_ack_handler()` + `rp_ack_decode_service_request()` для обработки ACK;
+- штатные Error, Abort и Reject handlers с проверкой source address и invoke ID;
+- TSM transaction state, invoke ID allocation/release и timeout через `tsm_invoke_id_failed()`;
+- ограничение времени операции и размера копируемого application payload.
+
+Вывод пока диагностический: application-data выдаётся в hex, а не преобразуется в типизированное AVIC Point Value. Команда не выполняет WriteProperty. Она не является AVIC Worker и пока не подключена к IPC/Driver Manager/Point Runtime.
+
+**Проверки, которые ещё обязательны:**
+1. Windows/Linux строгая сборка и CTest на новом HEAD.
+2. Интеграционный тест с BACnet/IP simulator, собранным на том же upstream Stack: успешный ACK, BACnet Error, Reject, Abort, отсутствие ответа/TSM timeout, неверный invoke/source и повреждённый ACK.
+3. Только после этого — AVIC IPC Worker, bounded queue, cancellation, quality/status mapping и reconnect.
+4. Реальный контроллер: модель, firmware, network configuration и полный журнал.
+
+Статус BACnet/IP остаётся 🟧 до завершения перечисленных gates. Сам факт наличия transaction path в исходнике не означает, что он уже собран, протестирован с simulator или принят на оборудовании.
