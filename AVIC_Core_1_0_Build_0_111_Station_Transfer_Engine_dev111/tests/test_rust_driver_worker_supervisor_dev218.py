@@ -116,22 +116,29 @@ EOF_LIVE_WORKER = textwrap.dedent(r"""
             send(request, "configured", {"configured":True})
         elif request.kind == "start":
             send(request, "status", {"state":"RUNNING"})
-            # Simulate a broken IPC channel while the child process stays alive.
+            # Let the parent finish start(), then break IPC while remaining alive.
+            time.sleep(0.1)
             os.close(1)
             time.sleep(30)
 """)
 
 
-def test_stdout_eof_terminates_worker_that_remains_alive():
+def test_stdout_eof_fences_worker_immediately_and_terminates_orphan():
     worker = make_worker(EOF_LIVE_WORKER, timeout=2)
     worker.start({"protocol": "modbus-tcp"})
+    deadline = time.monotonic() + 3
+    while not worker.diagnostics()["reader_failed"] and time.monotonic() < deadline:
+        time.sleep(0.005)
+    fenced = worker.diagnostics()
+    assert fenced["reader_failed"] is True, fenced
+    assert fenced["started"] is False, fenced
+    with pytest.raises(RustWorkerError, match="not started"):
+        worker.read({"protocol": "modbus-tcp"})
     deadline = time.monotonic() + 4
     while worker.diagnostics()["process_alive"] and time.monotonic() < deadline:
         time.sleep(0.02)
     diagnostics = worker.diagnostics()
     assert diagnostics["process_alive"] is False, diagnostics
-    assert diagnostics["started"] is False, diagnostics
-    assert diagnostics["reader_failed"] is True, diagnostics
     assert diagnostics["exit_code"] is not None, diagnostics
     worker.close()
 
@@ -153,6 +160,7 @@ def test_rust_worker_supervisor_lifecycle_and_read_round_trip():
     assert result == {"transport_ok": True, "result": {"value": 42}}
     worker.close()
     assert worker.diagnostics()["process_alive"] is False
+    assert worker.diagnostics()["reader_failed"] is False
 
 
 def test_rust_worker_requires_absolute_existing_executable():

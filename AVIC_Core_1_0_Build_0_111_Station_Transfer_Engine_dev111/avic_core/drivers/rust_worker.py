@@ -79,53 +79,58 @@ class RustDriverWorker:
         self._inbound_guard = SequenceGuard()
         self._inbound_sequence_gaps = 0
         self._lock = threading.RLock()
+        # Serializes lifecycle transitions with reads; IPC stdout remains independently monitored.
+        self._lifecycle_lock = threading.RLock()
         self._exchange_lock = threading.RLock()
         self._reader: threading.Thread | None = None
         self._stderr_reader: threading.Thread | None = None
         self._stderr_tail: deque[str] = deque(maxlen=100)
         self._started = False
         self._reader_failed = False
+        self._closing = False
         self._worker_version: str | None = None
 
     def start(self, config: dict[str, Any]) -> None:
-        with self._lock:
-            if self._process is not None:
-                raise RustWorkerError("worker process has already been created")
-            if not isinstance(config, dict):
-                raise TypeError("worker config must be an object")
-            inherited = os.environ
-            safe_env = {
-                key: inherited[key] for key in (
-                    "PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL",
-                ) if key in inherited
-            }
-            self._process = subprocess.Popen(
-                self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, bufsize=0, shell=False, env=safe_env,
-                close_fds=True,
-            )
-            self._reader = threading.Thread(target=self._read_stdout, name="avic-rust-worker-stdout", daemon=True)
-            self._stderr_reader = threading.Thread(target=self._read_stderr, name="avic-rust-worker-stderr", daemon=True)
-            self._reader.start()
-            self._stderr_reader.start()
-        try:
-            initialized = self._request("initialize", {})
-            if initialized.kind != "initialized" or initialized.payload.get("protocol") != "avic.driver.ipc" or initialized.payload.get("version") != 1:
-                raise RustWorkerError("Rust worker handshake protocol/version mismatch")
-            self._worker_version = str(initialized.payload.get("worker_version") or "unknown")
-            configured = self._request("configure", config)
-            if configured.kind != "configured":
-                raise RustWorkerError("Rust worker did not confirm configuration")
-            started = self._request("start", {})
-            if started.kind != "status" or started.payload.get("state") != "RUNNING":
-                raise RustWorkerError("Rust worker did not enter RUNNING state")
+        with self._lifecycle_lock:
             with self._lock:
-                if self._reader_failed or self._process is None or self._process.poll() is not None:
-                    raise RustWorkerError("Rust worker IPC/process failed during startup")
-                self._started = True
-        except Exception:
-            self._terminate()
-            raise
+                if self._process is not None:
+                    raise RustWorkerError("worker process has already been created")
+                if not isinstance(config, dict):
+                    raise TypeError("worker config must be an object")
+                inherited = os.environ
+                safe_env = {
+                    key: inherited[key] for key in (
+                        "PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL",
+                    ) if key in inherited
+                }
+                self._process = subprocess.Popen(
+                    self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE, bufsize=0, shell=False, env=safe_env,
+                    close_fds=True,
+                )
+                self._reader = threading.Thread(target=self._read_stdout, name="avic-rust-worker-stdout", daemon=True)
+                self._stderr_reader = threading.Thread(target=self._read_stderr, name="avic-rust-worker-stderr", daemon=True)
+                self._reader.start()
+                self._stderr_reader.start()
+            try:
+                initialized = self._request("initialize", {})
+                if initialized.kind != "initialized" or initialized.payload.get("protocol") != "avic.driver.ipc" or initialized.payload.get("version") != 1:
+                    raise RustWorkerError("Rust worker handshake protocol/version mismatch")
+                with self._lock:
+                    self._worker_version = str(initialized.payload.get("worker_version") or "unknown")
+                configured = self._request("configure", config)
+                if configured.kind != "configured":
+                    raise RustWorkerError("Rust worker did not confirm configuration")
+                started = self._request("start", {})
+                if started.kind != "status" or started.payload.get("state") != "RUNNING":
+                    raise RustWorkerError("Rust worker did not enter RUNNING state")
+                with self._lock:
+                    if self._reader_failed or self._process is None or self._process.poll() is not None:
+                        raise RustWorkerError("Rust worker IPC/process failed during startup")
+                    self._started = True
+            except Exception:
+                self._terminate()
+                raise
 
     def _validate_inbound_identity(self, frame: DriverEnvelope) -> None:
         if (
@@ -139,7 +144,8 @@ class RustDriverWorker:
             raise RustWorkerError("Rust worker inbound identity/generation mismatch")
         try:
             if self._inbound_guard.accept(frame.generation, frame.sequence):
-                self._inbound_sequence_gaps += 1
+                with self._lock:
+                    self._inbound_sequence_gaps += 1
         except DriverIpcError as exc:
             raise RustWorkerError(f"Rust worker inbound sequence rejected: {exc}") from exc
 
@@ -164,14 +170,18 @@ class RustDriverWorker:
             while True:
                 frame = read_frame(process.stdout)
                 if frame is None:
-                    # EOF is terminal for this IPC session. A child that closes
-                    # stdout but keeps running is an orphaned, unsupervised worker.
+                    # Fence unexpected EOF immediately. EOF after an intentional
+                    # shutdown is normal only if the child actually exits.
+                    with self._lock:
+                        expected_shutdown = self._closing
+                        if expected_shutdown:
+                            self._started = False
+                    if not expected_shutdown:
+                        self._reader_failure("worker stdout closed unexpectedly (EOF)")
                     try:
                         process.wait(timeout=0.5)
                     except subprocess.TimeoutExpired:
-                        self._reader_failure(
-                            "worker stdout closed while process remained alive; terminating"
-                        )
+                        self._reader_failure("worker stdout closed while process remained alive; terminating")
                         try:
                             process.terminate()
                         except OSError:
@@ -187,17 +197,9 @@ class RustDriverWorker:
                                 process.wait(timeout=2)
                             except subprocess.TimeoutExpired:
                                 pass
-                        stderr_reader = self._stderr_reader
-                        if stderr_reader is not None and stderr_reader is not threading.current_thread():
-                            stderr_reader.join(timeout=0.5)
-                        return
                     stderr_reader = self._stderr_reader
                     if stderr_reader is not None and stderr_reader is not threading.current_thread():
-                        stderr_reader.join(timeout=0.25)
-                    detail = list(self._stderr_tail)[-10:]
-                    self._reader_failure(
-                        f"worker stdout closed (exit_code={process.poll()}; stderr={detail})"
-                    )
+                        stderr_reader.join(timeout=0.5)
                     return
 
                 if not isinstance(frame, DriverEnvelope):
@@ -207,11 +209,13 @@ class RustDriverWorker:
                 if frame.kind in self.ASYNC_EVENT_KINDS and frame.correlation_id is not None and frame.kind != "status":
                     raise RustWorkerError("asynchronous IPC event must not have a correlation_id")
                 if frame.kind in self.ASYNC_EVENT_KINDS and frame.correlation_id is None:
-                    self._event_received_count += 1
+                    with self._lock:
+                        self._event_received_count += 1
                     try:
                         self._events.put_nowait(frame)
                     except queue.Full:
-                        self._event_overflow_count += 1
+                        with self._lock:
+                            self._event_overflow_count += 1
                         event_class = frame.payload.get("event_class")
                         replaceable_sample = (
                             event_class in self.REPLACEABLE_EVENT_CLASSES
@@ -252,7 +256,8 @@ class RustDriverWorker:
         for raw in iter(process.stderr.readline, b""):
             # The worker must never log credentials; retain only a bounded tail
             # for operational diagnostics if it exits unexpectedly.
-            self._stderr_tail.append(raw.decode("utf-8", errors="replace").rstrip())
+            with self._lock:
+                self._stderr_tail.append(raw.decode("utf-8", errors="replace").rstrip())
 
     def _envelope(self, kind: str, payload: dict[str, Any]) -> DriverEnvelope:
         self._request_sequence += 1
@@ -325,39 +330,45 @@ class RustDriverWorker:
             return None
 
     def read(self, request: dict[str, Any]) -> dict[str, Any]:
-        if not self._started:
-            raise RustWorkerError("Rust worker is not started")
-        if not isinstance(request, dict):
-            raise TypeError("read request must be an object")
-        response = self._request("read", request)
-        if response.kind == "read_error":
-            raise RustWorkerError(str(response.payload.get("message", "protocol read failed")))
-        if response.kind != "read_result":
-            raise RustWorkerError(f"unexpected worker response: {response.kind}")
-        return response.payload
+        with self._lifecycle_lock:
+            with self._lock:
+                if not self._started or self._reader_failed or self._closing:
+                    raise RustWorkerError("Rust worker is not started or IPC session has failed")
+            if not isinstance(request, dict):
+                raise TypeError("read request must be an object")
+            response = self._request("read", request)
+            if response.kind == "read_error":
+                raise RustWorkerError(str(response.payload.get("message", "protocol read failed")))
+            if response.kind != "read_result":
+                raise RustWorkerError(f"unexpected worker response: {response.kind}")
+            return response.payload
 
     def diagnostics(self) -> dict[str, Any]:
-        process = self._process
-        return {
-            "worker_id": self.worker_id,
-            "worker_version": self._worker_version,
-            "generation": self.generation,
-            # Kept for compatibility; gaps now cover the complete inbound stream.
-            "response_sequence_gaps": self._inbound_sequence_gaps,
-            "inbound_sequence_gaps": self._inbound_sequence_gaps,
-            "event_queue_depth": self._events.qsize(),
-            "event_received_count": self._event_received_count,
-            "event_overflow_count": self._event_overflow_count,
-            "started": self._started,
-            "reader_failed": self._reader_failed,
-            "process_alive": process is not None and process.poll() is None,
-            "exit_code": process.poll() if process is not None else None,
-            "stderr_tail": list(self._stderr_tail)[-10:],
-        }
+        with self._lock:
+            process = self._process
+            return {
+                "worker_id": self.worker_id,
+                "worker_version": self._worker_version,
+                "generation": self.generation,
+                # Kept for compatibility; gaps now cover the complete inbound stream.
+                "response_sequence_gaps": self._inbound_sequence_gaps,
+                "inbound_sequence_gaps": self._inbound_sequence_gaps,
+                "event_queue_depth": self._events.qsize(),
+                "event_received_count": self._event_received_count,
+                "event_overflow_count": self._event_overflow_count,
+                "started": self._started,
+                "reader_failed": self._reader_failed,
+                "closing": self._closing,
+                "process_alive": process is not None and process.poll() is None,
+                "exit_code": process.poll() if process is not None else None,
+                "stderr_tail": list(self._stderr_tail)[-10:],
+            }
 
     def _terminate(self) -> None:
-        process = self._process
-        self._started = False
+        with self._lock:
+            process = self._process
+            self._started = False
+            self._closing = True
         if process is None:
             return
         if process.poll() is None:
@@ -388,26 +399,30 @@ class RustDriverWorker:
             reader.join(timeout=1)
 
     def close(self) -> None:
-        process = self._process
-        if process is None:
-            return
-        if process.poll() is None:
-            try:
-                self._request("stop", {})
-                self._request("shutdown", {})
-                process.wait(timeout=2)
-            except Exception:
-                self._terminate()
-        self._started = False
-        for stream in (process.stdin, process.stdout, process.stderr):
-            if stream is not None:
+        with self._lifecycle_lock:
+            process = self._process
+            if process is None:
+                return
+            with self._lock:
+                self._closing = True
+            if process.poll() is None:
                 try:
-                    stream.close()
-                except OSError:
-                    pass
-        reader = self._reader
-        if reader is not None and reader is not threading.current_thread():
-            reader.join(timeout=1)
+                    self._request("stop", {})
+                    self._request("shutdown", {})
+                    process.wait(timeout=2)
+                except Exception:
+                    self._terminate()
+            with self._lock:
+                self._started = False
+            for stream in (process.stdin, process.stdout, process.stderr):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except OSError:
+                        pass
+            reader = self._reader
+            if reader is not None and reader is not threading.current_thread():
+                reader.join(timeout=1)
 
     def __enter__(self) -> "RustDriverWorker":
         return self
