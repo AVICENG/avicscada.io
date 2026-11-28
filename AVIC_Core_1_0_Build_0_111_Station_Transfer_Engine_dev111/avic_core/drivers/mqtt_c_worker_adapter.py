@@ -174,6 +174,27 @@ class MqttCWorkerPointAdapter:
                     continue
                 if event.kind == "fault":
                     detail = str(event.payload.get("message") or "MQTT C Worker fault")
+                    topic = event.payload.get("topic")
+                    if isinstance(topic, str):
+                        # Broker ACL/subscription rejection is binding-scoped:
+                        # keep the healthy MQTT session and unrelated points online.
+                        affected = [
+                            item for item in self.bindings
+                            if mqtt_topic_matches(item.topic, topic)
+                        ]
+                        for binding in affected:
+                            self._last_errors[binding.point_id] = detail[:512]
+                            self._failure_count += 1
+                            try:
+                                self.point_runtime.mark_quality(
+                                    binding.point_id, self._PointQuality.BAD_CONFIGURATION,
+                                    source_driver_id=self.driver_instance_id,
+                                )
+                            except Exception as exc:
+                                self._last_errors[binding.point_id] = (
+                                    f"{detail}; quality update failed: {type(exc).__name__}: {exc}"
+                                )[:512]
+                        continue
                     self._last_errors["__worker__"] = detail[:512]
                     self._connected = False
                     self._failure_count += 1
