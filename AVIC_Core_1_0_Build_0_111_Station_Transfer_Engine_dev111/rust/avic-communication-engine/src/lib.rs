@@ -375,23 +375,24 @@ mod tests {
             let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
             let address = listener.local_addr().unwrap();
             let malformed = malformed.to_string();
+            let expected = if malformed == "unit" {
+                "invalid MBAP header"
+            } else {
+                "invalid Modbus response payload"
+            };
+            let server_mode = malformed.clone();
             let server = std::thread::spawn(move || {
                 let (mut stream, _) = listener.accept().unwrap();
                 let mut request = [0u8; 12];
                 stream.read_exact(&mut request).unwrap();
                 let mut response = success_response(&request, 42);
-                if malformed == "unit" {
+                if server_mode == "unit" {
                     response[6] = 2;
                 } else {
                     response[8] = 4;
                 }
                 stream.write_all(&response).unwrap();
             });
-            let expected = if malformed == "unit" {
-                "invalid MBAP header"
-            } else {
-                "invalid Modbus response payload"
-            };
             assert!(matches!(
                 client_for(address).read_holding_registers(0, 1),
                 Err(ModbusError::Protocol(message)) if message == expected

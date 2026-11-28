@@ -184,7 +184,12 @@ MALFORMED_STREAM_LIVE_WORKER = textwrap.dedent(r"""
 
 def test_malformed_stdout_fences_and_kills_unresponsive_worker():
     worker = make_worker(MALFORMED_STREAM_LIVE_WORKER, timeout=2)
-    worker.start({"protocol": "modbus-tcp"})
+    # The reader may detect malformed stdout before start() returns. Both
+    # schedules are valid; the worker must be fenced and reaped in either case.
+    try:
+        worker.start({"protocol": "modbus-tcp"})
+    except RustWorkerError:
+        pass
     deadline = time.monotonic() + 6
     while worker.diagnostics()["process_alive"] and time.monotonic() < deadline:
         time.sleep(0.02)
