@@ -246,8 +246,25 @@ jobs:
       - name: Build BACnet Stack and AVIC probe
         run: cmake --build build/bacnet-stack-probe --config Release --parallel 2
 
-      - name: Run BACnet Stack version probe test
+      - name: Run BACnet Stack codec probe tests
         run: ctest --test-dir build/bacnet-stack-probe --build-config Release --output-on-failure
+
+      - name: Set up Python for BACnet simulator integration
+        if: runner.os == 'Linux'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build upstream Steve Karg BACnet/IP server simulator
+        if: runner.os == 'Linux'
+        run: make -C build/bacnet-stack-probe/_deps/bacnet_stack-src/apps BACDL=bip server.all
+
+      - name: Test AVIC ReadProperty ACK and Error against upstream simulator
+        if: runner.os == 'Linux'
+        run: >-
+          python tools/bacnet_stack_server_integration.py
+          --server build/bacnet-stack-probe/_deps/bacnet_stack-src/apps/bin/bacserv
+          --probe build/bacnet-stack-probe/avic-bacnet-stack-probe
 
   paho-mqtt-c-native-probe:
     name: Eclipse Paho MQTT C native probe / ${{ matrix.os }}
