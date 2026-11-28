@@ -10,7 +10,7 @@ from math import isfinite
 import threading
 from typing import Any
 
-from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding
+from avic_core.drivers.mqtt_adapter import MqttPointAdapter, MqttPointBinding, mqtt_topic_matches
 from avic_core.drivers.rust_worker import RustDriverWorker
 
 
@@ -113,7 +113,8 @@ class MqttCWorkerPointAdapter:
 
     def _consume_sample(self, payload: dict[str, Any]) -> None:
         topic = payload.get("topic")
-        bindings = self._by_topic.get(topic) if isinstance(topic, str) else None
+        bindings = [item for item in self.bindings
+                    if isinstance(topic, str) and mqtt_topic_matches(item.topic, topic)]
         if not bindings:
             self._unknown_topic_count += 1
             return

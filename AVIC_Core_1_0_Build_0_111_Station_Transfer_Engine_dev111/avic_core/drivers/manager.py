@@ -415,6 +415,12 @@ class DriverManagerService:
             ca_path = Path(str(ca_file)).expanduser()
             if not ca_path.is_file():
                 raise ValueError("MQTT TLS CA certificate file does not exist")
+        port = cfg.get("port", 8883 if ca_file else 1883)
+        keepalive = cfg.get("keepalive", 60)
+        if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+            raise ValueError("MQTT port must be an integer from 1 to 65535")
+        if isinstance(keepalive, bool) or not isinstance(keepalive, int) or not 10 <= keepalive <= 3600:
+            raise ValueError("MQTT keepalive must be an integer from 10 to 3600 seconds")
         if engine == "c":
             return self._build_mqtt_c_worker_adapter(core, instance, cfg, bindings)
         try:
@@ -432,8 +438,7 @@ class DriverManagerService:
             client.tls_insecure_set(False)
         return MqttPointAdapter(
             client, core.point_runtime, instance.id, bindings,
-            host=host, port=int(cfg.get("port", 8883 if ca_file else 1883)),
-            keepalive=int(cfg.get("keepalive", 60)),
+            host=host, port=port, keepalive=keepalive,
         )
 
     def catalog(self):

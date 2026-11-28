@@ -146,3 +146,26 @@ def test_mqtt_c_worker_rejects_duplicate_point_bindings(monkeypatch):
             ],
             installation_id="i", project_id="p", station_id="s",
         )
+
+
+
+def test_mqtt_c_worker_routes_wildcard_topic_filters(monkeypatch):
+    adapter, worker, runtime = build_adapter(monkeypatch)
+    # Replace the exact filters with a legal wildcard binding for this scenario.
+    adapter.stop() if adapter._started else None
+    adapter = MqttCWorkerPointAdapter(
+        worker_command=["/absolute/avic-mqtt-c-worker"],
+        core=SimpleNamespace(point_runtime=runtime),
+        driver_instance_id="driver-wildcard",
+        config={"host": "broker.local"},
+        bindings=[MqttPointBinding("point-wild", "plant/+/temp", qos=1)],
+        installation_id="install-1", project_id="project-1", station_id="station-1",
+    )
+    adapter.start()
+    worker.events.put(SimpleNamespace(kind="sample", payload={
+        "topic": "plant/ahu/temp", "payload": '{"value":22.5}',
+        "qos": 1, "received_at": "2026-11-28T08:00:00.000Z",
+    }))
+    assert runtime.sample_event.wait(2.0)
+    assert runtime.samples[0][0:3] == ("point-wild", 22.5, PointQuality.GOOD)
+    adapter.stop()

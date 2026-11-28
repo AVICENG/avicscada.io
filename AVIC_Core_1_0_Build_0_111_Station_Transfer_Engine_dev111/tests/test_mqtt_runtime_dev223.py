@@ -189,3 +189,32 @@ def test_driver_manager_selects_native_c_worker_without_importing_paho(monkeypat
     assert called["engine"] == "c"
     assert called["host"] == "broker.local"
     assert called["bindings"][0].qos == 2
+
+
+
+@pytest.mark.parametrize(
+    ("topic_filter", "topic", "expected"),
+    [
+        ("plant/+/temp", "plant/ahu/temp", True),
+        ("plant/+/temp", "plant/ahu/zone1/temp", False),
+        ("plant/#", "plant", True),
+        ("plant/#", "plant/ahu/temp", True),
+        ("plant/ahu/temp", "plant/ahu/temp", True),
+        ("plant/ahu/temp", "plant/ahu/humidity", False),
+        ("#", "$SYS/broker/uptime", False),
+        ("$SYS/#", "$SYS/broker/uptime", True),
+        ("plant/+/temp", "plant//temp", True),
+    ],
+)
+def test_mqtt_topic_filter_matching(topic_filter, topic, expected):
+    from avic_core.drivers.mqtt_adapter import mqtt_topic_matches
+    assert mqtt_topic_matches(topic_filter, topic) is expected
+
+
+def test_mqtt_topic_filter_rejects_misplaced_wildcards():
+    import pytest
+    from avic_core.drivers.mqtt_adapter import MqttPointBinding
+    with pytest.raises(ValueError, match="wildcards"):
+        MqttPointBinding("bad", "plant/ahu#")
+    with pytest.raises(ValueError, match="wildcards"):
+        MqttPointBinding("bad", "plant/#/temp")
