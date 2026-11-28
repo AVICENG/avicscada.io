@@ -2,6 +2,7 @@
 #include <jansson.h>
 #include <modbus.h>
 #include <stdint.h>
+#include <limits.h>
 #include <errno.h>
 #include <stdio.h>
 #ifdef _WIN32
@@ -160,6 +161,47 @@ static int contains_secret_key(json_t *value) {
 static void close_modbus(worker_t *w) {
     if (w->modbus) { modbus_close(w->modbus); modbus_free(w->modbus); w->modbus = NULL; }
 }
+#ifdef _WIN32
+static int ascii_prefix_equal(const char *value, const char *prefix) {
+    while (*prefix) {
+        char a = *value++;
+        char b = *prefix++;
+        if (a >= 'a' && a <= 'z') a = (char)(a - ('a' - 'A'));
+        if (b >= 'a' && b <= 'z') b = (char)(b - ('a' - 'A'));
+        if (a != b) return 0;
+    }
+    return 1;
+}
+
+/* Canonicalize COM aliases and apply the Win32 device namespace for COM10+. */
+static const char *normalize_windows_com_port(const char *port_name,
+                                               char *device, size_t device_size) {
+    if (!port_name || !*port_name) return port_name;
+    const char *name = port_name;
+    if (ascii_prefix_equal(name, "\\\\.\\") ) name += 4;
+    if (!ascii_prefix_equal(name, "COM")) return port_name;
+
+    const char *digits = name + 3;
+    if (!*digits) return port_name;
+    unsigned long number = 0;
+    for (const char *p = digits; *p; ++p) {
+        if (*p < '0' || *p > '9') return port_name;
+        unsigned long digit = (unsigned long)(*p - '0');
+        if (number > (ULONG_MAX - digit) / 10UL) return port_name;
+        number = number * 10UL + digit;
+    }
+    if (number == 0) return port_name;
+
+    int written;
+    if (number >= 10)
+        written = snprintf(device, device_size, "\\\\.\\COM%lu", number);
+    else
+        written = snprintf(device, device_size, "COM%lu", number);
+    if (written < 0 || (size_t)written >= device_size) return port_name;
+    return device;
+}
+#endif
+
 static int connect_modbus(worker_t *w) {
     if (w->modbus) return 1;
     if (strcmp(w->protocol, "modbus-tcp") == 0) {
@@ -167,15 +209,8 @@ static int connect_modbus(worker_t *w) {
     } else if (strcmp(w->protocol, "modbus-rtu") == 0) {
         const char *port_name = w->serial_port;
 #ifdef _WIN32
-        char device[sizeof(w->serial_port) + 8];
-        /* libmodbus requires the Win32 device namespace for COM ports > 9. */
-        if (strlen(port_name) == 5 && strncmp(port_name, "COM", 3) == 0
-            && port_name[3] >= '1' && port_name[3] <= '9'
-            && port_name[4] >= '0' && port_name[4] <= '9') {
-            if (snprintf(device, sizeof(device), "\\\\.\\%s", port_name) >= (int)sizeof(device))
-                return 0;
-            port_name = device;
-        }
+        char device[sizeof(w->serial_port) + 16];
+        port_name = normalize_windows_com_port(port_name, device, sizeof(device));
 #endif
         w->modbus = modbus_new_rtu(port_name, w->baud_rate, w->parity,
                                    w->data_bits, w->stop_bits);
