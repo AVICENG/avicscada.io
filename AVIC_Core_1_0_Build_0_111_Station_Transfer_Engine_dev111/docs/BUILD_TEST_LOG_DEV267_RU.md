@@ -65,3 +65,18 @@ PR: #11 — drivers/modbus-rtu-c-worker-dev249
 - Добавлен regression gate для свежести response sent_at, состояния connected и корректного завершения worker.
 
 Эти изменения пока не имеют подтверждённого CI на новом HEAD. MQTT остаётся 🟧.
+
+
+## Дополнение DEV267f CI — run 46130918095
+
+На HEAD `71559b899fa60dde12282d2118ebd116ef526a50`:
+- Linux Python 3.11/3.12/3.13 завершились успешно.
+- Linux Paho MQTT C Worker build и Mosquitto → C Worker → IPC → Point Runtime: **2 passed**.
+- Windows MSVC configure и сборка Paho/Jansson зависимостей прошли; Worker compile остановился на `fatal error C1083: jansson.h: No such file or directory`.
+- Windows Python 3.11/3.12/3.13 на этом коммите проверяют старый вариант MQTT 5.0 unit test; исправленный тест включён в следующий HEAD.
+
+Исправление DEV268d:
+- Явно добавлены `jansson_BINARY_DIR/include` и `jansson_SOURCE_DIR/src` в include path Worker target.
+- Отключена сборка тестового набора Jansson внутри product build (`JANSSON_WITHOUT_TESTS=ON`).
+
+Новый HEAD содержит также DEV268 IPC hardening и проверки актуального response timestamp/worker shutdown. Статус MQTT остаётся 🟧 до завершения нового Linux+Windows CI.

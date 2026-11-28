@@ -32,6 +32,13 @@
 - Завершение Paho disconnect lifecycle под интенсивным трафиком требует отдельного soak/fault-injection подтверждения.
 - Наличие сборки не означает готовность драйвера; MQTT остаётся 🟧 до завершения CI и дополнительных негативных тестов.
 
+## Дополнение по DEV267f CI
+
+- Linux CMake configure/build прошёл; Mosquitto-to-Point-Runtime integration: **2 passed**.
+- Windows MSVC configure прошёл, но компиляция Worker остановилась: `jansson.h` не найден в include path цели. В CMake добавлены публичный generated include и source include каталоги Jansson.
+- Отключена ненужная сборка upstream Jansson test suite в составе Worker build.
+- Новый CI на DEV268c должен подтвердить Windows build и свежие IPC lifecycle/timestamp checks.
+
 ## CI gates
 
 Linux job строит Worker и запускает Mosquitto round-trip до Point Runtime. Windows job строит MSVC executable и проверяет IPC handshake/shutdown. Полные результаты фиксируются в DEV267 build test log после завершения workflow.

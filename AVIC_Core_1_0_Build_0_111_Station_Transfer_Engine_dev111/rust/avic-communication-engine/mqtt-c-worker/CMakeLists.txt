@@ -25,6 +25,7 @@ FetchContent_MakeAvailable(paho_mqtt_c)
 
 set(JANSSON_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(JANSSON_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(JANSSON_WITHOUT_TESTS ON CACHE BOOL "" FORCE)
 FetchContent_Declare(jansson
   GIT_REPOSITORY https://github.com/akheron/jansson.git
   GIT_TAG v2.14.1 GIT_SHALLOW TRUE)
@@ -37,6 +38,9 @@ endif()
 
 add_executable(avic-mqtt-paho-c-worker src/main.c)
 target_link_libraries(avic-mqtt-paho-c-worker PRIVATE paho-mqtt3a-static jansson)
+target_include_directories(avic-mqtt-paho-c-worker PRIVATE
+  "${jansson_BINARY_DIR}/include"
+  "${jansson_SOURCE_DIR}/src")
 if(WIN32)
   target_link_libraries(avic-mqtt-paho-c-worker PRIVATE Rpcrt4)
 else()
